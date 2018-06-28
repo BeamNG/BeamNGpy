@@ -52,6 +52,8 @@ class BeamNGPy:
         userpath (str, optional): The userpath BeamNG.drive should run in.
                                   If not specified, BeamNG.drive's default will
                                   be used.
+        binary (str, optional): Name of the BeamNG.drive binary to call.
+
 
     Attributes:
         host (str): Host given during construction.
@@ -59,6 +61,7 @@ class BeamNGPy:
         server (:py:class:`socket.socket`): Server socket clients connect to.
         userpath (str): User path to run BeamNG.drive in. Can be ``None`` to use
                         the default.
+        binary (str): The BeamNG.drive binary that will be called.
         process (:py:class:`subprocess.Popen`): BeamNG.drive process if one has
                                                 been started yet, ``None``
                                                 otherwise.
@@ -99,12 +102,13 @@ class BeamNGPy:
 
     """
 
-    def __init__(self, host, port, userpath=None):
+    def __init__(self, host, port, userpath=None, binary=cfg.beamng_binary):
         self.host = host
         self.port = port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.userpath = userpath
+        self.binary = binary
 
         self.process = None
         self.client = None
@@ -122,7 +126,7 @@ class BeamNGPy:
             :py:mod:`subprocess` module.
         """
         call = [
-            cfg.beamng_binary,
+            self.binary,
             "-lua",
             "registerCoreModule({})".format(cfg.beamng_extension),
         ]
