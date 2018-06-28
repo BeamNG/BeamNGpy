@@ -1,7 +1,7 @@
 """
 .. module:: beamng
     :platform: Windows
-    :synopsis: Contains the main :class:`.BeamNGPy` class used to interface with
+    :synopsis: Contains the main :py:class:`.BeamNGPy` class used to interface with
                BeamNG.drive.
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.com>
@@ -38,7 +38,7 @@ class BeamNGPy:
     controlling vehicles, and extracting data from the simulation.
 
     .. note::
-        A BeamNG.drive process stores data locally in a so called `userpath`.
+        A BeamNG.drive process stores data locally in a so called ``userpath``.
         Multiple instances should not be set to run in the same userpath, as
         sharing those resources leads to undefined behaviour. Instead, when
         using multiple BeamNG.drive processes, specify unique user paths in the
@@ -57,13 +57,13 @@ class BeamNGPy:
         host (str): Host given during construction.
         port (int): Port given during construction.
         server (:py:class:`socket.socket`): Server socket clients connect to.
-        userpath (str): User path to run BeamNG.drive in. Can be `None` to use
+        userpath (str): User path to run BeamNG.drive in. Can be ``None`` to use
                         the default.
         process (:py:class:`subprocess.Popen`): BeamNG.drive process if one has
-                                                been started yet, `None`
+                                                been started yet, ``None``
                                                 otherwise.
         client (:py:class:`socket.socket`): Currently connected client if one
-                                            has connected yet, `None` otherwise.
+                                            has connected yet, ``None`` otherwise.
         queue (:py:class:`queue.Queue`): Messages received from the socket, but
                                          yet to be retrieved via either
                                          :py:meth:`BeamNGPy.poll` or
@@ -74,7 +74,7 @@ class BeamNGPy:
 
     Examples:
         Set up a BeamNGPy instance on localhost and port 64256, using the
-        default `userpath` and load the scenario `levels/test/test.json`:
+        default ``userpath`` and load the scenario ``levels/test/test.json``:
 
         .. code-block:: python
 
@@ -82,7 +82,7 @@ class BeamNGPy:
                 bpy.load_scenario('levels/test/test.json')
                 bpy.start_scenario()
 
-        Set up a BeamNGPy instance with a custom `userpath`, load a scenario,
+        Set up a BeamNGPy instance with a custom ``userpath``, load a scenario,
         drive the vehicle for 10s, retrieve its state, and save the screenshot
         to disk:
 
@@ -124,7 +124,7 @@ class BeamNGPy:
         call = [
             cfg.beamng_binary,
             "-lua",
-            f"registerCoreModule('{cfg.beamng_extension}')",
+            "registerCoreModule({})".format(cfg.beamng_extension),
         ]
 
         if self.userpath:
@@ -205,10 +205,10 @@ class BeamNGPy:
         specified as a dictionary specifying values to be set for each type of
         input. Possible inputs are:
 
-            * `steering`: Steering angle, within [-1.0, 1.0], negative goes left
-            * `throttle`: Throttle value, within [0.0, 1.0]
-            * `brake`: Brake intensity, within [0.0, 1.0]
-            * `parkingbrake`: Parking brake intensity, within [0.0, 1.0]
+            * ``steering``: Steering angle, within [-1.0, 1.0], negative goes left
+            * ``throttle``: Throttle value, within [0.0, 1.0]
+            * ``brake``: Brake intensity, within [0.0, 1.0]
+            * ``parkingbrake``: Parking brake intensity, within [0.0, 1.0]
 
         This command will only change inputs contained in the dictionary. If no
         change to, for example, the throttle value is supposed to happen, don't
@@ -247,17 +247,17 @@ class BeamNGPy:
 
         The state will be a dictionary containing the following entries:
 
-            * `pos`: List of [x, y, z] coordinates of the vehicle.
-            * `vel`: List of [x, y, z] velocities of the vehicle in metres per
+            * ``pos``: List of [x, y, z] coordinates of the vehicle.
+            * ``vel``: List of [x, y, z] velocities of the vehicle in metres per
                      second.
-            * `dir`: List of [x, y, z] components of the direction vector of the
+            * ``dir``: List of [x, y, z] components of the direction vector of the
                      vehicle; the vector is normalised.
-            * `rot`: Rotation of the vehicle in degrees.
-            * `steering`: Current steering angle, within [-1.0, 1.0]
-            * `throttle`: Current throttle intensity, within [0.0, 1.0]
-            * `brake`: Current brake intensity, within [0.0, 1.0]
-            * `parkingbrake`: Current parkingbrake intensity, within [0.0, 1.0]
-            * `img`: Current screenshot of the game as a :py:class:`PIL.Image`
+            * ``rot``: Rotation of the vehicle in degrees.
+            * ``steering``: Current steering angle, within [-1.0, 1.0]
+            * ``throttle``: Current throttle intensity, within [0.0, 1.0]
+            * ``brake``: Current brake intensity, within [0.0, 1.0]
+            * ``parkingbrake``: Current parkingbrake intensity, within [0.0, 1.0]
+            * ``img``: Current screenshot of the game as a :py:class:`PIL.Image`
                      instance
 
         """
@@ -305,12 +305,12 @@ class BeamNGPy:
     def decode_msg(self, msg):
         """
         Performs appropriate decoding of the given dict depending on the type
-        specified within. For example, `VehicleState` messages will have their
+        specified within. For example, ``VehicleState`` messages will have their
         raw image data decoded to a :py:class:`PIL.Image` instance. Decoding is
         done in place.
 
         Args:
-            msg (dict): Dictionary to decode. Must contain at least a `type`
+            msg (dict): Dictionary to decode. Must contain at least a ``type``
                         entry.
 
         Returns:
