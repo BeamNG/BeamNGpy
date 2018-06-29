@@ -1,10 +1,10 @@
 """
 .. module:: beamng
     :platform: Windows
-    :synopsis: Contains the main :py:class:`.BeamNGPy` class used to interface with
-               BeamNG.drive.
+    :synopsis: Contains the main :py:class:`.BeamNGPy` class used to interface
+               with BeamNG.drive.
 
-.. moduleauthor:: Marc Müller <mmueller@beamng.com>
+.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 
 """
 

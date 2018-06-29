@@ -3,4 +3,4 @@ Contributors
 ============
 
 * BeamNG GmbH <info@beamng.gmbh>
-* Marc Müller <mmueller@beamng.com>
+* Marc Müller <mmueller@beamng.gmbh>
