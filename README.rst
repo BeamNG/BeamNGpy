@@ -39,7 +39,7 @@ with:
 
 .. code-block:: python
 
-  bpy = beamnpy.BeamNGPy('localhost', 64256)
+  bpy = beamngpy.BeamNGPy('localhost', 64256)
 
 Where host and port are your choice, of course. More details on the methods of
 this class can be found in the `API reference`_.
