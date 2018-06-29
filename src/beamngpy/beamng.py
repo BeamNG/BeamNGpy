@@ -128,7 +128,7 @@ class BeamNGPy:
         call = [
             self.binary,
             "-lua",
-            "registerCoreModule({})".format(cfg.beamng_extension),
+            "registerCoreModule('{}')".format(cfg.beamng_extension),
         ]
 
         if self.userpath:
