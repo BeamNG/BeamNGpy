@@ -81,9 +81,12 @@ class BeamNGPy:
 
         .. code-block:: python
 
-            with BeamNGPy('localhost', 64256) as bpy:
-                bpy.load_scenario('levels/test/test.json')
-                bpy.start_scenario()
+            bpy = beamngpy.BeamNGPy('localhost', 64256)
+            bpy.open()
+            bpy.load_scenario('levels/test/test.json')
+            bpy.start_scenario()
+            # Do stuff...
+            bpy.close()
 
         Set up a BeamNGPy instance with a custom ``userpath``, load a scenario,
         drive the vehicle for 10s, retrieve its state, and save the screenshot
@@ -213,6 +216,8 @@ class BeamNGPy:
             * ``throttle``: Throttle value, within [0.0, 1.0]
             * ``brake``: Brake intensity, within [0.0, 1.0]
             * ``parkingbrake``: Parking brake intensity, within [0.0, 1.0]
+            * ``gear``: The gear to shift to. The vehicle needs to be shifted
+                        into at least 1 to accelerate forward.
 
         This command will only change inputs contained in the dictionary. If no
         change to, for example, the throttle value is supposed to happen, don't
@@ -244,7 +249,7 @@ class BeamNGPy:
         inputs = {"type": "VControl", "inputs": inputs}
         self.send(inputs)
 
-    def req_vstate(self):
+    def req_vstate(self, width=None, height=None):
         """
         Sends a request for the ego vehicle's current state that, once the
         client responds, will be retrievable via :py:meth:`BeamNGPy.poll`.
@@ -261,11 +266,96 @@ class BeamNGPy:
             * ``throttle``: Current throttle intensity, within [0.0, 1.0]
             * ``brake``: Current brake intensity, within [0.0, 1.0]
             * ``parkingbrake``: Current parkingbrake intensity, within [0.0, 1.0]
+            * ``gear``: Current gear the vehicle is shifted to.
             * ``img``: Current screenshot of the game as a :py:class:`PIL.Image`
-                     instance
+                       instance. The dimensions of this image can be controlled
+                       with the ``width`` and ``height`` arguments.
+
+        Args:
+            width (int): Width of the screenshot. If ``None``, it will be
+                         calculated based on the given height such that the
+                         aspect ratio of the game is maintained.
+            height (int): Height of the screenshot. If ``None``, it will be
+                          calculated based on the given width such taht the
+                          aspect ratio of the game is maintained.
+
+        Raises:
+            ValueError: If both ``width`` and ``height`` are ``None`` or 0.
 
         """
-        data = {"type": "ReqVState"}
+        if not width and not height:
+            raise ValueError("Need to specify at least height or width.")
+
+        data = dict()
+        data["type"] = "ReqVState"
+        data["width"] = width
+        data["height"] = height
+
+        self.send(data)
+
+    def get_vstate(self, width=None, height=None):
+        """
+        Same as :py:meth:`BeamNGPy.req_vstate` but blocks until the vehicle
+        state was received and returns it.
+
+        Args:
+            width (int): Same as the ``width`` in :py:meth:`BeamNGPy.req_vstate`
+            height (int): Same as the ``height`` in
+                          :py:meth:`BeamNGPy.req_vstate`
+
+        Returns:
+            The vehicle state as described in :py:meth:`BeamNGPy.req_vstate`.
+        """
+        self.req_vstate(width=width, height=height)
+        while True:
+            vstate = self.poll()
+            if vstate["type"] == "VehicleState":
+                return vstate
+
+    def relative_camera(self, pos=(0, 0, 0), rot=(0, 0, 0), fov=90):
+        """
+        Switches the camera to one relative to the vehicle. The given parameters
+        control position, orientation, and field of view of the camera.
+
+        Args:
+            pos (tuple): X, Y, Z coordinates of the camera's position relative
+                         to the vehicle
+            rot (tuple): Pitch, Yaw, Roll angles of the camera's orientation
+                         relative to the vehicle
+            fov (float): Field of View
+
+        Examples:
+            Get a bumper cam on the ETK800 Series:
+
+            .. code-block:: python
+
+                pos = (-0.5, 2, 0.5)
+                rot = (180, 0, 180)
+                fov = 90
+                bpy.relative_camera(pos, rot, fov)
+
+        """
+        data = dict()
+        data["type"] = "RelativeCamera"
+        data["pos"] = pos
+        data["rot"] = rot
+        data["fov"] = fov
+        self.send(data)
+
+    def hide_hud(self):
+        """
+        Hides the HUD.
+        """
+        data = dict()
+        data["type"] = "HideHUD"
+        self.send(data)
+
+    def show_hud(self):
+        """
+        Shows the HUD again.
+        """
+        data = dict()
+        data["type"] = "ShowHUD"
         self.send(data)
 
     def load_scenario(self, path):
