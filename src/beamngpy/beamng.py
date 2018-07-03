@@ -396,6 +396,32 @@ class BeamNGPy:
             if resp["type"] == "ScenarioStarted":
                 return
 
+    def pause(self):
+        """
+        Sends a pause request to BeamNG.drive, blocking until the simulation is
+        paused.
+        """
+        data = dict()
+        data["type"] = "Pause"
+        self.send(data)
+        while True:
+            resp = self.poll()
+            if resp["type"] == "Paused":
+                return
+
+    def resume(self):
+        """
+        Sends a resume request to BeamNG.drive, blocking until the simulation is
+        resumed.
+        """
+        data = dict()
+        data["type"] = "Resume"
+        self.send(data)
+        while True:
+            resp = self.poll()
+            if resp["type"] == "Resumed":
+                return
+
     def decode_msg(self, msg):
         """
         Performs appropriate decoding of the given dict depending on the type

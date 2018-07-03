@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.3
+===========
+- Add method to pause simulation
+- Add method to resume simulation
+
 Version 0.2
 ===========
 - Add option to specify image size when requesting vehicle state
