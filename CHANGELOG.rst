@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 0.3.1
+=============
+- Add `restart_scenario` method to restart a running scenario
+
 Version 0.3
 ===========
 - Add method to pause simulation

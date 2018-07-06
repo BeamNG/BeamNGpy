@@ -396,6 +396,17 @@ class BeamNGPy:
             if resp["type"] == "ScenarioStarted":
                 return
 
+    def restart_scenario(self):
+        """
+        Restarts a running scenario
+        """
+        data = {"type": "RestartScenario"}
+        self.send(data)
+        while True:
+            resp = self.poll()
+            if resp["type"] == "ScenarioRestarted":
+                return
+
     def pause(self):
         """
         Sends a pause request to BeamNG.drive, blocking until the simulation is
