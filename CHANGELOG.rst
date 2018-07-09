@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.3.3
+=============
+- Make ``BeamNGPy`` class take ``**options`` and add ``console`` as one to allow
+  running BeamNG.drive with the console flag.
+
 Version 0.3.2
 =============
 - Make BeamNGpy assume a running instance if binary is set to ``None``

@@ -76,6 +76,8 @@ class BeamNGPy:
         worker (:py:class:`threading.Thread`): Worker thread reading and parsing
                                                msgpack messages from the client
                                                socket.
+        console (bool): Whether to pass the ``-console`` flag to the
+                        BeamNG.drive process
 
     Examples:
         Set up a BeamNGPy instance on localhost and port 64256, using the
@@ -107,13 +109,15 @@ class BeamNGPy:
 
     """
 
-    def __init__(self, host, port, userpath=None, binary=cfg.beamng_binary):
+    def __init__(self, host, port, userpath=None, binary=cfg.beamng_binary,
+                 **options):
         self.host = host
         self.port = port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.userpath = userpath
         self.binary = binary
+        self.options = options
 
         self.process = None
         self.client = None
@@ -135,6 +139,9 @@ class BeamNGPy:
             "-lua",
             "registerCoreModule('{}')".format(cfg.beamng_extension),
         ]
+
+        if self.options.get("console", False):
+            call.append("-console")
 
         if self.userpath:
             call.append('-userpath')
