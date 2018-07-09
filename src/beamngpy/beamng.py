@@ -61,7 +61,9 @@ class BeamNGPy:
         server (:py:class:`socket.socket`): Server socket clients connect to.
         userpath (str): User path to run BeamNG.drive in. Can be ``None`` to use
                         the default.
-        binary (str): The BeamNG.drive binary that will be called.
+        binary (str): The BeamNG.drive binary that will be called. If ``None``,
+                      no binary will be called and it is assumed that an
+                      instance is already running.
         process (:py:class:`subprocess.Popen`): BeamNG.drive process if one has
                                                 been started yet, ``None``
                                                 otherwise.
@@ -178,7 +180,8 @@ class BeamNGPy:
         """
         log.info("Opening BeamNPy instance...")
         self.start_server()
-        self.start_beamng()
+        if self.binary:
+            self.start_beamng()
         self.client, addr = self.server.accept()
         self.sfile = self.client.makefile(mode='rwb')
 
@@ -311,6 +314,29 @@ class BeamNGPy:
             vstate = self.poll()
             if vstate["type"] == "VehicleState":
                 return vstate
+
+    def change_vcursor(self, cursor=0):
+        """
+        Changes the vehicle cursor to focus on the given vehicle number. By
+        default, the simulation focuses on the first vehicle with number 0,
+        changing this to, for example, 1 will make methods like
+        :py:meth:`BeamNGPy.get_vstate` focus on vehicle 1 instead.
+
+        This method blocks until the change is acknowledged by the simulation.
+
+        Args:
+            cursor (int): The new vehicle cursor. Defaults to 0, which is the
+                          first spawned car in BeamNG.drive.
+        """
+        data = dict()
+        data["type"] = "VehicleCursor"
+        data["cursor"] = cursor
+        self.send(data)
+        while True:
+            state = self.poll()
+            if state["type"] == "VehicleCursor":
+                assert cursor == state["cursor"]
+            return
 
     def relative_camera(self, pos=(0, 0, 0), rot=(0, 0, 0), fov=90):
         """

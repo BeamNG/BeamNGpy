@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.3.2
+=============
+- Make BeamNGpy assume a running instance if binary is set to ``None``
+- Add option to change vehicle cursor
+
 Version 0.3.1
 =============
 - Add `restart_scenario` method to restart a running scenario
