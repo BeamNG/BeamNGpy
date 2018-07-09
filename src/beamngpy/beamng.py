@@ -80,12 +80,13 @@ class BeamNGPy:
                         BeamNG.drive process
 
     Examples:
-        Set up a BeamNGPy instance on localhost and port 64256, using the
-        default ``userpath`` and load the scenario ``levels/test/test.json``:
+        Set up a BeamNGPy instance showing the dev console on localhost and port
+        64256, using the default ``userpath`` and load the scenario
+        ``levels/test/test.json``:
 
         .. code-block:: python
 
-            bpy = beamngpy.BeamNGPy('localhost', 64256)
+            bpy = beamngpy.BeamNGPy('localhost', 64256, console=True)
             bpy.open()
             bpy.load_scenario('levels/test/test.json')
             bpy.start_scenario()
