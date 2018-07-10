@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.3.4
+=============
+- Fix messages being split incorrectly when the message happened to contain a
+  newline through msgpack encoding.
+
 Version 0.3.3
 =============
 - Make ``BeamNGPy`` class take ``**options`` and add ``console`` as one to allow
@@ -14,7 +19,7 @@ Version 0.3.2
 
 Version 0.3.1
 =============
-- Add `restart_scenario` method to restart a running scenario
+- Add ``restart_scenario`` method to restart a running scenario
 
 Version 0.3
 ===========
@@ -40,4 +45,3 @@ Version 0.1.2
 Version 0.1
 ===========
 - Basic IPC and example functions
-
