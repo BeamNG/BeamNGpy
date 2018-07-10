@@ -214,8 +214,9 @@ class BeamNGPy:
             data (dict): Data to send.
         """
         data = msgpack.packb(data, use_bin_type=True)
+        length = '{}\n'.format(len(data))
+        self.client.send(bytes(length, 'ascii'))
         self.client.send(data)
-        self.client.send(bytes("\n", "ascii"))  # Lua socket reads line-by-line
 
     def vcontrol(self, inputs):
         """
