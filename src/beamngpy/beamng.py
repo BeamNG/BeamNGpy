@@ -163,6 +163,9 @@ class BeamNGPy:
         """
         Kills the running BeamNG.drive process.
         """
+        if not self.process:
+            return
+
         log.debug('Killing BeamNG process...')
         if os.name == "nt":
             subprocess.call(

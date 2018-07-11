@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.3.5
+=============
+- Fix ``close()`` in ``BeamNGPy`` not checking if there's even a process to be
+  killed.
+
 Version 0.3.4
 =============
 - Fix messages being split incorrectly when the message happened to contain a
