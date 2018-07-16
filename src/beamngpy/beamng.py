@@ -137,6 +137,10 @@ class BeamNGPy:
         """
         call = [
             self.binary,
+            "-rport",
+            str(self.port),
+            "-rhost",
+            str(self.host),
             "-lua",
             "registerCoreModule('{}')".format(cfg.beamng_extension),
         ]

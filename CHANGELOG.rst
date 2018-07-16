@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 0.3.6
+=============
+- Pass configured host and port to BeamNG.drive process.
+
 Version 0.3.5
 =============
 - Fix ``close()`` in ``BeamNGPy`` not checking if there's even a process to be
