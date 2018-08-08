@@ -30,6 +30,13 @@ IMG_CHANNELS = 'RGBA'
 MAX_QUEUE = 1024
 
 
+class BNGValueError(ValueError):
+    """
+    Value error specific to BeamNGpy.
+    """
+    pass
+
+
 class BeamNGPy:
     """
     This class provides methods used to start, interact with, and terminate an
@@ -59,8 +66,8 @@ class BeamNGPy:
         host (str): Host given during construction.
         port (int): Port given during construction.
         server (:py:class:`socket.socket`): Server socket clients connect to.
-        userpath (str): User path to run BeamNG.drive in. Can be ``None`` to use
-                        the default.
+        userpath (str): User path to run BeamNG.drive in. Can be ``None`` to
+                        use the default.
         binary (str): The BeamNG.drive binary that will be called. If ``None``,
                       no binary will be called and it is assumed that an
                       instance is already running.
@@ -68,20 +75,21 @@ class BeamNGPy:
                                                 been started yet, ``None``
                                                 otherwise.
         client (:py:class:`socket.socket`): Currently connected client if one
-                                            has connected yet, ``None`` otherwise.
+                                            has connected yet, ``None``
+                                            otherwise.
         queue (:py:class:`queue.Queue`): Messages received from the socket, but
                                          yet to be retrieved via either
                                          :py:meth:`BeamNGPy.poll` or
                                          :py:meth:`BeamNGPy.poll_all`.
-        worker (:py:class:`threading.Thread`): Worker thread reading and parsing
-                                               msgpack messages from the client
-                                               socket.
+        worker (:py:class:`threading.Thread`): Worker thread reading and
+                                               parsing msgpack messages from
+                                               the client socket.
         console (bool): Whether to pass the ``-console`` flag to the
                         BeamNG.drive process
 
     Examples:
-        Set up a BeamNGPy instance showing the dev console on localhost and port
-        64256, using the default ``userpath`` and load the scenario
+        Set up a BeamNGPy instance showing the dev console on localhost and
+        port 64256, using the default ``userpath`` and load the scenario
         ``levels/test/test.json``:
 
         .. code-block:: python
@@ -180,8 +188,8 @@ class BeamNGPy:
 
     def start_server(self):
         """
-        Binds a server socket to the configured host & port and starts listening
-        on it.
+        Binds a server socket to the configured host & port and starts
+        listening on it.
         """
         self.server.bind((self.host, self.port))
         self.server.listen()
@@ -214,8 +222,8 @@ class BeamNGPy:
 
     def send(self, data):
         """
-        Sends the given dictionary to the client, automatically encoding it with
-        :py:mod`msgpack` before transmission.
+        Sends the given dictionary to the client, automatically encoding it
+        with :py:mod`msgpack` before transmission.
 
         Args:
             data (dict): Data to send.
@@ -231,7 +239,7 @@ class BeamNGPy:
         specified as a dictionary specifying values to be set for each type of
         input. Possible inputs are:
 
-            * ``steering``: Steering angle, within [-1.0, 1.0], negative goes left
+            * ``steering``: Steering angle, within [-1.0, 1.0], negative = left
             * ``throttle``: Throttle value, within [0.0, 1.0]
             * ``brake``: Brake intensity, within [0.0, 1.0]
             * ``parkingbrake``: Parking brake intensity, within [0.0, 1.0]
@@ -276,19 +284,20 @@ class BeamNGPy:
         The state will be a dictionary containing the following entries:
 
             * ``pos``: List of [x, y, z] coordinates of the vehicle.
-            * ``vel``: List of [x, y, z] velocities of the vehicle in metres per
-                     second.
-            * ``dir``: List of [x, y, z] components of the direction vector of the
-                     vehicle; the vector is normalised.
+            * ``vel``: List of [x, y, z] velocities of the vehicle in metres
+                       per second.
+            * ``dir``: List of [x, y, z] components of the direction vector of
+                       the vehicle; the vector is normalised.
             * ``rot``: Rotation of the vehicle in degrees.
             * ``steering``: Current steering angle, within [-1.0, 1.0]
             * ``throttle``: Current throttle intensity, within [0.0, 1.0]
             * ``brake``: Current brake intensity, within [0.0, 1.0]
-            * ``parkingbrake``: Current parkingbrake intensity, within [0.0, 1.0]
+            * ``parkingbrake``: Current parkingbrake value, within [0.0, 1.0]
             * ``gear``: Current gear the vehicle is shifted to.
-            * ``img``: Current screenshot of the game as a :py:class:`PIL.Image`
-                       instance. The dimensions of this image can be controlled
-                       with the ``width`` and ``height`` arguments.
+            * ``img``: Current screenshot of the game as a
+                       :py:class:`PIL.Image` instance. The dimensions of this
+                       image can be controlled with the ``width`` and
+                       ``height`` arguments.
 
         Args:
             width (int): Width of the screenshot. If ``None``, it will be
@@ -299,11 +308,11 @@ class BeamNGPy:
                           aspect ratio of the game is maintained.
 
         Raises:
-            ValueError: If both ``width`` and ``height`` are ``None`` or 0.
+            BNGValueError: If both ``width`` and ``height`` are ``None`` or 0.
 
         """
         if not width and not height:
-            raise ValueError("Need to specify at least height or width.")
+            raise BNGValueError("Need to specify at least height or width.")
 
         data = dict()
         data["type"] = "ReqVState"
@@ -318,9 +327,8 @@ class BeamNGPy:
         state was received and returns it.
 
         Args:
-            width (int): Same as the ``width`` in :py:meth:`BeamNGPy.req_vstate`
-            height (int): Same as the ``height`` in
-                          :py:meth:`BeamNGPy.req_vstate`
+            width (int): Same as ``width`` in :py:meth:`BeamNGPy.req_vstate`
+            height (int): Same as ``height`` in :py:meth:`BeamNGPy.req_vstate`
 
         Returns:
             The vehicle state as described in :py:meth:`BeamNGPy.req_vstate`.
@@ -356,8 +364,9 @@ class BeamNGPy:
 
     def relative_camera(self, pos=(0, 0, 0), rot=(0, 0, 0), fov=90):
         """
-        Switches the camera to one relative to the vehicle. The given parameters
-        control position, orientation, and field of view of the camera.
+        Switches the camera to one relative to the vehicle. The given
+        parameters control position, orientation, and field of view of the
+        camera.
 
         Args:
             pos (tuple): X, Y, Z coordinates of the camera's position relative
@@ -407,8 +416,8 @@ class BeamNGPy:
         start.
 
         Args:
-            path (str): Path to the scenario descriptor to load. Must point to a
-                        the file within BeamNG.drive's userpath.
+            path (str): Path to the scenario descriptor to load. Must point to
+                        a the file within BeamNG.drive's userpath.
 
         Examples:
             Load an example scenario.
@@ -425,11 +434,39 @@ class BeamNGPy:
             if resp["type"] == "MapLoaded":
                 return
 
+    def move_vehicle(self, pos, rot):
+        """
+        Moves the current vehicle to the given position with the given
+        rotation. Blocks until the client has moved the vehicle.
+
+        Args:
+            pos (tuple): A tuple of three coordinates encoding the x, y, z
+                         position the vehicle is supposed to be moved to.
+            rot (tuple): A tuple of three angles encoding the pitch, yaw, roll
+                         rotations to apply to the vehicle.
+
+        Raises:
+            BNGValueError: If position or rotation don't have three components.
+        """
+        if len(pos) != 3:
+            raise BNGValueError("Position must have three components.")
+        if len(rot) != 3:
+            raise BNGValueError("Rotation must have three components.")
+
+        data = {"type": "SetPositionRotation"}
+        data["pos"] = pos
+        data["rot"] = rot
+        self.send(data)
+        while True:
+            resp = self.poll()
+            if resp["type"] == "VehicleMoved":
+                return
+
     def start_scenario(self):
         """
         Starts the scenario; equivalent to clicking the "Start" button in the
-        game after loading a scenario. This method blocks until the countdown to
-        the scenario's start has finished.
+        game after loading a scenario. This method blocks until the countdown
+        to the scenario's start has finished.
         """
         data = {"type": "StartScenario"}
         self.send(data)
@@ -464,8 +501,8 @@ class BeamNGPy:
 
     def resume(self):
         """
-        Sends a resume request to BeamNG.drive, blocking until the simulation is
-        resumed.
+        Sends a resume request to BeamNG.drive, blocking until the simulation
+        is resumed.
         """
         data = dict()
         data["type"] = "Resume"
@@ -478,9 +515,9 @@ class BeamNGPy:
     def decode_msg(self, msg):
         """
         Performs appropriate decoding of the given dict depending on the type
-        specified within. For example, ``VehicleState`` messages will have their
-        raw image data decoded to a :py:class:`PIL.Image` instance. Decoding is
-        done in place.
+        specified within. For example, ``VehicleState`` messages will have
+        their raw image data decoded to a :py:class:`PIL.Image` instance.
+        Decoding is done in place.
 
         Args:
             msg (dict): Dictionary to decode. Must contain at least a ``type``
@@ -503,8 +540,8 @@ class BeamNGPy:
     def recv(self):
         """
         Indefinitely reads :py:mod:`msgpack`-encoded dictionaries from the
-        client socket and enqueues them onto :py:attr:`BeamNGPy.queue`. Meant to
-        be called in a separate thread.
+        client socket and enqueues them onto :py:attr:`BeamNGPy.queue`. Meant
+        to be called in a separate thread.
         """
         unpacker = msgpack.Unpacker(encoding='utf-8')
         while True:
@@ -520,14 +557,14 @@ class BeamNGPy:
 
     def poll(self):
         """
-        Polls the next message from the message queue and returns it. If nothing
-        is on the queue, this method blocks until a message is received.
-        Messages will be parsed as :py:class:`dict` and decoded using
+        Polls the next message from the message queue and returns it. If
+        nothing is on the queue, this method blocks until a message is
+        received. Messages will be parsed as :py:class:`dict` and decoded using
         :py:meth:`BeamNGPy.decode_msg` before returning.
 
         Returns:
-            Next message as a :py:class:`dict` with appropriate decoding already
-            performed.
+            Next message as a :py:class:`dict` with appropriate decoding
+            already performed.
 
         Examples:
             Request the vehicle state and retrieve it once it was sent by the

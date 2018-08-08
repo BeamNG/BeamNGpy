@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 0.4.6
+=============
+- Add ``move_vehicle()`` method.
+
 Version 0.3.6
 =============
 - Pass configured host and port to BeamNG.drive process.
