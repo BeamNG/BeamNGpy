@@ -1,0 +1,20 @@
+//--- OBJECT WRITE BEGIN
+$ThisPrefab = new SimGroup() {
+    canSave = "1";
+    canSaveDynamicFields = "1";
+    groupPosition = "0.000000 0.000000 0.000000";
+
+    {% for vehicle in vehicles %}
+    new BeamNGVehicle({{vehicle.vid}}) {
+        JBeam = "{{vehicle.model}}";
+        color = "{{vehicle.color}}";
+        colorPalette0 = "{{vehicle.color}}";
+        colorPalette1 = "{{vehicle.color}}";
+        position = "{{vehicle.position}}";
+        canSave = "1";
+        canSaveDynamicFields = "1";
+        annotation = "CAR";
+        licenseText = "{{vehicle.licence}}"
+    };
+    {% endfor %}
+};

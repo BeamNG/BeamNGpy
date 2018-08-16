@@ -2,12 +2,8 @@ import logging as log
 import json
 import os
 
-DEFAULT_CONFIG = {
-    "beamng_binary": "BeamNG.research.x64.exe",
-    "beamng_extension": "util_researchAdapter",
-    "ipc_host": "127.0.0.1",
-    "ipc_port": 64256,
-}
+ENV = dict()
+ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
 
 class Config(dict):
@@ -61,7 +57,7 @@ def get_default():
     value for each option.
     """
     default = Config()
-    default.load_values(DEFAULT_CONFIG)
+    # default.load_values(DEFAULT_CONFIG)
     return default
 
 
