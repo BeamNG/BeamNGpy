@@ -1,9 +1,39 @@
 import logging as log
 import json
 import os
+import socket
+
+import msgpack
+
 
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
+
+
+class BNGError(Exception):
+    """
+    Generic BeamNG error
+    """
+    pass
+
+
+class BNGValueError(ValueError):
+    """
+    Value error specific to BeamNGpy.
+    """
+    pass
+
+
+def ack(ack_type):
+    def ack_wrapper(fun):
+        def ack_wrapped(*args, **kwargs):
+            fun(*args, **kwargs)
+            resp = args[0].recv()
+            if resp['type'] != ack_type:
+                raise BNGError('Wrong ACK: {} != {}'.format(ack_type,
+                                                            resp['type']))
+        return ack_wrapped
+    return ack_wrapper
 
 
 class Config(dict):
@@ -76,3 +106,25 @@ def ensure_config(cfg_file):
 
 
 CFG = get_default()
+
+
+def send_msg(skt, data):
+    data = msgpack.packb(data, use_bin_type=True, encoding='utf-8')
+    length = '{:016}'.format(len(data))
+    skt.send(bytes(length, 'ascii'))
+    skt.send(data)
+
+
+def recv_msg(skt):
+    length = skt.recv(16)
+    length = int(str(length, 'ascii'))
+    buf = bytearray()
+    while length > 0:
+        chunk = min(4096, length)
+        received = skt.recv(chunk)
+        buf.extend(received)
+        length -= len(received)
+    assert length == 0
+    data = skt.recv(length)
+    data = msgpack.unpackb(buf, encoding='utf-8')
+    return data

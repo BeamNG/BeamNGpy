@@ -17,24 +17,25 @@ import signal
 import socket
 import subprocess
 import sys
+import time
 
 from pathlib import Path
 from threading import Thread
+from time import sleep
 
 import msgpack
 
 from PIL import Image
 
-from .beamngenv import CFG as cfg
-from .beamngenv import ENV as env
-from .communication import send_msg, recv_msg
+from .beamng_common import ack
+from .beamng_common import *
 
 VERSION = 'v1.0'
 
 BUF_SIZE = 65536
 IMG_CHANNELS = 'RGBA'
 MAX_QUEUE = 1024
-BNG_HOME = env['BNG_HOME']
+BNG_HOME = ENV['BNG_HOME']
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -73,20 +74,6 @@ def setup_logging(log_file=None):
     sys.excepthook = log_exception
 
     log.info('Started BeamNGPy logging.')
-
-
-class BNGError(Exception):
-    """
-    Generic BeamNG error
-    """
-    pass
-
-
-class BNGValueError(ValueError):
-    """
-    Value error specific to BeamNGpy.
-    """
-    pass
 
 
 class BeamNGpy:
@@ -223,7 +210,7 @@ class BeamNGpy:
         self.start_server()
         if launch:
             self.start_beamng()
-        self.client, addr = self.server.accept()
+        self.skt, addr = self.server.accept()
 
         log.debug('Connection established. Awaiting "hello"...')
         hello = self.recv()
@@ -235,6 +222,7 @@ class BeamNGpy:
             print('Operation will proceed, but some features might not work.')
 
         log.info('Started BeamNPy communicating on %s', addr)
+        return self
 
     def close(self):
         """
@@ -243,135 +231,6 @@ class BeamNGpy:
         log.info('Closing BeamNGpy instance...')
         self.server.close()
         self.kill_beamng()
-
-    def vcontrol(self, inputs):
-        """
-        Sends a vehicle control package to the client. The inputs are to be
-        specified as a dictionary specifying values to be set for each type of
-        input. Possible inputs are:
-
-            * ``steering``: Steering angle, within [-1.0, 1.0], negative = left
-            * ``throttle``: Throttle value, within [0.0, 1.0]
-            * ``brake``: Brake intensity, within [0.0, 1.0]
-            * ``parkingbrake``: Parking brake intensity, within [0.0, 1.0]
-            * ``gear``: The gear to shift to. The vehicle needs to be shifted
-                        into at least 1 to accelerate forward.
-
-        This command will only change inputs contained in the dictionary. If no
-        change to, for example, the throttle value is supposed to happen, don't
-        specify any key/value pair for it.
-
-        Args:
-            inputs (dict): Dictionary of inputs to set, as described above.
-
-        Examples:
-            Go full throttle whilst steering all the way to the left:
-
-            .. code-block:: python
-
-                bpy.vcontrol({'throttle': 1., 'steering': -1.})
-
-            Now brake slightly:
-
-            .. code-block:: python
-
-                bpy.vcontrol({'brake': 0.2})
-
-            Stop everything:
-
-            .. code-block:: python
-
-                bpy.vcontrol({'throttle': 0, 'steering': 0, 'brake': 0})
-
-        """
-        inputs = {"type": "VControl", "inputs": inputs}
-        self.send(inputs)
-
-    def req_vstate(self, width=None, height=None):
-        """
-        Sends a request for the ego vehicle's current state that, once the
-        client responds, will be retrievable via :py:meth:`BeamNGPy.poll`.
-
-        The state will be a dictionary containing the following entries:
-
-            * ``pos``: List of [x, y, z] coordinates of the vehicle.
-            * ``vel``: List of [x, y, z] velocities of the vehicle in metres
-                       per second.
-            * ``dir``: List of [x, y, z] components of the direction vector of
-                       the vehicle; the vector is normalised.
-            * ``rot``: Rotation of the vehicle in degrees.
-            * ``steering``: Current steering angle, within [-1.0, 1.0]
-            * ``throttle``: Current throttle intensity, within [0.0, 1.0]
-            * ``brake``: Current brake intensity, within [0.0, 1.0]
-            * ``parkingbrake``: Current parkingbrake value, within [0.0, 1.0]
-            * ``gear``: Current gear the vehicle is shifted to.
-            * ``img``: Current screenshot of the game as a
-                       :py:class:`PIL.Image` instance. The dimensions of this
-                       image can be controlled with the ``width`` and
-                       ``height`` arguments.
-
-        Args:
-            width (int): Width of the screenshot. If ``None``, it will be
-                         calculated based on the given height such that the
-                         aspect ratio of the game is maintained.
-            height (int): Height of the screenshot. If ``None``, it will be
-                          calculated based on the given width such taht the
-                          aspect ratio of the game is maintained.
-
-        Raises:
-            BNGValueError: If both ``width`` and ``height`` are ``None`` or 0.
-
-        """
-        if not width and not height:
-            raise BNGValueError("Need to specify at least height or width.")
-
-        data = dict()
-        data["type"] = "ReqVState"
-        data["width"] = width
-        data["height"] = height
-
-        self.send(data)
-
-    def get_vstate(self, width=None, height=None):
-        """
-        Same as :py:meth:`BeamNGPy.req_vstate` but blocks until the vehicle
-        state was received and returns it.
-
-        Args:
-            width (int): Same as ``width`` in :py:meth:`BeamNGPy.req_vstate`
-            height (int): Same as ``height`` in :py:meth:`BeamNGPy.req_vstate`
-
-        Returns:
-            The vehicle state as described in :py:meth:`BeamNGPy.req_vstate`.
-        """
-        self.req_vstate(width=width, height=height)
-        while True:
-            vstate = self.poll()
-            if vstate["type"] == "VehicleState":
-                return vstate
-
-    def change_vcursor(self, cursor=0):
-        """
-        Changes the vehicle cursor to focus on the given vehicle number. By
-        default, the simulation focuses on the first vehicle with number 0,
-        changing this to, for example, 1 will make methods like
-        :py:meth:`BeamNGPy.get_vstate` focus on vehicle 1 instead.
-
-        This method blocks until the change is acknowledged by the simulation.
-
-        Args:
-            cursor (int): The new vehicle cursor. Defaults to 0, which is the
-                          first spawned car in BeamNG.drive.
-        """
-        data = dict()
-        data["type"] = "VehicleCursor"
-        data["cursor"] = cursor
-        self.send(data)
-        while True:
-            state = self.poll()
-            if state["type"] == "VehicleCursor":
-                assert cursor == state["cursor"]
-            return
 
     def relative_camera(self, pos=(0, 0, 0), rot=(0, 0, 0), fov=90):
         """
@@ -408,32 +267,29 @@ class BeamNGpy:
         """
         Hides the HUD.
         """
-        data = dict()
-        data["type"] = "HideHUD"
+        data = dict(type='HideHUD')
         self.send(data)
 
     def show_hud(self):
         """
         Shows the HUD again.
         """
-        data = dict()
-        data["type"] = "ShowHUD"
+        data = dict(type='ShowHUD')
         self.send(data)
 
     def connect_vehicle(self, vehicle):
-        vehicle_port = self.next_port
-        self.next_port += 1
         vehicle_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        vehicle_server.bind(self.host, vehicle_port)
+        vehicle_server.bind((self.host, self.next_port))
         vehicle_server.listen()
         log.debug('Starting vehicle server for %s on: %s:%s',
-                  vehicle, self.host, vehicle_port)
+                  vehicle, self.host, self.next_port)
 
         connection_msg = {'type': 'VehicleConnection'}
         connection_msg['vid'] = vehicle.vid
         connection_msg['host'] = self.host
-        connection_msg['port'] = self.vehicle_port
+        connection_msg['port'] = self.next_port
         self.send(connection_msg)
+        self.next_port += 1
         return vehicle_server
 
     def setup_vehicles(self):
@@ -444,11 +300,14 @@ class BeamNGpy:
 
     def load_scenario(self, scenario):
         info_path = scenario.get_info_path()
+        info_path = info_path.replace(str(self.home), '')
+        info_path = info_path[1:]
+        info_path = info_path.replace('\\', '/')
         data = {'type': 'LoadScenario', 'path': info_path}
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'MapLoaded'
-        sleep(10.0)
+        sleep(5.0)
         self.scenario = scenario
         self.setup_vehicles()
 
@@ -480,6 +339,7 @@ class BeamNGpy:
             if resp["type"] == "VehicleMoved":
                 return
 
+    @ack('ScenarioStarted')
     def start_scenario(self):
         """
         Starts the scenario; equivalent to clicking the "Start" button in the
@@ -488,47 +348,74 @@ class BeamNGpy:
         """
         data = {"type": "StartScenario"}
         self.send(data)
-        while True:
-            resp = self.poll()
-            if resp["type"] == "ScenarioStarted":
-                return
 
+    @ack('ScenarioRestarted')
     def restart_scenario(self):
         """
         Restarts a running scenario
         """
-        data = {"type": "RestartScenario"}
+        data = dict(type='RestartScenario')
         self.send(data)
-        while True:
-            resp = self.poll()
-            if resp["type"] == "ScenarioRestarted":
-                return
 
+    @ack('SetPhysicsDeterministic')
+    def set_deterministic(self):
+        data = dict(type='SetPhysicsDeterministic')
+        self.send(data)
+
+    @ack('SetPhysicsNonDeterministic')
+    def set_nondeterministic(self):
+        data = dict(type='SetPhysicsNonDeterministic')
+        self.send(data)
+
+    @ack('SetFPSLimit')
+    def set_steps_per_second(self, sps):
+        data = dict(type='FPSLimit', fps=sps)
+        self.send(data)
+
+    @ack('RemovedFPSLimit')
+    def remove_step_limit(self):
+        data = dict(type='RemoveFPSLimit')
+        self.send(data)
+
+    @ack('Stepped')
+    def step(self, count):
+        data = dict(type='Step', count=count)
+        self.send(data)
+
+    @ack('Paused')
     def pause(self):
         """
         Sends a pause request to BeamNG.drive, blocking until the simulation is
         paused.
         """
-        data = dict()
-        data["type"] = "Pause"
+        data = dict(type='Pause')
         self.send(data)
-        while True:
-            resp = self.poll()
-            if resp["type"] == "Paused":
-                return
 
+    @ack('Resumed')
     def resume(self):
         """
         Sends a resume request to BeamNG.drive, blocking until the simulation
         is resumed.
         """
-        data = dict()
-        data["type"] = "Resume"
+        data = dict(type='Resume')
         self.send(data)
-        while True:
-            resp = self.poll()
-            if resp["type"] == "Resumed":
-                return
+
+    def poll_sensors(self, vehicle):
+        engine_reqs, vehicle_reqs = vehicle.encode_sensor_requests()
+        sensor_data = dict()
+
+        if engine_reqs['sensors']:
+            start = time.time()
+            self.send(engine_reqs)
+            response = self.recv()
+            assert response['type'] == 'SensorData'
+            sensor_data.update(response['data'])
+
+        if vehicle_reqs['sensors']:
+            response = vehicle.poll_sensors(vehicle_reqs)
+            sensor_data.update(response)
+
+        return vehicle.decode_sensor_response(sensor_data)
 
     def __enter__(self):
         self.open()

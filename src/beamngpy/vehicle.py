@@ -10,10 +10,12 @@
 import base64
 import logging as log
 
+from .beamng_common import *
+
 
 class Vehicle:
 
-    def __init__(self, vid):
+    def __init__(self, vid, **options):
         self.vid = vid
 
         self.host = None
@@ -23,6 +25,14 @@ class Vehicle:
         self.skt = None
 
         self.sensors = dict()
+
+        self.options = options
+
+    def send(self, data):
+        return send_msg(self.skt, data)
+
+    def recv(self):
+        return recv_msg(self.skt)
 
     def __hash__(self):
         return hash(self.vid)
@@ -37,16 +47,50 @@ class Vehicle:
 
     def setup(self, server):
         self.server = server
-        self.skt = self.server.accept()
+        self.skt, addr = self.server.accept()
 
     def attach_sensor(self, name, sensor):
-        pass
+        self.sensors[name] = sensor
+        sensor.attach(self, name)
 
     def detach_sensor(self, name):
-        pass
+        del self.sensors[name]
+        sensor.detach(self, name)
 
-    def poll_sensors(self):
-        pass
+    def encode_sensor_requests(self):
+        engine_reqs = dict()
+        vehicle_reqs = dict()
 
-    def vcontrol(self, inputs):
-        pass
+        for name, sensor in self.sensors.items():
+            engine_req = sensor.encode_engine_request()
+            vehicle_req = sensor.encode_vehicle_request()
+
+            if engine_req:
+                engine_req['vehicle'] = self.vid
+                engine_reqs[name] = engine_req
+            if vehicle_req:
+                vehicle_req[name] = vehicle_req
+
+        engine_reqs = dict(type='SensorRequest', sensors=engine_reqs)
+        vehicle_reqs = dict(type='SensorRequest', sensors=vehicle_reqs)
+        return engine_reqs, vehicle_reqs
+
+    def decode_sensor_response(self, sensor_data):
+        response = dict()
+        for name, data in sensor_data.items():
+            sensor = self.sensors[name]
+            data = sensor.decode_response(data)
+            response[name] = data
+        return response
+
+    def poll_sensors(self, requests):
+        self.send(requests)
+        response = self.recv()
+        assert response['type'] == 'SensorData'
+        sensor_data = response['data']
+        return sensor_data
+
+    @ack('Controlled')
+    def control(self, **options):
+        data = dict(type='Control', **options)
+        self.send(data)
