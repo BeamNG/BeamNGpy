@@ -32,9 +32,6 @@ from .beamng_common import *
 
 VERSION = 'v1.0'
 
-BUF_SIZE = 65536
-IMG_CHANNELS = 'RGBA'
-MAX_QUEUE = 1024
 BNG_HOME = ENV['BNG_HOME']
 
 BINARIES = [
@@ -175,31 +172,6 @@ class BeamNGpy:
     def recv(self):
         return recv_msg(self.skt)
 
-    def decode_msg(self, msg):
-        """
-        Performs appropriate decoding of the given dict depending on the type
-        specified within. For example, ``VehicleState`` messages will have
-        their raw image data decoded to a :py:class:`PIL.Image` instance.
-        Decoding is done in place.
-
-        Args:
-            msg (dict): Dictionary to decode. Must contain at least a ``type``
-                        entry.
-
-        Returns:
-            Decoded message as a :py:class:`dict`.
-        """
-        if msg["type"] == "VehicleState":
-            img_w = msg["view"]["width"]
-            img_h = msg["view"]["height"]
-            img_d = base64.b64decode(msg["view"]["pixelsBase64"])
-            img_d = np.frombuffer(img_d, dtype=np.uint8)
-            img_d = img_d.reshape(img_h, img_w, len(IMG_CHANNELS))
-
-            msg["img"] = Image.fromarray(img_d)
-
-        return msg
-
     def open(self, launch=True):
         """
         Starts a BeamNG.drive process, opens a server socket, and waits for the
@@ -231,37 +203,6 @@ class BeamNGpy:
         log.info('Closing BeamNGpy instance...')
         self.server.close()
         self.kill_beamng()
-
-    def relative_camera(self, pos=(0, 0, 0), rot=(0, 0, 0), fov=90):
-        """
-        Switches the camera to one relative to the vehicle. The given
-        parameters control position, orientation, and field of view of the
-        camera.
-
-        Args:
-            pos (tuple): X, Y, Z coordinates of the camera's position relative
-                         to the vehicle
-            rot (tuple): Pitch, Yaw, Roll angles of the camera's orientation
-                         relative to the vehicle
-            fov (float): Field of View
-
-        Examples:
-            Get a bumper cam on the ETK800 Series:
-
-            .. code-block:: python
-
-                pos = (-0.5, 2, 0.5)
-                rot = (180, 0, 180)
-                fov = 90
-                bpy.relative_camera(pos, rot, fov)
-
-        """
-        data = dict()
-        data["type"] = "RelativeCamera"
-        data["pos"] = pos
-        data["rot"] = rot
-        data["fov"] = fov
-        self.send(data)
 
     def hide_hud(self):
         """
@@ -296,7 +237,7 @@ class BeamNGpy:
         vehicles = self.scenario.vehicles
         for vehicle in vehicles.keys():
             vehicle_server = self.connect_vehicle(vehicle)
-            vehicle.setup(vehicle_server)
+            vehicle.connect(self, vehicle_server)
 
     def load_scenario(self, scenario):
         info_path = scenario.get_info_path()
@@ -330,7 +271,7 @@ class BeamNGpy:
         if len(rot) != 3:
             raise BNGValueError("Rotation must have three components.")
 
-        data = {"type": "SetPositionRotation"}
+        data = dict(type="SetPositionRotation")
         data["pos"] = pos
         data["rot"] = rot
         self.send(data)
@@ -339,6 +280,16 @@ class BeamNGpy:
             if resp["type"] == "VehicleMoved":
                 return
 
+    @ack('OpenedShmem')
+    def open_shmem(self, name, size):
+        data = dict(type='OpenShmem', name=name, size=size)
+        self.send(data)
+
+    @ack('ClosedShmem')
+    def close_shmem(self, name):
+        data = dict(type='CloseShmem', name=name)
+        self.send(data)
+
     @ack('ScenarioStarted')
     def start_scenario(self):
         """
@@ -346,7 +297,7 @@ class BeamNGpy:
         game after loading a scenario. This method blocks until the countdown
         to the scenario's start has finished.
         """
-        data = {"type": "StartScenario"}
+        data = dict(type="StartScenario")
         self.send(data)
 
     @ack('ScenarioRestarted')
@@ -415,7 +366,32 @@ class BeamNGpy:
             response = vehicle.poll_sensors(vehicle_reqs)
             sensor_data.update(response)
 
-        return vehicle.decode_sensor_response(sensor_data)
+        result = vehicle.decode_sensor_response(sensor_data)
+        vehicle.sensor_cache = result
+        return result
+
+    def update(self, scenario):
+        scenario.update(self)
+
+    def get_roads(self):
+        data = dict(type="GetDecalRoadVertices")
+        self.send(data)
+        response = self.recv()
+        assert response['type'] == 'DecalRoadVertices'
+        roads_verts = response['vertices']
+        roads = dict()
+        for road, road_verts in roads_verts.items():
+            vertices = list()
+            for i in range(0, len(road_verts), 3):
+                vertex = (road_verts[i], road_verts[i + 1], road_verts[i + 2])
+                vertices.append(vertex)
+            edges = list()
+            for i in range(0, len(vertices), 3):
+                edge = (vertices[i], vertices[i + 1], vertices[i + 2])
+                edges.append(edge)
+            roads[road] = edges
+
+        return roads
 
     def __enter__(self):
         self.open()

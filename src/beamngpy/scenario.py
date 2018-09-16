@@ -53,6 +53,8 @@ class Scenario:
 
         self.vehicles = dict()
 
+        self.vehicle_states = dict()
+
     def _find_path(self, bng):
         self.path = bng.home / 'levels'
         self.path = self.path / self.level
@@ -127,3 +129,7 @@ class Scenario:
         self._write_prefab_file()
         info_path = self._write_info_file()
         return info_path
+
+    def update(self, bng):
+        for vehicle in self.vehicles.keys():
+            bng.poll_sensors(vehicle)

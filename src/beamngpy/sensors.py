@@ -35,6 +35,12 @@ class Sensor:
     def decode_response(self, resp):
         raise NotImplementedError('Subclasses have to implement this.')
 
+    def connect(self, bng, vehicle):
+        raise NotImplementedError('Sublcasses have to implememt this.')
+
+    def disconnect(self, bng, vehicle):
+        raise NotImplementedError('Subclasses have to implement this.')
+
 
 class Camera(Sensor):
 
@@ -89,6 +95,28 @@ class Camera(Sensor):
             log.debug('Unbinding memory for annotation: %s',
                       self.annotation_handle)
             self.annotation_shmem.close()
+
+    def connect(self, bng, vehicle):
+        size = self.resolution[0] * self.resolution[1] * 4  # RGBA / L are 4bbp
+
+        if self.colour_shmem:
+            bng.open_shmem(self.colour_handle, size)
+
+        if self.depth_shmem:
+            bng.open_shmem(self.depth_handle, size)
+
+        if self.annotation_shmem:
+            bng.open_shmem(self.annotation_handle, size)
+
+    def disconnect(self, bng, vehicle):
+        if self.colour_shmem:
+            bng.close_shmem(self.colour_handle)
+
+        if self.depth_shmem:
+            bng.close_shmem(self.depth_handle)
+
+        if self.annotation_shmem:
+            bng.close_shmem(self.annotation_handle)
 
     def encode_engine_request(self):
         req = dict(type='Camera')
@@ -147,4 +175,40 @@ class Camera(Sensor):
 
 
 class Lidar(Sensor):
-    pass
+
+    def attach(self, vehicle, name):
+        log.debug('Attaching GForces sensor %s to: %s', name, vehicle.vid)
+
+    def detach(self, vehicle, name):
+        log.debug('Attaching')
+
+    def encode_engine_request(self):
+        return None
+
+    def encode_vehicle_request(self):
+        return None
+
+
+class GForces(Sensor):
+
+    def attach(self, vehicle, name):
+        log.debug('Attaching GForces sensor %s to: %s', name, vehicle.vid)
+
+    def detach(self, vehicle, name):
+        log.debug('Detaching GForces sensor %s from: %s', name, vehicle.vid)
+
+    def encode_engine_request(self):
+        return None
+
+    def encode_vehicle_request(self):
+        req = dict(type='GForces')
+        return req
+
+    def decode_response(self, resp):
+        return resp
+
+    def connect(self, bng, vehicle):
+        pass
+
+    def disconnect(self, bng, vehicle):
+        pass

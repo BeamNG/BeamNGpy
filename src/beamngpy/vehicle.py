@@ -28,6 +28,8 @@ class Vehicle:
 
         self.options = options
 
+        self.sensor_cache = dict()
+
     def send(self, data):
         return send_msg(self.skt, data)
 
@@ -45,9 +47,15 @@ class Vehicle:
     def __str__(self):
         return 'V:{}'.format(self.vid)
 
-    def setup(self, server):
+    def connect(self, bng, server):
         self.server = server
         self.skt, addr = self.server.accept()
+
+        for name, sensor in self.sensors.items():
+            sensor.connect(bng, self)
+
+    def disconnect(self, bng):
+        pass
 
     def attach_sensor(self, name, sensor):
         self.sensors[name] = sensor
@@ -69,7 +77,7 @@ class Vehicle:
                 engine_req['vehicle'] = self.vid
                 engine_reqs[name] = engine_req
             if vehicle_req:
-                vehicle_req[name] = vehicle_req
+                vehicle_reqs[name] = vehicle_req
 
         engine_reqs = dict(type='SensorRequest', sensors=engine_reqs)
         vehicle_reqs = dict(type='SensorRequest', sensors=vehicle_reqs)
