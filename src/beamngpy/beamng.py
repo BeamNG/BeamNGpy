@@ -236,6 +236,8 @@ class BeamNGpy:
     def setup_vehicles(self):
         vehicles = self.scenario.vehicles
         for vehicle in vehicles.keys():
+            flags = vehicle.get_engine_flags()
+            self.set_engine_flags(flags)
             vehicle_server = self.connect_vehicle(vehicle)
             vehicle.connect(self, vehicle_server)
 
@@ -248,7 +250,7 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'MapLoaded'
-        sleep(5.0)
+        sleep(10.0)
         self.scenario = scenario
         self.setup_vehicles()
 
@@ -279,6 +281,11 @@ class BeamNGpy:
             resp = self.poll()
             if resp["type"] == "VehicleMoved":
                 return
+
+    @ack('SetEngineFlags')
+    def set_engine_flags(self, flags):
+        flags = dict(type='EngineFlags', flags=flags)
+        self.send(flags)
 
     @ack('OpenedShmem')
     def open_shmem(self, name, size):

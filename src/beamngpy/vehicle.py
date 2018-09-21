@@ -91,6 +91,13 @@ class Vehicle:
             response[name] = data
         return response
 
+    def get_engine_flags(self):
+        flags = dict()
+        for name, sensor in self.sensors.items():
+            sensor_flags = sensor.get_engine_flags()
+            flags.update(sensor_flags)
+        return flags
+
     def poll_sensors(self, requests):
         self.send(requests)
         response = self.recv()

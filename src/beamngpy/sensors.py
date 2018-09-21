@@ -17,29 +17,34 @@ from PIL import Image
 NEAR = 0.01
 FAR = 300
 
+LIDAR_POINTS = 500000
+
 
 class Sensor:
 
     def attach(self, vehicle, name):
-        raise NotImplementedError('Subclasses have to implement this.')
+        pass
 
     def detach(self, vehicle, name):
-        raise NotImplementedError('Subclasses have to implement this.')
+        pass
 
     def encode_engine_request(self):
-        raise NotImplementedError('Subclasses have to implement this.')
+        return None
 
     def encode_vehicle_request(self):
-        raise NotImplementedError('Subclasses have to implement this.')
+        return None
 
     def decode_response(self, resp):
-        raise NotImplementedError('Subclasses have to implement this.')
+        return resp
 
     def connect(self, bng, vehicle):
-        raise NotImplementedError('Sublcasses have to implememt this.')
+        pass
 
     def disconnect(self, bng, vehicle):
-        raise NotImplementedError('Subclasses have to implement this.')
+        pass
+
+    def get_engine_flags(self):
+        return dict()
 
 
 class Camera(Sensor):
@@ -138,9 +143,6 @@ class Camera(Sensor):
 
         return req
 
-    def encode_vehicle_request(self):
-        return None
-
     def decode_response(self, resp):
         decoded = dict(type='Camera')
         img_w = resp['width']
@@ -173,20 +175,47 @@ class Camera(Sensor):
 
         return decoded
 
+    def get_engine_flags(self):
+        flags = dict()
+        if self.annotation_shmem:
+            flags['annotations'] = True
+        return flags
+
 
 class Lidar(Sensor):
+    shmem_size = LIDAR_POINTS * 3 * 4
+
+    def __init__(self):
+        self.handle = None
+        self.shmem = None
 
     def attach(self, vehicle, name):
-        log.debug('Attaching GForces sensor %s to: %s', name, vehicle.vid)
+        self.handle = '{}.{}.lidar'.format(vehicle.vid, name)
+        self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
+        log.debug('Bound memory for lidar: %s', self.handle)
 
     def detach(self, vehicle, name):
-        log.debug('Attaching')
+        self.shmem.close()
 
     def encode_engine_request(self):
-        return None
+        req = dict(type='Lidar')
+        req['shmem'] = self.handle
+        req['size'] = Lidar.shmem_size
+        # TODO: Make Lidar customisable
+        return req
 
-    def encode_vehicle_request(self):
-        return None
+    def decode_response(self, resp):
+        size = resp['size']
+        self.shmem.seek(0)
+        points_buf = self.shmem.read(size)
+        points_buf = np.frombuffer(points_buf, dtype=np.float32)
+        assert points_buf.size % 3 == 0
+        points_buf = points_buf.reshape(points_buf.size // 3, 3)
+        return resp
+
+    def get_engine_flags(self):
+        flags = dict(lidar=True)
+        return flags
 
 
 class GForces(Sensor):
@@ -197,18 +226,32 @@ class GForces(Sensor):
     def detach(self, vehicle, name):
         log.debug('Detaching GForces sensor %s from: %s', name, vehicle.vid)
 
-    def encode_engine_request(self):
-        return None
-
     def encode_vehicle_request(self):
         req = dict(type='GForces')
         return req
 
-    def decode_response(self, resp):
-        return resp
 
-    def connect(self, bng, vehicle):
-        pass
+class Electrics(Sensor):
 
-    def disconnect(self, bng, vehicle):
-        pass
+    def attach(self, vehicle, name):
+        log.debug('Attaching Electrics sensor %s to: %s', name, vehicle.vid)
+
+    def detach(self, vehicle, name):
+        log.debug('Detaching Electrics sensor %s from: %s', name, vehicle.vid)
+
+    def encode_vehicle_request(self):
+        req = dict(type='Electrics')
+        return req
+
+
+class Damage(Sensor):
+
+    def attach(self, vehicle, name):
+        log.debug('Attaching Damage sensor %s to: %s', name, vehicle.vid)
+
+    def detach(self, vehicle, name):
+        log.debug('Detaching Damage sensor %s to: %s', name, vehicle.vid)
+
+    def encode_vehicle_request(self):
+        req = dict(type='Damage')
+        return req
