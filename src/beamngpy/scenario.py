@@ -1,8 +1,8 @@
 """
 .. module:: scenario
     :platform: Windows
-    :synopsis: Contains the main :py:class:`.Scenario` class used to define
-    scenarios.
+    :synopsis: Contains the main :py:class:`.beamngpy.Scenario` class used to
+               define scenarios.
 """
 
 import json
@@ -20,6 +20,16 @@ TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
 
 
 def compute_rotation_matrix(angles):
+    """
+    Calculates the rotation matrix string for the given triplet of Euler angles
+    to be used in a scenario prefab.
+
+    Args:
+        angles (tuple): Euler angles for the (x,y,z) axes.
+
+    Return:
+        The rotation matrix encoded as a string.
+    """
     angles = [np.radians(a) for a in angles]
 
     sin_a = math.sin(angles[0])
@@ -43,8 +53,23 @@ def compute_rotation_matrix(angles):
 
 
 class Scenario:
+    """
+    The scenario class contains information for setting up and executing
+    simulation scenarios along with methods to extract data during their
+    execution.
+    """
 
     def __init__(self, level, name, **options):
+        """
+        Instantiates a scenario instance with the given name taking place in
+        the given level.
+
+        Args:
+            level (str): Name of the level to place this scenario in. This has
+                         to be a level known to the simulation.
+            name (str): The name of this scenario. Should be unique for the
+                        level it's taking place in to avoid file collisions.
+        """
         self.level = level
         self.name = name
         self.options = options
@@ -56,6 +81,14 @@ class Scenario:
         self.vehicle_states = dict()
 
     def _find_path(self, bng):
+        """
+        Attempts to find the appropriate path for this scenario and creates it
+        iff it does not exist.
+
+        Args:
+            bng (:class:`.BeamNGpy`): The BeamNGpy instance to find the path
+                                      for.
+        """
         self.path = bng.home / 'levels'
         self.path = self.path / self.level
         if not self.path.exists():
@@ -65,6 +98,14 @@ class Scenario:
             self.path.mkdir(parents=True)
 
     def _get_info_dict(self):
+        """
+        Generates a dictionary of information to be written to the scenario's
+        files in the simulation diretory and returns it.
+
+        Returns:
+            Dictionary of information to write into the scenario files of the
+            simulator.
+        """
         info = dict()
         info['name'] = self.options.get('human_name', self.name)
         info['description'] = self.options.get('description', None)
@@ -87,6 +128,13 @@ class Scenario:
         return info
 
     def _get_prefab(self):
+        """
+        Generates prefab code to describe this scenario to the simulation
+        engine and returns it as a string.
+
+        Returns:
+            Prefab code for the simulator.
+        """
         template = TEMPLATE_ENV.get_template('prefab')
         vehicles = list()
         for vehicle, data in self.vehicles.items():
@@ -99,6 +147,10 @@ class Scenario:
         return template.render(vehicles=vehicles)
 
     def _write_info_file(self):
+        """
+        Writes the information for this scenario to an appropriate file for
+        the simulator to read.
+        """
         info_path = self.get_info_path()
         info_dict = self._get_info_dict()
         with open(info_path, 'w') as out_file:
@@ -107,6 +159,13 @@ class Scenario:
         return info_path
 
     def _write_prefab_file(self):
+        """
+        Writes the prefab code describing this scenario to an appropriate file
+        for the simulator to read.
+
+        Returns:
+            The path to the prefab file written to.
+        """
         prefab_path = self.get_prefab_path()
         prefab = self._get_prefab()
         with open(prefab_path, 'w') as out_file:
@@ -114,22 +173,51 @@ class Scenario:
         return prefab_path
 
     def get_info_path(self):
+        """
+        Returns: The path for the information file.
+        """
         info_path = self.path / '{}.json'.format(self.name)
         return str(info_path)
 
     def get_prefab_path(self):
+        """
+        Returns: The path for the prefab file.
+        """
         prefab_path = self.path / '{}.prefab'.format(self.name)
         return str(prefab_path)
 
     def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=(0, 0, 0)):
+        """
+        Adds a vehicle to this scenario at the given position with the given
+        orientation. This method has to be called before a scenario is started.
+
+        Args:
+            pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
+            rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
+                         in Euler angles around each axis.
+        """
         self.vehicles[vehicle] = (pos, rot)
 
     def make(self, bng):
+        """
+        Generates necessary files to describe the scenario in the simulation
+        and outputs them to the simulator.
+
+        Args:
+            bng (:class:`.BeamNGpy`): The BeamNGpy instance to generate the
+                                      scenario for.
+
+        Returns:
+            The path to the information file of this scenario in the simulator.
+        """
         self._find_path(bng)
         self._write_prefab_file()
         info_path = self._write_info_file()
         return info_path
 
     def update(self, bng):
+        """
+        Polls sensors of every vehicle contained in the scenario.
+        """
         for vehicle in self.vehicles.keys():
             bng.poll_sensors(vehicle)

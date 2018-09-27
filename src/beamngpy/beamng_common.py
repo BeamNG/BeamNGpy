@@ -1,3 +1,12 @@
+"""
+.. module:: beamng_common
+    :platform: Windows
+    :synopsis: Module containing common functions used across various BeamNGpy
+               modules.
+
+.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
+"""
+
 import logging as log
 import json
 import os
@@ -32,6 +41,8 @@ def ack(ack_type):
             if resp['type'] != ack_type:
                 raise BNGError('Wrong ACK: {} != {}'.format(ack_type,
                                                             resp['type']))
+
+        ack_wrapped.__doc__ = fun.__doc__  # Ensure documentation is retained
         return ack_wrapped
     return ack_wrapper
 
@@ -109,6 +120,15 @@ CFG = get_default()
 
 
 def send_msg(skt, data):
+    """
+    Encodes the given data via messagepack and sends the bytes over the given
+    socket. Before the raw message bytes are sent, the amount of bytes the
+    message is long is sent as a zero-padded 16-character string.
+
+    Args:
+        skt (:class:`socket`): The socket to write to
+        data (dict): The data to encode and send
+    """
     data = msgpack.packb(data, use_bin_type=True, encoding='utf-8')
     length = '{:016}'.format(len(data))
     skt.send(bytes(length, 'ascii'))
@@ -116,6 +136,18 @@ def send_msg(skt, data):
 
 
 def recv_msg(skt):
+    """
+    Reads a messagepack-encoded message from the given socket, decodes it, and
+    returns it. Before the raw message bytes are read, this function expects
+    the amount of bytes to read being sent as a zero-padded 16-character
+    string.
+
+    Args:
+        skt (:class:`socket`): The socket to read from
+
+    Returns:
+        The decoded message.
+    """
     length = skt.recv(16)
     length = int(str(length, 'ascii'))
     buf = bytearray()

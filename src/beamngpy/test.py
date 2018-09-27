@@ -1,3 +1,10 @@
+"""
+.. module:: test
+    :platform: Windows
+    :synopsis: Module containing classes that offer testing functionality
+               for BeamNGpy.
+"""
+
 RESULT_NOTHING = 0
 RESULT_FAILURE = 1
 RESULT_SUCCESS = 2
