@@ -33,8 +33,8 @@ from .beamng_common import *
 VERSION = 'v1.0'
 
 BINARIES = [
-    'Bin64/BeamNG.drive.x64.exe',
     'Bin64/BeamNG.research.x64.exe',
+    'Bin64/BeamNG.drive.x64.exe',
     'Bin32/BeamNG.drive.x86.exe',
 ]
 
@@ -159,6 +159,7 @@ class BeamNGpy:
         binary = self.determine_binary()
         call = [
             binary,
+            '-console',
             '-rport',
             str(self.port),
             '-rhost',

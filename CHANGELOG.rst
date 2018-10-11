@@ -2,6 +2,25 @@
 Changelog
 =========
 
+Version 1.0
+===========
+
+- Restructure code to offer modular sensor model
+- Implement scenario class to specify and generate BeamNG scenarios
+- Implement vehicle class that offers control over vehicles and ways  to
+  dynamically de-/attach sensors
+- Implement shared memory communication to boost performance
+- Add Camera sensor with colour, depth, and annotation data
+- Add multi-cam support
+- Add lidar sensor
+- Add G-Force sensor
+- Add damage sensor
+- Add electrics sensor
+- Add control over simulation timescale and stepping through simulation at
+  fixed rates
+- Add example code demonstrating scenario specification with control of a
+  vehicle that has various sensors attached
+
 Version 0.4
 ===========
 - Add ``move_vehicle()`` method.

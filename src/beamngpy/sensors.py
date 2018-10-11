@@ -440,17 +440,15 @@ class Lidar(Sensor):
 
         Returns:
             The decoded response as a dictionary with the point cloud as a
-            numpy array in the ``points`` entry. The numpy array has the shape
-            (n,3), where n is the number of points returned. Each row in this
-            array is a (x,y,z) triplet containing the coordinates of the
-            respective point.
+            numpy array in the ``points`` entry. The numpy array is a linear
+            sequence of coordinate triplets in the form of [x0, y0, z0, x1,
+            y1, z1, ..., xn, yn, zn].
         """
         size = resp['size']
         self.shmem.seek(0)
         points_buf = self.shmem.read(size)
         points_buf = np.frombuffer(points_buf, dtype=np.float32)
         assert points_buf.size % 3 == 0
-        points_buf = points_buf.reshape(points_buf.size // 3, 3)
         resp = dict(type='Lidar')
         resp['points'] = points_buf
         return resp
