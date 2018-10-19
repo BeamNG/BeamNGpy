@@ -10,6 +10,7 @@
 
 import base64
 import logging as log
+import mmap
 import numpy as np
 import os
 import queue
@@ -30,12 +31,11 @@ from PIL import Image
 from .beamng_common import ack
 from .beamng_common import *
 
-VERSION = 'v1.0'
+VERSION = 'v1.1'
 
 BINARIES = [
     'Bin64/BeamNG.research.x64.exe',
     'Bin64/BeamNG.drive.x64.exe',
-    'Bin32/BeamNG.drive.x86.exe',
 ]
 
 
@@ -299,7 +299,7 @@ class BeamNGpy:
         self.next_port += 1
         return vehicle_server
 
-    def setup_vehicles(self):
+    def setup_vehicles(self, scenario):
         """
         Goes over the current scenario's vehicles and establishes a connection
         between their vehicle instances and the vehicles in simulation. Engine
@@ -307,7 +307,7 @@ class BeamNGpy:
         hooks of the respective sensors called upon connection. This method
         blocks until all vehicles are fully connected.
         """
-        vehicles = self.scenario.vehicles
+        vehicles = scenario.vehicles
         for vehicle in vehicles.keys():
             flags = vehicle.get_engine_flags()
             self.set_engine_flags(flags)
@@ -330,9 +330,9 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'MapLoaded'
-        sleep(10.0)
+        sleep(12.0)
+        self.setup_vehicles(scenario)
         self.scenario = scenario
-        self.setup_vehicles()
 
     @ack('SetEngineFlags')
     def set_engine_flags(self, flags):
@@ -379,6 +379,14 @@ class BeamNGpy:
         game after loading a scenario. This method blocks until the countdown
         to the scenario's start has finished.
         """
+        if not self.scenario:
+            raise BNGError('Need to load a scenario before starting one.')
+
+        flags = self.scenario.get_engine_flags()
+        if flags:
+            self.set_engine_flags(flags)
+        self.scenario.connect(self)
+
         data = dict(type="StartScenario")
         self.send(data)
 
@@ -491,6 +499,19 @@ class BeamNGpy:
 
         result = vehicle.decode_sensor_response(sensor_data)
         vehicle.sensor_cache = result
+        return result
+
+    def render_cameras(self):
+        if not self.scenario:
+            raise BNGError('Need to be in a started scenario to render its '
+                           'cameras.')
+
+        engine_reqs = self.scenario.encode_requests()
+        self.send(engine_reqs)
+        response = self.recv()
+        assert response['type'] == 'SensorData'
+        camera_data = response['data']
+        result = self.scenario.decode_frames(camera_data)
         return result
 
     def get_roads(self):

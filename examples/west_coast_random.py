@@ -40,8 +40,7 @@ def main():
 
     plt.ion()
 
-    beamng = BeamNGpy('localhost', 64256,
-                      home='D:\\beamng.research_unlimited.v1.3.0.0')
+    beamng = BeamNGpy('localhost', 64256)
 
     # Create a scenario in west_coast_usa
     scenario = Scenario('west_coast_usa', 'research_test',

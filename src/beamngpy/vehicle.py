@@ -40,6 +40,7 @@ class Vehicle:
 
         self.sensors = dict()
 
+        options['color'] = options.get('colour', options.get('color', None))
         self.options = options
 
         self.sensor_cache = dict()
@@ -210,4 +211,35 @@ class Vehicle:
             **kwargs (dict): The input values to set.
         """
         data = dict(type='Control', **options)
+        self.send(data)
+
+    @ack('AiModeSet')
+    def ai_set_mode(self, mode):
+        data = dict(type='SetAiMode')
+        data['mode'] = mode
+        self.send(data)
+
+    @ack('AiSpeedSet')
+    def ai_set_speed(self, speed, mode='limit'):
+        data = dict(type='SetAiSpeed')
+        data['speed'] = speed
+        data['mode'] = mode
+        self.send(data)
+
+    @ack('AiTargetSet')
+    def ai_set_target(self, target):
+        data = dict(type='SetAiTarget')
+        data['target'] = target
+        self.send(data)
+
+    @ack('AiSpanSet')
+    def ai_set_span(self, span):
+        data = dict(type='SetAiSpan')
+        data['span'] = span
+        self.send(data)
+
+    @ack('AiDriveInLaneSet')
+    def ai_drive_in_lane(self, lane):
+        data = dict(type='SetDriveInLane')
+        data['lane'] = lane
         self.send(data)

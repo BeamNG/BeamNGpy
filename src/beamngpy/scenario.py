@@ -80,6 +80,8 @@ class Scenario:
 
         self.vehicle_states = dict()
 
+        self.cameras = dict()
+
     def _find_path(self, bng):
         """
         Attempts to find the appropriate path for this scenario and creates it
@@ -197,6 +199,38 @@ class Scenario:
                          in Euler angles around each axis.
         """
         self.vehicles[vehicle] = (pos, rot)
+
+    def add_camera(self, camera, name):
+        self.cameras[name] = camera
+        camera.attach(None, name)
+
+    def connect(self, bng):
+        for name, cam in self.cameras.items():
+            cam.connect(bng, None)
+
+    def decode_frames(self, camera_data):
+        response = dict()
+        for name, data in camera_data.items():
+            cam = self.cameras[name]
+            data = cam.decode_response(data)
+            response[name] = data
+        return response
+
+    def encode_requests(self):
+        requests = dict()
+        for name, cam in self.cameras.items():
+            request = cam.encode_engine_request()
+            requests[name] = request
+
+        requests = dict(type='SensorRequest', sensors=requests)
+        return requests
+
+    def get_engine_flags(self):
+        flags = dict()
+        for name, cam in self.cameras.items():
+            camera_flags = cam.get_engine_flags()
+            flags.update(camera_flags)
+        return flags
 
     def make(self, bng):
         """

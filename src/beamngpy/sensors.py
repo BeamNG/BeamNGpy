@@ -209,22 +209,25 @@ class Camera(Sensor):
                                          attached to.
             name (str): The name of the camera.
         """
+        prefix = ''
+        if vehicle:
+            prefix = vehicle.vid
         size = self.resolution[0] * self.resolution[1] * 4  # RGBA / L are 4bbp
-        if self.colour:
-            self.colour_handle = '{}.{}.colour'.format(vehicle.vid, name)
-            self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
-            log.debug('Bound memory for colour: %s', self.colour_handle)
+        # if self.colour:
+        self.colour_handle = '{}.{}.colour'.format(prefix, name)
+        self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
+        log.debug('Bound memory for colour: %s', self.colour_handle)
 
-        if self.depth:
-            self.depth_handle = '{}.{}.depth'.format(vehicle.vid, name)
-            self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
-            log.debug('Bound memory for depth: %s', self.depth_handle)
+        # if self.depth:
+        self.depth_handle = '{}.{}.depth'.format(prefix, name)
+        self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
+        log.debug('Bound memory for depth: %s', self.depth_handle)
 
-        if self.annotation:
-            self.annotation_handle = '{}.{}.annotate'.format(vehicle.vid, name)
-            self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
-            log.debug('Bound memory for annotation: %s',
-                      self.annotation_handle)
+        # if self.annotation:
+        self.annotation_handle = '{}.{}.annotate'.format(prefix, name)
+        self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
+        log.debug('Bound memory for annotation: %s',
+                  self.annotation_handle)
 
     def detach(self, vehicle, name):
         """
@@ -301,13 +304,13 @@ class Camera(Sensor):
         """
         req = dict(type='Camera')
 
-        if self.colour:
+        if self.colour_shmem:
             req['color'] = self.colour_handle
 
-        if self.depth:
+        if self.depth_shmem:
             req['depth'] = self.depth_handle
 
-        if self.annotation:
+        if self.annotation_shmem:
             req['annotation'] = self.annotation_handle
 
         req['pos'] = self.pos
@@ -338,21 +341,21 @@ class Camera(Sensor):
 
         size = img_w * img_h * 4
 
-        if self.colour:
+        if self.colour_shmem:
             self.colour_shmem.seek(0)
             colour_d = self.colour_shmem.read(size)
             colour_d = np.frombuffer(colour_d, dtype=np.uint8)
             colour_d = colour_d.reshape(img_h, img_w, 4)
             decoded['colour'] = Image.fromarray(colour_d)
 
-        if self.annotation:
+        if self.annotation_shmem:
             self.annotation_shmem.seek(0)
             annotate_d = self.annotation_shmem.read(size)
             annotate_d = np.frombuffer(annotate_d, dtype=np.uint8)
             annotate_d = annotate_d.reshape(img_h, img_w, 4)
             decoded['annotation'] = Image.fromarray(annotate_d)
 
-        if self.depth:
+        if self.depth_shmem:
             self.depth_shmem.seek(0)
             depth_d = self.depth_shmem.read(size)
             depth_d = np.frombuffer(depth_d, dtype=np.float32)
@@ -376,6 +379,8 @@ class Camera(Sensor):
 
 
 class Lidar(Sensor):
+    max_points = LIDAR_POINTS
+
     """
     The Lidar sensor provides 3D point clouds representing the environment
     as detected by a pulsing laser emitted from the vehicle. The range,
