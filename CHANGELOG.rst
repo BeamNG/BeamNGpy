@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 1.1
+===========
+- Add basic Lidar point cloud visualiser
+- Add AI control to vehicles
+- Add option to attach cameras to scenarios to render frames relative to
+  world space
+
 Version 1.0
 ===========
 
