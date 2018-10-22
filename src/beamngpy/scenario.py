@@ -52,6 +52,26 @@ def compute_rotation_matrix(angles):
     return mat_str
 
 
+class Road:
+
+    def __init__(self, material, **options):
+        self.material = material
+
+        self.drivability = options.get('drivability', 1)
+        self.one_way = options.get('one_way', False)
+        self.flip_direction = options.get('flip_direction', False)
+        self.looped = options.get('looped', False)
+        self.smoothness = options.get('smoothness', 0.5)
+        self.break_angle = options.get('break_angle', 3)
+        self.texture_length = options.get('texture_length')
+
+        self.one_way = '1' if self.one_way else '0'
+        self.flip_direction = '1' if self.flip_direction else '0'
+        self.looped = '1' if self.looped else '0'
+
+        self.nodes = list()
+
+
 class Scenario:
     """
     The scenario class contains information for setting up and executing
@@ -77,6 +97,7 @@ class Scenario:
         self.path = None
 
         self.vehicles = dict()
+        self.roads = list()
 
         self.vehicle_states = dict()
 
@@ -129,6 +150,30 @@ class Scenario:
 
         return info
 
+    def _get_vehicles_list(self):
+        ret = list()
+        vehicles = list()
+        for vehicle, data in self.vehicles.items():
+            pos, rot = data
+            vehicle_dict = dict(vid=vehicle.vid)
+            vehicle_dict.update(vehicle.options)
+            vehicle_dict['position'] = ' '.join([str(p) for p in pos])
+            vehicle_dict['rotationMatrix'] = compute_rotation_matrix(rot)
+            vehicles.append(vehicle_dict)
+        return ret
+
+    def _get_roads_list(self):
+        ret = list()
+        for idx, road in enumerate(self.roads):
+            road_dict = dict(**road.__dict__)
+
+            road_id = 'beamngpy_road_{}_{:03}'.format(self.name, idx)
+            road_dict['road_id'] = road_id
+            road_dict['render_priority'] = idx
+
+            ret.append(road_dict)
+        return ret
+
     def _get_prefab(self):
         """
         Generates prefab code to describe this scenario to the simulation
@@ -138,15 +183,11 @@ class Scenario:
             Prefab code for the simulator.
         """
         template = TEMPLATE_ENV.get_template('prefab')
-        vehicles = list()
-        for vehicle, data in self.vehicles.items():
-            pos, rot = data
-            vehicle_dict = dict(vid=vehicle.vid)
-            vehicle_dict.update(vehicle.options)
-            vehicle_dict['position'] = ' '.join([str(p) for p in pos])
-            vehicle_dict['rotationMatrix'] = compute_rotation_matrix(rot)
-            vehicles.append(vehicle_dict)
-        return template.render(vehicles=vehicles)
+
+        vehicles = self._get_vehicles_list()
+        roads = self._get_roads_list()
+
+        return template.render(vehicles=vehicles, roads=roads)
 
     def _write_info_file(self):
         """
@@ -199,6 +240,9 @@ class Scenario:
                          in Euler angles around each axis.
         """
         self.vehicles[vehicle] = (pos, rot)
+
+    def add_road(self, road):
+        self.roads.append(road)
 
     def add_camera(self, camera, name):
         self.cameras[name] = camera

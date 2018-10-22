@@ -34,8 +34,8 @@ from .beamng_common import *
 VERSION = 'v1.1'
 
 BINARIES = [
-    'Bin64/BeamNG.research.x64.exe',
     'Bin64/BeamNG.drive.x64.exe',
+    'Bin64/BeamNG.research.x64.exe',
 ]
 
 

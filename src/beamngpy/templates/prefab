@@ -22,4 +22,37 @@ $ThisPrefab = new SimGroup() {
         licenseText = "{{vehicle.licence}}";
     };
     {% endfor %}
+
+    {% for road in roads %}
+    new DecalRoad({{road.road_id}}) {
+        drivability = "{{road.drivability}}";
+        oneWay = "{{road.one_way}}";
+        flipDirection = "{{road.flip_direction}}";
+        improvedSpline = "1";
+        startTangent = "0";
+        endTangent = "0";
+        looped = "{{road.looped}}";
+        smoothness = "{{road.smoothness}}";
+        detail = "0.1";
+        overObjects = "0";
+        breakAngle = "{{road.break_angle}}";
+        renderPriority = "{{road.render_priority}}";
+        zBias = "0";
+        decalBias = "0.0005";
+        distanceFade = "1000 1000";
+        startEndFade = "0 0";
+        position = "0 0 0";
+        scale = "1 1 1";
+        rotationMatrix = "1 0 0 0 1 0 0 0 1";
+        canSave = "1";
+        canSaveDynamicFields = "1";
+
+        Material = "{{road.material}}";
+        textureLength = "{{road.texture_length}}";
+
+        {% for node in road.nodes %}
+        Node = "{{node[0]}} {{node[1]}} {{node[2]}} {{node[3]}}";
+        {% endfor %}
+    };
+    {% endfor %}
 };
