@@ -8,6 +8,7 @@
 import json
 import logging as log
 import math
+import os.path
 
 from pathlib import Path
 
@@ -79,7 +80,7 @@ class Scenario:
     execution.
     """
 
-    def __init__(self, level, name, **options):
+    def __init__(self, level, name, exists=False, **options):
         """
         Instantiates a scenario instance with the given name taking place in
         the given level.
@@ -151,7 +152,6 @@ class Scenario:
         return info
 
     def _get_vehicles_list(self):
-        ret = list()
         vehicles = list()
         for vehicle, data in self.vehicles.items():
             pos, rot = data
@@ -160,7 +160,7 @@ class Scenario:
             vehicle_dict['position'] = ' '.join([str(p) for p in pos])
             vehicle_dict['rotationMatrix'] = compute_rotation_matrix(rot)
             vehicles.append(vehicle_dict)
-        return ret
+        return vehicles
 
     def _get_roads_list(self):
         ret = list()
@@ -291,7 +291,27 @@ class Scenario:
         self._find_path(bng)
         self._write_prefab_file()
         info_path = self._write_info_file()
-        return info_path
+        #return info_path
+
+    def find(self, bng):
+        """
+        Looks for the files of an existing scenario and returns the path to the
+        info file of this scenario, iff one is found.
+
+        Args:
+            bng (:class:`.BeamNGpy`): The BeamNGpy instance to look for the
+                                      scenario in.
+
+        Returns:
+            The path to the information file of his scenario found in the
+            simulator as a string, None if it could not be found.
+        """
+        self._find_path(bng)
+        info = self.get_info_path()
+        if os.path.exists(info):
+            return info
+
+        return None
 
     def update(self, bng):
         """

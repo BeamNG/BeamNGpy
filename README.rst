@@ -34,12 +34,12 @@ After installaton, the package can be imported with:
 
   import beamngpy
 
-The main class that exposes the API is ``BeamNGPy`` which can be instantiated
+The main class that exposes the API is ``BeamNGpy`` which can be instantiated
 with:
 
 .. code-block:: python
 
-  bpy = beamngpy.BeamNGPy('localhost', 64256)
+  bng = beamngpy.BeamNppy('localhost', 64256)
 
 Where host and port are your choice, of course. More details on the methods of
 this class can be found in the `API reference`_.
