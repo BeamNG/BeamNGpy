@@ -442,10 +442,15 @@ class BeamNGpy:
         data = dict(type='RemoveFPSLimit')
         self.send(data)
 
-    @ack('Stepped')
-    def step(self, count):
+    def step(self, count, wait=True):
         data = dict(type='Step', count=count)
+        data['ack'] = wait
         self.send(data)
+        if wait:
+            resp = self.recv()
+            if resp['type'] != 'Stepped':
+                raise BNGError('Wrong ACK: {} != {}'.format('Stepped',
+                                                            resp['type']))
 
     @ack('Paused')
     def pause(self):

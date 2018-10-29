@@ -19,7 +19,7 @@ from PIL import Image
 NEAR = 0.01
 FAR = 300
 
-LIDAR_POINTS = 500000
+LIDAR_POINTS = 2000000
 
 
 class Sensor:
