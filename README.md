@@ -10,7 +10,8 @@ It allows remote control of the simulation, including vehicles contained in it:
 ![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/throttle.gif)
 ![Steering control](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/steering.gif)
 
-Vehicles and the environment can be equipped with various sensors that provide simulated sensor data such as a camera feed, with options for depth values and pixel-perfect semantic annotation:
+Vehicles and the environment can be equipped with various sensors that provide simulated sensor data such as a camera feed, with options for depth values and pixel-perfect semantic annotation: or a simulated Lidar sensor:
 
 ![Multiple cameras](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/camera.png)
+![Lidar](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/lidar.gif)
 
