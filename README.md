@@ -1,7 +1,7 @@
 # BeamNGpy
 
-[![BeamNG.research](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/beamng.research.png)](https://beamng.gmbh/research/)
-[![Documentation](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/documentation.png)](https://beamngpy.readthedocs.io/en/latest/)
+[![BeamNG.research](https://github.com/BeamNG/BeamNGpy/raw/master/media/beamng.research.png)](https://beamng.gmbh/research/)
+[![Documentation](https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png)](https://beamngpy.readthedocs.io/en/latest/)
 
 ## About
 
@@ -9,13 +9,13 @@ BeamNGpy is an official library providing a Python interface to BeamNG.research,
 
 It allows remote control of the simulation, including vehicles contained in it:
 
-![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/throttle.gif)
-![Steering control](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/steering.gif)
+![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/master/media/throttle.gif)
+![Steering control](https://github.com/BeamNG/BeamNGpy/raw/master/media/steering.gif)
 
 Vehicles and the environment can be equipped with various sensors that provide simulated sensor data such as a camera feed, with options for depth values and pixel-perfect semantic annotation or a simulated Lidar sensor:
 
-![Multiple cameras](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/camera.png)
-![Lidar](https://github.com/BeamNG/BeamNGpy/raw/newreadme/media/lidar.gif)
+![Multiple cameras](https://github.com/BeamNG/BeamNGpy/raw/master/media/camera.png)
+![Lidar](https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar.gif)
 
 ## Prerequisites
 
