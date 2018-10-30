@@ -32,16 +32,18 @@ The library itself is available on [PyPI](https://pypi.org/project/beamngpy/) an
 
 Once installed, the library can be imported using `import beamngpy`. A short usage example setting up a scenario with one vehicle in the West Coast USA map that spans the area is:
 
-    from beamngpy import BeamNGpy, Scenario, Vehicle
+```python
+from beamngpy import BeamNGpy, Scenario, Vehicle
 
-    bng = BeamNGpy('localhost', 64256, home='/path/to/bng/research')
-    scenario = Scenario('west_coast_usa', 'example')
-    vehicle = Vehicle('ego_vehicle', model='etk800', licence='PYTHON')
-    scenario.add_vehicle(vehicle, pos=(-717, 101, 118), rot=(0, 0, 45))
-    scenario.make(bng)
-    bng.open()
-    bng.load_scenario(scenario)
-    bng.start_scenario()
-    vehicle.ai_set_mode('span')
+bng = BeamNGpy('localhost', 64256, home='/path/to/bng/research')
+scenario = Scenario('west_coast_usa', 'example')
+vehicle = Vehicle('ego_vehicle', model='etk800', licence='PYTHON')
+scenario.add_vehicle(vehicle, pos=(-717, 101, 118), rot=(0, 0, 45))
+scenario.make(bng)
+bng.open()
+bng.load_scenario(scenario)
+bng.start_scenario()
+vehicle.ai_set_mode('span')
+```
 
 More examples can be found in the [examples/](https://github.com/BeamNG/BeamNGpy/tree/master/examples) folder of this repository and the documentation of the library is [available here.](https://beamngpy.readthedocs.io/en/latest/)
