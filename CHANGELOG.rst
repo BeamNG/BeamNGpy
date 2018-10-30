@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.2
+===========
+- Add wait option to step function in ``beamng.py``
+
 Version 1.1
 ===========
 - Add basic Lidar point cloud visualiser
