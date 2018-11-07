@@ -330,9 +330,11 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'MapLoaded'
-        sleep(12.0)
         self.setup_vehicles(scenario)
+        flags = scenario.get_engine_flags()
+        self.set_engine_flags(flags)
         self.scenario = scenario
+        self.scenario.bng = self
 
     @ack('SetEngineFlags')
     def set_engine_flags(self, flags):
@@ -372,6 +374,27 @@ class BeamNGpy:
         data = dict(type='CloseShmem', name=name)
         self.send(data)
 
+    @ack('OpenedLidar')
+    def open_lidar(self, name, vehicle, shmem, shmem_size,
+                   vres=64, rps=2200000, hz=20, angle=360, max_dist=120):
+        data = dict(type='OpenLidar')
+        data['name'] = name
+        data['shmem'] = shmem
+        data['size'] = shmem_size
+        data['vid'] = vehicle.vid
+        data['vRes'] = vres
+        data['rps'] = rps
+        data['hz'] = hz
+        data['angle'] = angle
+        data['maxDist'] = max_dist
+        self.send(data)
+
+    @ack('ClosedLidar')
+    def close_lidar(self, name):
+        data = dict(type='CloseLidar')
+        data['name'] = name
+        self.send(data)
+
     @ack('ScenarioStarted')
     def start_scenario(self):
         """
@@ -380,7 +403,7 @@ class BeamNGpy:
         to the scenario's start has finished.
         """
         if not self.scenario:
-            raise BNGError('Need to load a scenario before starting one.')
+            raise BNGError('Need to have a scenario loaded to start it.')
 
         flags = self.scenario.get_engine_flags()
         if flags:
@@ -395,8 +418,23 @@ class BeamNGpy:
         """
         Restarts a running scenario.
         """
+        if not self.scenario:
+            raise BNGError('Need to have a scenario loaded to restart it.')
+
         data = dict(type='RestartScenario')
         self.send(data)
+
+    @ack('ScenarioStopped')
+    def stop_scenario(self):
+        """
+        Stops a running scenario and returns to the main menu.
+        """
+        if not self.scenario:
+            raise BNGError('Need to have a scenario loaded to stop it.')
+
+        data = dict(type='StopScenario')
+        self.send(data)
+        self.scenario = None
 
     @ack('SetPhysicsDeterministic')
     def set_deterministic(self):
@@ -520,7 +558,7 @@ class BeamNGpy:
         return result
 
     def get_roads(self):
-        data = dict(type="GetDecalRoadVertices")
+        data = dict(type='GetDecalRoadVertices')
         self.send(data)
         response = self.recv()
         assert response['type'] == 'DecalRoadVertices'
@@ -538,6 +576,22 @@ class BeamNGpy:
             roads[road] = edges
 
         return roads
+
+    def update_scenario(self):
+        if not self.scenario:
+            raise BNGError('Need to have a senario loaded to update it.')
+
+        data = dict(type='UpdateScenario')
+        data['vehicles'] = list()
+        for vehicle in self.scenario.vehicles.keys():
+            data['vehicles'].append(vehicle.vid)
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'ScenarioUpdate'
+        for name, vehicle_state in resp['vehicles'].items():
+            vehicle = self.scenario.get_vehicle(name)
+            if vehicle:
+                vehicle.state = vehicle_state
 
     def __enter__(self):
         self.open()

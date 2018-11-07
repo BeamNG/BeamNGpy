@@ -45,6 +45,8 @@ class Vehicle:
 
         self.sensor_cache = dict()
 
+        self.state = None
+
     def send(self, data):
         """
         Sends the given data as a message to the corresponding vehicle's

@@ -389,12 +389,15 @@ class Lidar(Sensor):
 
     shmem_size = LIDAR_POINTS * 3 * 4
 
-    def __init__(self):
-        """
-        TODO: Add options to customise Lidar
-        """
+    def __init__(self, vres=64, rps=2200000, hz=20, angle=360, max_dist=200):
         self.handle = None
         self.shmem = None
+
+        self.vres = vres
+        self.rps = rps
+        self.hz = hz
+        self.angle = angle
+        self.max_dist = max_dist
 
     def attach(self, vehicle, name):
         """
@@ -423,6 +426,14 @@ class Lidar(Sensor):
         """
         self.shmem.close()
 
+    def connect(self, bng, vehicle):
+        bng.open_lidar(self.handle, vehicle, self.handle, Lidar.shmem_size,
+                       vres=self.vres, rps=self.rps, hz=self.hz,
+                       angle=self.angle, max_dist=self.max_dist)
+
+    def disconnect(self, bng, vehicle):
+        bng.close_lidar(self.handle)
+
     def encode_engine_request(self):
         """
         Called to obtain the engine request for this lidar sensor. Encodes the
@@ -433,8 +444,7 @@ class Lidar(Sensor):
             a dictionary.
         """
         req = dict(type='Lidar')
-        req['shmem'] = self.handle
-        req['size'] = Lidar.shmem_size
+        req['name'] = self.handle
         return req
 
     def decode_response(self, resp):

@@ -77,8 +77,9 @@ def main():
             sensors = bng.poll_sensors(vehicle)
             points = sensors['lidar']['points']
             bng.step(3, wait=False)
+            bng.update_scenario()
 
-            lidar_vis.update_points(points)
+            lidar_vis.update_points(points, vehicle.state)
             glutPostRedisplay()
 
         glutReshapeFunc(resize)
