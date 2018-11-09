@@ -67,6 +67,9 @@ def main():
         lidar_vis = LidarVisualiser(Lidar.max_points)
         lidar_vis.open(SIZE, SIZE)
 
+        bng.set_steps_per_second(60)
+        bng.set_deterministic()
+
         bng.hide_hud()
         bng.start_scenario()
 
@@ -77,7 +80,6 @@ def main():
             sensors = bng.poll_sensors(vehicle)
             points = sensors['lidar']['points']
             bng.step(3, wait=False)
-            bng.update_scenario()
 
             lidar_vis.update_points(points, vehicle.state)
             glutPostRedisplay()

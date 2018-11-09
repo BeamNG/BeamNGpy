@@ -71,6 +71,13 @@ def setup_logging(log_file=None):
     log.info('Started BeamNGpy logging.')
 
 
+def updating(fun):
+    def update_wrapped(*args, **kwargs):
+        args[0].update_scenario()
+        return fun(*args, **kwargs)
+    return update_wrapped
+
+
 class BeamNGpy:
     """
     The BeamNGpy class is the backbone of communication with the BeamNG
@@ -375,14 +382,18 @@ class BeamNGpy:
         self.send(data)
 
     @ack('OpenedLidar')
-    def open_lidar(self, name, vehicle, shmem, shmem_size,
-                   vres=64, rps=2200000, hz=20, angle=360, max_dist=120):
+    def open_lidar(self, name, vehicle, shmem, shmem_size, offset=(0, 0, 0),
+                   direction=(0, -1, 0), vres=64, vangle=26.9, rps=2200000,
+                   hz=20, angle=360, max_dist=120):
         data = dict(type='OpenLidar')
         data['name'] = name
         data['shmem'] = shmem
         data['size'] = shmem_size
         data['vid'] = vehicle.vid
+        data['offset'] = offset
+        data['direction'] = direction
         data['vRes'] = vres
+        data['vAngle'] = vangle
         data['rps'] = rps
         data['hz'] = hz
         data['angle'] = angle
@@ -508,6 +519,7 @@ class BeamNGpy:
         data = dict(type='Resume')
         self.send(data)
 
+    @updating
     def poll_sensors(self, vehicle):
         """
         Retrieves sensor values for the sensors attached to the given vehicle.

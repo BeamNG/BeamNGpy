@@ -64,7 +64,7 @@ class LidarVisualiser:
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(90, width / height, 0.01, 2000)
+        gluPerspective(90, width / height, 0.01, 5000)
 
         glViewport(0, 0, width, height)
 

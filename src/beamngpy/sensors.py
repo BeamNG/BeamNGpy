@@ -12,6 +12,7 @@ extract data from simulations.
 import base64
 import logging as log
 import mmap
+import os
 
 import numpy as np
 from PIL import Image
@@ -389,11 +390,16 @@ class Lidar(Sensor):
 
     shmem_size = LIDAR_POINTS * 3 * 4
 
-    def __init__(self, vres=64, rps=2200000, hz=20, angle=360, max_dist=200):
+    def __init__(self, offset=(0, 0, 0), direction=(0, -1, 0), vres=32,
+                 vangle=26.9, rps=2200000, hz=20, angle=360, max_dist=200):
         self.handle = None
         self.shmem = None
 
+        self.offset = offset
+        self.direction = direction
+
         self.vres = vres
+        self.vangle = vangle
         self.rps = rps
         self.hz = hz
         self.angle = angle
@@ -409,7 +415,7 @@ class Lidar(Sensor):
                                          attached to.
             name (str): The name of the sensor.
         """
-        self.handle = '{}.{}.lidar'.format(vehicle.vid, name)
+        self.handle = '{}.{}.{}.lidar'.format(os.getpid(), vehicle.vid, name)
         self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
         log.debug('Bound memory for lidar: %s', self.handle)
 
@@ -428,8 +434,9 @@ class Lidar(Sensor):
 
     def connect(self, bng, vehicle):
         bng.open_lidar(self.handle, vehicle, self.handle, Lidar.shmem_size,
-                       vres=self.vres, rps=self.rps, hz=self.hz,
-                       angle=self.angle, max_dist=self.max_dist)
+                       offset=self.offset, direction=self.direction,
+                       vres=self.vres, vangle=self.vangle, rps=self.rps,
+                       hz=self.hz, angle=self.angle, max_dist=self.max_dist)
 
     def disconnect(self, bng, vehicle):
         bng.close_lidar(self.handle)
