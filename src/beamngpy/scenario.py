@@ -100,9 +100,9 @@ class Scenario:
         self.vehicles = dict()
         self.roads = list()
 
-        self.vehicle_states = dict()
-
         self.cameras = dict()
+
+        self.bng = None
 
     def _find_path(self, bng):
         """
@@ -241,6 +241,12 @@ class Scenario:
         """
         self.vehicles[vehicle] = (pos, rot)
 
+    def get_vehicle(self, needle):
+        for vehicle in self.vehicles.keys():
+            if vehicle.vid == needle:
+                return vehicle
+        return None
+
     def add_road(self, road):
         self.roads.append(road)
 
@@ -291,7 +297,7 @@ class Scenario:
         self._find_path(bng)
         self._write_prefab_file()
         info_path = self._write_info_file()
-        #return info_path
+        return info_path
 
     def find(self, bng):
         """
@@ -313,9 +319,25 @@ class Scenario:
 
         return None
 
-    def update(self, bng):
-        """
-        Polls sensors of every vehicle contained in the scenario.
-        """
-        for vehicle in self.vehicles.keys():
-            bng.poll_sensors(vehicle)
+    def start(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to be started.')
+
+        self.bng.start_scenario()
+
+    def restart(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to be restarted.')
+
+        self.bng.restart_scenario()
+
+    def stop(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to be stopped.')
+
+        self.bng.stop_scenario()
+        self.bng = None
+    

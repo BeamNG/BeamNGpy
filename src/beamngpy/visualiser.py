@@ -64,7 +64,7 @@ class LidarVisualiser:
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(90, width / height, 0.01, 2000)
+        gluPerspective(90, width / height, 0.01, 5000)
 
         glViewport(0, 0, width, height)
 
@@ -125,8 +125,11 @@ class LidarVisualiser:
         self.mouse_x = x
         self.mouse_y = y
 
-    def update_points(self, points):
+    def update_points(self, points, vehicle_state):
         assert not self.dirty
+        if len(points) == 0:
+            return
+
         self.points = points
         self.points_count = len(points)
 
@@ -164,12 +167,12 @@ class LidarVisualiser:
                      self.colours, GL_STATIC_DRAW)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-        if self.follow:
-            self.focus = avg
+        if self.follow and vehicle_state:
+            self.focus = vehicle_state['pos']
 
-            self.pos[0] = self.focus[0] + 10
-            self.pos[1] = self.focus[1] + 10
-            self.pos[2] = self.focus[2] + 10
+            self.pos[0] = self.focus[0] + vehicle_state['dir'][0] * -30
+            self.pos[1] = self.focus[1] + vehicle_state['dir'][1] * -30
+            self.pos[2] = self.focus[2] + vehicle_state['dir'][2] + 10
 
     def render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

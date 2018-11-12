@@ -36,11 +36,12 @@ class BNGValueError(ValueError):
 def ack(ack_type):
     def ack_wrapper(fun):
         def ack_wrapped(*args, **kwargs):
-            fun(*args, **kwargs)
+            ret = fun(*args, **kwargs)
             resp = args[0].recv()
             if resp['type'] != ack_type:
                 raise BNGError('Wrong ACK: {} != {}'.format(ack_type,
                                                             resp['type']))
+            return ret
 
         ack_wrapped.__doc__ = fun.__doc__  # Ensure documentation is retained
         return ack_wrapped
