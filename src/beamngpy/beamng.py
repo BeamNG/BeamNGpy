@@ -31,7 +31,7 @@ from PIL import Image
 from .beamng_common import ack
 from .beamng_common import *
 
-VERSION = 'v1.1'
+VERSION = 'v1.2'
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
