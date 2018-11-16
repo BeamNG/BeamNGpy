@@ -390,7 +390,7 @@ class Lidar(Sensor):
 
     shmem_size = LIDAR_POINTS * 3 * 4
 
-    def __init__(self, offset=(0, 0, 0), direction=(0, -1, 0), vres=32,
+    def __init__(self, offset=(0, 0, 1.5), direction=(0, -1, 0), vres=32,
                  vangle=26.9, rps=2200000, hz=20, angle=360, max_dist=200):
         self.handle = None
         self.shmem = None

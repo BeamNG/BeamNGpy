@@ -245,3 +245,10 @@ class Vehicle:
         data = dict(type='SetDriveInLane')
         data['lane'] = lane
         self.send(data)
+
+    @ack('AiPathSet')
+    def ai_set_path(self, path, speed):
+        data = dict(type='SetAiPath')
+        data['path'] = path
+        data['speed'] = speed
+        self.send(data)
