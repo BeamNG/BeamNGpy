@@ -246,9 +246,9 @@ class Vehicle:
         data['lane'] = lane
         self.send(data)
 
-    @ack('AiPathSet')
-    def ai_set_path(self, path, speed):
-        data = dict(type='SetAiPath')
-        data['path'] = path
-        data['speed'] = speed
+    @ack('AiLineSet')
+    def ai_set_line(self, line, cling=True):
+        data = dict(type='SetAiLine')
+        data['line'] = line
+        data['cling'] = cling
         self.send(data)
