@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.3
+===========
+- Add support to specify polyline with per-vertex speed to the AI
+
 Version 1.2
 ===========
 - Add wait option to step function in ``beamng.py``
@@ -88,3 +92,4 @@ Version 0.1.2
 Version 0.1
 ===========
 - Basic IPC and example functions
+
