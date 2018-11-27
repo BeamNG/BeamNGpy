@@ -1,6 +1,5 @@
 alabaster==0.7.12
 Babel==2.6.0
--e git+git@github.com:BeamNG/BeamNGpy.git@ffe509bc21cab0a9116f4c41789c4e9f3ba91beb#egg=beamngpy
 better-exceptions==0.2.1
 bleach==3.0.2
 certifi==2018.10.15
