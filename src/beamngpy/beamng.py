@@ -28,8 +28,8 @@ import msgpack
 
 from PIL import Image
 
-from .beamng_common import ack
-from .beamng_common import *
+from .beamngcommon import ack
+from .beamngcommon import *
 
 VERSION = 'v1.2'
 

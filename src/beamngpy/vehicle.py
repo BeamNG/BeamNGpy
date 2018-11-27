@@ -10,7 +10,7 @@
 import base64
 import logging as log
 
-from .beamng_common import *
+from .beamngcommon import *
 
 
 class Vehicle:

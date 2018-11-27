@@ -1,5 +1,5 @@
 """
-.. module:: beamng_common
+.. module:: beamngcommon
     :platform: Windows
     :synopsis: Module containing common functions used across various BeamNGpy
                modules.

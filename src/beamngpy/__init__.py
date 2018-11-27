@@ -3,7 +3,7 @@ BeamNGPy API module.
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 """
-from . import beamng_common, sensors
+from . import beamngcommon, sensors
 
 from .scenario import *
 from .vehicle import *
