@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.4
+===========
+- Add vehicle-level state updates
+- Rework code to work with existing scenarios/vehicles
+
 Version 1.3
 ===========
 - Add support to specify polyline with per-vertex speed to the AI

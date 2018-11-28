@@ -13,6 +13,14 @@ import logging as log
 from .beamngcommon import *
 
 
+def updating(fun):
+    def update_wrapped(*args, **kwargs):
+        update_wrapped.__doc__ = fun.__doc__
+        args[0].update_vehicle()
+        return fun(*args, **kwargs)
+    return update_wrapped
+
+
 class Vehicle:
     """
     The vehicle class represents a vehicle of the simulation that can be
@@ -186,6 +194,13 @@ class Vehicle:
             flags.update(sensor_flags)
         return flags
 
+    def update_vehicle(self):
+        data = dict(type='UpdateVehicle')
+        self.send(data)
+        resp = self.recv()
+        self.state = resp['state']
+
+    @updating
     def poll_sensors(self, requests):
         """
         Sends a sensor request to the corresponding vehicle in the simulation

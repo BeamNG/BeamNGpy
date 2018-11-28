@@ -73,7 +73,9 @@ def setup_logging(log_file=None):
 
 def updating(fun):
     def update_wrapped(*args, **kwargs):
-        args[0].update_scenario()
+        update_wrapped.__doc__ = fun.__doc__
+        if args[0].scenario:
+            args[0].update_scenario()
         return fun(*args, **kwargs)
     return update_wrapped
 
@@ -250,7 +252,7 @@ class BeamNGpy:
         assert hello['type'] == 'Hello'
         if hello['version'] != VERSION:
             print('BeamNGpy and BeamNG.* version mismatch: '
-                  'BeamNGpy {}, BeamNG.* {}'.format(hello['version'], VERSION))
+                  'BeamNGpy {}, BeamNG.* {}'.format(VERSION, hello['version']))
             print('Make sure both this library and BeamNG.* are up to date.')
             print('Operation will proceed, but some features might not work.')
 
@@ -292,6 +294,9 @@ class BeamNGpy:
         Returns:
             The server socket created and waiting for a conection.
         """
+        flags = vehicle.get_engine_flags()
+        self.set_engine_flags(flags)
+
         vehicle_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         vehicle_server.bind((self.host, self.next_port))
         vehicle_server.listen()
@@ -302,8 +307,11 @@ class BeamNGpy:
         connection_msg['vid'] = vehicle.vid
         connection_msg['host'] = self.host
         connection_msg['port'] = self.next_port
+
         self.send(connection_msg)
         self.next_port += 1
+
+        vehicle.connect(self, vehicle_server)
         return vehicle_server
 
     def setup_vehicles(self, scenario):
@@ -316,10 +324,7 @@ class BeamNGpy:
         """
         vehicles = scenario.vehicles
         for vehicle in vehicles.keys():
-            flags = vehicle.get_engine_flags()
-            self.set_engine_flags(flags)
-            vehicle_server = self.connect_vehicle(vehicle)
-            vehicle.connect(self, vehicle_server)
+            self.connect_vehicle(vehicle)
 
     def load_scenario(self, scenario):
         """
@@ -413,13 +418,11 @@ class BeamNGpy:
         game after loading a scenario. This method blocks until the countdown
         to the scenario's start has finished.
         """
-        if not self.scenario:
-            raise BNGError('Need to have a scenario loaded to start it.')
-
-        flags = self.scenario.get_engine_flags()
-        if flags:
-            self.set_engine_flags(flags)
-        self.scenario.connect(self)
+        if self.scenario:
+            flags = self.scenario.get_engine_flags()
+            if flags:
+                self.set_engine_flags(flags)
+            self.scenario.connect(self)
 
         data = dict(type="StartScenario")
         self.send(data)
