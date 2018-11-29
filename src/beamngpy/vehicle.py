@@ -15,9 +15,9 @@ from .beamngcommon import *
 
 def updating(fun):
     def update_wrapped(*args, **kwargs):
-        update_wrapped.__doc__ = fun.__doc__
         args[0].update_vehicle()
         return fun(*args, **kwargs)
+    update_wrapped.__doc__ = fun.__doc__
     return update_wrapped
 
 
@@ -195,6 +195,9 @@ class Vehicle:
         return flags
 
     def update_vehicle(self):
+        """
+        Synchronises the :attr:`.Vehicle.state` field with the simulation.
+        """
         data = dict(type='UpdateVehicle')
         self.send(data)
         resp = self.recv()
@@ -205,6 +208,10 @@ class Vehicle:
         """
         Sends a sensor request to the corresponding vehicle in the simulation
         and returns the raw response data as a dictionary.
+
+        Note:
+            This method automatically synchronises the
+            :attr:`.Vehicle.state` field with the simulation.
         """
         self.send(requests)
         response = self.recv()
@@ -212,6 +219,7 @@ class Vehicle:
         sensor_data = response['data']
         return sensor_data
 
+    @updating
     @ack('Controlled')
     def control(self, **options):
         """
@@ -230,12 +238,28 @@ class Vehicle:
         data = dict(type='Control', **options)
         self.send(data)
 
+    @updating
     @ack('AiModeSet')
     def ai_set_mode(self, mode):
+        """
+        Sets the desired mode of the simulator's built-in AI for this vehicle.
+        Possible values are:
+
+            * ``disabled``: Turn the AI off (default state)
+            * ``random``: Drive from random points to random points on the map
+            * ``span``: Drive along the entire road network of the map
+            * ``manual``: Drive to a specific waypoint, target set separately
+            * ``chase``: Chase a target vehicle, target set separately
+            * ``flee``: Flee from a vehicle, target set separately
+            * ``stopping``: Make the vehicle come to a halt (AI disables itself
+                                                             once the vehicle
+                                                             stopped.)
+        """
         data = dict(type='SetAiMode')
         data['mode'] = mode
         self.send(data)
 
+    @updating
     @ack('AiSpeedSet')
     def ai_set_speed(self, speed, mode='limit'):
         data = dict(type='SetAiSpeed')
@@ -243,24 +267,28 @@ class Vehicle:
         data['mode'] = mode
         self.send(data)
 
+    @updating
     @ack('AiTargetSet')
     def ai_set_target(self, target):
         data = dict(type='SetAiTarget')
         data['target'] = target
         self.send(data)
 
+    @updating
     @ack('AiSpanSet')
     def ai_set_span(self, span):
         data = dict(type='SetAiSpan')
         data['span'] = span
         self.send(data)
 
+    @updating
     @ack('AiDriveInLaneSet')
     def ai_drive_in_lane(self, lane):
         data = dict(type='SetDriveInLane')
         data['lane'] = lane
         self.send(data)
 
+    @updating
     @ack('AiLineSet')
     def ai_set_line(self, line, cling=True):
         data = dict(type='SetAiLine')

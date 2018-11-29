@@ -31,7 +31,7 @@ from PIL import Image
 from .beamngcommon import ack
 from .beamngcommon import *
 
-VERSION = 'v1.2'
+VERSION = 'v1.5'
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -312,6 +312,7 @@ class BeamNGpy:
         self.next_port += 1
 
         vehicle.connect(self, vehicle_server)
+        vehicle.update_vehicle()
         return vehicle_server
 
     def setup_vehicles(self, scenario):
@@ -554,6 +555,8 @@ class BeamNGpy:
         if vehicle_reqs['sensors']:
             response = vehicle.poll_sensors(vehicle_reqs)
             sensor_data.update(response)
+        else:
+            vehicle.update_vehicle()
 
         result = vehicle.decode_sensor_response(sensor_data)
         vehicle.sensor_cache = result
@@ -591,6 +594,27 @@ class BeamNGpy:
             roads[road] = edges
 
         return roads
+
+    def get_gamestate(self):
+        """
+        Retrieves the current game state of the simulator. The game state is
+        returned as a dictionary containing a ``state`` entry that is either:
+
+            * ``scenario`` when a scenario is loaded
+            * ``menu`` otherwise
+
+        If a scenario is loaded, the resulting dictionary also contains a
+        ``scenario_state`` entry whose value is ``pre-running`` if the scenario
+        is currently at the start screen or ``running`` otherwise.
+
+        Returns:
+            The game state as a dictionary as described above.
+        """
+        data = dict(type='GameStateRequest')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'GameState'
+        return resp
 
     def update_scenario(self):
         if not self.scenario:

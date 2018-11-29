@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 1.5
+===========
+- Add ``get_gamestate()`` to ``BeamNGpy`` class
+- Make vehicle state being synched upon initial connection
+- Fix vehicle state not being updated on poll if only gameengine-specific
+  sensors were attached.
+
 Version 1.4
 ===========
 - Add vehicle-level state updates
