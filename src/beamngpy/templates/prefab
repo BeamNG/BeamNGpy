@@ -20,6 +20,9 @@ $ThisPrefab = new SimGroup() {
         canSaveDynamicFields = "1";
         annotation = "CAR";
         licenseText = "{{vehicle.licence}}";
+        {% if vehicle.partConfig is defined %}
+        partConfig = "{{vehicle.partConfig}}";
+        {% endif %}
     };
     {% endfor %}
 

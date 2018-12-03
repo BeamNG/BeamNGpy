@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.6
+===========
+- Add option to set target waypoint for builtin vehicle AI
+- Make shmem handle unique OS-wide
+
 Version 1.5
 ===========
 - Add ``get_gamestate()`` to ``BeamNGpy`` class

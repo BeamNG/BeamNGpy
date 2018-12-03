@@ -210,22 +210,23 @@ class Camera(Sensor):
                                          attached to.
             name (str): The name of the camera.
         """
+        pid = os.getpid()
         prefix = ''
         if vehicle:
             prefix = vehicle.vid
         size = self.resolution[0] * self.resolution[1] * 4  # RGBA / L are 4bbp
         # if self.colour:
-        self.colour_handle = '{}.{}.colour'.format(prefix, name)
+        self.colour_handle = '{}.{}.{}.colour'.format(pid, prefix, name)
         self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
         log.debug('Bound memory for colour: %s', self.colour_handle)
 
         # if self.depth:
-        self.depth_handle = '{}.{}.depth'.format(prefix, name)
+        self.depth_handle = '{}.{}.{}.depth'.format(pid, prefix, name)
         self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
         log.debug('Bound memory for depth: %s', self.depth_handle)
 
         # if self.annotation:
-        self.annotation_handle = '{}.{}.annotate'.format(prefix, name)
+        self.annotation_handle = '{}.{}.{}.annotate'.format(pid, prefix, name)
         self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
         log.debug('Bound memory for annotation: %s',
                   self.annotation_handle)
@@ -415,7 +416,8 @@ class Lidar(Sensor):
                                          attached to.
             name (str): The name of the sensor.
         """
-        self.handle = '{}.{}.{}.lidar'.format(os.getpid(), vehicle.vid, name)
+        pid = os.getpid()
+        self.handle = '{}.{}.{}.lidar'.format(pid, vehicle.vid, name)
         self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
         log.debug('Bound memory for lidar: %s', self.handle)
 

@@ -275,6 +275,13 @@ class Vehicle:
         self.send(data)
 
     @updating
+    @ack('AiWaypointSet')
+    def ai_set_waypoint(self, waypoint):
+        data = dict(type='SetAiWaypoint')
+        data['target'] = waypoint
+        self.send(data)
+
+    @updating
     @ack('AiSpanSet')
     def ai_set_span(self, span):
         data = dict(type='SetAiSpan')
