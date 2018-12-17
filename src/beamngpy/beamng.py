@@ -34,8 +34,8 @@ from .beamngcommon import *
 VERSION = 'v1.5'
 
 BINARIES = [
-    'Bin64/BeamNG.drive.x64.exe',
     'Bin64/BeamNG.research.x64.exe',
+    'Bin64/BeamNG.drive.x64.exe',
 ]
 
 
@@ -174,7 +174,7 @@ class BeamNGpy:
             '-rhost',
             str(self.host),
             '-lua',
-            "registerCoreModule('{}')".format('util_researchGE'),
+            "registerCoreModule('{}')".format('util/researchGE'),
         ]
 
         if self.user:
@@ -523,7 +523,6 @@ class BeamNGpy:
         data = dict(type='Resume')
         self.send(data)
 
-    @updating
     def poll_sensors(self, vehicle):
         """
         Retrieves sensor values for the sensors attached to the given vehicle.

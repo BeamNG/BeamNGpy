@@ -10,15 +10,9 @@
 import base64
 import logging as log
 
+from functools import wraps
+
 from .beamngcommon import *
-
-
-def updating(fun):
-    def update_wrapped(*args, **kwargs):
-        args[0].update_vehicle()
-        return fun(*args, **kwargs)
-    update_wrapped.__doc__ = fun.__doc__
-    return update_wrapped
 
 
 class Vehicle:
@@ -203,7 +197,6 @@ class Vehicle:
         resp = self.recv()
         self.state = resp['state']
 
-    @updating
     def poll_sensors(self, requests):
         """
         Sends a sensor request to the corresponding vehicle in the simulation
@@ -217,9 +210,15 @@ class Vehicle:
         response = self.recv()
         assert response['type'] == 'SensorData'
         sensor_data = response['data']
+        self.state = response['state']
         return sensor_data
 
-    @updating
+    @ack('ShiftModeSet')
+    def set_shift_mode(self, mode):
+        data = dict(type='SetShiftMode')
+        data['mode'] = mode
+        self.send(data)
+
     @ack('Controlled')
     def control(self, **options):
         """
@@ -231,6 +230,7 @@ class Vehicle:
          * ``brake``: Intensity of the brake, from 0.0 to 1.0.
          * ``parkingbrake``: Intensity of the parkingbrake, from 0.0 to 1.0.
          * ``clutch``: Clutch level, from 0.0 to 1.0.
+         * ``gear``: Gear to shift to
 
         Args:
             **kwargs (dict): The input values to set.
@@ -238,7 +238,6 @@ class Vehicle:
         data = dict(type='Control', **options)
         self.send(data)
 
-    @updating
     @ack('AiModeSet')
     def ai_set_mode(self, mode):
         """
@@ -254,50 +253,82 @@ class Vehicle:
             * ``stopping``: Make the vehicle come to a halt (AI disables itself
                                                              once the vehicle
                                                              stopped.)
+
+        Args:
+            mode (str): The AI mode to set.
         """
         data = dict(type='SetAiMode')
         data['mode'] = mode
         self.send(data)
 
-    @updating
     @ack('AiSpeedSet')
     def ai_set_speed(self, speed, mode='limit'):
+        """
+        Sets the target speed for the AI in m/s. Speed can be maintained in two
+        modes:
+
+            * ``limit``: Drive speeds between 0 and the limit, as the AI
+                         sees fit.
+            * ``set``: Try to maintain the given speed at all times.
+
+        Args:
+            speed (float): The target speed in m/s.
+            mode (str): The speed mode.
+        """
         data = dict(type='SetAiSpeed')
         data['speed'] = speed
         data['mode'] = mode
         self.send(data)
 
-    @updating
     @ack('AiTargetSet')
     def ai_set_target(self, target):
+        """
+        Sets the target to chase or flee. The target should be the ID of
+        another vehicle in the simulation.
+
+        Args:
+            target (str): ID of the target vehicle as a string.
+        """
         data = dict(type='SetAiTarget')
         data['target'] = target
         self.send(data)
 
-    @updating
     @ack('AiWaypointSet')
     def ai_set_waypoint(self, waypoint):
+        """
+        Sets the waypoint the AI should drive to in manual mode.
+
+        Args:
+            waypoint (str): ID of the target waypoint as a string.
+        """
+        self.ai_set_mode('manual')
         data = dict(type='SetAiWaypoint')
         data['target'] = waypoint
         self.send(data)
 
-    @updating
-    @ack('AiSpanSet')
-    def ai_set_span(self, span):
-        data = dict(type='SetAiSpan')
-        data['span'] = span
-        self.send(data)
-
-    @updating
     @ack('AiDriveInLaneSet')
     def ai_drive_in_lane(self, lane):
+        """
+        Sets the drive in lane flag of the AI. Iff True, the AI only drives
+        within the lane it can legally drive in.
+
+        Args:
+            lane (bool): Lane flag to set.
+        """
         data = dict(type='SetDriveInLane')
         data['lane'] = lane
         self.send(data)
 
-    @updating
     @ack('AiLineSet')
     def ai_set_line(self, line, cling=True):
+        """
+        Makes the AI follow a given polyline. The line is specified as a list
+        of (x, y , z) coordinate triples.
+
+        Args:
+            line (list): Polyline as list of (x, y, z) triples.
+            cling (bool): Whether or not to align the z coordinate of
+        """
         data = dict(type='SetAiLine')
         data['line'] = line
         data['cling'] = cling
