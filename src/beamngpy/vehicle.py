@@ -10,8 +10,6 @@
 import base64
 import logging as log
 
-from functools import wraps
-
 from .beamngcommon import *
 
 
