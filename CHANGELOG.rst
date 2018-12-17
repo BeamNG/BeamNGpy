@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.7
+===========
+- Add manual gear control
+- Add shift mode control
+
 Version 1.6
 ===========
 - Add option to set target waypoint for builtin vehicle AI
