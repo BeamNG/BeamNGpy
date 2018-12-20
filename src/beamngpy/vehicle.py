@@ -46,6 +46,23 @@ class Vehicle:
         self.sensor_cache = dict()
 
         self.state = None
+        """
+        This field contains the vehicle's current state in the running
+        scenario. It is None if no scenario is running or the state has not
+        been retrieved yet. Otherwise, it contains the following key entries:
+
+            * ``pos``: The vehicle's position as an (x,y,z) triplet
+            * ``dir``: The vehicle's direction vector as an (x,y,z) triplet
+            * ``up``: The vehicle's up vector as an (x,y,z) triplet
+            * ``vel``: The vehicle's velocity along each axis in metres per
+                       second as an (x,y,z) triplet
+
+        Note that the `state` variable represents a *snapshot* of the last
+        state. It has to be updated through :meth:`.Vehicle.update_vehicle`,
+        which is made to retrieve the current state. Alternatively, for
+        convenience, a call to :meth:`.Vehicle.poll_sensors` also updates the
+        vehicle state along with retrieving sensor data.
+        """
 
     def send(self, data):
         """
@@ -252,6 +269,10 @@ class Vehicle:
                                                              once the vehicle
                                                              stopped.)
 
+        Note:
+            Some AI methods automatically set appropriate modes, meaning a call
+            to this method might be optional.
+
         Args:
             mode (str): The AI mode to set.
         """
@@ -279,14 +300,18 @@ class Vehicle:
         self.send(data)
 
     @ack('AiTargetSet')
-    def ai_set_target(self, target):
+    def ai_set_target(self, target, mode='chase'):
         """
         Sets the target to chase or flee. The target should be the ID of
-        another vehicle in the simulation.
+        another vehicle in the simulation. The AI is automatically set to the
+        given mode.
 
         Args:
             target (str): ID of the target vehicle as a string.
+            mode(str): How the target should be treated. `chase` to chase the
+                       target, `flee` to flee from it.
         """
+        self.ai_set_mode(mode)
         data = dict(type='SetAiTarget')
         data['target'] = target
         self.send(data)
@@ -294,7 +319,8 @@ class Vehicle:
     @ack('AiWaypointSet')
     def ai_set_waypoint(self, waypoint):
         """
-        Sets the waypoint the AI should drive to in manual mode.
+        Sets the waypoint the AI should drive to in manual mode. The AI gets
+        automatically set to manual mode when this method is called.
 
         Args:
             waypoint (str): ID of the target waypoint as a string.

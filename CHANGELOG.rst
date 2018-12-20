@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.7.1
+=============
+- Make ai methods switch to appropriate modes
+
 Version 1.7
 ===========
 - Add manual gear control

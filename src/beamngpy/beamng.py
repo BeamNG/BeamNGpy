@@ -616,6 +616,10 @@ class BeamNGpy:
         return resp
 
     def update_scenario(self):
+        """
+        Updates the :attr:`.Vehicle.state` field of each vehicle in the
+        currently running scenario.
+        """
         if not self.scenario:
             raise BNGError('Need to have a senario loaded to update it.')
 
