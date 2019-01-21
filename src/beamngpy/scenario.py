@@ -340,4 +340,3 @@ class Scenario:
 
         self.bng.stop_scenario()
         self.bng = None
-    

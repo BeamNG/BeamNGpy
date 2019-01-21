@@ -2,6 +2,18 @@
 Changelog
 =========
 
+Version 1.8
+===========
+- Add vehicle teleporting function to ``BeamNGpy`` class
+- Add time of day control
+- Add function to switch weather presets
+- Add function to await vehicle spawns
+- Expose part configuration options of vehicles
+- Expose current part configuration of vehicles
+- Add function to change part configuration of vehicles
+- Add function to change vehicle colour
+- Add more documentation
+
 Version 1.7.1
 =============
 - Make ai methods switch to appropriate modes

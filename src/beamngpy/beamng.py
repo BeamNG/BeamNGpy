@@ -281,7 +281,7 @@ class BeamNGpy:
         data = dict(type='ShowHUD')
         self.send(data)
 
-    def connect_vehicle(self, vehicle):
+    def connect_vehicle(self, vehicle, port=None):
         """
         Creates a server socket for the given vehicle and sends a connection
         request for it to the simulation. This method does not wait for the
@@ -297,21 +297,24 @@ class BeamNGpy:
         flags = vehicle.get_engine_flags()
         self.set_engine_flags(flags)
 
+        if not port:
+            port = self.next_port
+            self.next_port += 1
+
         vehicle_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        vehicle_server.bind((self.host, self.next_port))
+        vehicle_server.bind((self.host, port))
         vehicle_server.listen()
         log.debug('Starting vehicle server for %s on: %s:%s',
-                  vehicle, self.host, self.next_port)
+                  vehicle, self.host, port)
 
         connection_msg = {'type': 'VehicleConnection'}
         connection_msg['vid'] = vehicle.vid
         connection_msg['host'] = self.host
-        connection_msg['port'] = self.next_port
+        connection_msg['port'] = port
 
         self.send(connection_msg)
-        self.next_port += 1
 
-        vehicle.connect(self, vehicle_server)
+        vehicle.connect(self, vehicle_server, port)
         vehicle.update_vehicle()
         return vehicle_server
 
@@ -410,6 +413,31 @@ class BeamNGpy:
     def close_lidar(self, name):
         data = dict(type='CloseLidar')
         data['name'] = name
+        self.send(data)
+
+    @ack('Teleported')
+    def teleport_vehicle(self, vehicle, pos, rot=None):
+        """
+        Teleports the given vehicle to the given position with the given
+        rotation.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to teleport.
+            pos (tuple): The target position as an (x,y,z) tuple containing
+                         world-space coordinates.
+            rot (tuple): Optional tuple specifying rotations around the (x,y,z)
+                         axes in degrees.
+
+        Notes:
+            In the current implementation, if both ``pos`` and ``rot`` are
+            specified, the vehicle will be repaired to its initial state during
+            teleport.
+        """
+        data = dict(type='Teleport')
+        data['vehicle'] = vehicle.vid
+        data['pos'] = pos
+        if rot:
+            data['rot'] = [np.radians(r) for r in rot]
         self.send(data)
 
     @ack('ScenarioStarted')
@@ -562,6 +590,19 @@ class BeamNGpy:
         return result
 
     def render_cameras(self):
+        """
+        Renders all cameras associated with the loaded scenario. These cameras
+        work exactly like the ones attached to vehicles as sensors, except
+        scenario cameras do not follow the vehicle they are attached to and can
+        be used to get a view from the perspective of something like a
+        surveillance camera, for example.
+
+        A scenario needs to be loaded for this method to work.
+
+        Returns:
+            The rendered data for all cameras in the loaded scenario as a
+            dict mapping camera name to render results.
+        """
         if not self.scenario:
             raise BNGError('Need to be in a started scenario to render its '
                            'cameras.')
@@ -575,6 +616,19 @@ class BeamNGpy:
         return result
 
     def get_roads(self):
+        """
+        Retrieves the vertex data of all DecalRoads in the current scenario.
+        The vertex data of a DecalRoad is formatted as point triples, where
+        each triplet represents the left, centre, and right points of the edges
+        that make up a DecalRoad.
+
+        Returns:
+            A dict mapping DecalRoad IDs to lists of point triples.
+        """
+        if not self.scenario:
+            raise BNGError('Need to be in a started scenario to get its '
+                           'DecalRoad data.')
+
         data = dict(type='GetDecalRoadVertices')
         self.send(data)
         response = self.recv()
@@ -615,6 +669,55 @@ class BeamNGpy:
         assert resp['type'] == 'GameState'
         return resp
 
+    @ack('TimeOfDayChanged')
+    def set_tod(self, tod):
+        """
+        Sets the current time of day. The time of day value is given as a float
+        between 0 and 1. How this value affects the lighting of the scene is
+        dependant on the map's TimeOfDay object.
+
+        Args:
+            tod (float): Time of day beteen 0 and 1.
+        """
+        data = dict(type='TimeOfDayChange')
+        data['tod'] = tod
+        self.send(data)
+
+    @ack('WeatherPresetChanged')
+    def set_weather_preset(self, preset, time=1):
+        """
+        Triggers a change to a different weather preset. Weather presets affect
+        multiple settings at once (time of day, wind speed, cloud coverage,
+        etc.) and need to have been defined first. Example json objects
+        defining weather presets can be found in BeamNG.research's
+        ``art/weather/defaults.json`` file.
+
+        Args:
+            preset (str): The name of the preset to switch to. Needs to be
+                          defined already within the simulation.
+            time (float): Time in seconds the transition from the current
+                          settings to the preset's should take.
+        """
+        data = dict(type='SetWeatherPreset')
+        data['preset'] = preset
+        data['time'] = time
+        self.send(data)
+
+    def await_vehicle_spawn(self, vid):
+        """
+        Waits for the vehicle with the given name to spawn and returns once it
+        has.
+
+        Args:
+            vid (str): The name of the  vehicle to wait for.
+        """
+        data = dict(type='WaitForSpawn')
+        data['name'] = vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'VehicleSpawned'
+        assert resp['name'] == vid
+
     def update_scenario(self):
         """
         Updates the :attr:`.Vehicle.state` field of each vehicle in the
@@ -634,6 +737,18 @@ class BeamNGpy:
             vehicle = self.scenario.get_vehicle(name)
             if vehicle:
                 vehicle.state = vehicle_state
+
+    @ack('GuiMessageDisplayed')
+    def display_gui_message(self, msg):
+        """
+        Displays a toast message in the user interface of the simulator.
+
+        Args:
+            msg (str): The message to display.
+        """
+        data = dict(type='DisplayGuiMessage')
+        data['message'] = msg
+        self.send(data)
 
     def __enter__(self):
         self.open()

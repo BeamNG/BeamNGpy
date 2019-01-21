@@ -32,9 +32,9 @@ class Vehicle:
         """
         self.vid = vid
 
-        self.host = None
         self.port = None
 
+        self.bng = None
         self.server = None
         self.skt = None
 
@@ -92,7 +92,7 @@ class Vehicle:
     def __str__(self):
         return 'V:{}'.format(self.vid)
 
-    def connect(self, bng, server):
+    def connect(self, bng, server, port):
         """
         Establishes socket communication with the corresponding vehicle in the
         simulation and calls the connect-hooks on the vehicle's sensors.
@@ -102,7 +102,9 @@ class Vehicle:
                                       with.
             server (:class:`socket`): The server socket opened for the vehicle.
         """
+        self.bng = bng
         self.server = server
+        self.port = port
         self.skt, addr = self.server.accept()
 
         for name, sensor in self.sensors.items():
@@ -356,4 +358,78 @@ class Vehicle:
         data = dict(type='SetAiLine')
         data['line'] = line
         data['cling'] = cling
+        self.send(data)
+
+    def get_part_options(self):
+        """
+        Retrieves a tree of part configuration options for this vehicle.
+
+        Returns:
+            A tree of part configuration options for this vehicle expressed
+            as nested dictionaries.
+        """
+        data = dict(type='GetPartOptions')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PartOptions'
+        return resp['options']
+
+    def get_part_config(self):
+        """
+        Retrieves the current part configuration of this vehicle. The
+        configuration contains both the current values of adjustable vehicle
+        parameters and a mapping of part types to their currently-selected
+        part.
+
+        Returns:
+            The current vehicle configuration as a dictionary.
+        """
+        data = dict(type='GetPartConfig')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PartConfig'
+        resp = resp['config']
+        if not resp['parts']:
+            resp['parts'] = dict()
+        if not resp['vars']:
+            resp['vars'] = dict()
+        return resp
+
+    def set_part_config(self, cfg):
+        """
+        Sets the current part configuration of this vehicle. The configuration
+        is given as a dictionary containing both adjustable vehicle parameters
+        and a mapping of part types to their selected parts.
+
+        Args:
+            cfg (dict): The new vehicle configuration as a dictionary.
+
+        Notes:
+            Changing parts causes the vehicle to respawn, which repairs it as
+            a side-effect.
+        """
+        data = dict(type='SetPartConfig')
+        data['config'] = cfg
+        self.send(data)
+        self.bng.await_vehicle_spawn(self.vid)
+        self.skt.close()
+        self.server.close()
+        self.skt = None
+        self.bng.connect_vehicle(self, self.port)
+
+    @ack('ColorSet')
+    def set_colour(self, rgba=(1., 1., 1., 1.)):
+        """
+        Sets the colour of this vehicle. Colour can be adjusted on the RGB
+        spectrum and the "shininess" of the paint.
+
+        Args:
+            rgba (tuple): The new colour given as a tuple of RGBA floats, where
+                          the alpha channel encodes the shininess of the paint.
+        """
+        data = dict(type='SetColor')
+        data['r'] = rgba[0]
+        data['g'] = rgba[1]
+        data['b'] = rgba[2]
+        data['a'] = rgba[3]
         self.send(data)
