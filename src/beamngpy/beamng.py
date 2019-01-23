@@ -750,6 +750,19 @@ class BeamNGpy:
         data['message'] = msg
         self.send(data)
 
+    @ack('VehicleSwitched')
+    def switch_vehicle(self, vehicle):
+        data = dict(type='SwitchVehicle')
+        data['vid'] = vehicle.vid
+        self.send(data)
+
+    @ack('FreeCameraSet')
+    def set_free_camera(self, pos, direction):
+        data = dict(type='SetFreeCamera')
+        data['pos'] = pos
+        data['dir'] = direction
+        self.send(data)
+
     def __enter__(self):
         self.open()
         return self

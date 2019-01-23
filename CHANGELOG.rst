@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.9
+===========
+- Add function to switch active vehicle
+- Add function to set position & orientation of the ingame camera
+
 Version 1.8
 ===========
 - Add vehicle teleporting function to ``BeamNGpy`` class
