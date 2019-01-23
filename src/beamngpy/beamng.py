@@ -31,7 +31,7 @@ from PIL import Image
 from .beamngcommon import ack
 from .beamngcommon import *
 
-VERSION = 'v1.8'
+VERSION = 'v1.9'
 
 BINARIES = [
     'Bin64/BeamNG.research.x64.exe',
