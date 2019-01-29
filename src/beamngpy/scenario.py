@@ -113,7 +113,11 @@ class Scenario:
             bng (:class:`.BeamNGpy`): The BeamNGpy instance to find the path
                                       for.
         """
-        self.path = bng.home / 'levels'
+        if bng.user is not None:
+            self.path = bng.user / 'levels'
+        else:
+            self.path = bng.home / 'levels'
+
         self.path = self.path / self.level
         if not self.path.exists():
             log.warn('Level for scenario does not exist: %s', self.path)
@@ -296,8 +300,7 @@ class Scenario:
         """
         self._find_path(bng)
         self._write_prefab_file()
-        info_path = self._write_info_file()
-        return info_path
+        self._write_info_file()
 
     def find(self, bng):
         """
@@ -314,10 +317,6 @@ class Scenario:
         """
         self._find_path(bng)
         info = self.get_info_path()
-        if os.path.exists(info):
-            return info
-
-        return None
 
     def start(self):
         if not self.bng:

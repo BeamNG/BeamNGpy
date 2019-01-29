@@ -340,6 +340,7 @@ class BeamNGpy:
         """
         info_path = scenario.get_info_path()
         info_path = info_path.replace(str(self.home), '')
+        info_path = info_path.replace(str(self.user), '')
         info_path = info_path[1:]
         info_path = info_path.replace('\\', '/')
         data = {'type': 'LoadScenario', 'path': info_path}

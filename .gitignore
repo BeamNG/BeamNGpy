@@ -110,7 +110,7 @@ log/
 *.log
 *.log.1
 *.cfg
-*.ipynb
+#*.ipynb
 
 # Temporary and binary files
 *~
