@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.9.1
+=============
+- Make scenario generation & loading respect user path setting
+
 Version 1.9
 ===========
 - Add function to switch active vehicle
