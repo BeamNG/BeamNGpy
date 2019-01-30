@@ -433,3 +433,6 @@ class Vehicle:
         data['b'] = rgba[2]
         data['a'] = rgba[3]
         self.send(data)
+
+    def annotate_parts(self):
+        self.bng.annotate_parts(self)

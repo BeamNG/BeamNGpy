@@ -764,6 +764,18 @@ class BeamNGpy:
         data['dir'] = direction
         self.send(data)
 
+    @ack('ParticlesSet')
+    def set_particles_enabled(self, enabled):
+        data = dict(type='ParticlesEnabled')
+        data['enabled'] = enabled
+        self.send(data)
+
+    @ack('PartsAnnotated')
+    def annotate_parts(self, vehicle):
+        data = dict(type='AnnotateParts')
+        data['vid'] = vehicle.vid
+        self.send(data)
+
     def __enter__(self):
         self.open()
         return self
