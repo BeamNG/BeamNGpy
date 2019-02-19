@@ -630,24 +630,19 @@ class BeamNGpy:
             raise BNGError('Need to be in a started scenario to get its '
                            'DecalRoad data.')
 
-        data = dict(type='GetDecalRoadVertices')
+        data = dict(type='GetDecalRoadData')
         self.send(data)
         response = self.recv()
-        assert response['type'] == 'DecalRoadVertices'
-        roads_verts = response['vertices']
-        roads = dict()
-        for road, road_verts in roads_verts.items():
-            vertices = list()
-            for i in range(0, len(road_verts), 3):
-                vertex = (road_verts[i], road_verts[i + 1], road_verts[i + 2])
-                vertices.append(vertex)
-            edges = list()
-            for i in range(0, len(vertices), 3):
-                edge = (vertices[i], vertices[i + 1], vertices[i + 2])
-                edges.append(edge)
-            roads[road] = edges
+        assert response['type'] == 'DecalRoadData'
+        return response['data']
 
-        return roads
+    def get_road_edges(self, road):
+        data = dict(type='GetDecalRoadEdges')
+        data['road'] = road
+        self.send(data)
+        response = self.recv()
+        assert response['type'] == 'DecalRoadEdges'
+        return response['edges']
 
     def get_gamestate(self):
         """
