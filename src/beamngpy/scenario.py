@@ -73,6 +73,34 @@ class Road:
         self.nodes = list()
 
 
+class ScenarioObject:
+
+    def __init__(self, oid, name, otype, pos, rot, scale):
+        self.id = oid
+        self.name = name
+        self.type = otype
+        self.position = pos
+        self.rotation = rot
+        self.scale = scale
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.id == other.id
+
+        return False
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __str__(self):
+        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
+        s = s.format(self.type, self.id, self.name, *self.position)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+
 class Scenario:
     """
     The scenario class contains information for setting up and executing
@@ -317,6 +345,9 @@ class Scenario:
         """
         self._find_path(bng)
         info = self.get_info_path()
+
+    def get_waypoints(self):
+        return self.bng.find_objects_class('BeamNGWaypoint')
 
     def start(self):
         if not self.bng:
