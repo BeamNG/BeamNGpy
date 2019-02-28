@@ -132,7 +132,7 @@ def send_msg(skt, data):
         skt (:class:`socket`): The socket to write to
         data (dict): The data to encode and send
     """
-    data = msgpack.packb(data, use_bin_type=True, encoding='utf-8')
+    data = msgpack.packb(data, use_bin_type=True)
     length = '{:016}'.format(len(data))
     skt.send(bytes(length, 'ascii'))
     skt.send(data)
@@ -161,5 +161,9 @@ def recv_msg(skt):
         length -= len(received)
     assert length == 0
     data = skt.recv(length)
-    data = msgpack.unpackb(buf, encoding='utf-8')
+    data = msgpack.unpackb(buf, raw=False)
+    if 'bngError' in data:
+        raise BNGError(data['bngError'])
+    if 'bngValueError' in data:
+        raise BNGValueError(data['bngValueError'])
     return data

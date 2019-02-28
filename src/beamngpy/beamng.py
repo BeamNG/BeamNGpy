@@ -109,7 +109,7 @@ class BeamNGpy:
         self.host = host
         self.port = port
         self.next_port = self.port + 1
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server = None
 
         self.home = home
         if not self.home:
@@ -213,6 +213,7 @@ class BeamNGpy:
         Binds a server socket to the configured host & port and starts
         listening on it.
         """
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((self.host, self.port))
         self.server.listen()
         log.info('Started BeamNGpy server on %s:%s', self.host, self.port)
@@ -770,6 +771,13 @@ class BeamNGpy:
         data = dict(type='AnnotateParts')
         data['vid'] = vehicle.vid
         self.send(data)
+
+    def get_scenario_name(self):
+        data = dict(type='GetScenarioName')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'ScenarioName'
+        return resp['name']
 
     def __enter__(self):
         self.open()

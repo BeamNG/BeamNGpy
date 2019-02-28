@@ -8,6 +8,7 @@
 import json
 import logging as log
 import math
+import os
 import os.path
 
 from pathlib import Path
@@ -80,7 +81,7 @@ class Scenario:
     execution.
     """
 
-    def __init__(self, level, name, exists=False, **options):
+    def __init__(self, level, name, **options):
         """
         Instantiates a scenario instance with the given name taking place in
         the given level.
@@ -223,6 +224,9 @@ class Scenario:
         """
         Returns: The path for the information file.
         """
+        if not self.path:
+            return None
+
         info_path = self.path / '{}.json'.format(self.name)
         return str(info_path)
 
@@ -230,6 +234,9 @@ class Scenario:
         """
         Returns: The path for the prefab file.
         """
+        if not self.path:
+            return None
+
         prefab_path = self.path / '{}.prefab'.format(self.name)
         return str(prefab_path)
 
@@ -317,6 +324,11 @@ class Scenario:
         """
         self._find_path(bng)
         info = self.get_info_path()
+
+    def delete(self, bng):
+        self._find_path(bng)
+        os.remove(self.get_info_path())
+        os.remove(self.get_prefab_path())
 
     def start(self):
         if not self.bng:
