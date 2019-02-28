@@ -246,7 +246,9 @@ class BeamNGpy:
         self.start_server()
         if launch:
             self.start_beamng()
+        self.server.settimeout(60)
         self.skt, addr = self.server.accept()
+        self.skt.settimeout(60)
 
         log.debug('Connection established. Awaiting "hello"...')
         hello = self.recv()

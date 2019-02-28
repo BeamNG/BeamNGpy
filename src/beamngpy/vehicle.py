@@ -105,7 +105,9 @@ class Vehicle:
         self.bng = bng
         self.server = server
         self.port = port
+        self.server.settimeout(60)
         self.skt, addr = self.server.accept()
+        self.skt.settimeout(60)
 
         for name, sensor in self.sensors.items():
             sensor.connect(bng, self)
