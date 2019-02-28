@@ -351,3 +351,13 @@ class Scenario:
 
         self.bng.stop_scenario()
         self.bng = None
+
+    def close(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to be stopped.')
+
+        for vehicle in self.vehicles.keys():
+            vehicle.close()
+
+        self.stop()

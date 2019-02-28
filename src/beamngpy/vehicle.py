@@ -438,3 +438,6 @@ class Vehicle:
 
     def annotate_parts(self):
         self.bng.annotate_parts(self)
+
+    def close(self):
+        self.server.close()

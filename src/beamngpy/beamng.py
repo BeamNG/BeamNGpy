@@ -267,6 +267,9 @@ class BeamNGpy:
         Kills the BeamNG.* process and closes the server.
         """
         log.info('Closing BeamNGpy instance...')
+        if self.scenario:
+            self.scenario.close()
+
         self.server.close()
         self.kill_beamng()
 
