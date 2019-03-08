@@ -28,6 +28,8 @@ import msgpack
 
 from PIL import Image
 
+from .scenario import ScenarioObject
+
 from .beamngcommon import ack
 from .beamngcommon import *
 
@@ -190,6 +192,7 @@ class BeamNGpy:
         termination.
         """
         call = self.prepare_call()
+        print('Call:', call)
         log.debug('Starting BeamNG process...')
         self.process = subprocess.Popen(call)
 
@@ -247,9 +250,9 @@ class BeamNGpy:
         self.start_server()
         if launch:
             self.start_beamng()
-         # self.server.settimeout(300)
+        self.server.settimeout(300)
         self.skt, addr = self.server.accept()
-        #self.skt.settimeout(300)
+        self.skt.settimeout(300)
 
         log.debug('Connection established. Awaiting "hello"...')
         hello = self.recv()
@@ -810,6 +813,21 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'VehicleDespawned'
+
+    def find_objects_class(self, clazz):
+        data = dict(type='FindObjectsClass')
+        data['class'] = clazz
+        self.send(data)
+        resp = self.recv()
+        ret = list()
+        for obj in resp['objects']:
+            sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
+                                  tuple(obj['position']),
+                                  tuple(obj['rotation']),
+                                  tuple(obj['scale']))
+            ret.append(sobj)
+
+        return ret
 
     def __enter__(self):
         self.open()
