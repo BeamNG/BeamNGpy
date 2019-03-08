@@ -173,6 +173,7 @@ class BeamNGpy:
             str(self.port),
             '-rhost',
             str(self.host),
+            '-nosteam',
             '-lua',
             "registerCoreModule('{}')".format('util/researchGE'),
         ]
@@ -246,9 +247,9 @@ class BeamNGpy:
         self.start_server()
         if launch:
             self.start_beamng()
-        self.server.settimeout(60)
+         # self.server.settimeout(300)
         self.skt, addr = self.server.accept()
-        self.skt.settimeout(60)
+        #self.skt.settimeout(300)
 
         log.debug('Connection established. Awaiting "hello"...')
         hello = self.recv()
@@ -460,6 +461,8 @@ class BeamNGpy:
                 self.set_engine_flags(flags)
             self.scenario.connect(self)
 
+        self.scenario.start()
+
         data = dict(type="StartScenario")
         self.send(data)
 
@@ -471,6 +474,8 @@ class BeamNGpy:
         if not self.scenario:
             raise BNGError('Need to have a scenario loaded to restart it.')
 
+        self.scenario.restart()
+
         data = dict(type='RestartScenario')
         self.send(data)
 
@@ -481,6 +486,8 @@ class BeamNGpy:
         """
         if not self.scenario:
             raise BNGError('Need to have a scenario loaded to stop it.')
+
+        self.scenario.stop()
 
         data = dict(type='StopScenario')
         self.send(data)
@@ -783,6 +790,26 @@ class BeamNGpy:
         resp = self.recv()
         assert resp['type'] == 'ScenarioName'
         return resp['name']
+
+    def spawn_vehicle(self, vehicle, pos, rot, cling=True):
+        data = dict(type='SpawnVehicle', cling=cling)
+        data['name'] = vehicle.vid
+        data['model'] = vehicle.options['model']
+        if 'color' in vehicle.options:
+            data['colour'] = vehicle.options['color']
+        data['pos'] = pos
+        data['rot'] = rot
+        self.send(data)
+        resp = self.recv()
+        self.connect_vehicle(vehicle)
+        assert resp['type'] == 'VehicleSpawned'
+
+    def despawn_vehicle(self, vehicle):
+        data = dict(type='DespawnVehicle')
+        data['vid'] = vehicle.vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'VehicleDespawned'
 
     def __enter__(self):
         self.open()

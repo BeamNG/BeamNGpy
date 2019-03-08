@@ -112,7 +112,7 @@ class Vehicle:
         for name, sensor in self.sensors.items():
             sensor.connect(bng, self)
 
-    def disconnect(self, bng):
+    def disconnect(self):
         """
         Closes socket communication with the corresponding vehicle.
 
@@ -120,7 +120,15 @@ class Vehicle:
             bng (:class:`.BeamNGpy`): The running BeamNGpy instance to
                                       disconnect from.
         """
-        pass
+        for name, sensor in self.sensors.items():
+            sensor.disconnect(self.bng, self)
+
+        self.server.close()
+        self.skt.close()
+        self.bng = None
+        self.server = None
+        self.port = None
+        self.skt = None
 
     def attach_sensor(self, name, sensor):
         """
@@ -440,4 +448,9 @@ class Vehicle:
         self.bng.annotate_parts(self)
 
     def close(self):
-        self.server.close()
+        self.disconnect()
+
+        for name, sensor in self.sensors.items():
+            sensor.detach(self, name)
+
+        self.sensors = dict()

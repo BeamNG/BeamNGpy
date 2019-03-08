@@ -99,7 +99,10 @@ class Scenario:
         self.path = None
 
         self.vehicles = dict()
+        self.transient_vehicles = set()  # Vehicles added during scenario
+
         self.roads = list()
+        self.waypoints = list()
 
         self.cameras = dict()
 
@@ -240,7 +243,7 @@ class Scenario:
         prefab_path = self.path / '{}.prefab'.format(self.name)
         return str(prefab_path)
 
-    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=(0, 0, 0)):
+    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=(0, 0, 0), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation. This method has to be called before a scenario is started.
@@ -251,6 +254,18 @@ class Scenario:
                          in Euler angles around each axis.
         """
         self.vehicles[vehicle] = (pos, rot)
+
+        if self.bng:
+            self.bng.spawn_vehicle(vehicle, pos, rot, cling=cling)
+            self.transient_vehicles.add(vehicle)
+
+    def remove_vehicle(self, vehicle):
+        if vehicle in self.vehicles:
+            if self.bng:
+                self.bng.despawn_vehicle(vehicle)
+                self.transient_vehicles.remove(vehicle)
+
+            del self.vehicles[vehicle]
 
     def get_vehicle(self, needle):
         for vehicle in self.vehicles.keys():
@@ -335,21 +350,23 @@ class Scenario:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be started.')
 
-        self.bng.start_scenario()
-
     def restart(self):
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be restarted.')
 
-        self.bng.restart_scenario()
+        while self.transient_vehicles:
+            vehicle = self.transient_vehicles.pop()
+            if vehicle in self.vehicles:
+                vehicle.disconnect()
+                self.bng.despawn_vehicle(vehicle)
+                del self.vehicles[vehicle]
 
     def stop(self):
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be stopped.')
 
-        self.bng.stop_scenario()
         self.bng = None
 
     def close(self):
