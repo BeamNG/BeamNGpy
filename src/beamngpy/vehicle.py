@@ -13,6 +13,14 @@ import logging as log
 from .beamngcommon import *
 
 
+SHIFT_MODES = {
+    'realistic_manual': 0,
+    'realistic_manual_auto_clutch': 1,
+    'arcade': 2,
+    'realistic_automatic': 3,
+}
+
+
 class Vehicle:
     """
     The vehicle class represents a vehicle of the simulation that can be
@@ -25,7 +33,6 @@ class Vehicle:
         """
         Creates a vehicle with the given vehicle ID. The ID must be unique
         within the scenario.
-
 
         Args:
             vid (str): The vehicle's ID.
@@ -51,11 +58,11 @@ class Vehicle:
         scenario. It is None if no scenario is running or the state has not
         been retrieved yet. Otherwise, it contains the following key entries:
 
-            * ``pos``: The vehicle's position as an (x,y,z) triplet
-            * ``dir``: The vehicle's direction vector as an (x,y,z) triplet
-            * ``up``: The vehicle's up vector as an (x,y,z) triplet
-            * ``vel``: The vehicle's velocity along each axis in metres per
-                       second as an (x,y,z) triplet
+         * ``pos``: The vehicle's position as an (x,y,z) triplet
+         * ``dir``: The vehicle's direction vector as an (x,y,z) triplet
+         * ``up``: The vehicle's up vector as an (x,y,z) triplet
+         * ``vel``: The vehicle's velocity along each axis in metres per
+                    second as an (x,y,z) triplet
 
         Note that the `state` variable represents a *snapshot* of the last
         state. It has to be updated through :meth:`.Vehicle.update_vehicle`,
@@ -63,6 +70,17 @@ class Vehicle:
         convenience, a call to :meth:`.Vehicle.poll_sensors` also updates the
         vehicle state along with retrieving sensor data.
         """
+
+    def __hash__(self):
+        return hash(self.vid)
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.vid == other.vid
+        return False
+
+    def __str__(self):
+        return 'V:{}'.format(self.vid)
 
     def send(self, data):
         """
@@ -80,17 +98,6 @@ class Vehicle:
             The message received as a dictionary.
         """
         return recv_msg(self.skt)
-
-    def __hash__(self):
-        return hash(self.vid)
-
-    def __eq__(self, other):
-        if isinstance(other, type(self)):
-            return self.vid == other.vid
-        return False
-
-    def __str__(self):
-        return 'V:{}'.format(self.vid)
 
     def connect(self, bng, server, port):
         """
@@ -242,6 +249,35 @@ class Vehicle:
 
     @ack('ShiftModeSet')
     def set_shift_mode(self, mode):
+        """
+        Sets the shifting mode of the vehicle. This changes whether or not and
+        how the vehicle shifts gears depending on the RPM. Available modes are:
+
+         * ``realistic_manual``: Gears have to be shifted manually by the
+                                 user, including engaging the clutch.
+         * ``realistic_manual_auto_clutch``: Gears have to be shifted manually
+                                             by the user, without having to
+                                             use the clutch.
+         * ``arcade``: Gears shift up and down automatically. If the brake is
+                       held, the vehicle automatically shifts into reverse
+                       and accelerates backward until brake is released or
+                       throttle is engaged.
+         * ``realistic_automatic``: Gears shift up automatically, but reverse
+                                    and parking need to be shifted to
+                                    manually.
+
+        Args:
+            mode (str): The mode to set. Must be a string from the options
+                        listed above.
+
+        Raises:
+            BNGValueError: If an invalid mode is given.
+        """
+        mode = mode.lower().strip()
+        if mode not in SHIFT_MODES:
+            raise BNGValueError('Non-existent shift mode: {}'.format(mode))
+
+        mode = SHIFT_MODES[mode]
         data = dict(type='SetShiftMode')
         data['mode'] = mode
         self.send(data)
@@ -271,15 +307,15 @@ class Vehicle:
         Sets the desired mode of the simulator's built-in AI for this vehicle.
         Possible values are:
 
-            * ``disabled``: Turn the AI off (default state)
-            * ``random``: Drive from random points to random points on the map
-            * ``span``: Drive along the entire road network of the map
-            * ``manual``: Drive to a specific waypoint, target set separately
-            * ``chase``: Chase a target vehicle, target set separately
-            * ``flee``: Flee from a vehicle, target set separately
-            * ``stopping``: Make the vehicle come to a halt (AI disables itself
-                                                             once the vehicle
-                                                             stopped.)
+         * ``disabled``: Turn the AI off (default state)
+         * ``random``: Drive from random points to random points on the map
+         * ``span``: Drive along the entire road network of the map
+         * ``manual``: Drive to a specific waypoint, target set separately
+         * ``chase``: Chase a target vehicle, target set separately
+         * ``flee``: Flee from a vehicle, target set separately
+         * ``stopping``: Make the vehicle come to a halt (AI disables itself
+                                                            once the vehicle
+                                                            stopped.)
 
         Note:
             Some AI methods automatically set appropriate modes, meaning a call
@@ -298,9 +334,9 @@ class Vehicle:
         Sets the target speed for the AI in m/s. Speed can be maintained in two
         modes:
 
-            * ``limit``: Drive speeds between 0 and the limit, as the AI
-                         sees fit.
-            * ``set``: Try to maintain the given speed at all times.
+         * ``limit``: Drive speeds between 0 and the limit, as the AI
+                        sees fit.
+         * ``set``: Try to maintain the given speed at all times.
 
         Args:
             speed (float): The target speed in m/s.
@@ -367,6 +403,60 @@ class Vehicle:
         """
         data = dict(type='SetAiLine')
         data['line'] = line
+        data['cling'] = cling
+        self.send(data)
+
+    @ack('AiScriptSet')
+    def ai_set_script(self, script, start_dir=None, up_dir=None, cling=True):
+        """
+        Makes the vehicle follow a given "script" -- a script being a list of
+        timestamped positions defining where a vehicle should be at what time.
+        This can be used to make the vehicle drive a long a polyline with speed
+        implicitly expressed in the time between points.
+
+        Args:
+            script (list): A list of nodes in the script. Each node is expected
+                           to be a dict-like that has `x`, `y`, and `z`
+                           entries for the supposed position of the vehicle,
+                           and a `t` entry for the time of the node along the
+                           path. Time values are in seconds relative to the
+                           time when script playback is started.
+            start_dir (tuple): Optional initial directional vector of the
+                               vehicle. If not specified, it's inferred from
+                               the first two points.
+            up_dir (tuple): Optional initial up vector of the vehicle. It can
+                            be set alongside `start_dir` to change orientation
+                            of the vehicle at the start. Otherwise, (0, 0, 1)
+                            is assumed as default.
+            cling (bool): A flag that makes the simulator cling z-coordinates
+                          to the ground. Since computing z-coordinates in
+                          advance without knowing the level geometry can be
+                          cumbersome, this flag is used to automatically set
+                          z-coordinates in the script to the ground height.
+                          Defaults to True.
+
+        Raises:
+            BNGValueError: If the script has fewer than three nodes, the
+                           minimum length of a script.
+        """
+        if len(script) < 3:
+            raise BNGValueError('AI script must have at least 3 nodes.')
+
+        if not start_dir:
+            fst = script[0]
+            snd = script[1]
+            start_dir = (
+                snd['x'] - fst['x'],
+                snd['y'] - fst['y'],
+                snd['z'] - fst['z'],
+            )
+            up_dir = (0, 0, 1)
+
+        script[0]['dir'] = start_dir
+        script[0]['up'] = up_dir
+
+        data = dict(type='SetAiScript')
+        data['script'] = script
         data['cling'] = cling
         self.send(data)
 
@@ -445,9 +535,17 @@ class Vehicle:
         self.send(data)
 
     def annotate_parts(self):
+        """
+        Triggers the process to have individual parts of a vehicle have unique
+        annotation colors.
+        """
         self.bng.annotate_parts(self)
 
     def close(self):
+        """
+        Closes this vehicle's and its sensors' connection and detaches all
+        sensors.
+        """
         self.disconnect()
 
         for name, sensor in self.sensors.items():

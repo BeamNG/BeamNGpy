@@ -36,8 +36,8 @@ from .beamngcommon import *
 VERSION = 'v1.9'
 
 BINARIES = [
-    'Bin64/BeamNG.research.x64.exe',
     'Bin64/BeamNG.drive.x64.exe',
+    'Bin64/BeamNG.research.x64.exe',
 ]
 
 
@@ -121,6 +121,7 @@ class BeamNGpy:
                                 'one in the constructor or define an '
                                 'environment variable "BNG_HOME" that '
                                 'points to where your copy of BeamNG.* is.')
+
         self.home = Path(self.home).resolve()
         if user:
             self.user = Path(user).resolve()
@@ -250,7 +251,7 @@ class BeamNGpy:
         self.start_server()
         if launch:
             self.start_beamng()
-         # self.server.settimeout(300)
+        # self.server.settimeout(300)
         self.skt, addr = self.server.accept()
         # self.skt.settimeout(300)
 
@@ -541,6 +542,23 @@ class BeamNGpy:
         self.send(data)
 
     def step(self, count, wait=True):
+        """
+        Advances the simulation the given amount of steps, assuming it is
+        currently paused. If the wait flag is set, this method blocks until
+        the simulator has finished simulating the desired amount of steps. If
+        not, this method resumes immediatly. This can be used to queue commands
+        that should be executed right after the steps have been simulated.
+
+        Args:
+            count (int): The amount of steps to simulate.
+
+        Keyword Arguments:
+            wait (bool): Whether to wait for the steps to be simulated.
+
+        Raises:
+            BNGError: If the wait flag is set but the simulator doesn't respond
+                      appropriately.
+        """
         data = dict(type='Step', count=count)
         data['ack'] = wait
         self.send(data)
@@ -764,12 +782,30 @@ class BeamNGpy:
 
     @ack('VehicleSwitched')
     def switch_vehicle(self, vehicle):
+        """
+        Switches to the given :class:`.Vehicle`. This means that the
+        simulator's main camera, inputs by the user, and so on will all focus
+        on that vehicle from now on.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The target vehicle.
+        """
         data = dict(type='SwitchVehicle')
         data['vid'] = vehicle.vid
         self.send(data)
 
     @ack('FreeCameraSet')
     def set_free_camera(self, pos, direction):
+        """
+        Sets the position and direction of the free camera. The free camera is
+        one that does not follow any particular vehicle, but can instead be
+        put at any spot and any position on the map.
+
+        Args:
+            pos (tuple): The position of the camera as a (x, y, z) triplet.
+            direction (tuple): The directional vector of the camera as a
+                               (x, y, z) triplet.
+        """
         data = dict(type='SetFreeCamera')
         data['pos'] = pos
         data['dir'] = direction
@@ -777,17 +813,35 @@ class BeamNGpy:
 
     @ack('ParticlesSet')
     def set_particles_enabled(self, enabled):
+        """
+        En-/disabled visual particle emmission.
+
+        Args:
+            enabled (bool): Whether or not to en- or disabled effects.
+        """
         data = dict(type='ParticlesEnabled')
         data['enabled'] = enabled
         self.send(data)
 
     @ack('PartsAnnotated')
     def annotate_parts(self, vehicle):
+        """
+        Triggers per-part annotation for the given :class:`.Vehicle`.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to annotate.
+        """
         data = dict(type='AnnotateParts')
         data['vid'] = vehicle.vid
         self.send(data)
 
     def get_scenario_name(self):
+        """
+        Retrieves the name of the currently-loaded scenario in the simulator.
+
+        Returns:
+            The name of the loaded scenario as a string.
+        """
         data = dict(type='GetScenarioName')
         self.send(data)
         resp = self.recv()
@@ -795,6 +849,22 @@ class BeamNGpy:
         return resp['name']
 
     def spawn_vehicle(self, vehicle, pos, rot, cling=True):
+        """
+        Spawns the given :class:`.Vehicle` instance in the simulator. This
+        method is meant for spawning vehicles *during the simulation*. Vehicles
+        that are known to be required before running the simulation should be
+        added during scenario creation instead.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to be spawned.
+            pos (tuple): Where to spawn the vehicle as a (x, y, z) triplet.
+            rot (tuple): The rotation of the vehicle as a triplet of Euler
+                         angles.
+            cling (bool): If set, the z-coordinate of the vehicle's position
+                          will be set to the ground level at the given
+                          position to avoid spawning the vehicle below ground
+                          or in the air.
+        """
         data = dict(type='SpawnVehicle', cling=cling)
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
@@ -808,6 +878,14 @@ class BeamNGpy:
         assert resp['type'] == 'VehicleSpawned'
 
     def despawn_vehicle(self, vehicle):
+        """
+        Despawns the given :class:`.Vehicle` from the simulation. It is
+        assumed that the vehicle has been disconnected prior to calling this
+        method.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to despawn.
+        """
         data = dict(type='DespawnVehicle')
         data['vid'] = vehicle.vid
         self.send(data)
@@ -815,6 +893,19 @@ class BeamNGpy:
         assert resp['type'] == 'VehicleDespawned'
 
     def find_objects_class(self, clazz):
+        """
+        Scans the current environment in the simulator for objects of a
+        certain class and returns them as a list of :class:`.ScenarioObject`.
+
+        What kind of classes correspond to what kind of objects is described
+        in the BeamNG.drive documentation.
+
+        Args:
+            clazz (str): The class name of objects to find.
+
+        Returns:
+            Found objects as a list.
+        """
         data = dict(type='FindObjectsClass')
         data['class'] = clazz
         self.send(data)
