@@ -112,6 +112,65 @@ class ScenarioObject:
         return str(self)
 
 
+class ProceduralMesh:
+    def __init__(self, pos, rot, name, material):
+        self.name = name
+        self.material = material
+        self.pos = pos
+        self.rot = rot
+
+    def place(self, bng):
+        raise NotImplementedError()
+
+
+class ProceduralCylinder(ProceduralMesh):
+    def __init__(self, pos, rot, radius, height, name=None, material=None):
+        super(ProceduralCylinder, self).__init__(pos, rot, name, material)
+        self.radius = radius
+        self.height = height
+
+    def place(self, bng):
+        bng.create_cylinder(self.radius, self.height, self.pos, self.rot,
+                            self.material, self.name)
+
+
+class ProceduralBump(ProceduralMesh):
+    def __init__(self, pos, rot, width, length, height,
+                 upper_length, upper_width, name=None, material=None):
+        super(ProceduralBump, self).__init__(pos, rot, name, material)
+        self.width = width
+        self.length = length
+        self.height = height
+        self.upper_length = upper_length
+        self.upper_width = upper_width
+
+    def place(self, bng):
+        bng.create_bump(self.width, self.length, self.height,
+                        self.upper_length, self.upper_width, self.pos,
+                        self.rot, self.material, self.name)
+
+
+class ProceduralCone(ProceduralMesh):
+    def __init__(self, pos, rot, radius, height, name=None, material=None):
+        super(ProceduralCone, self).__init__(pos, rot, name, material)
+        self.radius = radius
+        self.height = height
+
+    def place(self, bng):
+        bng.create_cone(self.radius, self.height, self.pos, self.rot,
+                        self.material, self.name)
+
+
+class ProceduralCube(ProceduralMesh):
+    def __init__(self, pos, rot, size, name=None, material=None):
+        super(ProceduralCube, self).__init__(pos, rot, name, material)
+        self.size = size
+
+    def place(self, bng):
+        bng.create_cube(self.size, self.pos, self.rot,
+                        self.material, self.name)
+
+
 class Scenario:
     """
     The scenario class contains information for setting up and executing
@@ -141,6 +200,7 @@ class Scenario:
 
         self.roads = list()
         self.waypoints = list()
+        self.proc_meshes = list()
 
         self.cameras = dict()
 
@@ -361,13 +421,23 @@ class Scenario:
         self.cameras[name] = camera
         camera.attach(None, name)
 
+    def add_procedural_mesh(self, mesh):
+        self.proc_meshes.append(mesh)
+        if self.bng:
+            mesh.place(self.bng)
+
     def connect(self, bng):
         """
         Connects this scenario to the simulator, hooking up any cameras to
         their counterpart in the simulator.
         """
+        self.bng = bng
+
+        for mesh in self.proc_meshes:
+            mesh.place(self.bng)
+
         for name, cam in self.cameras.items():
-            cam.connect(bng, None)
+            cam.connect(self.bng, None)
 
     def decode_frames(self, camera_data):
         response = dict()

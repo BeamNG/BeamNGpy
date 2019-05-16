@@ -362,7 +362,7 @@ class BeamNGpy:
         flags = scenario.get_engine_flags()
         self.set_engine_flags(flags)
         self.scenario = scenario
-        self.scenario.bng = self
+        self.scenario.connect(self)
 
     @ack('SetEngineFlags')
     def set_engine_flags(self, flags):
@@ -459,12 +459,6 @@ class BeamNGpy:
         game after loading a scenario. This method blocks until the countdown
         to the scenario's start has finished.
         """
-        if self.scenario:
-            flags = self.scenario.get_engine_flags()
-            if flags:
-                self.set_engine_flags(flags)
-            self.scenario.connect(self)
-
         self.scenario.start()
 
         data = dict(type="StartScenario")
@@ -919,6 +913,54 @@ class BeamNGpy:
             ret.append(sobj)
 
         return ret
+
+    @ack('CreatedCylinder')
+    def create_cylinder(self, radius, height, pos, rot,
+                        material=None, name=None):
+        data = dict(type='CreateCylinder')
+        data['radius'] = radius
+        data['height'] = height
+        data['pos'] = pos
+        data['rot'] = rot
+        data['name'] = name
+        data['material'] = material
+        self.send(data)
+
+    @ack('CreatedBump')
+    def create_bump(self, width, length, height, upper_length, upper_width,
+                    pos, rot, material=None, name=None):
+        data = dict(type='CreateBump')
+        data['width'] = width
+        data['length'] = length
+        data['height'] = height
+        data['upperLength'] = upper_length
+        data['upperWidth'] = upper_width
+        data['pos'] = pos
+        data['rot'] = rot
+        data['name'] = name
+        data['material'] = material
+        self.send(data)
+
+    @ack('CreatedCone')
+    def create_cone(self, radius, height, pos, rot, material=None, name=None):
+        data = dict(type='CreateCone')
+        data['radius'] = radius
+        data['height'] = height
+        data['material'] = material
+        data['name'] = name
+        data['pos'] = pos
+        data['rot'] = rot
+        self.send(data)
+
+    @ack('CreatedCube')
+    def create_cube(self, size, pos, rot, material=None, name=None):
+        data = dict(type='CreateCube')
+        data['size'] = size
+        data['pos'] = pos
+        data['rot'] = rot
+        data['material'] = material
+        data['name'] = name
+        self.send(data)
 
     def __enter__(self):
         self.open()
