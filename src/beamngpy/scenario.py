@@ -55,6 +55,11 @@ def compute_rotation_matrix(angles):
 
 
 class Road:
+    """
+    This class represents a DecalRoad in the environment. It contains
+    information about the road's material, direction-ness of lanes,
+    and geometry of the edges that make up the road.
+    """
 
     def __init__(self, material, **options):
         self.material = material
@@ -75,6 +80,11 @@ class Road:
 
 
 class ScenarioObject:
+    """
+    This class is used to represent objects in the simulator's environment. It
+    contains basic information like the object type, position, rotation, and
+    scale.
+    """
 
     def __init__(self, oid, name, otype, pos, rot, scale):
         self.id = oid
@@ -100,6 +110,65 @@ class ScenarioObject:
 
     def __repr__(self):
         return str(self)
+
+
+class ProceduralMesh:
+    def __init__(self, pos, rot, name, material):
+        self.name = name
+        self.material = material
+        self.pos = pos
+        self.rot = rot
+
+    def place(self, bng):
+        raise NotImplementedError()
+
+
+class ProceduralCylinder(ProceduralMesh):
+    def __init__(self, pos, rot, radius, height, name=None, material=None):
+        super(ProceduralCylinder, self).__init__(pos, rot, name, material)
+        self.radius = radius
+        self.height = height
+
+    def place(self, bng):
+        bng.create_cylinder(self.radius, self.height, self.pos, self.rot,
+                            self.material, self.name)
+
+
+class ProceduralBump(ProceduralMesh):
+    def __init__(self, pos, rot, width, length, height,
+                 upper_length, upper_width, name=None, material=None):
+        super(ProceduralBump, self).__init__(pos, rot, name, material)
+        self.width = width
+        self.length = length
+        self.height = height
+        self.upper_length = upper_length
+        self.upper_width = upper_width
+
+    def place(self, bng):
+        bng.create_bump(self.width, self.length, self.height,
+                        self.upper_length, self.upper_width, self.pos,
+                        self.rot, self.material, self.name)
+
+
+class ProceduralCone(ProceduralMesh):
+    def __init__(self, pos, rot, radius, height, name=None, material=None):
+        super(ProceduralCone, self).__init__(pos, rot, name, material)
+        self.radius = radius
+        self.height = height
+
+    def place(self, bng):
+        bng.create_cone(self.radius, self.height, self.pos, self.rot,
+                        self.material, self.name)
+
+
+class ProceduralCube(ProceduralMesh):
+    def __init__(self, pos, rot, size, name=None, material=None):
+        super(ProceduralCube, self).__init__(pos, rot, name, material)
+        self.size = size
+
+    def place(self, bng):
+        bng.create_cube(self.size, self.pos, self.rot,
+                        self.material, self.name)
 
 
 class Scenario:
@@ -131,6 +200,7 @@ class Scenario:
 
         self.roads = list()
         self.waypoints = list()
+        self.proc_meshes = list()
 
         self.cameras = dict()
 
@@ -188,6 +258,14 @@ class Scenario:
         return info
 
     def _get_vehicles_list(self):
+        """
+        Gets the vehicles contained in this scenario encoded as a dict and
+        put into one list, including their position and rotation as a matrix
+        ready to be placed in the simulator.
+
+        Returns:
+            All vehicles as a dict including position and rotation.
+        """
         vehicles = list()
         for vehicle, data in self.vehicles.items():
             pos, rot = data
@@ -199,6 +277,13 @@ class Scenario:
         return vehicles
 
     def _get_roads_list(self):
+        """
+        Gets the roads defined in this scenario encoded as a dict and put into
+        one list ready to be placed in the simulator.
+
+        Returns:
+            All roads encoded as a dict in one list.
+        """
         ret = list()
         for idx, road in enumerate(self.roads):
             road_dict = dict(**road.__dict__)
@@ -288,6 +373,13 @@ class Scenario:
             self.transient_vehicles.add(vehicle)
 
     def remove_vehicle(self, vehicle):
+        """
+        Removes the given :class:`.Vehicle`: from this scenario. If the
+        scenario is currently loaded, the vehicle will be despawned.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to remove.
+        """
         if vehicle in self.vehicles:
             if self.bng:
                 self.bng.despawn_vehicle(vehicle)
@@ -296,21 +388,56 @@ class Scenario:
             del self.vehicles[vehicle]
 
     def get_vehicle(self, needle):
+        """
+        Retrieves the vehicle with the given ID from this scenario.
+
+        Args:
+            needle (str): The ID of the vehicle to find.
+
+        Returns:
+            The :class:`.Vehicle` with the given ID. None if it wasn't found.
+        """
         for vehicle in self.vehicles.keys():
             if vehicle.vid == needle:
                 return vehicle
         return None
 
     def add_road(self, road):
+        """
+        Adds a :class:`.Road` to this scenario.
+        """
         self.roads.append(road)
 
     def add_camera(self, camera, name):
+        """
+        Adds a :class:`beamngpy.sensors.Camera` to this scenario which can be
+        used to obtain rendered frames from a location in the world (e.g.
+        something like a surveillance camera.)
+
+        Args:
+            camera (:class:`beamngpy.sensors.Camera` ): The camera to add.
+            name (str): The name the camera should be identified with.
+        """
         self.cameras[name] = camera
         camera.attach(None, name)
 
+    def add_procedural_mesh(self, mesh):
+        self.proc_meshes.append(mesh)
+        if self.bng:
+            mesh.place(self.bng)
+
     def connect(self, bng):
+        """
+        Connects this scenario to the simulator, hooking up any cameras to
+        their counterpart in the simulator.
+        """
+        self.bng = bng
+
+        for mesh in self.proc_meshes:
+            mesh.place(self.bng)
+
         for name, cam in self.cameras.items():
-            cam.connect(bng, None)
+            cam.connect(self.bng, None)
 
     def decode_frames(self, camera_data):
         response = dict()
