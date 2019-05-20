@@ -1,9 +1,8 @@
 import numpy as np
+import pytest
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError
-
-import pytest
 
 
 @pytest.fixture()
