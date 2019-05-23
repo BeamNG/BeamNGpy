@@ -33,7 +33,7 @@ from .scenario import ScenarioObject
 from .beamngcommon import ack
 from .beamngcommon import *
 
-VERSION = 'v1.9'
+VERSION = 'v1.10'
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -193,7 +193,6 @@ class BeamNGpy:
         termination.
         """
         call = self.prepare_call()
-        print('Call:', call)
         log.debug('Starting BeamNG process...')
         self.process = subprocess.Popen(call)
 
@@ -275,6 +274,7 @@ class BeamNGpy:
         log.info('Closing BeamNGpy instance...')
         if self.scenario:
             self.scenario.close()
+            self.scenario = None
 
         self.server.close()
         self.kill_beamng()
@@ -863,10 +863,9 @@ class BeamNGpy:
         data = dict(type='SpawnVehicle', cling=cling)
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
-        if 'color' in vehicle.options:
-            data['colour'] = vehicle.options['color']
         data['pos'] = pos
         data['rot'] = rot
+        data.update(vehicle.options)
         self.send(data)
         resp = self.recv()
         self.connect_vehicle(vehicle)
@@ -874,13 +873,12 @@ class BeamNGpy:
 
     def despawn_vehicle(self, vehicle):
         """
-        Despawns the given :class:`.Vehicle` from the simulation. It is
-        assumed that the vehicle has been disconnected prior to calling this
-        method.
+        Despawns the given :class:`.Vehicle` from the simulation.
 
         Args:
             vehicle (:class:`.Vehicle`): The vehicle to despawn.
         """
+        vehicle.disconnect()
         data = dict(type='DespawnVehicle')
         data['vid'] = vehicle.vid
         self.send(data)
