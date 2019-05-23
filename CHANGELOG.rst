@@ -2,6 +2,15 @@
 Changelog
 =========
 
+Version 1.10
+============
+- Add functions to spawn/despawn vehicles during a scenario
+- Add script AI function to vehicle and update AI line example accordingly
+- Add function to change AI aggression
+- Add functions to place procedurally generated primitives in the environment
+- Add unit tests for sensors, scenarios, and vehicles
+- Fix scenario not being cleared when BeamNG instance is closed
+
 Version 1.9.1
 =============
 - Make scenario generation & loading respect user path setting
