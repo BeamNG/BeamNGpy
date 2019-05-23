@@ -78,3 +78,23 @@ def test_vehicle_ai(beamng):
         assert_continued_movement(bng, vehicle, pos)
 
     scenario.delete(beamng)
+
+
+def test_vehicle_spawn(beamng):
+    scenario = Scenario('smallgrid', 'spawn_test')
+    vehicle = Vehicle('irrelevant', model='pickup')
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+    scenario.make(beamng)
+
+    with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+
+        other = Vehicle('relevant', model='etk800')
+        scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
+        other.update_vehicle()
+        assert 'pos' in other.state
+        bng.step(120)
+        scenario.remove_vehicle(other)
+        bng.step(600)
+        assert other.state is None

@@ -136,6 +136,7 @@ class Vehicle:
         self.server = None
         self.port = None
         self.skt = None
+        self.state = None
 
     def attach_sensor(self, name, sensor):
         """
@@ -460,6 +461,12 @@ class Vehicle:
         data['cling'] = cling
         self.send(data)
 
+    @ack('AiAggressionSet')
+    def ai_set_aggression(self, aggr):
+        data = dict(type='SetAiAggression')
+        data['aggression'] = aggr
+        self.send(data)
+
     def get_part_options(self):
         """
         Retrieves a tree of part configuration options for this vehicle.
@@ -518,7 +525,7 @@ class Vehicle:
         self.bng.connect_vehicle(self, self.port)
 
     @ack('ColorSet')
-    def set_colour(self, rgba=(1., 1., 1., 1.)):
+    def set_color(self, rgba=(1., 1., 1., 1.)):
         """
         Sets the colour of this vehicle. Colour can be adjusted on the RGB
         spectrum and the "shininess" of the paint.
@@ -533,6 +540,8 @@ class Vehicle:
         data['b'] = rgba[2]
         data['a'] = rgba[3]
         self.send(data)
+
+    set_colour = set_color
 
     def annotate_parts(self):
         """
