@@ -18,6 +18,9 @@ import numpy as np
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
+from .beamngcommon import BNGValueError, BNGError
+
+
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
 
 
