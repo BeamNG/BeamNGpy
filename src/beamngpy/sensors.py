@@ -18,7 +18,7 @@ import numpy as np
 from PIL import Image
 
 NEAR = 0.01
-FAR = 300
+FAR = 1000
 
 LIDAR_POINTS = 2000000
 
@@ -392,7 +392,8 @@ class Lidar(Sensor):
     shmem_size = LIDAR_POINTS * 3 * 4
 
     def __init__(self, offset=(0, 0, 1.5), direction=(0, -1, 0), vres=32,
-                 vangle=26.9, rps=2200000, hz=20, angle=360, max_dist=200):
+                 vangle=26.9, rps=2200000, hz=20, angle=360, max_dist=200,
+                 visualized=True):
         self.handle = None
         self.shmem = None
 
@@ -405,6 +406,8 @@ class Lidar(Sensor):
         self.hz = hz
         self.angle = angle
         self.max_dist = max_dist
+
+        self.visualized = visualized
 
     def attach(self, vehicle, name):
         """
@@ -438,7 +441,8 @@ class Lidar(Sensor):
         bng.open_lidar(self.handle, vehicle, self.handle, Lidar.shmem_size,
                        offset=self.offset, direction=self.direction,
                        vres=self.vres, vangle=self.vangle, rps=self.rps,
-                       hz=self.hz, angle=self.angle, max_dist=self.max_dist)
+                       hz=self.hz, angle=self.angle, max_dist=self.max_dist,
+                       visualized=self.visualized)
 
     def disconnect(self, bng, vehicle):
         bng.close_lidar(self.handle)

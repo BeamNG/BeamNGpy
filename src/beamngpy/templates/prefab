@@ -58,4 +58,12 @@ $ThisPrefab = new SimGroup() {
         {% endfor %}
     };
     {% endfor %}
+
+    {% for obj in objects %}
+    new {{obj.type}}({{obj.id}}) {
+        {% for k, v in obj.options.items() %}
+        {{k}} = "{{v}}";
+        {% endfor %}
+    };
+    {% endfor %}
 };

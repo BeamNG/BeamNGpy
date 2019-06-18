@@ -33,7 +33,7 @@ from .scenario import ScenarioObject
 from .beamngcommon import ack
 from .beamngcommon import *
 
-VERSION = 'v1.10'
+VERSION = 'v1.11'
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -406,7 +406,7 @@ class BeamNGpy:
     @ack('OpenedLidar')
     def open_lidar(self, name, vehicle, shmem, shmem_size, offset=(0, 0, 0),
                    direction=(0, -1, 0), vres=64, vangle=26.9, rps=2200000,
-                   hz=20, angle=360, max_dist=120):
+                   hz=20, angle=360, max_dist=120, visualized=True):
         data = dict(type='OpenLidar')
         data['name'] = name
         data['shmem'] = shmem
@@ -420,6 +420,7 @@ class BeamNGpy:
         data['hz'] = hz
         data['angle'] = angle
         data['maxDist'] = max_dist
+        data['visualized'] = visualized
         self.send(data)
 
     @ack('ClosedLidar')
@@ -908,7 +909,8 @@ class BeamNGpy:
             sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
                                   tuple(obj['position']),
                                   tuple(obj['rotation']),
-                                  tuple(obj['scale']))
+                                  tuple(obj['scale']),
+                                  **obj['options'])
             ret.append(sobj)
 
         return ret
@@ -955,6 +957,18 @@ class BeamNGpy:
     def create_cube(self, size, pos, rot, material=None, name=None):
         data = dict(type='CreateCube')
         data['size'] = size
+        data['pos'] = pos
+        data['rot'] = rot
+        data['material'] = material
+        data['name'] = name
+        self.send(data)
+
+    @ack('CreatedRing')
+    def create_ring(self, radius, thickness, pos, rot,
+                    material=None, name=None):
+        data = dict(type='CreateRing')
+        data['radius'] = radius
+        data['thickness'] = thickness
         data['pos'] = pos
         data['rot'] = rot
         data['material'] = material

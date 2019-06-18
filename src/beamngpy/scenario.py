@@ -5,6 +5,7 @@
                define scenarios.
 """
 
+import copy
 import json
 import logging as log
 import math
@@ -89,13 +90,14 @@ class ScenarioObject:
     scale.
     """
 
-    def __init__(self, oid, name, otype, pos, rot, scale):
+    def __init__(self, oid, name, otype, pos, rot, scale, **options):
         self.id = oid
         self.name = name
         self.type = otype
         self.position = pos
         self.rotation = rot
         self.scale = scale
+        self.opts = options
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
@@ -113,6 +115,15 @@ class ScenarioObject:
 
     def __repr__(self):
         return str(self)
+
+
+class StaticObject(ScenarioObject):
+    def __init__(self, name, pos, rot, scale, shape):
+        rot_mat = compute_rotation_matrix(rot)
+        pos_str = '{} {} {}'.format(*pos)
+        scale_str = '{} {} {}'.format(*scale)
+        super(StaticObject, self).__init__(name, None, 'TSStatic',
+                                           pos, rot, scale, shapeName=shape)
 
 
 class ProceduralMesh:
@@ -174,6 +185,17 @@ class ProceduralCube(ProceduralMesh):
                         self.material, self.name)
 
 
+class ProceduralRing(ProceduralMesh):
+    def __init__(self, pos, rot, radius, thickness, name=None, material=None):
+        super(ProceduralRing, self).__init__(pos, rot, name, material)
+        self.radius = radius
+        self.thickness = thickness
+
+    def place(self, bng):
+        bng.create_ring(self.radius, self.thickness, self.pos, self.rot,
+                        self.material, self.name)
+
+
 class Scenario:
     """
     The scenario class contains information for setting up and executing
@@ -204,6 +226,7 @@ class Scenario:
         self.roads = list()
         self.waypoints = list()
         self.proc_meshes = list()
+        self.objects = list()
 
         self.cameras = dict()
 
@@ -229,6 +252,22 @@ class Scenario:
         self.path = self.path / 'scenarios'
         if not self.path.exists():
             self.path.mkdir(parents=True)
+
+    def _get_objects_list(self):
+        objs = list()
+        for obj in self.objects:
+            obj_dict = dict(type=obj.type, id=obj.id)
+            obj_dict['options'] = copy.deepcopy(obj.opts)
+
+            pos_str = '{} {} {}'.format(*obj.position)
+            rot_mat = compute_rotation_matrix(obj.rotation)
+            scale_str = '{} {} {}'.format(*obj.scale)
+            obj_dict['options']['position'] = pos_str
+            obj_dict['options']['rotationMatrix'] = rot_mat
+            obj_dict['options']['scale'] = scale_str
+
+            objs.append(obj_dict)
+        return objs
 
     def _get_info_dict(self):
         """
@@ -310,8 +349,9 @@ class Scenario:
 
         vehicles = self._get_vehicles_list()
         roads = self._get_roads_list()
+        objs = self._get_objects_list()
 
-        return template.render(vehicles=vehicles, roads=roads)
+        return template.render(vehicles=vehicles, roads=roads, objects=objs)
 
     def _write_info_file(self):
         """
@@ -358,6 +398,9 @@ class Scenario:
 
         prefab_path = self.path / '{}.prefab'.format(self.name)
         return str(prefab_path)
+
+    def add_object(self, obj):
+        self.objects.append(obj)
 
     def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=(0, 0, 0), cling=True):
         """
@@ -539,3 +582,38 @@ class Scenario:
             vehicle.close()
 
         self.stop()
+
+    def find_waypoints(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to find objects.')
+
+        return self.bng.find_objects_class('BeamNGWaypoint')
+
+    def find_procedural_meshes(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to find objects.')
+
+        return self.bng.find_objects_class('ProceduralMesh')
+
+    def find_static_objects(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to find objects.')
+
+        return self.bng.find_objects_class('TSStatic')
+
+    def update(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to update its state.')
+
+        self.bng.update_scenario()
+
+    def render_cameras(self):
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance for rendering cameras.')
+
+        return self.bng.render_cameras()
