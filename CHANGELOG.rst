@@ -2,6 +2,19 @@
 Changelog
 =========
 
+Version 1.11
+============
+- Add ``StaticObject`` class to scenario module that allows placement of
+  static meshes
+- Add option for visualization to the Lidar sensor
+- Add helper functions to query scenario for certain objects in the world
+- Add example notebook showcasing procedural mesh and static mesh placement
+  including a scenario camera
+- Fix vehicle state not being synchronized properly
+- Fix scenario unloading glitch
+- Fix ``ai_drive_in_lane`` not updating GUI state correctly
+- Fix camera sensor showing residual head-/taillight flare
+
 Version 1.10
 ============
 - Add functions to spawn/despawn vehicles during a scenario
