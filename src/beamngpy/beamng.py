@@ -245,6 +245,11 @@ class BeamNGpy:
         Starts a BeamNG.* process, opens a server socket, and waits for the
         spawned BeamNG.* process to connect. This method blocks until the
         process started and is ready.
+
+        Args:
+            launch (bool): Whether to launch a new process or connect to a
+                           running one on the configured host/port. Defaults to
+                           True.
         """
         log.info('Opening BeamNPy instance...')
         self.start_server()
@@ -302,6 +307,8 @@ class BeamNGpy:
 
         Args:
             vehicle (:class:`.Vehicle`): The vehicle instance to be connected.
+            port (int): Optional. The port the vehicle should be connecting
+                        over.
 
         Returns:
             The server socket created and waiting for a conection.
@@ -337,6 +344,10 @@ class BeamNGpy:
         flags required by the vehicles' sensor setups are sent and connect-
         hooks of the respective sensors called upon connection. This method
         blocks until all vehicles are fully connected.
+
+        Args:
+            scenario (:class:`.Scenario`): Calls functions to set up scenario
+                                           objects after it has been loaded.
         """
         vehicles = scenario.vehicles
         for vehicle in vehicles.keys():
@@ -407,6 +418,37 @@ class BeamNGpy:
     def open_lidar(self, name, vehicle, shmem, shmem_size, offset=(0, 0, 0),
                    direction=(0, -1, 0), vres=64, vangle=26.9, rps=2200000,
                    hz=20, angle=360, max_dist=120, visualized=True):
+        """
+        Opens a Lidar sensor instance in the simulator with the given
+        parameters writing its data to the given shared memory space. The Lidar
+        instance has to be assigned a unique name that is later used for
+        closing.
+
+        Args:
+            name (str): The name of the Lidar instance to open. Has to be
+                        unique relative to other Lidars currently opened.
+            vehicle (:class:`.Vehicle`): The vehicle this Lidar is attached to.
+            shmem (str): The handle of the shared memory space used to exchange
+                         data.
+            shmem_size (int): Size of the shared memory space that has been
+                              allocated for exchange.
+            offset (tuple): (X, Y, Z) coordinate triplet specifying the
+                            position of the sensor relative to the vehicle's.
+            direction (tuple): (X, Y, Z) coordinate triple specifying the
+                               direction the Lidar is pointing towards.
+            vres (int): Vertical resolution, i.e. how many lines are sampled
+                        vertically.
+            vangle (float): The vertical angle, i.e. how many degrees up and
+                            down points are scattered.
+            rps (int): The rays per second shot by the sensor.
+            hz (int): The refresh rate of the sensor in Hz
+            angle (float): The horizontal degrees covered, i.e. 360 degrees
+                           covers the entire surroundings of the vehicle.
+            max_dist (float): Maximum distance of points. Any dot farther away
+                              will not show up in the sample.
+            visualized (bool): Whether or not to render the Lidar sensor's
+                              points in the simulator.
+        """
         data = dict(type='OpenLidar')
         data['name'] = name
         data['shmem'] = shmem
@@ -425,6 +467,12 @@ class BeamNGpy:
 
     @ack('ClosedLidar')
     def close_lidar(self, name):
+        """
+        Closes the Lidar instance of the given name in the simulator.
+
+        Args:
+            name (str): The name of the Lidar instance to close.
+        """
         data = dict(type='CloseLidar')
         data['name'] = name
         self.send(data)
@@ -461,8 +509,6 @@ class BeamNGpy:
         game after loading a scenario. This method blocks until the countdown
         to the scenario's start has finished.
         """
-        self.scenario.start()
-
         data = dict(type="StartScenario")
         self.send(data)
 
@@ -487,11 +533,11 @@ class BeamNGpy:
         if not self.scenario:
             raise BNGError('Need to have a scenario loaded to stop it.')
 
-        self.scenario.stop()
+        self.scenario.close()
+        self.scenario = None
 
         data = dict(type='StopScenario')
         self.send(data)
-        self.scenario = None
 
     @ack('SetPhysicsDeterministic')
     def set_deterministic(self):
@@ -547,9 +593,8 @@ class BeamNGpy:
 
         Args:
             count (int): The amount of steps to simulate.
-
-        Keyword Arguments:
-            wait (bool): Whether to wait for the steps to be simulated.
+            wait (bool): Optional. Whether to wait for the steps to be
+                         simulated. Defaults to True.
 
         Raises:
             BNGError: If the wait flag is set but the simulator doesn't respond
@@ -667,6 +712,22 @@ class BeamNGpy:
         return response['data']
 
     def get_road_edges(self, road):
+        """
+        Retrieves the edges of the road with the given name and returns them
+        as a list of point triplets. Roads are defined by a series of lines
+        that specify the leftmost, center, and rightmost point in the road.
+        These lines go horizontally across the road and the series of leftmost
+        points make up the left edge of the road, the series of rightmost
+        points make up the right edge of the road, and the series of center
+        points the middle line of the road.
+
+        Args:
+            road (str): Name of the road to get edges from.
+
+        Returns:
+            The road edges as a list of (left, center, right) point triplets.
+            Each point is an (X, Y, Z) coordinate triplet.
+        """
         data = dict(type='GetDecalRoadEdges')
         data['road'] = road
         self.send(data)
@@ -918,6 +979,24 @@ class BeamNGpy:
     @ack('CreatedCylinder')
     def create_cylinder(self, radius, height, pos, rot,
                         material=None, name=None):
+        """
+        Creates a procedurally generated cylinder mesh with the given
+        radius and height at the given position and rotation. The material
+        can optionally be specified and a name can be assigned for later
+        identification.
+
+        Args:
+            radius (float): The radius of the cylinder's base circle.
+            height (float): The between top and bottom circles of the
+                            cylinder.
+            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
+                         position.
+            rot (tuple): Triplet of Euler angles specifying rotations around
+                         the (X, Y, Z) axes.
+            material (str): Optional material name to use as a texture for the
+                            mesh.
+            name (str): Optional name for the mesh.
+        """
         data = dict(type='CreateCylinder')
         data['radius'] = radius
         data['height'] = height
@@ -930,6 +1009,27 @@ class BeamNGpy:
     @ack('CreatedBump')
     def create_bump(self, width, length, height, upper_length, upper_width,
                     pos, rot, material=None, name=None):
+        """
+        Creates a procedurally generated bump with the given properties at the
+        given position and rotation. The material can optionally be specified
+        and a name can be assigned for later identification.
+
+        Args:
+            width (float): The width of the bump, i.e. its size between left
+                           and right edges.
+            length (float): The length of the bump, i.e. the distances from
+                            up and downward slopes.
+            height (float): The height of the tip.
+            upper_length (float): The length of the tip.
+            upper_width (float): The width of the tip.
+            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
+                         position.
+            rot (tuple): Triplet of Euler angles specifying rotations around
+                         the (X, Y, Z) axes.
+            material (str): Optional material name to use as a texture for the
+                            mesh.
+            name (str): Optional name for the mesh.
+        """
         data = dict(type='CreateBump')
         data['width'] = width
         data['length'] = length
@@ -944,6 +1044,22 @@ class BeamNGpy:
 
     @ack('CreatedCone')
     def create_cone(self, radius, height, pos, rot, material=None, name=None):
+        """
+        Creates a procedurally generated cone with the given properties at the
+        given position and rotation. The material can optionally be specified
+        and a name can be assigned for later identification.
+
+        Args:
+            radius (float): Radius of the base circle.
+            height (float): Distance of the tip to the base circle.
+            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
+                         position.
+            rot (tuple): Triplet of Euler angles specifying rotations around
+                         the (X, Y, Z) axes.
+            material (str): Optional material name to use as a texture for the
+                            mesh.
+            name (str): Optional name for the mesh.
+        """
         data = dict(type='CreateCone')
         data['radius'] = radius
         data['height'] = height
@@ -955,6 +1071,22 @@ class BeamNGpy:
 
     @ack('CreatedCube')
     def create_cube(self, size, pos, rot, material=None, name=None):
+        """
+        Creates a procedurally generated cube with the given properties at the
+        given position and rotation. The material can optionally be specified
+        and a name can be assigned for later identification.
+
+        Args:
+            size (tuple): A triplet specifying the (length, width, height) of
+                          the cuboid.
+            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
+                         position.
+            rot (tuple): Triplet of Euler angles specifying rotations around
+                         the (X, Y, Z) axes.
+            material (str): Optional material name to use as a texture for the
+                            mesh.
+            name (str): Optional name for the mesh.
+        """
         data = dict(type='CreateCube')
         data['size'] = size
         data['pos'] = pos
@@ -966,6 +1098,22 @@ class BeamNGpy:
     @ack('CreatedRing')
     def create_ring(self, radius, thickness, pos, rot,
                     material=None, name=None):
+        """
+        Creates a procedurally generated ring with the given properties at the
+        given position and rotation. The material can optionally be specified
+        and a name can be assigned for later identification.
+
+        Args:
+            radius (float): Radius of the circle encompassing the ring.
+            thickness (float): Thickness of the rim.
+            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
+                         position.
+            rot (tuple): Triplet of Euler angles specifying rotations around
+                         the (X, Y, Z) axes.
+            material (str): Optional material name to use as a texture for the
+                            mesh.
+            name (str): Optional name for the mesh.
+        """
         data = dict(type='CreateRing')
         data['radius'] = radius
         data['thickness'] = thickness

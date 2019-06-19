@@ -389,6 +389,10 @@ class Vehicle:
             lane (bool): Lane flag to set.
         """
         data = dict(type='SetDriveInLane')
+        if lane:
+            lane = 'on'
+        else:
+            lane = 'off'
         data['lane'] = lane
         self.send(data)
 

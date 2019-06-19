@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 from matplotlib.pyplot import imshow
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
-from beamngpy.sensors import Camera, GForces, Lidar, Electrics, Damage
+from beamngpy.sensors import Camera, GForces, Lidar, Electrics, Damage, Timer
 
 
 def main():
@@ -69,6 +69,7 @@ def main():
     electrics = Electrics()
     damage = Damage()
     lidar = Lidar()
+    timer = Timer()
 
     # Attach them
     vehicle.attach_sensor('front_cam', front_camera)
@@ -77,6 +78,7 @@ def main():
     vehicle.attach_sensor('lidar', lidar)
     vehicle.attach_sensor('electrics', electrics)
     vehicle.attach_sensor('damage', damage)
+    vehicle.attach_sensor('timer', timer)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
 
@@ -109,6 +111,8 @@ def main():
 
             # Retrieve sensor data and show the camera data.
             sensors = bng.poll_sensors(vehicle)
+
+            print('{} seconds passed.'.format(sensors['timer']['time']))
 
             a_colour.imshow(sensors['front_cam']['colour'].convert('RGB'))
             a_depth.imshow(sensors['front_cam']['depth'].convert('L'))

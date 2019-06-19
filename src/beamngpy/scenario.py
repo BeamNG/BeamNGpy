@@ -254,6 +254,14 @@ class Scenario:
             self.path.mkdir(parents=True)
 
     def _get_objects_list(self):
+        """
+        Encodes extra objects to be placed in the scene as dictionaries for the
+        prefab template.
+
+        Returns:
+            A list of dictionaries representing :class:`.ScenarioObject`
+            instances to be placed in the prefab.
+        """
         objs = list()
         for obj in self.objects:
             obj_dict = dict(type=obj.type, id=obj.id)
@@ -400,6 +408,11 @@ class Scenario:
         return str(prefab_path)
 
     def add_object(self, obj):
+        """
+        Adds an extra object to be placed in the prefab. Objects are expected
+        to be :class:`.ScenarioObject` instances with additional, type-
+        specific properties in that class's opts dictionary.
+        """
         self.objects.append(obj)
 
     def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=(0, 0, 0), cling=True):
@@ -468,6 +481,12 @@ class Scenario:
         camera.attach(None, name)
 
     def add_procedural_mesh(self, mesh):
+        """
+        Adds a :class:`.ProceduralMesh` to be placed in world to the scenario.
+
+        Args:
+            mesh (:class:`.ProceduralMesh`): The mesh to place.
+        """
         self.proc_meshes.append(mesh)
         if self.bng:
             mesh.place(self.bng)
@@ -486,6 +505,9 @@ class Scenario:
             cam.connect(self.bng, None)
 
     def decode_frames(self, camera_data):
+        """
+        Decodes raw camera sensor data as a :class:`.Image`
+        """
         response = dict()
         for name, data in camera_data.items():
             cam = self.cameras[name]
@@ -494,6 +516,13 @@ class Scenario:
         return response
 
     def encode_requests(self):
+        """
+        Encodes the sensor requests of cameras placed in this scenario for the
+        simulator.
+
+        Returns:
+            Dictionary of camera names to their corresponding sensor requests.
+        """
         requests = dict()
         for name, cam in self.cameras.items():
             request = cam.encode_engine_request()
@@ -503,6 +532,12 @@ class Scenario:
         return requests
 
     def get_engine_flags(self):
+        """
+        Gathers engine flags to set for cameras in this scenario to work.
+
+        Returns:
+            Dictionary of flag names to their state.
+        """
         flags = dict()
         for name, cam in self.cameras.items():
             camera_flags = cam.get_engine_flags()
@@ -542,19 +577,41 @@ class Scenario:
         info = self.get_info_path()
 
     def delete(self, bng):
+        """
+        Deletes files created by this scenario from the given
+        :class:`.BeamNGpy`'s home/user path.
+        """
         self._find_path(bng)
         os.remove(self.get_info_path())
         os.remove(self.get_prefab_path())
 
-    def get_waypoints(self):
-        return self.bng.find_objects_class('BeamNGWaypoint')
-
     def start(self):
+        """
+        Starts this scenario. Requires the scenario to be loaded into a
+        running :class:`.BeamNGpy` instance first.
+
+        Raises:
+            BNGError: If the scenario is not loaded.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be started.')
 
+        self.bng.start_scenario()
+
     def restart(self):
+        """
+        Restarts this scenario. Requires the scenario to be loaded into a
+        running :class:`.BeamNGpy` instance first.
+
+        Notes:
+            If any vehicles have been added during the scenario after it has
+            been started, they will be removed as the scenario is reset to
+            its original state.
+
+        Raises:
+            BNGError: If the scenario has not been loaded.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be restarted.')
@@ -566,14 +623,10 @@ class Scenario:
                 self.bng.despawn_vehicle(vehicle)
                 del self.vehicles[vehicle]
 
-    def stop(self):
-        if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to be stopped.')
-
-        self.bng = None
-
     def close(self):
+        """
+        Closes open connections and allocations of the scenario.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be stopped.')
@@ -581,7 +634,7 @@ class Scenario:
         for vehicle in self.vehicles.keys():
             vehicle.close()
 
-        self.stop()
+        self.bng = None
 
     def find_waypoints(self):
         if not self.bng:
@@ -591,6 +644,16 @@ class Scenario:
         return self.bng.find_objects_class('BeamNGWaypoint')
 
     def find_procedural_meshes(self):
+        """
+        Finds procedural meshes placed in the world right now.
+
+        Returns:
+            A list of :class:`.ScenarioObject` containing procedural meshes
+            found in the world.
+
+        Raises:
+            BNGError: If the scenario is not currently loaded.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to find objects.')
@@ -598,6 +661,16 @@ class Scenario:
         return self.bng.find_objects_class('ProceduralMesh')
 
     def find_static_objects(self):
+        """
+        Finds static objects placed in the world right now.
+
+        Returns:
+            A list of :class:`.ScenarioObject` containing statically placed
+            objects found in the world.
+
+        Raises:
+            BNGError: If the scenario is not currently loaded.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to find objects.')
@@ -605,6 +678,14 @@ class Scenario:
         return self.bng.find_objects_class('TSStatic')
 
     def update(self):
+        """
+        Synchronizes object states of this scenario with the simulator. For
+        example, this is used to update the :attr:`.Vehicle.state` fields of
+        each vehicle in the scenario.
+
+        Raises:
+            BNGError: If the scenario is currently not loaded.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to update its state.')
@@ -612,6 +693,16 @@ class Scenario:
         self.bng.update_scenario()
 
     def render_cameras(self):
+        """
+        Renders images for each of the cameras place in this scenario.
+
+        Returns:
+            A dictionary mapping camera names to color, annotation, or depth
+            images, depending on how each camera is set up.
+
+        Raises:
+            BNGError: If the scenario is currently not loaded.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance for rendering cameras.')
