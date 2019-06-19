@@ -637,6 +637,16 @@ class Scenario:
         self.bng = None
 
     def find_waypoints(self):
+        """
+        Finds waypoints placed in the world right now.
+
+        Returns:
+            A list of :class:`.ScenarioObject` containing waypoints found in
+            the world.
+
+        Raises:
+            BNGError: If the scenario is not currently loaded.
+        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to find objects.')
