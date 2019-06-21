@@ -68,14 +68,13 @@ def main():
     gforces = GForces()
     electrics = Electrics()
     damage = Damage()
-    lidar = Lidar()
+    lidar = Lidar(visualized=False)
     timer = Timer()
 
     # Attach them
     vehicle.attach_sensor('front_cam', front_camera)
     vehicle.attach_sensor('back_cam', back_camera)
     vehicle.attach_sensor('gforces', gforces)
-    vehicle.attach_sensor('lidar', lidar)
     vehicle.attach_sensor('electrics', electrics)
     vehicle.attach_sensor('damage', damage)
     vehicle.attach_sensor('timer', timer)
@@ -88,6 +87,7 @@ def main():
     # Start BeamNG and enter the main loop
     bng = beamng.open(launch=True)
     try:
+        bng.hide_hud()
         bng.set_deterministic()  # Set simulator to be deterministic
         bng.set_steps_per_second(60)  # With 60hz temporal resolution
 
@@ -96,7 +96,6 @@ def main():
         bng.start_scenario()
         # Put simulator in pause awaiting further inputs
         bng.pause()
-        bng.hide_hud()
 
         assert vehicle.skt
 
