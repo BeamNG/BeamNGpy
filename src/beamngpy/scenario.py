@@ -65,8 +65,10 @@ class Road:
     and geometry of the edges that make up the road.
     """
 
-    def __init__(self, material, **options):
+    def __init__(self, material, rid=None, **options):
         self.material = material
+
+        self.rid = rid
 
         self.drivability = options.get('drivability', 1)
         self.one_way = options.get('one_way', False)
@@ -338,7 +340,10 @@ class Scenario:
         for idx, road in enumerate(self.roads):
             road_dict = dict(**road.__dict__)
 
-            road_id = 'beamngpy_road_{}_{:03}'.format(self.name, idx)
+            if road.rid is None:
+                road_id = 'beamngpy_road_{}_{:03}'.format(self.name, idx)
+            else:
+                road_id = road.rid
             road_dict['road_id'] = road_id
             road_dict['render_priority'] = idx
 

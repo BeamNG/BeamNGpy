@@ -16,7 +16,7 @@ def main():
     beamng = BeamNGpy('localhost', 64256)
 
     scenario = Scenario('GridMap', 'road_test')
-    road_a = Road('track_editor_C_center', looped=True)
+    road_a = Road('track_editor_C_center', rid='circle_road', looped=True)
     nodes = [
         (-25, 300, 0, 5),
         (25, 300, 0, 6),
@@ -26,7 +26,7 @@ def main():
     road_a.nodes.extend(nodes)
     scenario.add_road(road_a)
 
-    road_b = Road('track_editor_C_center')
+    road_b = Road('track_editor_C_center', rid='center_road')
     nodes = [
         (0, 325, 0, 5),
         (50, 375, 0, 5),
