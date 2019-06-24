@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.12
+============
+- Add option to specify road ID for placed DecalRoads
+
 Version 1.11
 ============
 - Add ``StaticObject`` class to scenario module that allows placement of
