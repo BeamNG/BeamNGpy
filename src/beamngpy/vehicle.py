@@ -400,10 +400,12 @@ class Vehicle:
     def ai_set_line(self, line, cling=True):
         """
         Makes the AI follow a given polyline. The line is specified as a list
-        of (x, y , z) coordinate triples.
+        of dictionaries where each dictionary has a `pos` entry specifying the
+        supposed position as an (x, y, z) triplet and a `speed` entry
+        specifying the speed in m/s.
 
         Args:
-            line (list): Polyline as list of (x, y, z) triples.
+            line (list): Polyline as list of dicts as described above.
             cling (bool): Whether or not to align the z coordinate of
         """
         data = dict(type='SetAiLine')
