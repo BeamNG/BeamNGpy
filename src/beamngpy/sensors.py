@@ -13,6 +13,7 @@ import base64
 import logging as log
 import mmap
 import os
+import sys
 
 import numpy as np
 from PIL import Image
@@ -344,27 +345,39 @@ class Camera(Sensor):
         size = img_w * img_h * 4
 
         if self.colour_shmem:
-            self.colour_shmem.seek(0)
-            colour_d = self.colour_shmem.read(size)
-            colour_d = np.frombuffer(colour_d, dtype=np.uint8)
-            colour_d = colour_d.reshape(img_h, img_w, 4)
-            decoded['colour'] = Image.fromarray(colour_d)
+            if 'color' in resp.keys():
+                self.colour_shmem.seek(0)
+                colour_d = self.colour_shmem.read(size)
+                colour_d = np.frombuffer(colour_d, dtype=np.uint8)
+                colour_d = colour_d.reshape(img_h, img_w, 4)
+                decoded['colour'] = Image.fromarray(colour_d)
+            else:
+                print('Color buffer failed to render. Check that you '
+                      'aren\'t running on low settings.', file=sys.stderr)
 
         if self.annotation_shmem:
-            self.annotation_shmem.seek(0)
-            annotate_d = self.annotation_shmem.read(size)
-            annotate_d = np.frombuffer(annotate_d, dtype=np.uint8)
-            annotate_d = annotate_d.reshape(img_h, img_w, 4)
-            decoded['annotation'] = Image.fromarray(annotate_d)
+            if 'annotation' in resp.keys():
+                self.annotation_shmem.seek(0)
+                annotate_d = self.annotation_shmem.read(size)
+                annotate_d = np.frombuffer(annotate_d, dtype=np.uint8)
+                annotate_d = annotate_d.reshape(img_h, img_w, 4)
+                decoded['annotation'] = Image.fromarray(annotate_d)
+            else:
+                print('Annotation buffer failed to render. Check that you '
+                      'aren\'t running on low settings.', file=sys.stderr)
 
         if self.depth_shmem:
-            self.depth_shmem.seek(0)
-            depth_d = self.depth_shmem.read(size)
-            depth_d = np.frombuffer(depth_d, dtype=np.float32)
-            depth_d = depth_d / FAR
-            depth_d = depth_d.reshape(img_h, img_w)
-            depth_d = np.uint8(depth_d * 255)
-            decoded['depth'] = Image.fromarray(depth_d)
+            if 'depth' in resp.keys():
+                self.depth_shmem.seek(0)
+                depth_d = self.depth_shmem.read(size)
+                depth_d = np.frombuffer(depth_d, dtype=np.float32)
+                depth_d = depth_d / FAR
+                depth_d = depth_d.reshape(img_h, img_w)
+                depth_d = np.uint8(depth_d * 255)
+                decoded['depth'] = Image.fromarray(depth_d)
+            else:
+                print('Depth buffer failed to render. Check that you '
+                      'aren\'t running on low settings.', file=sys.stderr)
 
         return decoded
 
