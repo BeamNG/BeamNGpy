@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.13
+============
+- Add option to disable node interpolation on roads
+- Add `get_bbox()` method to `Vehicle` class
+
 Version 1.12
 ============
 - Add option to specify road ID for placed DecalRoads

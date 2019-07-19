@@ -33,7 +33,7 @@ from .scenario import ScenarioObject
 from .beamngcommon import ack
 from .beamngcommon import *
 
-VERSION = 'v1.11'
+VERSION = 'v1.12'
 
 BINARIES = [
     'Bin64/BeamNG.research.x64.exe',
@@ -1122,6 +1122,25 @@ class BeamNGpy:
         data['material'] = material
         data['name'] = name
         self.send(data)
+
+    def get_vehicle_bbox(self, vehicle):
+        data = dict(type='GetBBoxCorners')
+        data['vid'] = vehicle.vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'BBoxCorners'
+        points = resp['points']
+        bbox = {
+            'near_bottom_left': points[3],
+            'near_bottom_right': points[0],
+            'near_top_left': points[2],
+            'near_top_right': points[1],
+            'far_bottom_left': points[7],
+            'far_bottom_right': points[4],
+            'far_top_left': points[6],
+            'far_top_right': points[5],
+        }
+        return bbox
 
     def __enter__(self):
         self.open()

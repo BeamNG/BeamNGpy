@@ -63,9 +63,28 @@ class Road:
     This class represents a DecalRoad in the environment. It contains
     information about the road's material, direction-ness of lanes,
     and geometry of the edges that make up the road.
+
+
     """
 
-    def __init__(self, material, rid=None, **options):
+    def __init__(self, material, rid=None, interpolate=True, **options):
+        """
+        Creates a new road instance using the given material name. The material
+        name needs to match a material that is part of the level in the
+        simulator this road will be placed in.
+
+        Args:
+            material (str): Name of the material this road uses. This affects
+                            how the road looks visually and needs to match a
+                            material that's part of the level this road is
+                            placed in.
+            rid (str): Optional string setting this road's name. If specified,
+                       needs to be unique with respect to other roads in the
+                       level/scenario.
+            interpolat (bool): Whether to apply Catmull-Rom spline
+                               interpolation to smooth transition between the
+                               road's nodes.
+        """
         self.material = material
 
         self.rid = rid
@@ -81,6 +100,12 @@ class Road:
         self.one_way = '1' if self.one_way else '0'
         self.flip_direction = '1' if self.flip_direction else '0'
         self.looped = '1' if self.looped else '0'
+
+        if interpolate:
+            self.improved_spline = '1'
+        else:
+            self.improved_spline = '0'
+            self.break_angle = 359.9
 
         self.nodes = list()
 

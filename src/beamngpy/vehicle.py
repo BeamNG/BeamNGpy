@@ -549,6 +549,39 @@ class Vehicle:
 
     set_colour = set_color
 
+    def get_bbox(self):
+        """
+        Returns this vehicle's current bounding box as a dictionary containing
+        eight points.
+
+        Returns:
+            The vehicle's current bounding box as a dictionary of eight points.
+            Points are named following the convention that the cuboid has a
+            "near" rectangle towards the rear of the vehicle and "far"
+            rectangle towards the front. The points are then named like this:
+
+            * `near_bottom_left`: Bottom left point of the near rectangle as an
+                                  (x, y ,z) triplet
+            * `near_bottom_right`: Bottom right point of the near rectangle as
+                                   an (x, y, z) triplet
+            * `near_top_left`: Top left point of the near rectangle as an
+                               (x, y, z) triplet
+            * `near_top_right`: Top right point of the near rectangle as an
+                                (x, y, z) triplet
+            * `far_bottom_left`: Bottom left point of the far rectangle as an
+                                 (x, y, z) triplet
+            * `far_bottom_right`: Bottom right point of the far rectangle as an
+                                  (x, y, z) triplet
+            * `far_top_left`: Top left point of the far rectangle as an
+                              (x, y, z) triplet
+            * `far_top_right`: Top right point of the far rectangle as an
+                               (x, y, z) triplet
+        """
+        if self.bng is None:
+            raise BNGError('The vehicle needs to be loaded in the simulator '
+                           'to obtain its current bounding box.')
+        return self.bng.get_vehicle_bbox(self)
+
     def annotate_parts(self):
         """
         Triggers the process to have individual parts of a vehicle have unique
