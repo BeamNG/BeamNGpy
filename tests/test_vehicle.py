@@ -62,7 +62,7 @@ def test_vehicle_ai(beamng):
         bng.restart_scenario()
         bng.pause()
 
-        vehicle.ai_set_waypoint('Bridge3_B')
+        vehicle.ai_set_waypoint('Bridge4_B')
         assert_continued_movement(bng, vehicle, pos)
 
         bng.restart_scenario()

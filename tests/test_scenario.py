@@ -33,4 +33,4 @@ def test_find_scenario(beamng):
         scenario.find(bng)
         assert scenario.get_info_path() is not None
         bng.load_scenario(scenario)
-        assert bng.get_scenario_name() == 'Asphalt Derby Race'
+        assert bng.get_scenario_name() == 'scenarios.west_coast_usa.derby_asphalt.title'

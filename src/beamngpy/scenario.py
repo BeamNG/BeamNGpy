@@ -81,9 +81,9 @@ class Road:
             rid (str): Optional string setting this road's name. If specified,
                        needs to be unique with respect to other roads in the
                        level/scenario.
-            interpolat (bool): Whether to apply Catmull-Rom spline
-                               interpolation to smooth transition between the
-                               road's nodes.
+            interpolate (bool): Whether to apply Catmull-Rom spline
+                                interpolation to smooth transition between the
+                                road's nodes.
         """
         self.material = material
 
@@ -95,7 +95,8 @@ class Road:
         self.looped = options.get('looped', False)
         self.smoothness = options.get('smoothness', 0.5)
         self.break_angle = options.get('break_angle', 3)
-        self.texture_length = options.get('texture_length')
+        self.texture_length = options.get('texture_length', 5)
+        self.render_priority = options.get('render_priority', 10)
 
         self.one_way = '1' if self.one_way else '0'
         self.flip_direction = '1' if self.flip_direction else '0'
