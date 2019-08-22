@@ -205,8 +205,8 @@ class BeamNGpy:
 
         log.debug('Killing BeamNG process...')
         if os.name == "nt":
-            subprocess.call(
-                ['taskkill', '/F', '/T', '/PID', str(self.process.pid)])
+            with open(os.devnull, 'w') as devnull:
+                subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)], stdout=devnull, stderr=devnull)
         else:
             os.kill(self.process.pid, signal.SIGTERM)
 
