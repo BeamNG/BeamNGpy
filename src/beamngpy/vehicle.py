@@ -589,6 +589,13 @@ class Vehicle:
         """
         self.bng.annotate_parts(self)
 
+    def revert_annotations(self):
+        """
+        Reverts per-part annotations of this vehicle such that it will be
+        annotated with the same color for the entire vehicle.
+        """
+        self.bng.revert_annotations(self)
+
     def close(self):
         """
         Closes this vehicle's and its sensors' connection and detaches all

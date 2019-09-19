@@ -177,6 +177,8 @@ class BeamNGpy:
             '-rhost',
             str(self.host),
             '-nosteam',
+            '-physicsfps',
+            '4000',
             '-lua',
             "registerCoreModule('{}')".format('util/researchGE'),
         ]
@@ -891,6 +893,37 @@ class BeamNGpy:
         data = dict(type='AnnotateParts')
         data['vid'] = vehicle.vid
         self.send(data)
+
+    @ack('AnnotationsReverted')
+    def revert_annotations(self, vehicle):
+        """
+        Reverts the given vehicle's annotations back to the object-based mode,
+        removing the per-part annotations.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to annotate.
+        """
+        data = dict(type='RevertAnnotations')
+        data['vid'] = vehicle.vid
+        self.send(data)
+
+    def get_part_annotations(self, vehicle):
+        data = dict(type='GetPartAnnotations')
+        data['vid'] = vehicle.vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PartAnnotations'
+        return resp['colors']
+
+    def get_part_annotation(self, part):
+        data = dict(type='GetPartAnnotation')
+        data['part'] = part
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PartAnnotation'
+        if 'color' in resp:
+            return resp['color']
+        return None
 
     def get_scenario_name(self):
         """
