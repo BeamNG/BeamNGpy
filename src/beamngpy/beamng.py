@@ -800,9 +800,6 @@ class BeamNGpy:
         Args:
             vid (str): The name of the  vehicle to wait for.
         """
-        data = dict(type='WaitForSpawn')
-        data['name'] = vid
-        self.send(data)
         resp = self.recv()
         assert resp['type'] == 'VehicleSpawned'
         assert resp['name'] == vid

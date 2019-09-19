@@ -523,6 +523,7 @@ class Vehicle:
         """
         data = dict(type='SetPartConfig')
         data['config'] = cfg
+        data['vid'] = self.vid
         self.send(data)
         self.bng.await_vehicle_spawn(self.vid)
         self.skt.close()
