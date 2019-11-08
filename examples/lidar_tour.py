@@ -39,7 +39,7 @@ def open_window(width, height):
     glutInit()
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE)
     glutInitWindowSize(width, height)
-    window = glutCreateWindow('Lidar Tour')
+    window = glutCreateWindow(b'Lidar Tour')
     resize(width, height)
     return window
 
@@ -47,7 +47,7 @@ def open_window(width, height):
 def main():
     setup_logging()
 
-    beamng = BeamNGpy('localhost', 64256, home='C:\\bng\\game')
+    beamng = BeamNGpy('localhost', 64256)
     scenario = Scenario('west_coast_usa', 'lidar_tour',
                         description='Tour through the west coast gathering '
                                     'Lidar data')

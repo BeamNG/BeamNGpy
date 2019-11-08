@@ -135,7 +135,8 @@ class LidarVisualiser:
 
         verts = np.array(self.points, dtype=np.float32)
 
-        glDeleteBuffers(1, self.vertex_buf)
+        if self.vertex_buf:
+            glDeleteBuffers(1, self.vertex_buf)
         self.vertex_buf = glGenBuffers(1)
 
         glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)

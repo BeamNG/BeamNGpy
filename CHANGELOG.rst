@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.15
+============
+- Add option to pass additional Lua extensions to be loaded on startup
+- Fix waiting for vehicle spawn after changing parts to hang infinitely
+
 Version 1.13
 ============
 - Add option to disable node interpolation on roads

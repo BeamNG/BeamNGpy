@@ -33,7 +33,7 @@ from .scenario import ScenarioObject
 from .beamngcommon import ack
 from .beamngcommon import *
 
-VERSION = 'v1.12'
+VERSION = 'v1.15'
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -159,7 +159,7 @@ class BeamNGpy:
         log.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
 
-    def prepare_call(self):
+    def prepare_call(self, extensions, *args, **opts):
         """
         Prepares the command line call to execute to start BeamNG.*.
         according to this class' and the global configuration.
@@ -168,7 +168,13 @@ class BeamNGpy:
             List of shell components ready to be called in the
             :mod:`subprocess` module.
         """
+        if extensions is None:
+            extensions = []
+
+        extensions.insert(0, 'util/researchGE')
         binary = self.determine_binary()
+        lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
+        lua = lua.format(*extensions)
         call = [
             binary,
             '-console',
@@ -180,8 +186,13 @@ class BeamNGpy:
             '-physicsfps',
             '4000',
             '-lua',
-            "registerCoreModule('{}')".format('util/researchGE'),
+            lua,
         ]
+
+        for arg in args:
+            call.append(arg)
+        for key, val in opts.items():
+            call.extend([key, val])
 
         if self.user:
             call.append('-userpath')
@@ -189,12 +200,12 @@ class BeamNGpy:
 
         return call
 
-    def start_beamng(self):
+    def start_beamng(self, extensions, *args, **opts):
         """
         Spawns a BeamNG.* process and retains a reference to it for later
         termination.
         """
-        call = self.prepare_call()
+        call = self.prepare_call(extensions, *args, **opts)
         log.debug('Starting BeamNG process...')
         self.process = subprocess.Popen(call)
 
@@ -242,7 +253,7 @@ class BeamNGpy:
         """
         return recv_msg(self.skt)
 
-    def open(self, launch=True):
+    def open(self, extensions=None, *args, launch=True, **opts):
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the
         spawned BeamNG.* process to connect. This method blocks until the
@@ -256,7 +267,7 @@ class BeamNGpy:
         log.info('Opening BeamNPy instance...')
         self.start_server()
         if launch:
-            self.start_beamng()
+            self.start_beamng(extensions, *args, **opts)
 
         self.server.settimeout(300)
         self.skt, addr = self.server.accept()
@@ -800,6 +811,9 @@ class BeamNGpy:
         Args:
             vid (str): The name of the  vehicle to wait for.
         """
+        req = dict(type='WaitForSpawn')
+        req['name'] = vid
+        self.send(req)
         resp = self.recv()
         assert resp['type'] == 'VehicleSpawned'
         assert resp['name'] == vid
