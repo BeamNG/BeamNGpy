@@ -92,6 +92,7 @@ class Road:
         self.drivability = options.get('drivability', 1)
         self.one_way = options.get('one_way', False)
         self.flip_direction = options.get('flip_direction', False)
+        self.over_objects = options.get('over_objects', True)
         self.looped = options.get('looped', False)
         self.smoothness = options.get('smoothness', 0.5)
         self.break_angle = options.get('break_angle', 3)
@@ -100,6 +101,7 @@ class Road:
 
         self.one_way = '1' if self.one_way else '0'
         self.flip_direction = '1' if self.flip_direction else '0'
+        self.over_objects = '1' if self.over_objects else '0'
         self.looped = '1' if self.looped else '0'
 
         if interpolate:
