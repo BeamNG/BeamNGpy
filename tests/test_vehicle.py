@@ -98,3 +98,27 @@ def test_vehicle_spawn(beamng):
         scenario.remove_vehicle(other)
         bng.step(600)
         assert other.state is None
+
+def test_vehicle_bbox(beamng):
+    scenario = Scenario('west_coast_usa', 'bbox_test')
+    vehicle_a = Vehicle('vehicle_a', model='etk800')
+    vehicle_b = Vehicle('vehicle_b', model='etk800')
+    pos = [-717.121, 101, 118.675]
+    scenario.add_vehicle(vehicle_a, pos=pos, rot=(0, 0, 45))
+    pos = [-453, 700, 75]
+    scenario.add_vehicle(vehicle_b, pos=pos, rot=(0, 0, 45))
+    scenario.make(beamng)
+
+    with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+        bng.pause()
+
+        bbox_beg = bng.get_vehicle_bbox(vehicle_a)
+        vehicle_a.ai_set_mode('span')
+        bng.step(2000, True)
+        bbox_end = bng.get_vehicle_bbox(vehicle_a)
+
+        for k, v in bbox_beg.items():
+            assert k in bbox_end
+            assert v != bbox_end[k]

@@ -382,7 +382,7 @@ class Vehicle:
     @ack('AiDriveInLaneSet')
     def ai_drive_in_lane(self, lane):
         """
-        Sets the drive in lane flag of the AI. Iff True, the AI only drives
+        Sets the drive in lane flag of the AI. If True, the AI only drives
         within the lane it can legally drive in.
 
         Args:
