@@ -1201,10 +1201,6 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'AvailableVehicles'
-        for vehicle, data in resp['vehicles'].items():
-            print('Vehicle:', vehicle)
-            print(data)
-            print()
         return resp
 
     @ack('TrafficStarted')
