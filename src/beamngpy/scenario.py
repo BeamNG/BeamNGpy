@@ -458,6 +458,11 @@ class Scenario:
             rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
                          in Euler angles around each axis.
         """
+        if self.name == vehicle.vid:
+            error = 'Cannot have vehicle with the same name as the scenario:' \
+                ' Scenario={}, Vehicle={}'.format(self.name, vehicle.vid)
+            raise BNGValueError(error)
+
         self.vehicles[vehicle] = (pos, rot)
 
         if self.bng:
@@ -572,7 +577,7 @@ class Scenario:
             Dictionary of flag names to their state.
         """
         flags = dict()
-        for name, cam in self.cameras.items():
+        for _, cam in self.cameras.items():
             camera_flags = cam.get_engine_flags()
             flags.update(camera_flags)
         return flags
@@ -607,7 +612,7 @@ class Scenario:
             simulator as a string, None if it could not be found.
         """
         self._find_path(bng)
-        info = self.get_info_path()
+        return self.get_info_path()
 
     def delete(self, bng):
         """

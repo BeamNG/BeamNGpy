@@ -521,10 +521,46 @@ class Electrics(Sensor):
 
     # TODO: List all the electrics.lua values.
     """
+    name_map = {
+        'lights_state': 'headlights',
+        'signal_left_input': 'left_signal',
+        'signal_right_input': 'right_signal',
+        'hazard_enabled': 'hazard_signal',
+        'fog': 'fog_lights',
+    }
+
+    def _rename_values(self, vals):
+        """
+        The values returned from the game often don't follow any naming 
+        convention and especially don't follow this library's, so we rename
+        some of them here to be more consistent.
+        """
+
+        for k, v in Electrics.name_map.items():
+            if k in vals:
+                vals[v] = vals[k]
+                del vals[k]
+        return vals
+
+    def _reassign_values(self, vals):
+        if 'left_signal' in vals:
+            vals['left_signal'] = vals['left_signal'] == 1
+        if 'right_signal' in vals:
+            vals['right_signal'] = vals['right_signal'] == 1
+        if 'hazard_signal' in vals:
+            vals['hazard_signal'] = vals['hazard_signal'] == 1
+        return vals
 
     def encode_vehicle_request(self):
         req = dict(type='Electrics')
         return req
+
+    def decode_response(self, resp):
+        if 'values' in resp:
+            ret = self._rename_values(resp['values'])
+            ret = self._reassign_values(ret)
+            return ret
+        return None
 
 
 class Damage(Sensor):

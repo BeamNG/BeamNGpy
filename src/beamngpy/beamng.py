@@ -14,6 +14,7 @@ import mmap
 import numpy as np
 import os
 import queue
+import shutil
 import signal
 import socket
 import subprocess
@@ -30,10 +31,9 @@ from PIL import Image
 
 from .scenario import ScenarioObject
 
-from .beamngcommon import ack
-from .beamngcommon import *
+from .beamngcommon import ack, send_msg, recv_msg, ENV
 
-VERSION = 'v1.15'
+PROTOCOL_VERSION = 'v1.16'
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -219,7 +219,8 @@ class BeamNGpy:
         log.debug('Killing BeamNG process...')
         if os.name == "nt":
             with open(os.devnull, 'w') as devnull:
-                subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)], stdout=devnull, stderr=devnull)
+                subprocess.call(['taskkill', '/F', '/T', '/PID',
+                                 str(self.process.pid)], stdout=devnull, stderr=devnull)
         else:
             os.kill(self.process.pid, signal.SIGTERM)
 
@@ -276,9 +277,10 @@ class BeamNGpy:
         log.debug('Connection established. Awaiting "hello"...')
         hello = self.recv()
         assert hello['type'] == 'Hello'
-        if hello['version'] != VERSION:
+        if hello['version'] != PROTOCOL_VERSION:
             print('BeamNGpy and BeamNG.* version mismatch: '
-                  'BeamNGpy {}, BeamNG.* {}'.format(VERSION, hello['version']))
+                  'BeamNGpy {}, BeamNG.* {}'.format(PROTOCOL_VERSION,
+                                                    hello['version']))
             print('Make sure both this library and BeamNG.* are up to date.')
             print('Operation will proceed, but some features might not work.')
 
@@ -343,6 +345,8 @@ class BeamNGpy:
         connection_msg['vid'] = vehicle.vid
         connection_msg['host'] = self.host
         connection_msg['port'] = port
+        if vehicle.extensions is not None:
+            connection_msg['exts'] = vehicle.extensions
 
         self.send(connection_msg)
 
@@ -1185,6 +1189,36 @@ class BeamNGpy:
             'far_top_right': points[5],
         }
         return bbox
+
+    @ack('GravitySet')
+    def set_gravity(self, gravity):
+        data = dict(type='SetGravity')
+        data['gravity'] = gravity
+        self.send(data)
+
+    def get_available_vehicles(self):
+        data = dict(type='GetAvailableVehicles')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'AvailableVehicles'
+        for vehicle, data in resp['vehicles'].items():
+            print('Vehicle:', vehicle)
+            print(data)
+            print()
+        return resp
+
+    @ack('TrafficStarted')
+    def start_traffic(self, participants):
+        participants = [p.vid for p in participants]
+        data = dict(type='StartTraffic')
+        data['participants'] = participants
+        self.send(data)
+
+    @ack('TrafficStopped')
+    def stop_traffic(self, stop=False):
+        data = dict(type='StopTraffic')
+        data['stop'] = stop
+        self.send(data)
 
     def __enter__(self):
         self.open()

@@ -52,6 +52,8 @@ class Vehicle:
 
         self.sensor_cache = dict()
 
+        self.extensions = options.get('extensions')
+
         self.state = None
         """
         This field contains the vehicle's current state in the running
@@ -113,10 +115,10 @@ class Vehicle:
         self.server = server
         self.port = port
         self.server.settimeout(60)
-        self.skt, addr = self.server.accept()
+        self.skt, _ = self.server.accept()
         self.skt.settimeout(60)
 
-        for name, sensor in self.sensors.items():
+        for _, sensor in self.sensors.items():
             sensor.connect(bng, self)
 
     def disconnect(self):
@@ -127,7 +129,7 @@ class Vehicle:
             bng (:class:`.BeamNGpy`): The running BeamNGpy instance to
                                       disconnect from.
         """
-        for name, sensor in self.sensors.items():
+        for _, sensor in self.sensors.items():
             sensor.disconnect(self.bng, self)
 
         self.server.close()
@@ -160,8 +162,10 @@ class Vehicle:
         Args:
             name (str): The name of the sensor to disconnect.
         """
+        if name in self.sensors:
+            sensor = self.sensors[name]
+            sensor.detach(self, name)
         del self.sensors[name]
-        sensor.detach(self, name)
 
     def encode_sensor_requests(self):
         """
@@ -414,7 +418,8 @@ class Vehicle:
         self.send(data)
 
     @ack('AiScriptSet')
-    def ai_set_script(self, script, start_dir=None, up_dir=None, cling=True):
+    def ai_set_script(self, script, start_dir=None, up_dir=None, cling=True,
+                      teleport=True):
         """
         Makes the vehicle follow a given "script" -- a script being a list of
         timestamped positions defining where a vehicle should be at what time.
@@ -428,13 +433,6 @@ class Vehicle:
                            and a `t` entry for the time of the node along the
                            path. Time values are in seconds relative to the
                            time when script playback is started.
-            start_dir (tuple): Optional initial directional vector of the
-                               vehicle. If not specified, it's inferred from
-                               the first two points.
-            up_dir (tuple): Optional initial up vector of the vehicle. It can
-                            be set alongside `start_dir` to change orientation
-                            of the vehicle at the start. Otherwise, (0, 0, 1)
-                            is assumed as default.
             cling (bool): A flag that makes the simulator cling z-coordinates
                           to the ground. Since computing z-coordinates in
                           advance without knowing the level geometry can be
@@ -442,25 +440,21 @@ class Vehicle:
                           z-coordinates in the script to the ground height.
                           Defaults to True.
 
+        Notes:
+            The AI follows the given script the best it can. It cannot drive
+            along scripts that would be physically impossible, e.g. specifying
+            a script with points A & B one kilometer apart and giving it a
+            a second between those points will make the AI drive from A to B as
+            fast as it can, but unlikely to reach it in the given time.
+            Furthermore, if the AI falls behind schedule, it will start
+            skipping points in the script in an effort to make up for lost time.
+
         Raises:
             BNGValueError: If the script has fewer than three nodes, the
                            minimum length of a script.
         """
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
-
-        if not start_dir:
-            fst = script[0]
-            snd = script[1]
-            start_dir = (
-                snd['x'] - fst['x'],
-                snd['y'] - fst['y'],
-                snd['z'] - fst['z'],
-            )
-            up_dir = (0, 0, 1)
-
-        script[0]['dir'] = start_dir
-        script[0]['up'] = up_dir
 
         data = dict(type='SetAiScript')
         data['script'] = script
@@ -534,7 +528,7 @@ class Vehicle:
     @ack('ColorSet')
     def set_color(self, rgba=(1., 1., 1., 1.)):
         """
-        Sets the colour of this vehicle. Colour can be adjusted on the RGB
+        Sets the color of this vehicle. Colour can be adjusted on the RGB
         spectrum and the "shininess" of the paint.
 
         Args:
@@ -582,6 +576,107 @@ class Vehicle:
             raise BNGError('The vehicle needs to be loaded in the simulator '
                            'to obtain its current bounding box.')
         return self.bng.get_vehicle_bbox(self)
+
+    @ack('LightsSet')
+    def set_lights(self, **kwargs):
+        """
+        Sets the vehicle's lights to given intensity values. The lighting
+        system features lights that are simply binary on/off, but also ones
+        where the intensity can be varied. Binary lights include:
+
+            * `left_signal`
+            * `right_signal`
+            * `hazard_signal`
+
+        Non-binary lights vary between 0 for off, 1 for on, 2 for higher
+        intensity. For example, headlights can be turned on with 1 and set to
+        be more intense with 2. Non-binary lights include:
+
+            * `headlights`
+            * `fog_lights`
+            * `lightbar`
+
+        Args:
+            left_signal (bool): On/off state of the left signal
+            right_signal (bool): On/off state of the right signal
+            hazard_signal (bool): On/off state of the hazard lights
+            headlights (int): Value from 0 to 2 indicating headlight intensity
+            fog_lights (int): Value from 0 to 2 indicating fog light intensity
+            lightbar (int): Value from 0 to 2 indicating lightbar intensity
+
+        Note:
+            Not every vehicle has every type of light. For example, the
+            `lightbar` refers to the kind of lights typically found on top of
+            police cars. Setting values for non-existent lights will not cause
+            an error, but also achieve no effect.
+
+            Note also that lights are not independent. For example, turning on
+            the hazard lights will make both signal indicators blink, meaning
+            they will be turned on as well. Opposing indicators also turn each
+            other off, i.e. turning on the left signal turns off the right one,
+            and turning on the left signal during 
+
+        Raises:
+            BNGValueError: If an invalid light value is given.
+
+        Returns:
+            Nothing. To query light states, attach an
+            :class:`.sensors.Electrics` sensor and poll it.
+        """
+        lights = {}
+
+        left_signal = kwargs.get('left_signal', None)
+        if left_signal is not None:
+            if not isinstance(left_signal, bool):
+                raise BNGValueError('Non-boolean value for left_signal.')
+            lights['leftSignal'] = left_signal
+
+        right_signal = kwargs.get('right_signal', None)
+        if right_signal is not None:
+            if not isinstance(right_signal, bool):
+                raise BNGValueError('Non-boolean value for right_signal.')
+            lights['rightSignal'] = right_signal
+
+        hazard_signal = kwargs.get('hazard_signal', None)
+        if hazard_signal is not None:
+            if not isinstance(hazard_signal, bool):
+                raise BNGValueError('Non-boolean value for hazard_signal.')
+            lights['hazardSignal'] = hazard_signal
+
+        valid_lights = {0, 1, 2}
+
+        headlights = kwargs.get('headlights', None)
+        if headlights is not None:
+            if not isinstance(headlights, int):
+                raise BNGValueError('Non-int value given for headlights.')
+            if headlights not in valid_lights:
+                msg = 'Invalid value given for headlights, must be ' \
+                      '0, 1, or 2, but was: ' + str(headlights)
+                raise BNGValueError(msg)
+            lights['headLights'] = headlights
+
+        fog_lights = kwargs.get('fog_lights', None)
+        if fog_lights is not None:
+            if not isinstance(fog_lights, int):
+                raise BNGValueError('Non-int value given for fog lights.')
+            if fog_lights not in valid_lights:
+                msg = 'Invalid value given for fog lights, must be ' \
+                      '0, 1, or 2, but was: ' + str(fog_lights)
+                raise BNGValueError(msg)
+            lights['fogLights'] = fog_lights
+
+        lightbar = kwargs.get('lightbar', None)
+        if lightbar is not None:
+            if not isinstance(lightbar, int):
+                raise BNGValueError('Non-int value given for lighbar.')
+            if lightbar not in valid_lights:
+                msg = 'Invalid value given for lightbar, must be ' \
+                      '0, 1, or 2, but was: ' + str(lightbar)
+                raise BNGValueError(msg)
+            lights['lightBar'] = lightbar
+
+        lights['type'] = 'SetLights'
+        self.send(lights)
 
     def annotate_parts(self):
         """
