@@ -31,7 +31,7 @@ from PIL import Image
 
 from .scenario import ScenarioObject
 
-from .beamngcommon import ack, send_msg, recv_msg, ENV
+from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError
 
 PROTOCOL_VERSION = 'v1.16'
 
@@ -1172,6 +1172,42 @@ class BeamNGpy:
         self.send(data)
 
     def get_vehicle_bbox(self, vehicle):
+        """
+        Retrieves the current bounding box of the vehicle. The bounding box
+        corresponds to the vehicle's location/rotation in world space, i.e. if
+        the vehicle moves/turns, the bounding box moves acoordingly. Note that
+        the bounding box contains the min/max coordinates of the entire
+        vehicle. This means that the vehicle losing a part like a mirror will
+        cause the bounding box to "expand" while the vehicle moves as the
+        mirror is left behind, but still counts as part of the box containing
+        the vehicle.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to get the bounding box of
+
+        Returns:
+            The vehicle's current bounding box as a dictionary of eight points.
+            Points are named following the convention that the cuboid has a
+            "near" rectangle towards the rear of the vehicle and "far"
+            rectangle towards the front. The points are then named like this:
+
+            * `front_bottom_left`: Bottom left point of the front rectangle as
+                                   an (x, y ,z) triplet
+            * `front_bottom_right`: Bottom right point of the front rectangle
+                                    as an (x, y, z) triplet
+            * `front_top_left`: Top left point of the front rectangle as an
+                                (x, y, z) triplet
+            * `front_top_right`: Top right point of the front rectangle as an
+                                 (x, y, z) triplet
+            * `rear_bottom_left`: Bottom left point of the rear rectangle as an
+                                  (x, y, z) triplet
+            * `rear_bottom_right`: Bottom right point of the rear rectangle as
+                                   an (x, y, z) triplet
+            * `rear_top_left`: Top left point of the rear rectangle as an
+                               (x, y, z) triplet
+            * `rear_top_right`: Top right point of the rear rectangle as an
+                                (x, y, z) triplet
+        """
         data = dict(type='GetBBoxCorners')
         data['vid'] = vehicle.vid
         self.send(data)
@@ -1179,24 +1215,46 @@ class BeamNGpy:
         assert resp['type'] == 'BBoxCorners'
         points = resp['points']
         bbox = {
-            'near_bottom_left': points[3],
-            'near_bottom_right': points[0],
-            'near_top_left': points[2],
-            'near_top_right': points[1],
-            'far_bottom_left': points[7],
-            'far_bottom_right': points[4],
-            'far_top_left': points[6],
-            'far_top_right': points[5],
+            'front_bottom_left': points[3],
+            'front_bottom_right': points[0],
+            'front_top_left': points[2],
+            'front_top_right': points[1],
+            'rear_bottom_left': points[7],
+            'rear_bottom_right': points[4],
+            'rear_top_left': points[6],
+            'rear_top_right': points[5],
         }
         return bbox
 
     @ack('GravitySet')
-    def set_gravity(self, gravity):
+    def set_gravity(self, gravity=-9.807):
+        """
+        Sets the strength of gravity in the simulator.
+
+        Args:
+            gravity (float): The gravity value to set. The default one is
+                             that of earth (-9.807)
+        """
         data = dict(type='SetGravity')
         data['gravity'] = gravity
         self.send(data)
 
     def get_available_vehicles(self):
+        """
+        Retrieves a dictionary of vehicles known to the simulator that map
+        to various properties of the vehicle and a list of pre-configured
+        vehicle configurations.
+
+        Returns:
+            A mapping of model names to vehicle properties & configs.
+
+        Raises:
+            BNGError: If the game is not running to accept a request.
+        """
+        if not self.skt:
+            raise BNGError('The game needs to be started to retrieve '
+                           'vehicles.')
+
         data = dict(type='GetAvailableVehicles')
         self.send(data)
         resp = self.recv()
@@ -1205,6 +1263,15 @@ class BeamNGpy:
 
     @ack('TrafficStarted')
     def start_traffic(self, participants):
+        """
+        Enables traffic simulation for the given list of vehicles.
+
+        Args:
+            participants (list): List of vehicles that will be part of the
+                                 simulation. These vehicles need to be spawned
+                                 beforehand and the simulation will take
+                                 control of them.
+        """
         participants = [p.vid for p in participants]
         data = dict(type='StartTraffic')
         data['participants'] = participants
@@ -1212,6 +1279,15 @@ class BeamNGpy:
 
     @ack('TrafficStopped')
     def stop_traffic(self, stop=False):
+        """
+        Stops the traffic simulation.
+
+        Args:
+            stop (bool): Whether or not to stop the vehicles participating in
+                         traffic. If True, vehicles will come to a halt, if
+                         False, the AI will simply stop controlling the
+                         vehicle.
+        """
         data = dict(type='StopTraffic')
         data['stop'] = stop
         self.send(data)

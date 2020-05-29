@@ -4,13 +4,12 @@ Changelog
 
 Version 1.16
 ============
-- Add option to specify multiple positions/directions for the ``Camera`` sensor
+- Add traffic controls
 - Add option to specify additional Lua extensions to load per vehicle
 - Add ``set_lights`` method to vehicle class
 - Add test for setting lights
 - Add test for vehicle bounding box
 - Add ``over_objects`` field to ``Road`` class
-- Add ``teleport`` flag to ``ai_set_script`` of ``Vehicle`` class
 - Fix lack of `__version__`
 - Fix electrics sensor not returning values directly
 - Fix `ai_set_script` teleporting vehicle

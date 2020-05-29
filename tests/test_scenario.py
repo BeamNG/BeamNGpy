@@ -1,3 +1,4 @@
+import socket
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError
@@ -19,6 +20,11 @@ def test_new_scenario(beamng):
         scenario.make(bng)
         bng.load_scenario(scenario)
         assert bng.get_scenario_name() == 'test_scenario'
+        try:
+            bng.start_scenario()
+            assert True
+        except socket.timeout:
+            assert False
 
     scenario.delete(beamng)
 
@@ -30,7 +36,18 @@ def test_new_scenario(beamng):
 def test_find_scenario(beamng):
     with beamng as bng:
         scenario = Scenario('west_coast_usa', 'derby_asphalt')
-        scenario.find(bng)
-        assert scenario.get_info_path() is not None
+        assert scenario.find(bng) is not None
         bng.load_scenario(scenario)
         assert 'derby' in bng.get_scenario_name().lower()
+        try:
+            bng.start_scenario()
+            assert True
+        except socket.timeout:
+            assert False
+
+
+def test_scenario_vehicle_name(beamng):
+    scenario = Scenario('smallgrid', 'same')
+    vehicle = Vehicle('same', model='etk800')
+    with pytest.raises(BNGValueError):
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))

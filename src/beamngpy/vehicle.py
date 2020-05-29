@@ -555,21 +555,21 @@ class Vehicle:
             "near" rectangle towards the rear of the vehicle and "far"
             rectangle towards the front. The points are then named like this:
 
-            * `near_bottom_left`: Bottom left point of the near rectangle as an
+            * `front_bottom_left`: Bottom left point of the front rectangle as an
                                   (x, y ,z) triplet
-            * `near_bottom_right`: Bottom right point of the near rectangle as
+            * `front_bottom_right`: Bottom right point of the front rectangle as
                                    an (x, y, z) triplet
-            * `near_top_left`: Top left point of the near rectangle as an
+            * `front_top_left`: Top left point of the front rectangle as an
                                (x, y, z) triplet
-            * `near_top_right`: Top right point of the near rectangle as an
+            * `front_top_right`: Top right point of the front rectangle as an
                                 (x, y, z) triplet
-            * `far_bottom_left`: Bottom left point of the far rectangle as an
+            * `rear_bottom_left`: Bottom left point of the rear rectangle as an
                                  (x, y, z) triplet
-            * `far_bottom_right`: Bottom right point of the far rectangle as an
+            * `rear_bottom_right`: Bottom right point of the rear rectangle as an
                                   (x, y, z) triplet
-            * `far_top_left`: Top left point of the far rectangle as an
+            * `rear_top_left`: Top left point of the rear rectangle as an
                               (x, y, z) triplet
-            * `far_top_right`: Top right point of the far rectangle as an
+            * `rear_top_right`: Top right point of the rear rectangle as an
                                (x, y, z) triplet
         """
         if self.bng is None:
