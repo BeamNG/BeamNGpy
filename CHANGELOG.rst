@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.16.1
+==============
+- Fix spaces in vehicle names breaking the scenario prefab
+
 Version 1.16
 ============
 - Make BeamNGpy ship required Lua files and deploy them as a mod on launch
