@@ -37,7 +37,7 @@ class Vehicle:
         Args:
             vid (str): The vehicle's ID.
         """
-        self.vid = vid
+        self.vid = vid.replace(' ', '_')
 
         self.port = None
 
