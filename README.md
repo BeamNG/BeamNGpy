@@ -54,6 +54,7 @@ bng.load_scenario(scenario)
 bng.start_scenario()
 # Make the vehicle's AI span the map
 vehicle.ai_set_mode('span')
+input('Hit enter when done...')
 ```
 
 More examples can be found in the [examples/](https://github.com/BeamNG/BeamNGpy/tree/master/examples) folder of this repository and the documentation of the library is [available here.](https://beamngpy.readthedocs.io/en/latest/)
