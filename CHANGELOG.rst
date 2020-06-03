@@ -4,6 +4,7 @@ Changelog
 
 Version 1.16
 ============
+- Make BeamNGpy ship required Lua files and deploy them as a mod on launch
 - Add traffic controls
 - Add option to specify additional Lua extensions to load per vehicle
 - Add ``set_lights`` method to vehicle class

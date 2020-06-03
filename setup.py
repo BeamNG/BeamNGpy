@@ -12,7 +12,7 @@ def setup_package():
     needs_sphinx = {'build_sphinx', 'upload_docs'}.intersection(sys.argv)
     sphinx = ['sphinx'] if needs_sphinx else []
     setup(setup_requires=['pyscaffold'] + sphinx,
-          entry_points=entry_points,
+          entry_points=entry_points, include_package_data=True,
           use_pyscaffold=True)
 
 

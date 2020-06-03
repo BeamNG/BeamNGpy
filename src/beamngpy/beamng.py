@@ -20,6 +20,7 @@ import socket
 import subprocess
 import sys
 import time
+import zipfile
 
 from pathlib import Path
 from threading import Thread
@@ -123,15 +124,30 @@ class BeamNGpy:
                                 'points to where your copy of BeamNG.* is.')
 
         self.home = Path(self.home).resolve()
+        self.binary = self.determine_binary()
+
         if user:
             self.user = Path(user).resolve()
         else:
-            self.user = None
+            self.user = self.determine_userpath()
+            print('Determined userpath:', self.user)
 
         self.process = None
         self.skt = None
 
         self.scenario = None
+
+    def determine_userpath(self):
+        """
+        Tries to find the userpath based on the beamng installation if the user
+        did not provide a custom userpath.
+        """
+        user = Path.home() / 'Documents'
+        if '.research' in self.binary:
+            user = user / 'BeamNG.research'
+        else:
+            user = user / 'BeamNG.drive'
+        return user
 
     def determine_binary(self):
         """
@@ -159,6 +175,25 @@ class BeamNGpy:
         log.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
 
+    def deploy_mod(self):
+        mods = self.user / 'mods'
+        if not mods.exists():
+            mods.mkdir(parents=True)
+
+        lua = Path(__file__).parent / 'lua'
+        common = lua / 'researchCommunication.lua'
+        ge = lua / 'researchGE.lua'
+        ve = lua / 'researchVE.lua'
+
+        common_name = 'lua/common/utils/researchCommunication.lua'
+        ge_name = 'lua/ge/extensions/util/researchGE.lua'
+        ve_name = 'lua/vehicle/extensions/researchVE.lua'
+
+        with zipfile.ZipFile(str(mods / 'BeamNGpy.zip'), 'w') as ziph:
+            ziph.write(common, arcname=common_name)
+            ziph.write(ge, arcname=ge_name)
+            ziph.write(ve, arcname=ve_name)
+
     def prepare_call(self, extensions, *args, **opts):
         """
         Prepares the command line call to execute to start BeamNG.*.
@@ -172,11 +207,10 @@ class BeamNGpy:
             extensions = []
 
         extensions.insert(0, 'util/researchGE')
-        binary = self.determine_binary()
         lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
         lua = lua.format(*extensions)
         call = [
-            binary,
+            self.binary,
             '-console',
             '-rport',
             str(self.port),
@@ -266,6 +300,7 @@ class BeamNGpy:
                            True.
         """
         log.info('Opening BeamNPy instance...')
+        self.deploy_mod()
         self.start_server()
         if launch:
             self.start_beamng(extensions, *args, **opts)

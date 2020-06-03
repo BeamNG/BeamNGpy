@@ -118,9 +118,9 @@ def test_electrics(beamng):
 
         sensors = bng.poll_sensors(vehicle)
 
-    assert sensors['electrics']['values']['airspeed'] > 0
-    assert sensors['electrics']['values']['wheelspeed'] > 0
-    assert sensors['electrics']['values']['throttle'] > 0
+    assert sensors['electrics']['airspeed'] > 0
+    assert sensors['electrics']['wheelspeed'] > 0
+    assert sensors['electrics']['throttle'] > 0
 
 
 def test_damage(beamng):
