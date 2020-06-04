@@ -156,7 +156,7 @@ sensorHandlers.GForces = function(msg)
 
   resp['gx'] = sensors.gx
   resp['gx2'] = sensors.gx2
-  resp['gxSmoothMax'] = sensors.gxSmoothMax
+  resp['gx_smooth_max'] = sensors.gxSmoothMax
   resp['gy'] = sensors.gy
   resp['gy2'] = sensors.gy2
   resp['gz'] = sensors.gz
@@ -173,11 +173,11 @@ end
 
 sensorHandlers.Damage = function(msg)
   local resp = {type = 'Damage'}
-  resp['damageExt'] = beamstate.damageExt
-  resp['deformGroupDamage'] = beamstate.deformGroupDamage
+  resp['damage_ext'] = beamstate.damageExt
+  resp['deform_group_damage'] = beamstate.deformGroupDamage
   resp['lowpressure'] = beamstate.lowpressure
   resp['damage'] = beamstate.damage
-  resp['partDamage'] = beamstate.getPartDamageData()
+  resp['part_damage'] = beamstate.getPartDamageData()
   return resp
 end
 
