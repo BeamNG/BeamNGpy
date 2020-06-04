@@ -28,7 +28,7 @@ from beamngpy.visualiser import LidarVisualiser
 SIZE = 1024
 
 
-def resize(width, height):
+def lidar_resize(width, height):
     if height == 0:
         height = 1
 
@@ -40,7 +40,7 @@ def open_window(width, height):
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE)
     glutInitWindowSize(width, height)
     window = glutCreateWindow(b'Lidar Tour')
-    resize(width, height)
+    lidar_resize(width, height)
     return window
 
 
@@ -84,7 +84,7 @@ def main():
             lidar_vis.update_points(points, vehicle.state)
             glutPostRedisplay()
 
-        glutReshapeFunc(resize)
+        glutReshapeFunc(lidar_resize)
         glutIdleFunc(update)
         glutMainLoop()
     finally:

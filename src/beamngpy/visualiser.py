@@ -23,7 +23,7 @@ MOVE_SPEED = 0.25
 TURN_SPEED = 1
 
 
-def resize(width, height):
+def lidar_resize(width, height):
     if height == 0:
         height = 1
 
@@ -72,12 +72,12 @@ class LidarVisualiser:
         glutDisplayFunc(self.render)
         glutKeyboardFunc(self.on_key)
         glutMotionFunc(self.on_drag)
-        glutReshapeFunc(resize)
+        glutReshapeFunc(lidar_resize)
 
         self.init_gl(width, height)
 
-        self.vertex_buf = glGenBuffers(1)
-        self.colour_buf = glGenBuffers(1)
+        self.vertex_buf = np.uint64(glGenBuffers(1))
+        self.colour_buf = np.uint64(glGenBuffers(1))
 
     def on_key(self, name, *args):
         if name == b'f':
@@ -137,7 +137,7 @@ class LidarVisualiser:
 
         if self.vertex_buf:
             glDeleteBuffers(1, self.vertex_buf)
-        self.vertex_buf = glGenBuffers(1)
+        self.vertex_buf = np.uint64(glGenBuffers(1))
 
         glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
         glBufferData(GL_ARRAY_BUFFER, self.points_count *
@@ -162,7 +162,7 @@ class LidarVisualiser:
             self.colours[0:self.points_count:3]
 
         glDeleteBuffers(1, self.colour_buf)
-        self.colour_buf = glGenBuffers(1)
+        self.colour_buf = np.uint64(glGenBuffers(1))
         glBindBuffer(GL_ARRAY_BUFFER, self.colour_buf)
         glBufferData(GL_ARRAY_BUFFER, self.points_count * 4,
                      self.colours, GL_STATIC_DRAW)

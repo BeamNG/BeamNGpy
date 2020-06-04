@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.16.3
+==============
+- Fix lidar visualizer using wrong buffer types in newer PyOpenGL version
+
 Version 1.16.2
 ==============
 - Update values of `Electrics` sensor not following our naming conventions
