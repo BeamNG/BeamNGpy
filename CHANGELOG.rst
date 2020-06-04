@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.16.2
+==============
+- Update values of `Electrics` sensor not following our naming conventions
+- Fix camera orientation issue
+- Add example for using the `Camera` sensor like a multishot camera
+
 Version 1.16.1
 ==============
 - Fix spaces in vehicle names breaking the scenario prefab
