@@ -1009,7 +1009,7 @@ class BeamNGpy:
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
         data['pos'] = pos
-        data['rot'] = rot
+        data['rot'] = [np.radians(r) for r in rot]
         data.update(vehicle.options)
         self.send(data)
         resp = self.recv()
