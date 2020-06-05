@@ -316,11 +316,11 @@ class Camera(Sensor):
         if self.annotation_shmem:
             req['annotation'] = self.annotation_handle
 
-        req['pos'] = self.pos
-        req['direction'] = self.direction
+        req['pos'] = [float(f) for f in self.pos]
+        req['direction'] = [float(f) for f in self.direction]
         req['fov'] = self.fov
-        req['resolution'] = self.resolution
-        req['near_far'] = self.near_far
+        req['resolution'] = [int(i) for i in self.resolution]
+        req['near_far'] = [float(f) for f in self.near_far]
 
         return req
 

@@ -130,7 +130,6 @@ class BeamNGpy:
             self.user = Path(user).resolve()
         else:
             self.user = self.determine_userpath()
-            print('Determined userpath:', self.user)
 
         self.process = None
         self.skt = None

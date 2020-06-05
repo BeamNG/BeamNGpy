@@ -431,13 +431,14 @@ sensors.Camera = function(req, callback)
   pos = req['pos']
   pos = vec3(pos[1], pos[2], pos[3])
   if req['vehicle'] then
-    pos = offset + rot * pos
+    pos = offset + orientation * pos
   else
     pos = offset + pos
   end
   pos = Point3F(pos.x, pos.y, pos.z)
 
   rot = QuatF(rot.x, rot.y, rot.z, rot.w)
+
   resolution = Point2F(resolution[1], resolution[2])
   nearFar = Point2F(nearFar[1], nearFar[2])
 
