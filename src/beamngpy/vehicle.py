@@ -29,13 +29,14 @@ class Vehicle:
     sensors the user can attach to the vehicle.
     """
 
-    def __init__(self, vid, **options):
+    def __init__(self, vid, model, **options):
         """
         Creates a vehicle with the given vehicle ID. The ID must be unique
         within the scenario.
 
         Args:
             vid (str): The vehicle's ID.
+            model (str): Model of the vehicle.
         """
         self.vid = vid.replace(' ', '_')
 
@@ -47,7 +48,11 @@ class Vehicle:
 
         self.sensors = dict()
 
-        options['color'] = options.get('colour', options.get('color', None))
+        options['model'] = model
+        options['licenseText'] = options.get('licence')
+        options['color'] = options.get('colour', options.get('color'))
+        options['color2'] = options.get('colour2', options.get('color2'))
+        options['color3'] = options.get('colour3', options.get('color3'))
         self.options = options
 
         self.sensor_cache = dict()

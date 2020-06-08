@@ -358,30 +358,16 @@ M.handleSpawnVehicle = function(msg)
 
   local partConfig = msg['partConfig']
 
-  local color = msg['color']
-  if color ~= nil then
-    color = Color4F(color[1], color[2], color[3])
-  end
-
-  local color2 = msg['color2']
-  if color2 ~= nil then
-    color2 = Color4F(color2[1], color2[2], color2[3])
-  end
-
-  local color3 = msg['color3']
-  if color3 ~= nil then
-    color3 = Color4F(color3[1], color3[2], color3[3])
-  end
-
   local options = {}
   options.config = partConfig
   options.pos = pos
   options.rot = rot
   options.cling = cling
   options.vehicleName = name
-  options.color = color
-  options.color2 = color2
-  options.color3 = color3
+  options.color = msg['color']
+  options.color2 = msg['color2']
+  options.color3 = msg['color3']
+  options.licenseText = msg['licenseText']
 
   spawnPending = name
 
