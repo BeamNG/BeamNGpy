@@ -657,7 +657,6 @@ class Scenario:
         while self.transient_vehicles:
             vehicle = self.transient_vehicles.pop()
             if vehicle in self.vehicles:
-                vehicle.disconnect()
                 self.bng.despawn_vehicle(vehicle)
                 del self.vehicles[vehicle]
 
