@@ -553,6 +553,26 @@ class BeamNGpy:
             data['rot'] = [np.radians(r) for r in rot]
         self.send(data)
 
+    @ack('ScenarioObjectTeleported')
+    def teleport_scenario_object(self, scenario_object, pos, rot=None):
+        """
+        Teleports the given scenario object to the given position with the given
+        rotation.
+
+        Args:
+            scenario_object (:class:`.ScenarioObject`): The vehicle to teleport.
+            pos (tuple): The target position as an (x,y,z) tuple containing
+                         world-space coordinates.
+            rot (tuple): Optional tuple specifying rotations around the (x,y,z)
+                         axes in degrees.
+        """
+        data = dict(type='TeleportScenarioObject')
+        data['id'] = scenario_object.id
+        data['pos'] = pos
+        if rot:
+            data['rot'] = [np.radians(r) for r in rot]
+        self.send(data)
+
     @ack('ScenarioStarted')
     def start_scenario(self):
         """

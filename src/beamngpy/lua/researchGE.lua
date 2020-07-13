@@ -284,6 +284,18 @@ M.handleTeleport = function(msg)
   return true
 end
 
+M.handleTeleportScenarioObject = function(msg)
+  local sobj = scenetree.findObject(msg['id'])
+  if msg['rot'] ~= nil then
+    local quat = quatFromEuler(msg['rot'][1], msg['rot'][2], msg['rot'][3])
+    sobj:setPosRot(msg['pos'][1], msg['pos'][2], msg['pos'][3], quat.x, quat.y, quat.z, quat.w)
+  else
+    sobj:setPosition(Point3F(msg['pos'][1], msg['pos'][2], msg['pos'][3]))
+  end
+  rcom.sendACK(skt, 'ScenarioObjectTeleported')
+  return true
+end
+
 M.handleVehicleConnection = function(msg)
   local vID, vHost, vPort, veh, command
 

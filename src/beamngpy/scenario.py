@@ -124,8 +124,8 @@ class ScenarioObject:
         self.id = oid
         self.name = name
         self.type = otype
-        self.position = pos
-        self.rotation = rot
+        self.pos = pos
+        self.rot = rot
         self.scale = scale
         self.opts = options
 
@@ -140,7 +140,7 @@ class ScenarioObject:
 
     def __str__(self):
         s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
-        s = s.format(self.type, self.id, self.name, *self.position)
+        s = s.format(self.type, self.id, self.name, *self.pos)
         return s
 
     def __repr__(self):
@@ -156,19 +156,18 @@ class StaticObject(ScenarioObject):
                                            pos, rot, scale, shapeName=shape)
 
 
-class ProceduralMesh:
+class ProceduralMesh(ScenarioObject):
     def __init__(self, pos, rot, name, material):
-        self.name = name
+        super(ProceduralMesh, self).__init__(name, name, 'ProceduralMesh',
+                                             pos, rot, (1, 1, 1))
         self.material = material
-        self.pos = pos
-        self.rot = rot
 
     def place(self, bng):
         raise NotImplementedError()
 
 
 class ProceduralCylinder(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name=None, material=None):
+    def __init__(self, pos, rot, radius, height, name, material=None):
         super(ProceduralCylinder, self).__init__(pos, rot, name, material)
         self.radius = radius
         self.height = height
@@ -180,7 +179,7 @@ class ProceduralCylinder(ProceduralMesh):
 
 class ProceduralBump(ProceduralMesh):
     def __init__(self, pos, rot, width, length, height,
-                 upper_length, upper_width, name=None, material=None):
+                 upper_length, upper_width, name, material=None):
         super(ProceduralBump, self).__init__(pos, rot, name, material)
         self.width = width
         self.length = length
@@ -195,7 +194,7 @@ class ProceduralBump(ProceduralMesh):
 
 
 class ProceduralCone(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name=None, material=None):
+    def __init__(self, pos, rot, radius, height, name, material=None):
         super(ProceduralCone, self).__init__(pos, rot, name, material)
         self.radius = radius
         self.height = height
@@ -206,7 +205,7 @@ class ProceduralCone(ProceduralMesh):
 
 
 class ProceduralCube(ProceduralMesh):
-    def __init__(self, pos, rot, size, name=None, material=None):
+    def __init__(self, pos, rot, size, name, material=None):
         super(ProceduralCube, self).__init__(pos, rot, name, material)
         self.size = size
 
@@ -216,7 +215,7 @@ class ProceduralCube(ProceduralMesh):
 
 
 class ProceduralRing(ProceduralMesh):
-    def __init__(self, pos, rot, radius, thickness, name=None, material=None):
+    def __init__(self, pos, rot, radius, thickness, name, material=None):
         super(ProceduralRing, self).__init__(pos, rot, name, material)
         self.radius = radius
         self.thickness = thickness
