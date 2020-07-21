@@ -296,8 +296,8 @@ class Scenario:
             obj_dict = dict(type=obj.type, id=obj.id)
             obj_dict['options'] = copy.deepcopy(obj.opts)
 
-            pos_str = '{} {} {}'.format(*obj.position)
-            rot_mat = compute_rotation_matrix(obj.rotation)
+            pos_str = '{} {} {}'.format(*obj.pos)
+            rot_mat = compute_rotation_matrix(obj.rot)
             scale_str = '{} {} {}'.format(*obj.scale)
             obj_dict['options']['position'] = pos_str
             obj_dict['options']['rotationMatrix'] = rot_mat
