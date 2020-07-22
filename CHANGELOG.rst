@@ -2,12 +2,16 @@
 Changelog
 =========
 
+Version 1.16.5
+==============
+- Fix prefab compilation
+
 Version 1.16.4
 ==============
 - Add ``teleport_scenario_object`` method to ``BeamNGpy`` class
 - Update vehicle state example
 - Fix decal road positioning
-- Fix ``spawn_vehicle`` not setting color and license plate correctly 
+- Fix ``spawn_vehicle`` not setting color and license plate correctly
 - Fix ``spawn_vehicle`` rotation in degrees
 
 Version 1.16.3
