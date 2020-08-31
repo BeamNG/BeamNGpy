@@ -62,6 +62,12 @@ def main():
         input('press Enter to teleport last vehicle with quaternion')
         bng.teleport_vehicle(vehicle, pos, rot_quat=(-0.00333699025,-0.00218820246,-0.689169466,0.724589229))
 
+        input('press Enter to teleport roadblock with angle')
+        bng.teleport_scenario_object(rb, (0, -6, 0), rot=(45,0,0))
+
+        input('press Enter to teleport roadblock with quaternion')
+        bng.teleport_scenario_object(rb, (0, -6, 0), rot_quat=(0,0,0,1))
+
         input('Press ENTER to exit')
     finally:
         bng.close()

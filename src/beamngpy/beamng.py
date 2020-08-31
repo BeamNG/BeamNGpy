@@ -557,7 +557,7 @@ class BeamNGpy:
         self.send(data)
 
     @ack('ScenarioObjectTeleported')
-    def teleport_scenario_object(self, scenario_object, pos, rot=None):
+    def teleport_scenario_object(self, scenario_object, pos, rot=None, rot_quat=None):
         """
         Teleports the given scenario object to the given position with the given
         rotation.
@@ -572,8 +572,10 @@ class BeamNGpy:
         data = dict(type='TeleportScenarioObject')
         data['id'] = scenario_object.id
         data['pos'] = pos
-        if rot:
-            data['rot'] = [np.radians(r) for r in rot]
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            data['rot'] = angle_to_quat(rot)
         self.send(data)
 
     @ack('ScenarioStarted')
