@@ -1087,8 +1087,8 @@ class BeamNGpy:
         return ret
 
     @ack('CreatedCylinder')
-    def create_cylinder(self, radius, height, pos, rot,
-                        material=None, name=None):
+    def create_cylinder(self, name, radius, height, pos, rot,
+                        material=None):
         """
         Creates a procedurally generated cylinder mesh with the given
         radius and height at the given position and rotation. The material
@@ -1096,6 +1096,7 @@ class BeamNGpy:
         identification.
 
         Args:
+            name (str): Name for the mesh. Should be unique.
             radius (float): The radius of the cylinder's base circle.
             height (float): The between top and bottom circles of the
                             cylinder.
@@ -1105,7 +1106,6 @@ class BeamNGpy:
                          the (X, Y, Z) axes.
             material (str): Optional material name to use as a texture for the
                             mesh.
-            name (str): Optional name for the mesh.
         """
         data = dict(type='CreateCylinder')
         data['radius'] = radius
@@ -1117,14 +1117,15 @@ class BeamNGpy:
         self.send(data)
 
     @ack('CreatedBump')
-    def create_bump(self, width, length, height, upper_length, upper_width,
-                    pos, rot, material=None, name=None):
+    def create_bump(self, name, width, length, height, upper_length,
+                    upper_width, pos, rot, material=None):
         """
         Creates a procedurally generated bump with the given properties at the
         given position and rotation. The material can optionally be specified
         and a name can be assigned for later identification.
 
         Args:
+            name (str): Name for the mesh. Should be unique.
             width (float): The width of the bump, i.e. its size between left
                            and right edges.
             length (float): The length of the bump, i.e. the distances from
@@ -1138,7 +1139,6 @@ class BeamNGpy:
                          the (X, Y, Z) axes.
             material (str): Optional material name to use as a texture for the
                             mesh.
-            name (str): Optional name for the mesh.
         """
         data = dict(type='CreateBump')
         data['width'] = width
@@ -1153,13 +1153,14 @@ class BeamNGpy:
         self.send(data)
 
     @ack('CreatedCone')
-    def create_cone(self, radius, height, pos, rot, material=None, name=None):
+    def create_cone(self, name, radius, height, pos, rot, material=None):
         """
         Creates a procedurally generated cone with the given properties at the
         given position and rotation. The material can optionally be specified
         and a name can be assigned for later identification.
 
         Args:
+            name (str): Name for the mesh. Should be unique.
             radius (float): Radius of the base circle.
             height (float): Distance of the tip to the base circle.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
@@ -1168,7 +1169,6 @@ class BeamNGpy:
                          the (X, Y, Z) axes.
             material (str): Optional material name to use as a texture for the
                             mesh.
-            name (str): Optional name for the mesh.
         """
         data = dict(type='CreateCone')
         data['radius'] = radius
@@ -1180,13 +1180,14 @@ class BeamNGpy:
         self.send(data)
 
     @ack('CreatedCube')
-    def create_cube(self, size, pos, rot, material=None, name=None):
+    def create_cube(self, name, size, pos, rot, material=None):
         """
         Creates a procedurally generated cube with the given properties at the
         given position and rotation. The material can optionally be specified
         and a name can be assigned for later identification.
 
         Args:
+            name (str): Name for the mesh. Should be unique.
             size (tuple): A triplet specifying the (length, width, height) of
                           the cuboid.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
@@ -1195,7 +1196,6 @@ class BeamNGpy:
                          the (X, Y, Z) axes.
             material (str): Optional material name to use as a texture for the
                             mesh.
-            name (str): Optional name for the mesh.
         """
         data = dict(type='CreateCube')
         data['size'] = size
@@ -1206,14 +1206,14 @@ class BeamNGpy:
         self.send(data)
 
     @ack('CreatedRing')
-    def create_ring(self, radius, thickness, pos, rot,
-                    material=None, name=None):
+    def create_ring(self, name, radius, thickness, pos, rot, material=None):
         """
         Creates a procedurally generated ring with the given properties at the
         given position and rotation. The material can optionally be specified
         and a name can be assigned for later identification.
 
         Args:
+            name (str): Name for the mesh. Should be unique.
             radius (float): Radius of the circle encompassing the ring.
             thickness (float): Thickness of the rim.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
@@ -1222,7 +1222,6 @@ class BeamNGpy:
                          the (X, Y, Z) axes.
             material (str): Optional material name to use as a texture for the
                             mesh.
-            name (str): Optional name for the mesh.
         """
         data = dict(type='CreateRing')
         data['radius'] = radius

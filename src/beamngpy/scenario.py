@@ -146,8 +146,8 @@ class ProceduralCylinder(ProceduralMesh):
         self.height = height
 
     def place(self, bng):
-        bng.create_cylinder(self.radius, self.height, self.pos, self.rot,
-                            self.material, self.name)
+        bng.create_cylinder(self.name, self.radius, self.height, self.pos,
+                            self.rot, self.material)
 
 
 class ProceduralBump(ProceduralMesh):
@@ -161,9 +161,9 @@ class ProceduralBump(ProceduralMesh):
         self.upper_width = upper_width
 
     def place(self, bng):
-        bng.create_bump(self.width, self.length, self.height,
+        bng.create_bump(self.name, self.width, self.length, self.height,
                         self.upper_length, self.upper_width, self.pos,
-                        self.rot, self.material, self.name)
+                        self.rot, self.material)
 
 
 class ProceduralCone(ProceduralMesh):
@@ -173,8 +173,8 @@ class ProceduralCone(ProceduralMesh):
         self.height = height
 
     def place(self, bng):
-        bng.create_cone(self.radius, self.height, self.pos, self.rot,
-                        self.material, self.name)
+        bng.create_cone(self.name, self.radius, self.height, self.pos,
+                        self.rot, self.material)
 
 
 class ProceduralCube(ProceduralMesh):
@@ -183,8 +183,8 @@ class ProceduralCube(ProceduralMesh):
         self.size = size
 
     def place(self, bng):
-        bng.create_cube(self.size, self.pos, self.rot,
-                        self.material, self.name)
+        bng.create_cube(self.name, self.size, self.pos, self.rot,
+                        self.material)
 
 
 class ProceduralRing(ProceduralMesh):
@@ -194,8 +194,8 @@ class ProceduralRing(ProceduralMesh):
         self.thickness = thickness
 
     def place(self, bng):
-        bng.create_ring(self.radius, self.thickness, self.pos, self.rot,
-                        self.material, self.name)
+        bng.create_ring(self.name, self.radius, self.thickness, self.pos,
+                        self.rot, self.material)
 
 
 class Scenario:
