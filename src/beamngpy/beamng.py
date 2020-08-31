@@ -568,6 +568,7 @@ class BeamNGpy:
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
                          axes in degrees.
+            rot_quat (tuple): optional tuple specifying object rotation as a quaternion
         """
         data = dict(type='TeleportScenarioObject')
         data['id'] = scenario_object.id
@@ -1088,7 +1089,7 @@ class BeamNGpy:
 
     @ack('CreatedCylinder')
     def create_cylinder(self, name, radius, height, pos, rot,
-                        material=None):
+                        rot_quat=None, material=None):
         """
         Creates a procedurally generated cylinder mesh with the given
         radius and height at the given position and rotation. The material
@@ -1104,6 +1105,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the cylinder's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1111,14 +1113,17 @@ class BeamNGpy:
         data['radius'] = radius
         data['height'] = height
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
         self.send(data)
 
     @ack('CreatedBump')
     def create_bump(self, name, width, length, height, upper_length,
-                    upper_width, pos, rot, material=None):
+                    upper_width, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated bump with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1137,6 +1142,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the bump's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1147,13 +1153,16 @@ class BeamNGpy:
         data['upperLength'] = upper_length
         data['upperWidth'] = upper_width
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
         self.send(data)
 
     @ack('CreatedCone')
-    def create_cone(self, name, radius, height, pos, rot, material=None):
+    def create_cone(self, name, radius, height, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated cone with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1167,6 +1176,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the cone's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1176,11 +1186,14 @@ class BeamNGpy:
         data['material'] = material
         data['name'] = name
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            data['rot'] = angle_to_quat(rot)
         self.send(data)
 
     @ack('CreatedCube')
-    def create_cube(self, name, size, pos, rot, material=None):
+    def create_cube(self, name, size, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated cube with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1194,19 +1207,23 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the cube's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
         data = dict(type='CreateCube')
         data['size'] = size
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
         self.send(data)
 
     @ack('CreatedRing')
-    def create_ring(self, name, radius, thickness, pos, rot, material=None):
+    def create_ring(self, name, radius, thickness, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated ring with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1220,6 +1237,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the ring's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1227,7 +1245,10 @@ class BeamNGpy:
         data['radius'] = radius
         data['thickness'] = thickness
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
         self.send(data)
