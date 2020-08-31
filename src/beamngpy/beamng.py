@@ -32,7 +32,7 @@ from PIL import Image
 
 from .scenario import ScenarioObject
 
-from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError
+from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError, angle_to_quat
 
 PROTOCOL_VERSION = 'v1.16'
 
@@ -1007,7 +1007,7 @@ class BeamNGpy:
         assert resp['type'] == 'ScenarioName'
         return resp['name']
 
-    def spawn_vehicle(self, vehicle, pos, rot, cling=True):
+    def spawn_vehicle(self, vehicle, pos, rot, rot_quat=(0, 0, 0, 1), cling=True):
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
@@ -1019,6 +1019,7 @@ class BeamNGpy:
             pos (tuple): Where to spawn the vehicle as a (x, y, z) triplet.
             rot (tuple): The rotation of the vehicle as a triplet of Euler
                          angles.
+            rot_quat (tuple): Vehicle rotation in form of a quaternion
             cling (bool): If set, the z-coordinate of the vehicle's position
                           will be set to the ground level at the given
                           position to avoid spawning the vehicle below ground
@@ -1028,7 +1029,9 @@ class BeamNGpy:
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
         data['pos'] = pos
-        data['rot'] = [np.radians(r) for r in rot]
+        if rot:
+            rot_quat = angle_to_quat(rot)
+        data['rot'] = rot_quat
         data.update(vehicle.options)
         self.send(data)
         resp = self.recv()
