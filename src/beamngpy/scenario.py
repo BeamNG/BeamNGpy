@@ -25,38 +25,69 @@ from .beamngcommon import BNGValueError, BNGError
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
 
 
-def compute_rotation_matrix(angles):
+def angle_to_quat(angle):
     """
-    Calculates the rotation matrix string for the given triplet of Euler angles
+    Converts an euler angle to a quaternion.
+
+    Args:
+        angle (tuple): Euler angle 
+
+    Return:
+        Quaterion with the order (x, y, z, w) with w representing the real component
+    """
+    angle = np.radians(angle)
+
+    cy = np.cos(angle[2] * 0.5)
+    sy = np.sin(angle[2] * 0.5)
+    cp = np.cos(angle[1] * 0.5)
+    sp = np.sin(angle[1] * 0.5)
+    cr = np.cos(angle[0] * 0.5)
+    sr = np.sin(angle[0] * 0.5)
+
+    w = cr * cp * cy + sr * sp * sy
+    x = sr * cp * cy - cr * sp * sy
+    y = cr * sp * cy + sr * cp * sy
+    z = cr * cp * sy - sr * sp * cy
+
+    return (x, y, z, w)
+
+def compute_rotation_matrix(quat):
+    """
+    Calculates the rotation matrix for the given quaternion
     to be used in a scenario prefab.
 
     Args:
-        angles (tuple): Euler angles for the (x,y,z) axes.
+        quat (tuple): Quaterion with the order (x, y, z, w) with w representing the real component
 
     Return:
-        The rotation matrix encoded as a string.
+        The rotation matrix as np array.
     """
-    angles = [np.radians(a) for a in angles]
+    norm = np.linalg.norm(quat)
+    eps = np.finfo(float).eps
+    if np.abs(norm-1) > eps:
+        quat /= norm
+    x, y, z, w = quat[0], quat[1], quat[2], quat[3]
+    rot_mat = np.array([
+                            [1-2*(y**2+z**2), 2*(x*y-z*w), 2*(x*z+y*w)],
+                            [2*(x*y+z*w), 1-2*(x**2+z**2), 2*(y*z-x*w)],
+                            [2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x**2+y**2)]
+                        ], dtype=float) 
+    return rot_mat
 
-    sin_a = math.sin(angles[0])
-    cos_a = math.cos(angles[0])
-    sin_b = math.sin(angles[1])
-    cos_b = math.cos(angles[1])
-    sin_c = math.sin(angles[2])
-    cos_c = math.cos(angles[2])
+def quat_as_rotation_mat_str(quat):
+    """
+    For a given quaternion, the function computes the corresponding rotation matrix and converts it into a string.
 
-    mat_a = np.array(((1, 0, 0), (0, cos_a, -sin_a), (0, sin_a, cos_a)))
-    mat_b = np.array(((cos_b, 0, sin_b), (0, 1, 0), (-sin_b, 0, cos_b)))
-    mat_c = np.array(((cos_c, -sin_c, 0), (sin_c, cos_c, 0), (0, 0, 1)))
+    Args:
+        quat (tuple): Quaterion with the order (x, y, z, w) with w representing the real component
+    
+    Return:
+        Rotation matrix as string
 
-    mat = np.matmul(np.matmul(mat_a, mat_b), mat_c)
-    mat = mat.reshape(9)
-
-    mat_str = ('{} ' * 9).strip()
-    mat_str = mat_str.format(*mat)
-
-    return mat_str
-
+    """
+    mat = compute_rotation_matrix(quat)
+    mat =  mat.reshape(9).astype(str)
+    return ' '.join(mat)
 
 class Road:
     """
@@ -120,12 +151,14 @@ class ScenarioObject:
     scale.
     """
 
-    def __init__(self, oid, name, otype, pos, rot, scale, **options):
+    def __init__(self, oid, name, otype, pos, rot, scale, rot_quat=None, **options):
         self.id = oid
         self.name = name
         self.type = otype
         self.pos = pos
-        self.rot = rot
+        if rot:
+            rot_quat = angle_to_quat(rot)
+        self.rot = rot_quat
         self.scale = scale
         self.opts = options
 
@@ -148,18 +181,22 @@ class ScenarioObject:
 
 
 class StaticObject(ScenarioObject):
-    def __init__(self, name, pos, rot, scale, shape):
-        rot_mat = compute_rotation_matrix(rot)
-        pos_str = '{} {} {}'.format(*pos)
-        scale_str = '{} {} {}'.format(*scale)
+    def __init__(self, name, pos, rot, scale, shape, rot_quat=None):
+        # these vars are not used remove??
+        # if rot:
+        #     rot_quat = angle_to_quat(rot)
+            
+        # rot_mat = quat_as_rotation_mat_str(rot_quat)
+        # pos_str = '{} {} {}'.format(*pos)
+        # scale_str = '{} {} {}'.format(*scale)
         super(StaticObject, self).__init__(name, None, 'TSStatic',
-                                           pos, rot, scale, shapeName=shape)
+                                           pos, rot, scale, rot_quat=rot_quat, shapeName=shape)
 
 
 class ProceduralMesh(ScenarioObject):
-    def __init__(self, pos, rot, name, material):
+    def __init__(self, pos, rot, name, material, rot_quat=None):
         super(ProceduralMesh, self).__init__(name, name, 'ProceduralMesh',
-                                             pos, rot, (1, 1, 1))
+                                             pos, rot, (1, 1, 1), rot_quat=rot_quat)
         self.material = material
 
     def place(self, bng):
@@ -297,7 +334,7 @@ class Scenario:
             obj_dict['options'] = copy.deepcopy(obj.opts)
 
             pos_str = '{} {} {}'.format(*obj.pos)
-            rot_mat = compute_rotation_matrix(obj.rot)
+            rot_mat = quat_as_rotation_mat_str(obj.rot)
             scale_str = '{} {} {}'.format(*obj.scale)
             obj_dict['options']['position'] = pos_str
             obj_dict['options']['rotationMatrix'] = rot_mat
@@ -351,7 +388,7 @@ class Scenario:
             vehicle_dict = dict(vid=vehicle.vid)
             vehicle_dict.update(vehicle.options)
             vehicle_dict['position'] = ' '.join([str(p) for p in pos])
-            vehicle_dict['rotationMatrix'] = compute_rotation_matrix(rot)
+            vehicle_dict['rotationMatrix'] = quat_as_rotation_mat_str(rot)
             vehicles.append(vehicle_dict)
         return vehicles
 
@@ -447,7 +484,7 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=(0, 0, 0), cling=True):
+    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=None, rot_quat=(0, 0, 0, 1), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation. This method has to be called before a scenario is started.
@@ -461,11 +498,13 @@ class Scenario:
             error = 'Cannot have vehicle with the same name as the scenario:' \
                 ' Scenario={}, Vehicle={}'.format(self.name, vehicle.vid)
             raise BNGValueError(error)
-
-        self.vehicles[vehicle] = (pos, rot)
+        
+        if rot:
+            rot_quat = angle_to_quat(rot)
+        self.vehicles[vehicle] = (pos, rot_quat)
 
         if self.bng:
-            self.bng.spawn_vehicle(vehicle, pos, rot, cling=cling)
+            self.bng.spawn_vehicle(vehicle, pos, rot, cling=cling) #todo
             self.transient_vehicles.add(vehicle)
 
     def remove_vehicle(self, vehicle):
