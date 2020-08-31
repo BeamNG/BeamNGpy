@@ -529,7 +529,7 @@ class BeamNGpy:
         self.send(data)
 
     @ack('Teleported')
-    def teleport_vehicle(self, vehicle, pos, rot=None):
+    def teleport_vehicle(self, vehicle, pos, rot=None, rot_quat=None):
         """
         Teleports the given vehicle to the given position with the given
         rotation.
@@ -540,6 +540,7 @@ class BeamNGpy:
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
                          axes in degrees.
+            rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion
 
         Notes:
             In the current implementation, if both ``pos`` and ``rot`` are
@@ -549,8 +550,10 @@ class BeamNGpy:
         data = dict(type='Teleport')
         data['vehicle'] = vehicle.vid
         data['pos'] = pos
-        if rot:
-            data['rot'] = [np.radians(r) for r in rot]
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            data['rot'] = angle_to_quat(rot)
         self.send(data)
 
     @ack('ScenarioObjectTeleported')
