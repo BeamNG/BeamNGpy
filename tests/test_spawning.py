@@ -21,7 +21,7 @@ def main():
     rb = ScenarioObject(oid='roadblock', 
                               name='sawhorse',
                               otype='BeamNGVehicle',
-                              pos=(0, -5, 0),
+                              pos=(-10, 5, 0),
                               rot=(0,0,0),
                               scale=(1, 1, 1),
                               JBeam = 'sawhorse',
@@ -57,16 +57,16 @@ def main():
         bng.spawn_vehicle(vehicle, pos, None, rot_quat=(0,0,0,1))
 
         input('press Enter to teleport last vehicle with angle')
-        bng.teleport_vehicle(vehicle, pos, rot=(0,0,180))
+        bng.teleport_vehicle(vehicle, pos, rot=(0,45,0))
 
         input('press Enter to teleport last vehicle with quaternion')
         bng.teleport_vehicle(vehicle, pos, rot_quat=(-0.00333699025,-0.00218820246,-0.689169466,0.724589229))
 
         input('press Enter to teleport roadblock with angle')
-        bng.teleport_scenario_object(rb, (0, -6, 0), rot=(45,0,0))
+        bng.teleport_scenario_object(rb, (-10, 5, 0), rot=(-45,0,0))
 
         input('press Enter to teleport roadblock with quaternion')
-        bng.teleport_scenario_object(rb, (0, -6, 0), rot_quat=(0,0,0,1))
+        bng.teleport_scenario_object(rb, (-10, 5, 0), rot_quat=(-0.003337, -0.0021882, -0.6891695, 0.7245892))
 
         input('Press ENTER to exit')
     finally:
