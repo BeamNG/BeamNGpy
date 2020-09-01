@@ -140,7 +140,7 @@ class ProceduralMesh(ScenarioObject):
 
 
 class ProceduralCylinder(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name, material=None):
+    def __init__(self, pos, rot, radius, height, name, rot_quat=None, material=None):
         super(ProceduralCylinder, self).__init__(pos, rot, name, material)
         self.radius = radius
         self.height = height

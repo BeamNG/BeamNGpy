@@ -1115,7 +1115,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        elif rot:
+        else:
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1155,7 +1155,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        elif rot:
+        else:
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1188,7 +1188,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        elif rot:
+        else:
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -1216,7 +1216,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        elif rot:
+        else:
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
@@ -1247,7 +1247,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        elif rot:
+        else:
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name

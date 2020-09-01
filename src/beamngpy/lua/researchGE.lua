@@ -366,7 +366,7 @@ M.handleSpawnVehicle = function(msg)
   local cling = msg['cling']
 
   pos = vec3(pos[1], pos[2], pos[3])
-  rot = quatFromEuler(rot[1], rot[2], rot[3])
+  rot = quat(rot)
 
   local partConfig = msg['partConfig']
 
@@ -767,9 +767,7 @@ M.handleFindObjectsClass = function(msg)
 
     pos = {pos.x, pos.y, pos.z}
 
-    rot = quat(rot.x, rot.y, rot.z, rot.w)
-    rot = rot:toEulerYXZ()
-    rot = {rot.x, rot.y, rot.z}
+    rot ={rot.x, rot.y, rot.z, rot.w}
 
     scl = {scl.x, scl.y, scl.z}
 
@@ -806,7 +804,7 @@ local function placeObject(name, mesh, pos, rot)
   end
 
   pos = vec3(pos)
-  rot = quatFromEuler(rot[1], rot[2], rot[3]):toTorqueQuat()
+  rot = quat(rot):toTorqueQuat()
 
   local proc = createObject('ProceduralMesh')
   proc:registerObject(name)
