@@ -1080,8 +1080,9 @@ class BeamNGpy:
         for obj in resp['objects']:
             sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
                                   tuple(obj['position']),
-                                  tuple(obj['rotation']),
+                                  None,
                                   tuple(obj['scale']),
+                                  rot_quat=tuple(obj['rotation']),
                                   **obj['options'])
             ret.append(sobj)
 

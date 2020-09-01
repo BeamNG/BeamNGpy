@@ -1,6 +1,5 @@
 from beamngpy import BeamNGpy, Vehicle, Scenario, ScenarioObject, setup_logging
 
-import numpy as np
 
 
 def main():
@@ -12,7 +11,7 @@ def main():
     scenario = Scenario('smallgrid', 'test_quat')
 
     vehicle = Vehicle('ego_vehicle', model='etk800', color='Blue', licence="angle")
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0, 0))
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
 
 
     vehicle = Vehicle('ego_vehicle2', model='etk800', color='Green', license="quat")
@@ -21,7 +20,7 @@ def main():
     rb = ScenarioObject(oid='roadblock', 
                               name='sawhorse',
                               otype='BeamNGVehicle',
-                              pos=(-10, 5, 0),
+                              pos=(-10, -5, 0),
                               rot=(0,0,0),
                               scale=(1, 1, 1),
                               JBeam = 'sawhorse',
@@ -32,7 +31,7 @@ def main():
     cn = ScenarioObject(oid='cones', 
                               name='cones',
                               otype='BeamNGVehicle',
-                              pos=(0, 5, 0),
+                              pos=(0, -5, 0),
                               rot=None, 
                               rot_quat=(0,0,0,1),
                               scale=(1, 1, 1),

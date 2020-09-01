@@ -761,12 +761,16 @@ M.handleFindObjectsClass = function(msg)
     object = scenetree.findObject(object)
 
     local obj = {type=clazz, id=object:getID(), name=object:getName()}
+    
+    local scl = object:getScale()
     local pos = object:getPosition()
     local rot = object:getRotation()
-    local scl = object:getScale()
+    if clazz == 'BeamNGVehicle' then
+      local vehicleData = map.objects[obj.id]
+      rot = quatFromDir(vehicleData.dirVec, vehicleData.dirVecUp)
+    end
 
     pos = {pos.x, pos.y, pos.z}
-
     rot ={rot.x, rot.y, rot.z, rot.w}
 
     scl = {scl.x, scl.y, scl.z}
@@ -776,7 +780,6 @@ M.handleFindObjectsClass = function(msg)
     obj['scale'] = scl
 
     obj['options'] = {}
-    dump(object:getFieldList())
     for fld, nfo in pairs(object:getFieldList()) do
       if fld ~= 'position' and fld ~= 'rotation' and fld ~= 'scale' and fld ~= 'id' and fld ~= 'type' and fld ~= 'name' then
         local val = object:getField(fld, '')
