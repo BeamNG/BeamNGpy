@@ -808,7 +808,6 @@ local function placeObject(name, mesh, pos, rot)
 
   pos = vec3(pos)
   rot = quat(rot):toTorqueQuat()
-  log('D', 'placeObject'..tostring(rot))
 
   local proc = createObject('ProceduralMesh')
   proc:registerObject(name)

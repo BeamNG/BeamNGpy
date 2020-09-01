@@ -422,6 +422,7 @@ class Scenario:
             pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
             rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
                          in Euler angles around each axis.
+            rot_quat (tuple): Optional tuple (x, y, z, w) specifying the rotation as quaternion
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
