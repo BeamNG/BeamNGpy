@@ -118,13 +118,6 @@ class ScenarioObject:
 
 class StaticObject(ScenarioObject):
     def __init__(self, name, pos, rot, scale, shape, rot_quat=None):
-        # these vars are not used remove??
-        # if rot:
-        #     rot_quat = angle_to_quat(rot)
-            
-        # rot_mat = quat_as_rotation_mat_str(rot_quat)
-        # pos_str = '{} {} {}'.format(*pos)
-        # scale_str = '{} {} {}'.format(*scale)
         super(StaticObject, self).__init__(name, None, 'TSStatic',
                                            pos, rot, scale, rot_quat=rot_quat, shapeName=shape)
 
@@ -141,19 +134,19 @@ class ProceduralMesh(ScenarioObject):
 
 class ProceduralCylinder(ProceduralMesh):
     def __init__(self, pos, rot, radius, height, name, rot_quat=None, material=None):
-        super(ProceduralCylinder, self).__init__(pos, rot, name, material)
+        super(ProceduralCylinder, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.radius = radius
         self.height = height
 
     def place(self, bng):
         bng.create_cylinder(self.name, self.radius, self.height, self.pos,
-                            self.rot, self.material)
+                            None, material=self.material, rot_quat=self.rot)
 
 
 class ProceduralBump(ProceduralMesh):
     def __init__(self, pos, rot, width, length, height,
-                 upper_length, upper_width, name, material=None):
-        super(ProceduralBump, self).__init__(pos, rot, name, material)
+                 upper_length, upper_width, name, rot_quat=None, material=None):
+        super(ProceduralBump, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.width = width
         self.length = length
         self.height = height
@@ -163,39 +156,39 @@ class ProceduralBump(ProceduralMesh):
     def place(self, bng):
         bng.create_bump(self.name, self.width, self.length, self.height,
                         self.upper_length, self.upper_width, self.pos,
-                        self.rot, self.material)
+                        None, material=self.material, rot_quat=self.rot)
 
 
 class ProceduralCone(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name, material=None):
-        super(ProceduralCone, self).__init__(pos, rot, name, material)
+    def __init__(self, pos, rot, radius, height, name, rot_quat=None, material=None):
+        super(ProceduralCone, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.radius = radius
         self.height = height
 
     def place(self, bng):
         bng.create_cone(self.name, self.radius, self.height, self.pos,
-                        self.rot, self.material)
+                        None, material=self.material, rot_quat=self.rot)
 
 
 class ProceduralCube(ProceduralMesh):
-    def __init__(self, pos, rot, size, name, material=None):
-        super(ProceduralCube, self).__init__(pos, rot, name, material)
+    def __init__(self, pos, rot, size, name, rot_quat=None, material=None):
+        super(ProceduralCube, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.size = size
 
     def place(self, bng):
-        bng.create_cube(self.name, self.size, self.pos, self.rot,
-                        self.material)
+        bng.create_cube(self.name, self.size, self.pos, None,
+                        material=self.material, rot_quat=self.rot)
 
 
 class ProceduralRing(ProceduralMesh):
-    def __init__(self, pos, rot, radius, thickness, name, material=None):
-        super(ProceduralRing, self).__init__(pos, rot, name, material)
+    def __init__(self, pos, rot, radius, thickness, name, rot_quat=None, material=None):
+        super(ProceduralRing, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.radius = radius
         self.thickness = thickness
 
     def place(self, bng):
         bng.create_ring(self.name, self.radius, self.thickness, self.pos,
-                        self.rot, self.material)
+                        None, material=self.material, rot_quat=self.rot)
 
 
 class Scenario:
