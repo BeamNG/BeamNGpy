@@ -79,7 +79,7 @@ def main():
     vehicle.attach_sensor('damage', damage)
     vehicle.attach_sensor('timer', timer)
 
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
 
     # Compile the scenario and place it in BeamNG's map folder
     scenario.make(beamng)

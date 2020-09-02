@@ -63,7 +63,7 @@ def main():
     scenario.add_procedural_mesh(ring)
 
     vehicle = Vehicle('ego_vehicle', model='etk800')
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=None, rot_quat=(0,0,0,1))
 
     scenario.make(beamng)
 

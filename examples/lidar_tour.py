@@ -56,7 +56,7 @@ def main():
     lidar = Lidar()
     vehicle.attach_sensor('lidar', lidar)
 
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(beamng)
 
     bng = beamng.open(launch=True)
