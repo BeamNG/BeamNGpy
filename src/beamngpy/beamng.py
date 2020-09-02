@@ -21,6 +21,7 @@ import subprocess
 import sys
 import time
 import zipfile
+import warnings
 
 from pathlib import Path
 from threading import Thread
@@ -32,7 +33,7 @@ from PIL import Image
 
 from .scenario import ScenarioObject
 
-from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError, angle_to_quat
+from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError, angle_to_quat, raise_rot_deprecation_warning
 
 PROTOCOL_VERSION = 'v1.16'
 
@@ -50,7 +51,7 @@ def log_exception(extype, value, trace):
     log.exception("Uncaught exception: ", exc_info=(extype, value, trace))
 
 
-def setup_logging(log_file=None):
+def setup_logging(log_file=None, activateWarnings=True):
     """
     Sets up the logging framework to log to the given log_file and to STDOUT.
     If the path to the log_file does not exist, directories for it will be
@@ -66,10 +67,14 @@ def setup_logging(log_file=None):
 
     term_handler = log.StreamHandler()
     handlers.append(term_handler)
-    fmt = '%(asctime)s %(levelname)-8s %(message)s'
+    fmt = '%(asctime)s %(levelname)-8s %(message)s'    
     log.basicConfig(handlers=handlers, format=fmt, level=log.DEBUG)
 
     sys.excepthook = log_exception
+
+    if activateWarnings:
+        warnings.simplefilter('default')
+        log.captureWarnings(True)
 
     log.info('Started BeamNGpy logging.')
 
@@ -553,6 +558,7 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         elif rot:
+            raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -576,6 +582,7 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         elif rot:
+            raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -1036,6 +1043,7 @@ class BeamNGpy:
         data['model'] = vehicle.options['model']
         data['pos'] = pos
         if rot:
+            raise_rot_deprecation_warning()
             rot_quat = angle_to_quat(rot)
         data['rot'] = rot_quat
         data.update(vehicle.options)
@@ -1117,6 +1125,7 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
+            raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1157,6 +1166,7 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
+            raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1190,6 +1200,7 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
+            raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -1218,6 +1229,7 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
+            raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
@@ -1249,6 +1261,7 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
+            raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name

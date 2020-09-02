@@ -19,7 +19,7 @@ import numpy as np
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
-from .beamngcommon import BNGValueError, BNGError, angle_to_quat, compute_rotation_matrix, quat_as_rotation_mat_str
+from .beamngcommon import BNGValueError, BNGError, angle_to_quat, compute_rotation_matrix, quat_as_rotation_mat_str, raise_rot_deprecation_warning
 
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
@@ -93,6 +93,7 @@ class ScenarioObject:
         self.type = otype
         self.pos = pos
         if rot:
+            raise_rot_deprecation_warning()
             rot_quat = angle_to_quat(rot)
         self.rot = rot_quat
         self.scale = scale
@@ -430,6 +431,7 @@ class Scenario:
             raise BNGValueError(error)
         
         if rot:
+            raise_rot_deprecation_warning()
             rot_quat = angle_to_quat(rot)
         self.vehicles[vehicle] = (pos, rot_quat)
 

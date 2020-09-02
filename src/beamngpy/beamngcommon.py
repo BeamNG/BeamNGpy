@@ -12,6 +12,7 @@ import json
 import os
 import socket
 import numpy as np
+import warnings
 
 from functools import wraps
 
@@ -35,6 +36,8 @@ class BNGValueError(ValueError):
     """
     pass
 
+def raise_rot_deprecation_warning():
+    warnings.warn("'rot' is deprecated, use rot_mat instead", DeprecationWarning)
 
 def ack(ack_type):
     def ack_wrapper(fun):
