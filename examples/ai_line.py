@@ -22,7 +22,7 @@ def main():
 
     orig = (-769.1, 400.8, 142.8)
 
-    scenario.add_vehicle(vehicle, pos=orig, rot=(0, 0, 180))
+    scenario.add_vehicle(vehicle, pos=orig, rot=None, rot_quat=(0, 0, 1, 0))
     scenario.make(beamng)
 
     script = list()

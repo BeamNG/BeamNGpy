@@ -21,6 +21,7 @@ import subprocess
 import sys
 import time
 import zipfile
+import warnings
 
 from pathlib import Path
 from threading import Thread
@@ -32,7 +33,7 @@ from PIL import Image
 
 from .scenario import ScenarioObject
 
-from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError
+from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError, angle_to_quat, raise_rot_deprecation_warning
 
 PROTOCOL_VERSION = 'v1.16'
 
@@ -50,7 +51,7 @@ def log_exception(extype, value, trace):
     log.exception("Uncaught exception: ", exc_info=(extype, value, trace))
 
 
-def setup_logging(log_file=None):
+def setup_logging(log_file=None, activateWarnings=True):
     """
     Sets up the logging framework to log to the given log_file and to STDOUT.
     If the path to the log_file does not exist, directories for it will be
@@ -66,10 +67,14 @@ def setup_logging(log_file=None):
 
     term_handler = log.StreamHandler()
     handlers.append(term_handler)
-    fmt = '%(asctime)s %(levelname)-8s %(message)s'
+    fmt = '%(asctime)s %(levelname)-8s %(message)s'    
     log.basicConfig(handlers=handlers, format=fmt, level=log.DEBUG)
 
     sys.excepthook = log_exception
+
+    if activateWarnings:
+        warnings.simplefilter('default')
+        log.captureWarnings(True)
 
     log.info('Started BeamNGpy logging.')
 
@@ -529,7 +534,7 @@ class BeamNGpy:
         self.send(data)
 
     @ack('Teleported')
-    def teleport_vehicle(self, vehicle, pos, rot=None):
+    def teleport_vehicle(self, vehicle, pos, rot=None, rot_quat=None):
         """
         Teleports the given vehicle to the given position with the given
         rotation.
@@ -540,6 +545,7 @@ class BeamNGpy:
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
                          axes in degrees.
+            rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion
 
         Notes:
             In the current implementation, if both ``pos`` and ``rot`` are
@@ -549,12 +555,15 @@ class BeamNGpy:
         data = dict(type='Teleport')
         data['vehicle'] = vehicle.vid
         data['pos'] = pos
-        if rot:
-            data['rot'] = [np.radians(r) for r in rot]
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            raise_rot_deprecation_warning()
+            data['rot'] = angle_to_quat(rot)
         self.send(data)
 
     @ack('ScenarioObjectTeleported')
-    def teleport_scenario_object(self, scenario_object, pos, rot=None):
+    def teleport_scenario_object(self, scenario_object, pos, rot=None, rot_quat=None):
         """
         Teleports the given scenario object to the given position with the given
         rotation.
@@ -565,12 +574,16 @@ class BeamNGpy:
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
                          axes in degrees.
+            rot_quat (tuple): optional tuple specifying object rotation as a quaternion
         """
         data = dict(type='TeleportScenarioObject')
         data['id'] = scenario_object.id
         data['pos'] = pos
-        if rot:
-            data['rot'] = [np.radians(r) for r in rot]
+        if rot_quat:
+            data['rot'] = rot_quat
+        elif rot:
+            raise_rot_deprecation_warning()
+            data['rot'] = angle_to_quat(rot)
         self.send(data)
 
     @ack('ScenarioStarted')
@@ -1007,7 +1020,7 @@ class BeamNGpy:
         assert resp['type'] == 'ScenarioName'
         return resp['name']
 
-    def spawn_vehicle(self, vehicle, pos, rot, cling=True):
+    def spawn_vehicle(self, vehicle, pos, rot, rot_quat=(0, 0, 0, 1), cling=True):
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
@@ -1019,6 +1032,7 @@ class BeamNGpy:
             pos (tuple): Where to spawn the vehicle as a (x, y, z) triplet.
             rot (tuple): The rotation of the vehicle as a triplet of Euler
                          angles.
+            rot_quat (tuple): Vehicle rotation in form of a quaternion
             cling (bool): If set, the z-coordinate of the vehicle's position
                           will be set to the ground level at the given
                           position to avoid spawning the vehicle below ground
@@ -1028,7 +1042,10 @@ class BeamNGpy:
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
         data['pos'] = pos
-        data['rot'] = [np.radians(r) for r in rot]
+        if rot:
+            raise_rot_deprecation_warning()
+            rot_quat = angle_to_quat(rot)
+        data['rot'] = rot_quat
         data.update(vehicle.options)
         self.send(data)
         resp = self.recv()
@@ -1071,8 +1088,9 @@ class BeamNGpy:
         for obj in resp['objects']:
             sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
                                   tuple(obj['position']),
-                                  tuple(obj['rotation']),
+                                  None,
                                   tuple(obj['scale']),
+                                  rot_quat=tuple(obj['rotation']),
                                   **obj['options'])
             ret.append(sobj)
 
@@ -1080,7 +1098,7 @@ class BeamNGpy:
 
     @ack('CreatedCylinder')
     def create_cylinder(self, name, radius, height, pos, rot,
-                        material=None):
+                        rot_quat=None, material=None):
         """
         Creates a procedurally generated cylinder mesh with the given
         radius and height at the given position and rotation. The material
@@ -1096,6 +1114,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the cylinder's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1103,14 +1122,18 @@ class BeamNGpy:
         data['radius'] = radius
         data['height'] = height
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        else:
+            raise_rot_deprecation_warning()
+            data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
         self.send(data)
 
     @ack('CreatedBump')
     def create_bump(self, name, width, length, height, upper_length,
-                    upper_width, pos, rot, material=None):
+                    upper_width, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated bump with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1129,6 +1152,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the bump's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1139,13 +1163,17 @@ class BeamNGpy:
         data['upperLength'] = upper_length
         data['upperWidth'] = upper_width
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        else:
+            raise_rot_deprecation_warning()
+            data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
         self.send(data)
 
     @ack('CreatedCone')
-    def create_cone(self, name, radius, height, pos, rot, material=None):
+    def create_cone(self, name, radius, height, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated cone with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1159,6 +1187,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the cone's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1168,11 +1197,15 @@ class BeamNGpy:
         data['material'] = material
         data['name'] = name
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        else:
+            raise_rot_deprecation_warning()
+            data['rot'] = angle_to_quat(rot)
         self.send(data)
 
     @ack('CreatedCube')
-    def create_cube(self, name, size, pos, rot, material=None):
+    def create_cube(self, name, size, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated cube with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1186,19 +1219,24 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the cube's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
         data = dict(type='CreateCube')
         data['size'] = size
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        else:
+            raise_rot_deprecation_warning()
+            data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
         self.send(data)
 
     @ack('CreatedRing')
-    def create_ring(self, name, radius, thickness, pos, rot, material=None):
+    def create_ring(self, name, radius, thickness, pos, rot, rot_quat=None, material=None):
         """
         Creates a procedurally generated ring with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1212,6 +1250,7 @@ class BeamNGpy:
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
                          the (X, Y, Z) axes.
+            rot_quat (tuple): Quaternion specifying the ring's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
         """
@@ -1219,7 +1258,11 @@ class BeamNGpy:
         data['radius'] = radius
         data['thickness'] = thickness
         data['pos'] = pos
-        data['rot'] = rot
+        if rot_quat:
+            data['rot'] = rot_quat
+        else:
+            raise_rot_deprecation_warning()
+            data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
         self.send(data)

@@ -275,7 +275,7 @@ M.handleTeleport = function(msg)
   local vID = msg['vehicle']
   local veh = scenarioHelper.getVehicleByName(vID)
   if msg['rot'] ~= nil then
-    local quat = quatFromEuler(msg['rot'][1], msg['rot'][2], msg['rot'][3])
+    local quat = quat(msg['rot'][1], msg['rot'][2], msg['rot'][3], msg['rot'][4])
     veh:setPositionRotation(msg['pos'][1], msg['pos'][2], msg['pos'][3], quat.x, quat.y, quat.z, quat.w)
   else
     veh:setPosition(Point3F(msg['pos'][1], msg['pos'][2], msg['pos'][3]))
@@ -287,7 +287,7 @@ end
 M.handleTeleportScenarioObject = function(msg)
   local sobj = scenetree.findObject(msg['id'])
   if msg['rot'] ~= nil then
-    local quat = quatFromEuler(msg['rot'][1], msg['rot'][2], msg['rot'][3])
+    local quat = quat(msg['rot'][1], msg['rot'][2], msg['rot'][3], msg['rot'][4])
     sobj:setPosRot(msg['pos'][1], msg['pos'][2], msg['pos'][3], quat.x, quat.y, quat.z, quat.w)
   else
     sobj:setPosition(Point3F(msg['pos'][1], msg['pos'][2], msg['pos'][3]))
@@ -366,7 +366,7 @@ M.handleSpawnVehicle = function(msg)
   local cling = msg['cling']
 
   pos = vec3(pos[1], pos[2], pos[3])
-  rot = quatFromEuler(rot[1], rot[2], rot[3])
+  rot = quat(rot)
 
   local partConfig = msg['partConfig']
 
@@ -761,15 +761,17 @@ M.handleFindObjectsClass = function(msg)
     object = scenetree.findObject(object)
 
     local obj = {type=clazz, id=object:getID(), name=object:getName()}
+    
+    local scl = object:getScale()
     local pos = object:getPosition()
     local rot = object:getRotation()
-    local scl = object:getScale()
+    if clazz == 'BeamNGVehicle' then
+      local vehicleData = map.objects[obj.id]
+      rot = quatFromDir(vehicleData.dirVec, vehicleData.dirVecUp)
+    end
 
     pos = {pos.x, pos.y, pos.z}
-
-    rot = quat(rot.x, rot.y, rot.z, rot.w)
-    rot = rot:toEulerYXZ()
-    rot = {rot.x, rot.y, rot.z}
+    rot ={rot.x, rot.y, rot.z, rot.w}
 
     scl = {scl.x, scl.y, scl.z}
 
@@ -778,7 +780,6 @@ M.handleFindObjectsClass = function(msg)
     obj['scale'] = scl
 
     obj['options'] = {}
-    dump(object:getFieldList())
     for fld, nfo in pairs(object:getFieldList()) do
       if fld ~= 'position' and fld ~= 'rotation' and fld ~= 'scale' and fld ~= 'id' and fld ~= 'type' and fld ~= 'name' then
         local val = object:getField(fld, '')
@@ -806,7 +807,7 @@ local function placeObject(name, mesh, pos, rot)
   end
 
   pos = vec3(pos)
-  rot = quatFromEuler(rot[1], rot[2], rot[3]):toTorqueQuat()
+  rot = quat(rot):toTorqueQuat()
 
   local proc = createObject('ProceduralMesh')
   proc:registerObject(name)

@@ -11,6 +11,8 @@ import logging as log
 import json
 import os
 import socket
+import numpy as np
+import warnings
 
 from functools import wraps
 
@@ -34,6 +36,8 @@ class BNGValueError(ValueError):
     """
     pass
 
+def raise_rot_deprecation_warning():
+    warnings.warn("'rot' is deprecated, use rot_mat instead", DeprecationWarning)
 
 def ack(ack_type):
     def ack_wrapper(fun):
@@ -167,3 +171,68 @@ def recv_msg(skt):
     if 'bngValueError' in data:
         raise BNGValueError(data['bngValueError'])
     return data
+
+
+def angle_to_quat(angle):
+    """
+    Converts an euler angle to a quaternion.
+
+    Args:
+        angle (tuple): Euler angle (degrees)
+
+    Return:
+        Quaterion with the order (x, y, z, w) with w representing the real component
+    """
+    angle = np.radians(angle)
+
+    cy = np.cos(angle[2] * 0.5)
+    sy = np.sin(angle[2] * 0.5)
+    cp = np.cos(angle[1] * 0.5)
+    sp = np.sin(angle[1] * 0.5)
+    cr = np.cos(angle[0] * 0.5)
+    sr = np.sin(angle[0] * 0.5)
+
+    w = cr * cp * cy + sr * sp * sy
+    x = sr * cp * cy - cr * sp * sy
+    y = cr * sp * cy + sr * cp * sy
+    z = cr * cp * sy - sr * sp * cy
+
+    return (x, y, z, w)
+
+def compute_rotation_matrix(quat):
+    """
+    Calculates the rotation matrix for the given quaternion
+    to be used in a scenario prefab.
+
+    Args:
+        quat (tuple): Quaterion with the order (x, y, z, w) with w representing the real component
+
+    Return:
+        The rotation matrix as np array.
+    """
+    norm = np.linalg.norm(quat)
+    eps = np.finfo(float).eps
+    if np.abs(norm-1) > eps:
+        quat /= norm
+    x, y, z, w = quat[0], quat[1], quat[2], quat[3]
+    rot_mat = np.array([
+                            [1-2*(y**2+z**2), 2*(x*y-z*w), 2*(x*z+y*w)],
+                            [2*(x*y+z*w), 1-2*(x**2+z**2), 2*(y*z-x*w)],
+                            [2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x**2+y**2)]
+                        ], dtype=float) 
+    return rot_mat
+
+def quat_as_rotation_mat_str(quat):
+    """
+    For a given quaternion, the function computes the corresponding rotation matrix and converts it into a string.
+
+    Args:
+        quat (tuple): Quaterion with the order (x, y, z, w) with w representing the real component
+    
+    Return:
+        Rotation matrix as string
+
+    """
+    mat = compute_rotation_matrix(quat)
+    mat =  mat.reshape(9).astype(str)
+    return ' '.join(mat)

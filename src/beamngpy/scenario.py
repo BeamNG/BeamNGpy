@@ -19,43 +19,10 @@ import numpy as np
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
-from .beamngcommon import BNGValueError, BNGError
+from .beamngcommon import BNGValueError, BNGError, angle_to_quat, compute_rotation_matrix, quat_as_rotation_mat_str, raise_rot_deprecation_warning
 
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
-
-
-def compute_rotation_matrix(angles):
-    """
-    Calculates the rotation matrix string for the given triplet of Euler angles
-    to be used in a scenario prefab.
-
-    Args:
-        angles (tuple): Euler angles for the (x,y,z) axes.
-
-    Return:
-        The rotation matrix encoded as a string.
-    """
-    angles = [np.radians(a) for a in angles]
-
-    sin_a = math.sin(angles[0])
-    cos_a = math.cos(angles[0])
-    sin_b = math.sin(angles[1])
-    cos_b = math.cos(angles[1])
-    sin_c = math.sin(angles[2])
-    cos_c = math.cos(angles[2])
-
-    mat_a = np.array(((1, 0, 0), (0, cos_a, -sin_a), (0, sin_a, cos_a)))
-    mat_b = np.array(((cos_b, 0, sin_b), (0, 1, 0), (-sin_b, 0, cos_b)))
-    mat_c = np.array(((cos_c, -sin_c, 0), (sin_c, cos_c, 0), (0, 0, 1)))
-
-    mat = np.matmul(np.matmul(mat_a, mat_b), mat_c)
-    mat = mat.reshape(9)
-
-    mat_str = ('{} ' * 9).strip()
-    mat_str = mat_str.format(*mat)
-
-    return mat_str
 
 
 class Road:
@@ -120,12 +87,15 @@ class ScenarioObject:
     scale.
     """
 
-    def __init__(self, oid, name, otype, pos, rot, scale, **options):
+    def __init__(self, oid, name, otype, pos, rot, scale, rot_quat=None, **options):
         self.id = oid
         self.name = name
         self.type = otype
         self.pos = pos
-        self.rot = rot
+        if rot:
+            raise_rot_deprecation_warning()
+            rot_quat = angle_to_quat(rot)
+        self.rot = rot_quat
         self.scale = scale
         self.opts = options
 
@@ -148,18 +118,15 @@ class ScenarioObject:
 
 
 class StaticObject(ScenarioObject):
-    def __init__(self, name, pos, rot, scale, shape):
-        rot_mat = compute_rotation_matrix(rot)
-        pos_str = '{} {} {}'.format(*pos)
-        scale_str = '{} {} {}'.format(*scale)
+    def __init__(self, name, pos, rot, scale, shape, rot_quat=None):
         super(StaticObject, self).__init__(name, None, 'TSStatic',
-                                           pos, rot, scale, shapeName=shape)
+                                           pos, rot, scale, rot_quat=rot_quat, shapeName=shape)
 
 
 class ProceduralMesh(ScenarioObject):
-    def __init__(self, pos, rot, name, material):
+    def __init__(self, pos, rot, name, material, rot_quat=None):
         super(ProceduralMesh, self).__init__(name, name, 'ProceduralMesh',
-                                             pos, rot, (1, 1, 1))
+                                             pos, rot, (1, 1, 1), rot_quat=rot_quat)
         self.material = material
 
     def place(self, bng):
@@ -167,20 +134,20 @@ class ProceduralMesh(ScenarioObject):
 
 
 class ProceduralCylinder(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name, material=None):
-        super(ProceduralCylinder, self).__init__(pos, rot, name, material)
+    def __init__(self, pos, rot, radius, height, name, rot_quat=None, material=None):
+        super(ProceduralCylinder, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.radius = radius
         self.height = height
 
     def place(self, bng):
         bng.create_cylinder(self.name, self.radius, self.height, self.pos,
-                            self.rot, self.material)
+                            None, material=self.material, rot_quat=self.rot)
 
 
 class ProceduralBump(ProceduralMesh):
     def __init__(self, pos, rot, width, length, height,
-                 upper_length, upper_width, name, material=None):
-        super(ProceduralBump, self).__init__(pos, rot, name, material)
+                 upper_length, upper_width, name, rot_quat=None, material=None):
+        super(ProceduralBump, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.width = width
         self.length = length
         self.height = height
@@ -190,39 +157,39 @@ class ProceduralBump(ProceduralMesh):
     def place(self, bng):
         bng.create_bump(self.name, self.width, self.length, self.height,
                         self.upper_length, self.upper_width, self.pos,
-                        self.rot, self.material)
+                        None, material=self.material, rot_quat=self.rot)
 
 
 class ProceduralCone(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name, material=None):
-        super(ProceduralCone, self).__init__(pos, rot, name, material)
+    def __init__(self, pos, rot, radius, height, name, rot_quat=None, material=None):
+        super(ProceduralCone, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.radius = radius
         self.height = height
 
     def place(self, bng):
         bng.create_cone(self.name, self.radius, self.height, self.pos,
-                        self.rot, self.material)
+                        None, material=self.material, rot_quat=self.rot)
 
 
 class ProceduralCube(ProceduralMesh):
-    def __init__(self, pos, rot, size, name, material=None):
-        super(ProceduralCube, self).__init__(pos, rot, name, material)
+    def __init__(self, pos, rot, size, name, rot_quat=None, material=None):
+        super(ProceduralCube, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.size = size
 
     def place(self, bng):
-        bng.create_cube(self.name, self.size, self.pos, self.rot,
-                        self.material)
+        bng.create_cube(self.name, self.size, self.pos, None,
+                        material=self.material, rot_quat=self.rot)
 
 
 class ProceduralRing(ProceduralMesh):
-    def __init__(self, pos, rot, radius, thickness, name, material=None):
-        super(ProceduralRing, self).__init__(pos, rot, name, material)
+    def __init__(self, pos, rot, radius, thickness, name, rot_quat=None, material=None):
+        super(ProceduralRing, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
         self.radius = radius
         self.thickness = thickness
 
     def place(self, bng):
         bng.create_ring(self.name, self.radius, self.thickness, self.pos,
-                        self.rot, self.material)
+                        None, material=self.material, rot_quat=self.rot)
 
 
 class Scenario:
@@ -297,7 +264,7 @@ class Scenario:
             obj_dict['options'] = copy.deepcopy(obj.opts)
 
             pos_str = '{} {} {}'.format(*obj.pos)
-            rot_mat = compute_rotation_matrix(obj.rot)
+            rot_mat = quat_as_rotation_mat_str(obj.rot)
             scale_str = '{} {} {}'.format(*obj.scale)
             obj_dict['options']['position'] = pos_str
             obj_dict['options']['rotationMatrix'] = rot_mat
@@ -351,7 +318,7 @@ class Scenario:
             vehicle_dict = dict(vid=vehicle.vid)
             vehicle_dict.update(vehicle.options)
             vehicle_dict['position'] = ' '.join([str(p) for p in pos])
-            vehicle_dict['rotationMatrix'] = compute_rotation_matrix(rot)
+            vehicle_dict['rotationMatrix'] = quat_as_rotation_mat_str(rot)
             vehicles.append(vehicle_dict)
         return vehicles
 
@@ -447,7 +414,7 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=(0, 0, 0), cling=True):
+    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=None, rot_quat=(0, 0, 0, 1), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation. This method has to be called before a scenario is started.
@@ -456,16 +423,20 @@ class Scenario:
             pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
             rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
                          in Euler angles around each axis.
+            rot_quat (tuple): Optional tuple (x, y, z, w) specifying the rotation as quaternion
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
                 ' Scenario={}, Vehicle={}'.format(self.name, vehicle.vid)
             raise BNGValueError(error)
-
-        self.vehicles[vehicle] = (pos, rot)
+        
+        if rot:
+            raise_rot_deprecation_warning()
+            rot_quat = angle_to_quat(rot)
+        self.vehicles[vehicle] = (pos, rot_quat)
 
         if self.bng:
-            self.bng.spawn_vehicle(vehicle, pos, rot, cling=cling)
+            self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat, cling=cling) #todo
             self.transient_vehicles.add(vehicle)
 
     def remove_vehicle(self, vehicle):
