@@ -5,7 +5,7 @@
                with BeamNG.drive.
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-
+.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
 import base64
@@ -33,9 +33,11 @@ from PIL import Image
 
 from .scenario import ScenarioObject
 
-from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError, BNGValueError, angle_to_quat, raise_rot_deprecation_warning
+from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError
+from .beamngcommon import BNGValueError, angle_to_quat
+from .beamngcommon import raise_rot_deprecation_warning
 
-PROTOCOL_VERSION = 'v1.16'
+PROTOCOL_VERSION = 'v1.17'
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -67,7 +69,7 @@ def setup_logging(log_file=None, activateWarnings=True):
 
     term_handler = log.StreamHandler()
     handlers.append(term_handler)
-    fmt = '%(asctime)s %(levelname)-8s %(message)s'    
+    fmt = '%(asctime)s %(levelname)-8s %(message)s'
     log.basicConfig(handlers=handlers, format=fmt, level=log.DEBUG)
 
     sys.excepthook = log_exception
@@ -257,8 +259,11 @@ class BeamNGpy:
         log.debug('Killing BeamNG process...')
         if os.name == "nt":
             with open(os.devnull, 'w') as devnull:
-                subprocess.call(['taskkill', '/F', '/T', '/PID',
-                                 str(self.process.pid)], stdout=devnull, stderr=devnull)
+                subprocess.call([
+                    'taskkill', '/F', '/T', '/PID',
+                    str(self.process.pid)], stdout=devnull,
+                    stderr=devnull
+                )
         else:
             os.kill(self.process.pid, signal.SIGTERM)
 
@@ -545,7 +550,8 @@ class BeamNGpy:
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
                          axes in degrees.
-            rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion
+            rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
+                              rotation as quaternion
 
         Notes:
             In the current implementation, if both ``pos`` and ``rot`` are
@@ -563,18 +569,21 @@ class BeamNGpy:
         self.send(data)
 
     @ack('ScenarioObjectTeleported')
-    def teleport_scenario_object(self, scenario_object, pos, rot=None, rot_quat=None):
+    def teleport_scenario_object(self, scenario_object, pos,
+                                 rot=None, rot_quat=None):
         """
-        Teleports the given scenario object to the given position with the given
-        rotation.
+        Teleports the given scenario object to the given position with the
+        given rotation.
 
         Args:
-            scenario_object (:class:`.ScenarioObject`): The vehicle to teleport.
+            scenario_object (:class:`.ScenarioObject`): The vehicle to
+                                                        teleport.
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
                          axes in degrees.
-            rot_quat (tuple): optional tuple specifying object rotation as a quaternion
+            rot_quat (tuple): Optional tuple specifying object rotation as a
+                              quaternion
         """
         data = dict(type='TeleportScenarioObject')
         data['id'] = scenario_object.id
@@ -1020,7 +1029,8 @@ class BeamNGpy:
         assert resp['type'] == 'ScenarioName'
         return resp['name']
 
-    def spawn_vehicle(self, vehicle, pos, rot, rot_quat=(0, 0, 0, 1), cling=True):
+    def spawn_vehicle(self, vehicle, pos, rot,
+                      rot_quat=(0, 0, 0, 1), cling=True):
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
@@ -1173,7 +1183,8 @@ class BeamNGpy:
         self.send(data)
 
     @ack('CreatedCone')
-    def create_cone(self, name, radius, height, pos, rot, rot_quat=None, material=None):
+    def create_cone(self, name, radius, height, pos, rot, rot_quat=None,
+                    material=None):
         """
         Creates a procedurally generated cone with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1236,7 +1247,8 @@ class BeamNGpy:
         self.send(data)
 
     @ack('CreatedRing')
-    def create_ring(self, name, radius, thickness, pos, rot, rot_quat=None, material=None):
+    def create_ring(self, name, radius, thickness, pos, rot, rot_quat=None,
+                    material=None):
         """
         Creates a procedurally generated ring with the given properties at the
         given position and rotation. The material can optionally be specified

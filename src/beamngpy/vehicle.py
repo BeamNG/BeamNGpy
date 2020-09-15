@@ -4,6 +4,7 @@
     :synopsis: Contains vehicle-related classes/functions  for BeamNGpy.
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
+.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 
 """
 
@@ -452,7 +453,8 @@ class Vehicle:
             a second between those points will make the AI drive from A to B as
             fast as it can, but unlikely to reach it in the given time.
             Furthermore, if the AI falls behind schedule, it will start
-            skipping points in the script in an effort to make up for lost time.
+            skipping points in the script in an effort to make up for
+            lost time.
 
         Raises:
             BNGValueError: If the script has fewer than three nodes, the
@@ -560,18 +562,18 @@ class Vehicle:
             "near" rectangle towards the rear of the vehicle and "far"
             rectangle towards the front. The points are then named like this:
 
-            * `front_bottom_left`: Bottom left point of the front rectangle as an
-                                  (x, y ,z) triplet
-            * `front_bottom_right`: Bottom right point of the front rectangle as
-                                   an (x, y, z) triplet
+            * `front_bottom_left`: Bottom left point of the front rectangle as
+                                   an (x, y ,z) triplet
+            * `front_bottom_right`: Bottom right point of the front rectangle
+                                    as an (x, y, z) triplet
             * `front_top_left`: Top left point of the front rectangle as an
                                (x, y, z) triplet
             * `front_top_right`: Top right point of the front rectangle as an
                                 (x, y, z) triplet
             * `rear_bottom_left`: Bottom left point of the rear rectangle as an
                                  (x, y, z) triplet
-            * `rear_bottom_right`: Bottom right point of the rear rectangle as an
-                                  (x, y, z) triplet
+            * `rear_bottom_right`: Bottom right point of the rear rectangle as
+                                   an (x, y, z) triplet
             * `rear_top_left`: Top left point of the rear rectangle as an
                               (x, y, z) triplet
             * `rear_top_right`: Top right point of the rear rectangle as an
@@ -619,7 +621,7 @@ class Vehicle:
             the hazard lights will make both signal indicators blink, meaning
             they will be turned on as well. Opposing indicators also turn each
             other off, i.e. turning on the left signal turns off the right one,
-            and turning on the left signal during 
+            and turning on the left signal during
 
         Raises:
             BNGValueError: If an invalid light value is given.

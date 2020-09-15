@@ -4,7 +4,7 @@
 
 local M = {}
 local logTag = 'ResearchGE'
-local version = 'v1.16'
+local version = 'v1.17'
 
 local socket = require('libs/luasocket/socket.socket')
 local rcom = require('utils/researchCommunication')
@@ -761,7 +761,7 @@ M.handleFindObjectsClass = function(msg)
     object = scenetree.findObject(object)
 
     local obj = {type=clazz, id=object:getID(), name=object:getName()}
-    
+
     local scl = object:getScale()
     local pos = object:getPosition()
     local rot = object:getRotation()

@@ -5,6 +5,7 @@
                modules.
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
+.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
 import logging as log
@@ -36,8 +37,11 @@ class BNGValueError(ValueError):
     """
     pass
 
+
 def raise_rot_deprecation_warning():
-    warnings.warn("'rot' is deprecated, use rot_mat instead", DeprecationWarning)
+    warnings.warn('\'rot\' is deprecated, use rot_mat instead',
+                  DeprecationWarning)
+
 
 def ack(ack_type):
     def ack_wrapper(fun):
@@ -181,7 +185,8 @@ def angle_to_quat(angle):
         angle (tuple): Euler angle (degrees)
 
     Return:
-        Quaterion with the order (x, y, z, w) with w representing the real component
+        Quaterion with the order (x, y, z, w) with w representing the real
+        component
     """
     angle = np.radians(angle)
 
@@ -199,13 +204,15 @@ def angle_to_quat(angle):
 
     return (x, y, z, w)
 
+
 def compute_rotation_matrix(quat):
     """
     Calculates the rotation matrix for the given quaternion
     to be used in a scenario prefab.
 
     Args:
-        quat (tuple): Quaterion with the order (x, y, z, w) with w representing the real component
+        quat (tuple): Quaterion with the order (x, y, z, w) with w
+                      representing the real component
 
     Return:
         The rotation matrix as np array.
@@ -219,20 +226,23 @@ def compute_rotation_matrix(quat):
                             [1-2*(y**2+z**2), 2*(x*y-z*w), 2*(x*z+y*w)],
                             [2*(x*y+z*w), 1-2*(x**2+z**2), 2*(y*z-x*w)],
                             [2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x**2+y**2)]
-                        ], dtype=float) 
+                        ], dtype=float)
     return rot_mat
+
 
 def quat_as_rotation_mat_str(quat):
     """
-    For a given quaternion, the function computes the corresponding rotation matrix and converts it into a string.
+    For a given quaternion, the function computes the corresponding rotation
+    matrix and converts it into a string.
 
     Args:
-        quat (tuple): Quaterion with the order (x, y, z, w) with w representing the real component
-    
+        quat (tuple): Quaterion with the order (x, y, z, w) with w
+        representing the real component
+
     Return:
         Rotation matrix as string
 
     """
     mat = compute_rotation_matrix(quat)
-    mat =  mat.reshape(9).astype(str)
+    mat = mat.reshape(9).astype(str)
     return ' '.join(mat)

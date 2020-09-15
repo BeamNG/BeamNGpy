@@ -3,6 +3,10 @@
     :platform: Windows
     :synopsis: Contains the main :py:class:`.beamngpy.Scenario` class used to
                define scenarios.
+
+.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
+.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
+.. moduleauthor:: Sedonas <https://github.com/Sedonas>
 """
 
 import copy
@@ -19,7 +23,9 @@ import numpy as np
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
-from .beamngcommon import BNGValueError, BNGError, angle_to_quat, compute_rotation_matrix, quat_as_rotation_mat_str, raise_rot_deprecation_warning
+from .beamngcommon import BNGValueError, BNGError, angle_to_quat
+from .beamngcommon import compute_rotation_matrix, quat_as_rotation_mat_str
+from .beamngcommon import raise_rot_deprecation_warning
 
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
@@ -87,7 +93,8 @@ class ScenarioObject:
     scale.
     """
 
-    def __init__(self, oid, name, otype, pos, rot, scale, rot_quat=None, **options):
+    def __init__(self, oid, name, otype, pos, rot, scale,
+                 rot_quat=None, **options):
         self.id = oid
         self.name = name
         self.type = otype
@@ -120,13 +127,15 @@ class ScenarioObject:
 class StaticObject(ScenarioObject):
     def __init__(self, name, pos, rot, scale, shape, rot_quat=None):
         super(StaticObject, self).__init__(name, None, 'TSStatic',
-                                           pos, rot, scale, rot_quat=rot_quat, shapeName=shape)
+                                           pos, rot, scale, rot_quat=rot_quat,
+                                           shapeName=shape)
 
 
 class ProceduralMesh(ScenarioObject):
     def __init__(self, pos, rot, name, material, rot_quat=None):
         super(ProceduralMesh, self).__init__(name, name, 'ProceduralMesh',
-                                             pos, rot, (1, 1, 1), rot_quat=rot_quat)
+                                             pos, rot, (1, 1, 1),
+                                             rot_quat=rot_quat)
         self.material = material
 
     def place(self, bng):
@@ -134,8 +143,10 @@ class ProceduralMesh(ScenarioObject):
 
 
 class ProceduralCylinder(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name, rot_quat=None, material=None):
-        super(ProceduralCylinder, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
+    def __init__(self, pos, rot, radius, height, name,
+                 rot_quat=None, material=None):
+        super(ProceduralCylinder, self).__init__(pos, rot, name, material,
+                                                 rot_quat=rot_quat)
         self.radius = radius
         self.height = height
 
@@ -145,9 +156,10 @@ class ProceduralCylinder(ProceduralMesh):
 
 
 class ProceduralBump(ProceduralMesh):
-    def __init__(self, pos, rot, width, length, height,
-                 upper_length, upper_width, name, rot_quat=None, material=None):
-        super(ProceduralBump, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
+    def __init__(self, pos, rot, width, length, height, upper_length,
+                 upper_width, name, rot_quat=None, material=None):
+        super(ProceduralBump, self).__init__(pos, rot, name, material,
+                                             rot_quat=rot_quat)
         self.width = width
         self.length = length
         self.height = height
@@ -161,8 +173,10 @@ class ProceduralBump(ProceduralMesh):
 
 
 class ProceduralCone(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name, rot_quat=None, material=None):
-        super(ProceduralCone, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
+    def __init__(self, pos, rot, radius, height, name,
+                 rot_quat=None, material=None):
+        super(ProceduralCone, self).__init__(pos, rot, name, material,
+                                             rot_quat=rot_quat)
         self.radius = radius
         self.height = height
 
@@ -173,7 +187,8 @@ class ProceduralCone(ProceduralMesh):
 
 class ProceduralCube(ProceduralMesh):
     def __init__(self, pos, rot, size, name, rot_quat=None, material=None):
-        super(ProceduralCube, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
+        super(ProceduralCube, self).__init__(pos, rot, name, material,
+                                             rot_quat=rot_quat)
         self.size = size
 
     def place(self, bng):
@@ -182,8 +197,10 @@ class ProceduralCube(ProceduralMesh):
 
 
 class ProceduralRing(ProceduralMesh):
-    def __init__(self, pos, rot, radius, thickness, name, rot_quat=None, material=None):
-        super(ProceduralRing, self).__init__(pos, rot, name, material, rot_quat=rot_quat)
+    def __init__(self, pos, rot, radius, thickness, name,
+                 rot_quat=None, material=None):
+        super(ProceduralRing, self).__init__(pos, rot, name, material,
+                                             rot_quat=rot_quat)
         self.radius = radius
         self.thickness = thickness
 
@@ -414,7 +431,8 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot=None, rot_quat=(0, 0, 0, 1), cling=True):
+    def add_vehicle(self, vehicle, pos=(0, 0, 0),
+                    rot=None, rot_quat=(0, 0, 0, 1), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation. This method has to be called before a scenario is started.
@@ -423,20 +441,22 @@ class Scenario:
             pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
             rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
                          in Euler angles around each axis.
-            rot_quat (tuple): Optional tuple (x, y, z, w) specifying the rotation as quaternion
+            rot_quat (tuple): Optional tuple (x, y, z, w) specifying the
+                              rotation as quaternion
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
                 ' Scenario={}, Vehicle={}'.format(self.name, vehicle.vid)
             raise BNGValueError(error)
-        
+
         if rot:
             raise_rot_deprecation_warning()
             rot_quat = angle_to_quat(rot)
         self.vehicles[vehicle] = (pos, rot_quat)
 
         if self.bng:
-            self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat, cling=cling) #todo
+            self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat,
+                                   cling=cling)  # todo
             self.transient_vehicles.add(vehicle)
 
     def remove_vehicle(self, vehicle):
