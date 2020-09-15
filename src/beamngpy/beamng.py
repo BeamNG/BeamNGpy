@@ -1345,6 +1345,35 @@ class BeamNGpy:
         data['stop'] = stop
         self.send(data)
 
+    @ack('SettingsChanged')
+    def change_setting(self, key, value):
+        """
+        Changes a setting in the game. Examples of the key and value pairs
+        given to this method can be found in your game's settings ini files.
+        These are usually in <userpath>/settings/game-settings.ini or
+        <userpath>/settings/cloud/game-settings-cloud.ini.
+
+        Args:
+            key (str): The key of the setting that is to be changed
+            value (str): The desired value.
+        """
+        data = dict(type='ChangeSetting')
+        data['key'] = key
+        data['value'] = value
+        self.send(data)
+
+    @ack('GraphicsSettingApplied')
+    def apply_graphics_setting(self):
+        """
+        Makes the game apply a graphics setting that has been changed since
+        startup or the last time settings were applied. A call to this is
+        required after changing settings like whether or not the game is
+        in fullscreen or the resolution, otherwise those settings will only
+        take effect after the next launch.
+        """
+        data = dict(type='ApplyGraphicsSetting')
+        self.send(data)
+
     def __enter__(self):
         self.open()
         return self

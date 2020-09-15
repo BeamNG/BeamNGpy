@@ -302,11 +302,11 @@ M.handleVehicleConnection = function(msg)
   vID = msg['vid']
   vHost = msg['host']
   vPort = msg['port']
-  
+
   command = 'extensions.load("researchVE")'
   veh = scenarioHelper.getVehicleByName(vID)
   veh:queueLuaCommand(command)
-  
+
   local exts = msg['exts']
   if exts then
     for idx, ext in pairs(exts) do
@@ -956,6 +956,18 @@ M.handleStopTraffic = function(msg)
   local stop = msg.stop
   gameplay_traffic.deactivate(stop)
   rcom.sendACK(skt, 'TrafficStopped')
+end
+
+M.handleChangeSetting = function(msg)
+  local key = msg['key']
+  local value = msg['value']
+  settings.setValue(key, value, true)
+  rcom.sendACK(skt, 'SettingsChanged')
+end
+
+M.handleApplyGraphicsSetting = function(msg)
+  core_settings_graphic.applyGraphicsState()
+  rcom.sendACK(skt, 'GraphicsSettingApplied')
 end
 
 return M

@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.17
+============
+- Add ``change_setting`` and ``apply_graphics_setting`` methods including a usage example
+- Add option to specify rotations as quaternions where appropriate
+- Add example for querying the road network
+
 Version 1.16.5
 ==============
 - Fix prefab compilation
