@@ -225,15 +225,13 @@ M.handleShowHUD = function(msg)
 end
 
 M.handleSetPhysicsDeterministic = function(msg)
-  -- be:setPhysicsSpeedFactor(-1)
-  be:setPhysicsDeterministic(true)
+  be:setPhysicsSpeedFactor(-1)
   rcom.sendACK(skt, 'SetPhysicsDeterministic')
   return true
 end
 
 M.handleSetPhysicsNonDeterministic = function(msg)
-  be:setPhysicsSpeedFactor(1)
-  be:setPhysicsDeterministic(false)
+  be:setPhysicsSpeedFactor(0)
   rcom.sendACK(skt, 'SetPhysicsNonDeterministic')
   return true
 end
