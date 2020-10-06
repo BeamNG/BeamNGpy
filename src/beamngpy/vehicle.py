@@ -474,6 +474,18 @@ class Vehicle:
         data['aggression'] = aggr
         self.send(data)
 
+    @ack('ExecutedLuaChunkVE')
+    def queue_lua_command(self, chunk):
+        """
+        Executes lua chunk in the vehicle engine VM.
+
+        Args:
+            chunk(str): lua chunk as a string
+        """
+        data = dict(type='QueueLuaCommandVE')
+        data['chunk'] = chunk
+        self.send(data)
+
     def get_part_options(self):
         """
         Retrieves a tree of part configuration options for this vehicle.
