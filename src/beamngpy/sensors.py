@@ -1065,3 +1065,26 @@ class IMU(Sensor):
         req = dict(type='IMU')
         req['name'] = self._name
         return req
+
+
+class Ultrasonic(Sensor):
+    def __init__(self,
+                 pos,
+                 rot,
+                 fov = 120,
+                 resolution = (512, 512),
+                 near_far=(NEAR, FAR)):
+        self.pos = pos
+        self.rot = rot
+        self.fov = fov
+        self.resolution = resolution
+        self.near_far = near_far
+
+    def encode_engine_request(self):
+        req = dict(type='Ultrasonic')
+        req['pos'] = self.pos
+        req['rot'] = self.rot
+        req['fov'] = self.fov
+        req['resolution'] = self.resolution
+        req['near_far'] = self.near_far
+        return req

@@ -528,6 +528,20 @@ sensors.Timer = function(req, callback)
   callback({time = scenario_scenarios.getScenario().timer})
 end
 
+sensors.Ultrasonic = function(req, callback)
+  local pos = req['pos']
+  pos = vec3(pos[1], pos[2], pos[3])
+  local rot = req['rot']
+  rot = QuatF(rot[1], rot[1], rot[3], rot[4])
+  local fov = math.rad(req['fov'])
+  local resolution = req['resolution']
+  resolution = Point2F(resolution[1], resolution[2])
+  local near_far = req['near_far']
+  near_far = Point2F(near_far[1], near_far[2])
+  local distance = Engine.testUltrasonic(pos, rot, resolution, fov, near_far)
+  callback(distance)
+end
+
 local function getSensorData(request, callback)
   local response, sensor_type, handler
   sensor_type = request['type']
@@ -1077,17 +1091,17 @@ M.handleSetRelativeCam = function(msg)
   end
 end
 
-local debugObjects = { spheres = {}, 
-                       polylines = {}, 
-                       cylinders = {}, 
-                       triangles = {}, 
+local debugObjects = { spheres = {},
+                       polylines = {},
+                       cylinders = {},
+                       triangles = {},
                        rectangles ={},
                        text = {},
                        squarePrisms = {}
                       }
-local debugObjectCounter = {sphereNum = 0, 
-                            lineNum = 0, 
-                            cylinderNum = 0, 
+local debugObjectCounter = {sphereNum = 0,
+                            lineNum = 0,
+                            cylinderNum = 0,
                             triangleNum = 0,
                             rectangleNum = 0,
                             textNum = 0,
@@ -1096,7 +1110,7 @@ local debugObjectCounter = {sphereNum = 0,
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])
-  if cling then 
+  if cling then
     local z = be:getSurfaceHeightBelow(point)
     point = Point3F(point.x, point.y, z+offset)
   end
@@ -1105,7 +1119,7 @@ end
 
 M.handleAddDebugSpheres = function(msg)
   local sphereIDs = {}
-  for idx = 1,#msg.radii do 
+  for idx = 1,#msg.radii do
     local coo = tableToPoint3F(msg.coordinates[idx], msg.cling, msg.offset)
     local color = msg.colors[idx]
     color = ColorF(color[1], color[2], color[3], color[4])
@@ -1129,7 +1143,7 @@ M.handleAddDebugPolyline = function(msg)
   local polyline = {segments = {}}
   polyline.color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
   local origin = tableToPoint3F(msg.coordinates[1], msg.cling, msg.offset)
-  for i = 2, #msg.coordinates do 
+  for i = 2, #msg.coordinates do
     local target = tableToPoint3F(msg.coordinates[i], msg.cling, msg.offset)
     local segment = {origin = origin, target = target}
     table.insert(polyline.segments, segment)
@@ -1205,27 +1219,27 @@ M.handleAddDebugSquarePrism = function(msg)
 end
 
 M.onDrawDebug = function(dtReal, lastFocus)
-  for _, sphere in pairs(debugObjects.spheres) do 
+  for _, sphere in pairs(debugObjects.spheres) do
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
   end
-  for _, polyline in pairs(debugObjects.polylines) do 
-    for _, segment in pairs(polyline.segments) do 
+  for _, polyline in pairs(debugObjects.polylines) do
+    for _, segment in pairs(polyline.segments) do
       debugDrawer:drawLine(segment.origin, segment.target, polyline.color)
     end
   end
-  for _, cylinder in pairs(debugObjects.cylinders) do 
+  for _, cylinder in pairs(debugObjects.cylinders) do
     debugDrawer:drawCylinder(cylinder.circleAPos, cylinder.circleBPos, cylinder.radius, cylinder.color)
   end
-  for _, triangle in pairs(debugObjects.triangles) do 
+  for _, triangle in pairs(debugObjects.triangles) do
     debugDrawer:drawTriSolid(triangle.a, triangle.b, triangle.c, triangle.color)
   end
-  for _, rectangle in pairs(debugObjects.rectangles) do 
+  for _, rectangle in pairs(debugObjects.rectangles) do
     debugDrawer:drawQuadSolid(rectangle.a, rectangle.b, rectangle.c, rectangle.d, rectangle.color)
   end
-  for _, line in pairs(debugObjects.text) do 
+  for _, line in pairs(debugObjects.text) do
     debugDrawer:drawText(line.origin, line.content, line.color)
   end
-  for _, prism in pairs(debugObjects.squarePrisms) do 
+  for _, prism in pairs(debugObjects.squarePrisms) do
     debugDrawer:drawSquarePrism(prism.sideA, prism.sideB, prism.sideADims, prism.sideBDims, prism.color)
   end
 end
