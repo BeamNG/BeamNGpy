@@ -460,6 +460,8 @@ class Vehicle:
             BNGValueError: If the script has fewer than three nodes, the
                            minimum length of a script.
         """
+        if start_dir != None or up_dir != None or teleport != None:
+            warnings.warn("The function arguments 'start_dir', 'up_dir', and 'teleport' are not used anymore and will be removed in future versions.", DeprecationWarning) 
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
 
