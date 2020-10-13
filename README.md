@@ -23,7 +23,7 @@ pixel-perfect semantic annotation or a simulated Lidar sensor:
 
 Usage of BeamNGpy requires BeamNG.research to be installed. Builds of
 BeamNG.research are made available for non-commercial use upon request using
-[this form.][2]. For commercial use, contact us at [licensing@beamng.gmbh][3].
+[this form][2]. For commercial use, contact us at [licensing@beamng.gmbh][3].
 Once downloaded (and extracted, depending on whether or no BeamNG.research was
 obtained as a `.zip`), you can set an environment variable `BNG_HOME` to where
 BeamNG.research can be run from, or provide a path to the BeamNGpy library
