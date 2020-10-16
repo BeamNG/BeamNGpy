@@ -22,23 +22,24 @@ def test_get_available_vehicles(beamng):
 def assert_continued_movement(bng, vehicle, start_pos):
     last_pos = start_pos
     for _ in range(5):
-        bng.step(60)
+        bng.step(120, wait=True)
         vehicle.update_vehicle()
-        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) > 1
+        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) > 0.5
         last_pos = vehicle.state['pos']
 
 
 def assert_non_movement(bng, vehicle, start_pos):
     last_pos = start_pos
     for _ in range(5):
-        bng.step(60)
+        bng.step(60, wait=True)
         vehicle.update_vehicle()
-        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) < 1
+        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) < 0.5
         last_pos = vehicle.state['pos']
 
 
 def test_vehicle_move(beamng):
     with beamng as bng:
+        bng.set_steps_per_second(50)
         bng.set_deterministic()
 
         scenario = Scenario('smallgrid', 'move_test')
@@ -49,7 +50,7 @@ def test_vehicle_move(beamng):
         bng.start_scenario()
         bng.pause()
         vehicle.control(throttle=1)
-        bng.step(120)
+        bng.step(120, wait=True)
         vehicle.update_vehicle()
         assert np.linalg.norm(vehicle.state['pos']) > 1
 
@@ -58,6 +59,7 @@ def test_vehicle_move(beamng):
 
 def test_vehicle_ai(beamng):
     with beamng as bng:
+        bng.set_steps_per_second(50)
         bng.set_deterministic()
 
         scenario = Scenario('west_coast_usa', 'ai_test')
@@ -127,9 +129,9 @@ def test_vehicle_spawn(beamng):
         scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
         other.update_vehicle()
         assert 'pos' in other.state
-        bng.step(120)
+        bng.step(120, wait=True)
         scenario.remove_vehicle(other)
-        bng.step(600)
+        bng.step(600, wait=True)
         assert other.state is None
 
 
@@ -150,7 +152,7 @@ def test_vehicle_bbox(beamng):
 
         bbox_beg = bng.get_vehicle_bbox(vehicle_a)
         vehicle_a.ai_set_mode('span')
-        bng.step(2000, True)
+        bng.step(2000, wait=True)
         bbox_end = bng.get_vehicle_bbox(vehicle_a)
 
         for k, v in bbox_beg.items():
@@ -253,6 +255,7 @@ def test_lights(beamng):
 
 def test_traffic(beamng):
     with beamng as bng:
+        bng.set_steps_per_second(50)
         bng.set_deterministic()
 
         scenario = Scenario('west_coast_usa', 'ai_test')
