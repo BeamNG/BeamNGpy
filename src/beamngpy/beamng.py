@@ -1429,6 +1429,18 @@ class BeamNGpy:
         data = dict(type='ApplyGraphicsSetting')
         self.send(data)
 
+    @ack('ExecutedLuaChunkGE')
+    def queue_lua_command(self, chunk):
+        """
+        Executes one lua chunk in the game engine VM.
+
+        Args:
+            chunk(str): lua chunk as a string
+        """
+        data = dict(type='QueueLuaCommandGE')
+        data['chunk'] = chunk
+        self.send(data)
+
     @ack('RelativeCamSet')
     def set_relative_camera(self, pos, rot=None, rot_quat=None):
         """

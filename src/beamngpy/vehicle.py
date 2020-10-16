@@ -460,6 +460,8 @@ class Vehicle:
             BNGValueError: If the script has fewer than three nodes, the
                            minimum length of a script.
         """
+        if start_dir != None or up_dir != None or teleport != None:
+            warnings.warn("The function arguments 'start_dir', 'up_dir', and 'teleport' are not used anymore and will be removed in future versions.", DeprecationWarning) 
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
 
@@ -472,6 +474,18 @@ class Vehicle:
     def ai_set_aggression(self, aggr):
         data = dict(type='SetAiAggression')
         data['aggression'] = aggr
+        self.send(data)
+
+    @ack('ExecutedLuaChunkVE')
+    def queue_lua_command(self, chunk):
+        """
+        Executes lua chunk in the vehicle engine VM.
+
+        Args:
+            chunk(str): lua chunk as a string
+        """
+        data = dict(type='QueueLuaCommandVE')
+        data['chunk'] = chunk
         self.send(data)
 
     def get_part_options(self):

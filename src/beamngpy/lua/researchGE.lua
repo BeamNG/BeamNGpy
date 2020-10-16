@@ -1108,4 +1108,17 @@ M.onDrawDebug = function(dtReal, lastFocus)
   end
 end
 
+M.handleQueueLuaCommandGE = function(msg)
+  local func, loading_err = load(msg.chunk)
+  if func then
+    local status, err = pcall(func)
+    if not status then
+      log('E', 'execution error: "' .. err .. '"')
+    end
+  else
+    log('E', 'compilation error in: "' .. msg.chunk .. '"')
+  end
+  rcom.sendACK(skt, 'ExecutedLuaChunkGE')
+end
+
 return M

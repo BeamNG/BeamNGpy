@@ -401,7 +401,6 @@ M.handleSetLights = function(msg)
     electrics.set_fog_lights(fogLights)
   end
 
-
   if lightBar ~= nil then
     if state.lightbar ~= lightBar then
       electrics.set_lightbar_signal(lightBar)
@@ -409,6 +408,19 @@ M.handleSetLights = function(msg)
   end
 
   rcom.sendACK(skt, 'LightsSet')
+end
+
+M.handleQueueLuaCommandVE = function(msg)
+  local func, loading_err = load(msg.chunk)
+  if func then 
+    local status, err = pcall(func)
+    if not status then
+      log('E', 'execution error: "' .. err .. '"')
+    end
+  else
+    log('E', 'compilation error in: "' .. msg.chunk .. '"')
+  end
+  rcom.sendACK(skt, 'ExecutedLuaChunkVE')
 end
 
 return M
