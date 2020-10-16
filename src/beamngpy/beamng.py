@@ -246,7 +246,7 @@ class BeamNGpy:
         termination.
         """
         call = self.prepare_call(extensions, *args, **opts)
-        log.debug('Starting BeamNG process...')
+        log.debug('Starting BeamNG process: %s', call)
         self.process = subprocess.Popen(call)
 
     def kill_beamng(self):
@@ -1427,6 +1427,100 @@ class BeamNGpy:
         take effect after the next launch.
         """
         data = dict(type='ApplyGraphicsSetting')
+        self.send(data)
+
+    @ack('ExecutedLuaChunkGE')
+    def queue_lua_command(self, chunk):
+        """
+        Executes one lua chunk in the game engine VM.
+
+        Args:
+            chunk(str): lua chunk as a string
+        """
+        data = dict(type='QueueLuaCommandGE')
+        data['chunk'] = chunk
+        self.send(data)
+
+    @ack('RelativeCamSet')
+    def set_relative_camera(self, pos, rot=None, rot_quat=None):
+        """
+        Switches the camera mode for the currently-entered vehicle to the
+        'relative' mode in which the camera can be placed at an arbitrary point
+        relative to the vehicle, moving along with it as it drives around.
+
+        Args:
+            pos (tuple): (x, y, z) tuple of the camera's position relative to
+                         the vehicle.
+            rot (tuple): Euler angles expressing the rotation of the camera.
+            rot_quat (tuple): The camera's rotation but written as a quat.
+        """
+        if rot_quat is None:
+            if rot is not None:
+                rot_quat = angle_to_quat(rot)
+        data = dict(type='SetRelativeCam')
+        data['pos'] = pos
+        if rot_quat:
+            data['rot'] = rot_quat
+        self.send(data)
+
+    def add_debug_line(self, points, point_colors,
+                       spheres=None, sphere_colors=None,
+                       cling=False, offset=0):
+        """
+        Adds a visual line to be rendered by BeamNG. This is mainly used for
+        debugging purposes, but can also be used to add visual indicators to
+        the user. A line is given as a series of points encoded as (x, y, z)
+        triplets and also a list of colors given as (r, g, b, a) quartets.
+        Additionally, it's possible to give a list of spheres to be rendered
+        alongside the line; spheres are specified similar to the line: a list
+        of (x, y, z, r) points, where r is the radius of the sphere. A list of
+        colors that the respective spheres should have is also given as a list
+        of (r, g, b, a) quartets.
+
+        Args:
+            points (list): List of points in the line given as (x, y, z)
+                           coordinate triplets.
+            point_colors (list): List of colors as (r, g, b, a) quartets, each
+                                 value expressing red, green, blue, and alpha
+                                 intensity from 0 to 1.
+            spheres (list): Optional list of points where spheres should be
+                            rendered, given as (x, y, z, r) tuples where x,y,z
+                            are coordinates and r the radius of the sphere.
+            sphere_colors (list): Optional list of sphere colors that contains
+                                  the desired color of spheres in the sphere
+                                  list as a (r, g, b, a) quartet for each
+                                  sphere.
+            cling (bool): Whether or not to align the given coordinates to the
+                          ground, e.g. set all z-coords to the ground height
+                          below the given x, y coords.
+            offset (float): A height offset that is used alongside the cling
+                            flag. This is value is added to computed z-coords
+                            and can be used to make the line float above the
+                            ground by, for example, adding 10cm to the z value.
+
+        Returns:
+            An ID of the added debug line that can be used later to disable
+            rendering of that line.
+        """
+        data = dict(type='AddDebugLine')
+        data['points'] = points
+        data['pointColors'] = point_colors
+
+        if spheres:
+            data['spheres'] = spheres
+            data['sphereColors'] = sphere_colors
+
+        data['cling'] = cling
+        data['offset'] = offset
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugLineAdded'
+        return resp['lineID']
+
+    @ack('DebugLineRemoved')
+    def remove_debug_line(self, line_id):
+        data = dict(type='RemoveDebugLine')
+        data['lineID'] = line_id
         self.send(data)
 
     def __enter__(self):
