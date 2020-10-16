@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.18
+============
+- Add function to switch current viewport to the relative camera mode with options to control the position of the camera
+- Add function to display debug lines in the environment
+
 Version 1.17
 ============
 - Add ``change_setting`` and ``apply_graphics_setting`` methods including a usage example

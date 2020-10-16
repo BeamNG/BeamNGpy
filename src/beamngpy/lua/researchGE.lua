@@ -41,6 +41,11 @@ local spawnPending = nil
 
 local objectCount = 1
 
+local frameDelayTimer = -1
+local frameDelayFunc = nil
+
+local debugLines = {}
+
 local _log = log
 local function log(level, message)
   _log(level, logTag, message)
@@ -99,6 +104,15 @@ M.onPreRender = function(dt)
     end
 
     return
+  end
+
+  if frameDelayTimer > 0 then
+    frameDelayTimer = frameDelayTimer - 1
+    if frameDelayTimer == 0 then
+      frameDelayFunc()
+      frameDelayFunc = nil
+      frameDelayTimer = 0
+    end
   end
 
   if stepsLeft > 0 then
@@ -969,6 +983,129 @@ end
 M.handleApplyGraphicsSetting = function(msg)
   core_settings_graphic.applyGraphicsState()
   rcom.sendACK(skt, 'GraphicsSettingApplied')
+end
+
+M.handleSetRelativeCam = function(msg)
+  core_camera.setByName(0, 'relative', false, {})
+
+  local vid = be:getPlayerVehicle(0):getID()
+  local pos = msg['pos']
+  local rot = msg['rot']
+  frameDelayTimer = 3
+  frameDelayFunc = function()
+    pos = vec3(pos[1], pos[2], pos[3])
+    core_camera.getCameraDataById(vid)['relative'].pos = pos
+
+    if rot ~= nil then
+      rot = quat(rot[1], rot[2], rot[3], rot[4]):toEulerYXZ()
+      core_camera.getCameraDataById(vid)['relative'].rot = rot
+    end
+
+    rcom.sendACK(skt, 'RelativeCamSet')
+  end
+end
+
+M.handleAddDebugLine = function(msg)
+  local points = msg['points']
+  local pointColors = msg['pointColors']
+
+  local spheres = msg['spheres']
+  local sphereColors = msg['sphereColors']
+
+  local cling = msg['cling'] or false
+  local groundOffset = msg['offset'] or 0
+
+  if #points ~= #pointColors then
+    rcom.sendBNGValueError(skt, 'Different amount of debug line points and colors given!')
+    return
+  end
+
+  if spheres ~= nil and sphereColors ~= nil then
+    if #spheres ~= #sphereColors then
+      rcom.sendBNGValueError(skt, 'Different amount of debug spheres and colors given!')
+      return
+    end
+  end
+
+  local convertedPoints = {}
+  local convertedPointColors = {}
+  for i = 1, #points do
+    local point = points[i]
+    local color = pointColors[i]
+
+    point = Point3F(point[1], point[2], point[3])
+
+    if cling then
+      local height = be:getSurfaceHeightBelow(point)
+      point = Point3F(point.x, point.y, height + groundOffset)
+    end
+
+    table.insert(convertedPoints, point)
+    table.insert(convertedPointColors, ColorF(color[1], color[2], color[3], color[4]))
+  end
+
+  local line = {
+    points = convertedPoints,
+    pointColors = convertedPointColors
+  }
+
+  if spheres ~= nil then
+    local convertedSpheres = {}
+    local convertedSphereColors = {}
+
+    for i = 1, #spheres do
+      local point = spheres[i]
+      local color = sphereColors[i]
+
+      point = Point3F(point[1], point[2], point[3])
+
+      if cling then
+        point.z = 10000
+        local height = be:getSurfaceHeightBelow(point)
+        point = Point3F(point.x, point.y, height + groundOffset)
+      end
+
+      table.insert(convertedSpheres, { point = point, radius = spheres[i][4] })
+      table.insert(convertedSphereColors, ColorF(color[1], color[2], color[3], color[4]))
+    end
+
+    line.spheres = convertedSpheres
+    line.sphereColors = convertedSphereColors
+  end
+
+  table.insert(debugLines, line)
+
+  local resp = {type = 'DebugLineAdded', lineID = #debugLines}
+  rcom.sendMessage(skt, resp)
+end
+
+M.handleRemoveDebugLine = function(msg)
+  local lineID = msg['lineID']
+  debugLines[lineID] = {}
+  rcom.sendACK(skg, 'DebugLineRemoved')
+end
+
+M.onDrawDebug = function(dtReal, lastFocus)
+  for i = 1, #debugLines do
+    local line = debugLines[i]
+
+    if line.spheres ~= nil then
+      for j = 1, #line.spheres do
+        local point = line.spheres[j].point
+        local radius = line.spheres[j].radius
+        local color = line.sphereColors[j]
+
+        debugDrawer:drawSphere(point, radius, color)
+      end
+    end
+
+    for j = 1, #line.points - 1 do
+      local a = line.points[j]
+      local b = line.points[j + 1]
+
+      debugDrawer:drawLine(a, b, line.pointColors[j + 1])
+    end
+  end
 end
 
 return M
