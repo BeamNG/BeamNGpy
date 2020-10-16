@@ -246,7 +246,7 @@ class BeamNGpy:
         termination.
         """
         call = self.prepare_call(extensions, *args, **opts)
-        log.debug('Starting BeamNG process...')
+        log.debug('Starting BeamNG process: %s', call)
         self.process = subprocess.Popen(call)
 
     def kill_beamng(self):
