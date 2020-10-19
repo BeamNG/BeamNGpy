@@ -1,36 +1,51 @@
 # BeamNGpy
 
-[![BeamNG.research](https://github.com/BeamNG/BeamNGpy/raw/master/media/beamng.research.png)](https://beamng.gmbh/research/)
-[![Documentation](https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png)](https://beamngpy.readthedocs.io/en/latest/)
+[![Documentation](https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png)][1]
 
 ## About
 
-BeamNGpy is an official library providing a Python interface to BeamNG.research, the research-oriented fork of the video game BeamNG.drive.
+BeamNGpy is an official library providing a Python interface to BeamNG.research,
+the research-oriented fork of the video game BeamNG.drive.
 
 It allows remote control of the simulation, including vehicles contained in it:
 
 ![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/master/media/throttle.gif)
 ![Steering control](https://github.com/BeamNG/BeamNGpy/raw/master/media/steering.gif)
 
-Vehicles and the environment can be equipped with various sensors that provide simulated sensor data such as a camera feed, with options for depth values and pixel-perfect semantic annotation or a simulated Lidar sensor:
+Vehicles and the environment can be equipped with various sensors that provide
+simulated sensor data such as a camera feed, with options for depth values and
+pixel-perfect semantic annotation or a simulated Lidar sensor:
 
 ![Multiple cameras](https://github.com/BeamNG/BeamNGpy/raw/master/media/camera.png)
 ![Lidar](https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar.gif)
 
 ## Prerequisites
 
-Usage of BeamNGpy requires BeamNG.research to be installed. A copy free for non-commercial use can be obtained on the [BeamNG.research home page](https://beamng.gmbh/research/). Once downloaded (and extracted, depending on whether or no BeamNG.research was obtained as a `.zip`), you can set an environment variable `BNG_HOME` to where BeamNG.research can be run from, or
-provide a path to the BeamNGpy library during initialisation.
+Usage of BeamNGpy requires BeamNG.research to be installed. Builds of
+BeamNG.research are made available for non-commercial use upon request using
+[this form][2]. For commercial use, contact us at [licensing@beamng.gmbh][3].
+Once downloaded (and extracted, depending on whether or no BeamNG.research was
+obtained as a `.zip`), you can set an environment variable `BNG_HOME` to where
+BeamNG.research can be run from, or provide a path to the BeamNGpy library
+during initialization.
+
+The regular [Steam release of BeamNG.drive][4] is compatible to an extent as
+well. Certain sensors like the simulated LiDAR or camera will not work, but
+most of the functions that are not exclusive to a research build will likely
+work.
 
 ## Installation
 
-The library itself is available on [PyPI](https://pypi.org/project/beamngpy/) and can therefore be installed using common methods like `pip`:
+The library itself is available on [PyPI][5] and can therefore be installed
+using common methods like `pip`:
 
     pip install beamngpy
 
 ## Usage
 
-Once installed, the library can be imported using `import beamngpy`. A short usage example setting up a scenario with one vehicle in the West Coast USA map that spans the area is:
+Once installed, the library can be imported using `import beamngpy`. A short
+usage example setting up a scenario with one vehicle in the West Coast USA map
+that spans the area is:
 
 ```python
 from beamngpy import BeamNGpy, Scenario, Vehicle
@@ -57,4 +72,13 @@ vehicle.ai_set_mode('span')
 input('Hit enter when done...')
 ```
 
-More examples can be found in the [examples/](https://github.com/BeamNG/BeamNGpy/tree/master/examples) folder of this repository and the documentation of the library is [available here.](https://beamngpy.readthedocs.io/en/latest/)
+More examples can be found in the [examples/][6] folder of this repository and
+the documentation of the library is [available here.][7].
+
+[1]: https://beamngpy.readthedocs.io/en/latest/
+[2]: https://register.beamng.tech/
+[3]: mailto:licensing@beamng.gmbh
+[4]: https://store.steampowered.com/app/284160/BeamNGdrive/
+[5]: https://pypi.org/project/beamngpy/
+[6]: https://github.com/BeamNG/BeamNGpy/tree/master/examples
+[7]: https://beamngpy.readthedocs.io/en/latest/

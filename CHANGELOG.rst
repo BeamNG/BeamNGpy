@@ -2,6 +2,17 @@
 Changelog
 =========
 
+=======
+Version 1.18
+============
+- Add function to switch current viewport to the relative camera mode with options to control the position of the camera
+- Add function to display debug lines in the environment
+- Add function to send Lua commands to be executed inside the simulation
+
+Version 1.17.1
+==============
+- Fix deterministic mode ignoring user-defined steps per second
+
 Version 1.17
 ============
 - Add ``change_setting`` and ``apply_graphics_setting`` methods including a usage example
