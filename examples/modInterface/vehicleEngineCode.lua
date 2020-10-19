@@ -8,15 +8,10 @@ local function log(level, msg)
 end
 
 local function handleBar(skt, msg)
-    -- this code only runs in all vehicle VMs
-    -- you'll have to introduce a check here if its only supposed to run in a particular vehicle VM
-    log('D', "I was here last")
-    print(msg.text)
+    log("I", msg.text)
 end
 
 local function onSocketMessage(skt, msg)
-    log('D', "I was here first")
-    log("D", "onSocketMessage")
     local msgType = 'handle' .. msg['type']
     local handler = M[msgType]
     if handler ~= nil then
