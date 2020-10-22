@@ -529,8 +529,11 @@ sensors.Timer = function(req, callback)
 end
 
 sensors.Ultrasonic = function(req, callback)
-  local pos = req['pos']
-  pos = vec3(pos[1], pos[2], pos[3])
+  log("D", "got ultrasonic senor request")
+  dump(req)
+  log("E", "todo: offset is absolute position as of now")
+  local offset = req['offset']
+  offset = Point3F(offset[1], offset[2], offset[3])
   local rot = req['rot']
   rot = QuatF(rot[1], rot[1], rot[3], rot[4])
   local fov = math.rad(req['fov'])
@@ -538,7 +541,11 @@ sensors.Ultrasonic = function(req, callback)
   resolution = Point2F(resolution[1], resolution[2])
   local near_far = req['near_far']
   near_far = Point2F(near_far[1], near_far[2])
-  local distance = Engine.testUltrasonic(pos, rot, resolution, fov, near_far)
+  dump(offset, rot, resolution, fov, near_far)
+  local dist = Engine.testUltrasonic(offset, rot, resolution, fov, near_far)
+  dump(dist)
+  log("E", "todo: correct dist")
+  local distance = 5 
   callback(distance)
 end
 
