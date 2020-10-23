@@ -1080,30 +1080,66 @@ end
 M.handleRemoveDebugLine = function(msg)
   local lineID = msg['lineID']
   debugLines[lineID] = {}
-  rcom.sendACK(skg, 'DebugLineRemoved')
+  rcom.sendACK(skt, 'DebugLineRemoved')
+end
+
+local debugObjects = { spheres = {}, lines = {}}
+local debugObjectCounter = {sphereNum = 0, lineNum = 0}
+
+M.handleAddDebugSpheres = function(msg)
+  local sphereIDs = {}
+  for idx = 1,#msg.radii do 
+    local coo = msg.coordinates[idx]
+    coo = Point3F(coo[1], coo[2], coo[3])
+    if msg.cling then
+      local z = be:getSurfaceHeightBelow(coo) + msg.offset
+      coo = Point3F(coo.x, coo.y, z)
+    end
+    local color = msg.colors[idx]
+    color = ColorF(color[1], color[2], color[3], color[4])
+    local sphere = {coo = coo, radius = msg.radii[idx], color = color}
+    debugObjectCounter.sphereNum = debugObjectCounter.sphereNum + 1
+    debugObjects.spheres[debugObjectCounter.sphereNum] = sphere
+    table.insert(sphereIDs, debugObjectCounter.sphereNum)
+  end
+  local resp = {type = 'DebugSphereAdded', sphereIDs = sphereIDs}
+  rcom.sendMessage(skt, resp)
+end
+
+M.handleRemoveDebugSpheres = function(msg)
+  for _, idx in pairs(msg.sphereIDs) do
+    debugObjects.spheres[idx] = nil
+  end
+  rcom.sendACK(skt, 'DebugSpheresRemoved')
 end
 
 M.onDrawDebug = function(dtReal, lastFocus)
-  for i = 1, #debugLines do
-    local line = debugLines[i]
-
-    if line.spheres ~= nil then
-      for j = 1, #line.spheres do
-        local point = line.spheres[j].point
-        local radius = line.spheres[j].radius
-        local color = line.sphereColors[j]
-
-        debugDrawer:drawSphere(point, radius, color)
-      end
-    end
-
-    for j = 1, #line.points - 1 do
-      local a = line.points[j]
-      local b = line.points[j + 1]
-
-      debugDrawer:drawLine(a, b, line.pointColors[j + 1])
-    end
+  for _, sphere in pairs(debugObjects.spheres) do 
+    debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
   end
+  for _, line in pairs(debugObjects.lines) do 
+    log("E", "not implemented yet")
+  end
+  -- for i = 1, #debugLines do
+  --   local line = debugLines[i]
+
+  --   if line.spheres ~= nil then
+  --     for j = 1, #line.spheres do
+  --       local point = line.spheres[j].point
+  --       local radius = line.spheres[j].radius
+  --       local color = line.sphereColors[j]
+
+  --       debugDrawer:drawSphere(point, radius, color)
+  --     end
+  --   end
+
+  --   for j = 1, #line.points - 1 do
+  --     local a = line.points[j]
+  --     local b = line.points[j + 1]
+
+  --     debugDrawer:drawLine(a, b, line.pointColors[j + 1])
+  --   end
+  -- end
 end
 
 M.handleQueueLuaCommandGE = function(msg)

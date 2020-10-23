@@ -1502,6 +1502,9 @@ class BeamNGpy:
             An ID of the added debug line that can be used later to disable
             rendering of that line.
         """
+        if spheres or sphere_colors:
+            warnings.warn('use "add_debug_sphere", using the parameters "spheres" and "sphere_colors" is deprecated and they will be removed in future versions')
+
         data = dict(type='AddDebugLine')
         data['points'] = points
         data['pointColors'] = point_colors
@@ -1522,6 +1525,26 @@ class BeamNGpy:
         data = dict(type='RemoveDebugLine')
         data['lineID'] = line_id
         self.send(data)
+
+    def add_debug_spheres(self, coordinates, radii, rgba_colors, cling=False, offset=2):
+        data = dict(type="AddDebugSpheres")
+        assert len(coordinates) == len(radii) == len(rgba_colors)
+        data['coordinates'] = coordinates
+        data['radii'] = radii
+        data['colors'] = rgba_colors
+        data['cling'] = cling
+        data['offset'] = offset
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugSphereAdded'
+        return resp['sphereIDs']
+
+    @ack('DebugSpheresRemoved')
+    def remove_debug_spheres(self, sphere_ids):
+        data = dict(type='RemoveDebugSpheres')
+        data['sphereIDs'] = sphere_ids
+        self.send(data)
+        
 
     def __enter__(self):
         self.open()
