@@ -1546,7 +1546,7 @@ class BeamNGpy:
         data['objIDs'] = sphere_ids
         self.send(data)
     
-    def add_debug_polyline(self, coordinates, radii, rgba_color, cling=False, offset=0):
+    def add_debug_polyline(self, coordinates, rgba_color, cling=False, offset=0):
         data = dict(type='AddDebugPolyline')
         data['coordinates'] = coordinates
         data['color'] = rgba_color
@@ -1555,13 +1555,13 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'DebugPolylineAdded'
-        return resp['lineIDs']
+        return resp['lineID']
 
     @ack('DebugObjectsRemoved')
-    def remove_debug_polyline(self, line_ids):
+    def remove_debug_polyline(self, line_id):
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'polylines'
-        data['objIDs'] = line_ids
+        data['objIDs'] = [line_id]
         self.send(data)
 
     def __enter__(self):

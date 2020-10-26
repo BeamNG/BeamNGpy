@@ -1086,15 +1086,19 @@ end
 local debugObjects = { spheres = {}, polylines = {}}
 local debugObjectCounter = {sphereNum = 0, lineNum = 0}
 
+local function tableToPoint3F(point, cling, offset)
+  local point = Point3F(point[1], point[2], point[3])
+  if cling then 
+    local z = be:getSurfaceHeightBelow(point)
+    return Point3F(point.x, point.y, z+offset)
+  end
+  return point
+end
+
 M.handleAddDebugSpheres = function(msg)
   local sphereIDs = {}
   for idx = 1,#msg.radii do 
-    local coo = msg.coordinates[idx]
-    coo = Point3F(coo[1], coo[2], coo[3])
-    if msg.cling then
-      local z = be:getSurfaceHeightBelow(coo) + msg.offset
-      coo = Point3F(coo.x, coo.y, z)
-    end
+    local coo = tableToPoint3F(msg.coordinates[idx], msg.cling, msg.offset)
     local color = msg.colors[idx]
     color = ColorF(color[1], color[2], color[3], color[4])
     local sphere = {coo = coo, radius = msg.radii[idx], color = color}
@@ -1107,6 +1111,7 @@ M.handleAddDebugSpheres = function(msg)
 end
 
 M.handleRemoveDebugObjects = function(msg)
+  dump(msg)
   for _, idx in pairs(msg.objIDs) do
     debugObjects[msg.objType][idx] = nil
   end
@@ -1114,21 +1119,29 @@ M.handleRemoveDebugObjects = function(msg)
 end
 
 M.handleAddDebugPolyline = function(msg)
-end
-
-M.handleRemoveDebugSpheres = function(msg)
-  for _, idx in pairs(msg.sphereIDs) do
-    debugObjects.spheres[idx] = nil
+  polyline = {segments = {}}
+  polyline.color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
+  local origin = tableToPoint3F(msg.coordinates[1], msg.cling, msg.offset)
+  for i = 2, #msg.coordinates do 
+    local target = tableToPoint3F(msg.coordinates[i], msg.cling, msg.offset)
+    local segment = {origin = origin, target = target}
+    table.insert(polyline.segments, segment)
+    origin = target
   end
-  rcom.sendACK(skt, 'DebugSpheresRemoved')
+  debugObjectCounter.lineNum = debugObjectCounter.lineNum + 1
+  table.insert(debugObjects.polylines, debugObjectCounter.lineNum, polyline)
+  local resp = {type = 'DebugPolylineAdded', lineID = debugObjectCounter.lineNum}
+  rcom.sendMessage(skt, resp)
 end
 
 M.onDrawDebug = function(dtReal, lastFocus)
   for _, sphere in pairs(debugObjects.spheres) do 
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
   end
-  for _, line in pairs(debugObjects.polylines) do 
-    log("E", "not implemented yet")
+  for _, polyline in pairs(debugObjects.polylines) do 
+    for _, segment in pairs(polyline.segments) do 
+      debugDrawer:drawLine(segment.origin, segment.target, polyline.color)
+    end
   end
   -- for i = 1, #debugLines do
   --   local line = debugLines[i]
