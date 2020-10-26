@@ -1003,86 +1003,6 @@ M.handleSetRelativeCam = function(msg)
   end
 end
 
-M.handleAddDebugLine = function(msg)
-  local points = msg['points']
-  local pointColors = msg['pointColors']
-
-  local spheres = msg['spheres']
-  local sphereColors = msg['sphereColors']
-
-  local cling = msg['cling'] or false
-  local groundOffset = msg['offset'] or 0
-
-  if #points ~= #pointColors then
-    rcom.sendBNGValueError(skt, 'Different amount of debug line points and colors given!')
-    return
-  end
-
-  if spheres ~= nil and sphereColors ~= nil then
-    if #spheres ~= #sphereColors then
-      rcom.sendBNGValueError(skt, 'Different amount of debug spheres and colors given!')
-      return
-    end
-  end
-
-  local convertedPoints = {}
-  local convertedPointColors = {}
-  for i = 1, #points do
-    local point = points[i]
-    local color = pointColors[i]
-
-    point = Point3F(point[1], point[2], point[3])
-
-    if cling then
-      local height = be:getSurfaceHeightBelow(point)
-      point = Point3F(point.x, point.y, height + groundOffset)
-    end
-
-    table.insert(convertedPoints, point)
-    table.insert(convertedPointColors, ColorF(color[1], color[2], color[3], color[4]))
-  end
-
-  local line = {
-    points = convertedPoints,
-    pointColors = convertedPointColors
-  }
-
-  if spheres ~= nil then
-    local convertedSpheres = {}
-    local convertedSphereColors = {}
-
-    for i = 1, #spheres do
-      local point = spheres[i]
-      local color = sphereColors[i]
-
-      point = Point3F(point[1], point[2], point[3])
-
-      if cling then
-        point.z = 10000
-        local height = be:getSurfaceHeightBelow(point)
-        point = Point3F(point.x, point.y, height + groundOffset)
-      end
-
-      table.insert(convertedSpheres, { point = point, radius = spheres[i][4] })
-      table.insert(convertedSphereColors, ColorF(color[1], color[2], color[3], color[4]))
-    end
-
-    line.spheres = convertedSpheres
-    line.sphereColors = convertedSphereColors
-  end
-
-  table.insert(debugLines, line)
-
-  local resp = {type = 'DebugLineAdded', lineID = #debugLines}
-  rcom.sendMessage(skt, resp)
-end
-
-M.handleRemoveDebugLine = function(msg)
-  local lineID = msg['lineID']
-  debugLines[lineID] = {}
-  rcom.sendACK(skt, 'DebugLineRemoved')
-end
-
 local debugObjects = { spheres = {}, polylines = {}}
 local debugObjectCounter = {sphereNum = 0, lineNum = 0}
 
@@ -1118,7 +1038,7 @@ M.handleRemoveDebugObjects = function(msg)
 end
 
 M.handleAddDebugPolyline = function(msg)
-  polyline = {segments = {}}
+  local polyline = {segments = {}}
   polyline.color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
   local origin = tableToPoint3F(msg.coordinates[1], msg.cling, msg.offset)
   for i = 2, #msg.coordinates do 
@@ -1142,26 +1062,6 @@ M.onDrawDebug = function(dtReal, lastFocus)
       debugDrawer:drawLine(segment.origin, segment.target, polyline.color)
     end
   end
-  -- for i = 1, #debugLines do
-  --   local line = debugLines[i]
-
-  --   if line.spheres ~= nil then
-  --     for j = 1, #line.spheres do
-  --       local point = line.spheres[j].point
-  --       local radius = line.spheres[j].radius
-  --       local color = line.sphereColors[j]
-
-  --       debugDrawer:drawSphere(point, radius, color)
-  --     end
-  --   end
-
-  --   for j = 1, #line.points - 1 do
-  --     local a = line.points[j]
-  --     local b = line.points[j + 1]
-
-  --     debugDrawer:drawLine(a, b, line.pointColors[j + 1])
-  --   end
-  -- end
 end
 
 M.handleQueueLuaCommandGE = function(msg)

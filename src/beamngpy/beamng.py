@@ -1467,6 +1467,7 @@ class BeamNGpy:
                        spheres=None, sphere_colors=None,
                        cling=False, offset=0):
         """
+        Function use is deprecated, use 'add_debug_polyline' instead!
         Adds a visual line to be rendered by BeamNG. This is mainly used for
         debugging purposes, but can also be used to add visual indicators to
         the user. A line is given as a series of points encoded as (x, y, z)
@@ -1482,7 +1483,7 @@ class BeamNGpy:
                            coordinate triplets.
             point_colors (list): List of colors as (r, g, b, a) quartets, each
                                  value expressing red, green, blue, and alpha
-                                 intensity from 0 to 1.
+                                 intensity from 0 to 1. Only the first entry is used.
             spheres (list): Optional list of points where spheres should be
                             rendered, given as (x, y, z, r) tuples where x,y,z
                             are coordinates and r the radius of the sphere.
@@ -1499,32 +1500,20 @@ class BeamNGpy:
                             ground by, for example, adding 10cm to the z value.
 
         Returns:
-            An ID of the added debug line that can be used later to disable
-            rendering of that line.
+            The ID of the added debug line that can be used to remove the line
         """
-        if spheres or sphere_colors:
-            warnings.warn('use "add_debug_sphere", using the parameters "spheres" and "sphere_colors" is deprecated and they will be removed in future versions')
-
-        data = dict(type='AddDebugLine')
-        data['points'] = points
-        data['pointColors'] = point_colors
-
+        warnings.warn('use of "add_debug_line" deprecated it will be removed in future versions, use "add_debug_polyline" and "add_debug_spheres" instead')
         if spheres:
-            data['spheres'] = spheres
-            data['sphereColors'] = sphere_colors
+            coordinates = [s[:3] for s in spheres]
+            radii = [s[3] for s in spheres]
+            self.add_debug_spheres(coordinates, radii, sphere_colors, cling, offset)
 
-        data['cling'] = cling
-        data['offset'] = offset
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'DebugLineAdded'
-        return resp['lineID']
+        lineID = self.add_debug_polyline(points, point_colors[0], cling, offset)
+        return lineID
 
-    @ack('DebugLineRemoved')
     def remove_debug_line(self, line_id):
-        data = dict(type='RemoveDebugLine')
-        data['lineID'] = line_id
-        self.send(data)
+        warnings.warn('use of "remove_debug_line" deprecated it will be removed in future versions, use "add_debug_polyline" instead')
+        self.remove_debug_polyline(line_id)
 
     def add_debug_spheres(self, coordinates, radii, rgba_colors, cling=False, offset=0):
         data = dict(type="AddDebugSpheres")
