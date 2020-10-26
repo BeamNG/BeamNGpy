@@ -1111,7 +1111,6 @@ M.handleAddDebugSpheres = function(msg)
 end
 
 M.handleRemoveDebugObjects = function(msg)
-  dump(msg)
   for _, idx in pairs(msg.objIDs) do
     debugObjects[msg.objType][idx] = nil
   end
