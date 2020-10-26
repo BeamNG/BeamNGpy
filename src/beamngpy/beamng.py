@@ -1573,6 +1573,25 @@ class BeamNGpy:
         data['objIDs'] = [cylinder_id]
         self.send(data)
 
+    def add_debug_tri_solid(self, points, rgba_color, cling=False, offset=0):
+            data = dict(type='AddDebugTriSolid')
+            data['points'] = points
+            data['color'] = rgba_color
+            data['cling'] = cling
+            data['offset'] = offset
+            self.send(data)
+            resp = self.recv()
+            assert resp['type'] == 'DebugTriSolidAdded'
+            return resp['triSolidID']
+
+    @ack('DebugObjectsRemoved')
+    def remove_debug_tri_solid(self, tri_solid_id):
+        data = dict(type='RemoveDebugObjects')
+        data['objType'] = 'triSolids'
+        data['objIDs'] = [tri_solid_id]
+        self.send(data)
+
+
     def __enter__(self):
         self.open()
         return self
