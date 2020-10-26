@@ -1003,8 +1003,8 @@ M.handleSetRelativeCam = function(msg)
   end
 end
 
-local debugObjects = { spheres = {}, polylines = {}}
-local debugObjectCounter = {sphereNum = 0, lineNum = 0}
+local debugObjects = { spheres = {}, polylines = {}, cylinders = {}}
+local debugObjectCounter = {sphereNum = 0, lineNum = 0, cylinderNum = 0}
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])
@@ -1053,6 +1053,17 @@ M.handleAddDebugPolyline = function(msg)
   rcom.sendMessage(skt, resp)
 end
 
+M.handleAddDebugCylinder = function(msg)
+  local down = tableToPoint3F(msg.origin, msg.cling, msg.offset)
+  local up = Point3F(down.x, down.y, down.z+msg.height)
+  local color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
+  local cylinder = {down=down, up=up, radius=msg.radius, color=color}
+  debugObjectCounter.cylinderNum = debugObjectCounter.cylinderNum + 1
+  table.insert(debugObjects.cylinders, debugObjectCounter.cylinderNum, cylinder)
+  local resp = {type='DebugCylinderAdded', cylinderID=debugObjectCounter.cylinderNum}
+  rcom.sendMessage(skt, resp)
+end
+
 M.onDrawDebug = function(dtReal, lastFocus)
   for _, sphere in pairs(debugObjects.spheres) do 
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
@@ -1061,6 +1072,9 @@ M.onDrawDebug = function(dtReal, lastFocus)
     for _, segment in pairs(polyline.segments) do 
       debugDrawer:drawLine(segment.origin, segment.target, polyline.color)
     end
+  end
+  for _, cylinder in pairs(debugObjects.cylinders) do 
+    debugDrawer:drawCylinder(cylinder.down, cylinder.up, cylinder.radius, cylinder.color)
   end
 end
 

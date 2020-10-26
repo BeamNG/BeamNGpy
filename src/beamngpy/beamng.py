@@ -1553,6 +1553,26 @@ class BeamNGpy:
         data['objIDs'] = [line_id]
         self.send(data)
 
+    def add_debug_cylinder(self, origin, height, radius, rgba_color, cling=False, offset=0):
+            data = dict(type='AddDebugCylinder')
+            data['origin'] = origin
+            data['height'] = height
+            data['radius'] = radius
+            data['color'] = rgba_color
+            data['cling'] = cling
+            data['offset'] = offset
+            self.send(data)
+            resp = self.recv()
+            assert resp['type'] == 'DebugCylinderAdded'
+            return resp['cylinderID']
+
+    @ack('DebugObjectsRemoved')
+    def remove_debug_cylinder(self, cylinder_id):
+        data = dict(type='RemoveDebugObjects')
+        data['objType'] = 'cylinders'
+        data['objIDs'] = [cylinder_id]
+        self.send(data)
+
     def __enter__(self):
         self.open()
         return self
