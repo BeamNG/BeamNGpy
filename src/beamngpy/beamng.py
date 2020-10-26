@@ -1526,7 +1526,7 @@ class BeamNGpy:
         data['lineID'] = line_id
         self.send(data)
 
-    def add_debug_spheres(self, coordinates, radii, rgba_colors, cling=False, offset=2):
+    def add_debug_spheres(self, coordinates, radii, rgba_colors, cling=False, offset=0):
         data = dict(type="AddDebugSpheres")
         assert len(coordinates) == len(radii) == len(rgba_colors)
         data['coordinates'] = coordinates
@@ -1539,12 +1539,30 @@ class BeamNGpy:
         assert resp['type'] == 'DebugSphereAdded'
         return resp['sphereIDs']
 
-    @ack('DebugSpheresRemoved')
+    @ack('DebugObjectsRemoved')
     def remove_debug_spheres(self, sphere_ids):
-        data = dict(type='RemoveDebugSpheres')
-        data['sphereIDs'] = sphere_ids
+        data = dict(type='RemoveDebugObjects')
+        data['objType'] = 'spheres'
+        data['objIDs'] = sphere_ids
         self.send(data)
-        
+    
+    def add_debug_polyline(self, coordinates, radii, rgba_color, cling=False, offset=0):
+        data = dict(type='AddDebugPolyline')
+        data['coordinates'] = coordinates
+        data['color'] = rgba_color
+        data['cling'] = cling
+        data['offset'] = offset
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugPolylineAdded'
+        return resp['lineIDs']
+
+    @ack('DebugObjectsRemoved')
+    def remove_debug_polyline(self, line_ids):
+        data = dict(type='RemoveDebugObjects')
+        data['objType'] = 'polylines'
+        data['objIDs'] = line_ids
+        self.send(data)
 
     def __enter__(self):
         self.open()

@@ -1083,7 +1083,7 @@ M.handleRemoveDebugLine = function(msg)
   rcom.sendACK(skt, 'DebugLineRemoved')
 end
 
-local debugObjects = { spheres = {}, lines = {}}
+local debugObjects = { spheres = {}, polylines = {}}
 local debugObjectCounter = {sphereNum = 0, lineNum = 0}
 
 M.handleAddDebugSpheres = function(msg)
@@ -1106,6 +1106,16 @@ M.handleAddDebugSpheres = function(msg)
   rcom.sendMessage(skt, resp)
 end
 
+M.handleRemoveDebugObjects = function(msg)
+  for _, idx in pairs(msg.objIDs) do
+    debugObjects[msg.objType][idx] = nil
+  end
+  rcom.sendACK(skt, 'DebugObjectsRemoved')
+end
+
+M.handleAddDebugPolyline = function(msg)
+end
+
 M.handleRemoveDebugSpheres = function(msg)
   for _, idx in pairs(msg.sphereIDs) do
     debugObjects.spheres[idx] = nil
@@ -1117,7 +1127,7 @@ M.onDrawDebug = function(dtReal, lastFocus)
   for _, sphere in pairs(debugObjects.spheres) do 
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
   end
-  for _, line in pairs(debugObjects.lines) do 
+  for _, line in pairs(debugObjects.polylines) do 
     log("E", "not implemented yet")
   end
   -- for i = 1, #debugLines do
