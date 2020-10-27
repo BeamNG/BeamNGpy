@@ -1003,8 +1003,18 @@ M.handleSetRelativeCam = function(msg)
   end
 end
 
-local debugObjects = { spheres = {}, polylines = {}, cylinders = {}, triangles = {}}
-local debugObjectCounter = {sphereNum = 0, lineNum = 0, cylinderNum = 0, triangleNum = 0}
+local debugObjects = { spheres = {}, 
+                       polylines = {}, 
+                       cylinders = {}, 
+                       triangles = {}, 
+                       rectangles ={}
+                      }
+local debugObjectCounter = {sphereNum = 0, 
+                            lineNum = 0, 
+                            cylinderNum = 0, 
+                            triangleNum = 0,
+                            rectangleNum = 0
+                          }
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])
@@ -1067,13 +1077,27 @@ end
 M.handleAddDebugTriangle = function(msg)
   local color = msg.color
   color = ColorI(math.ceil(color[1]*255), math.ceil(color[2]*255), math.ceil(color[3]*255), math.ceil(color[4]*255))
-  local pointA = tableToPoint3F(msg.points[1], msg.cling, msg.offset)
-  local pointB = tableToPoint3F(msg.points[2], msg.cling, msg.offset)
-  local pointC = tableToPoint3F(msg.points[3], msg.cling, msg.offset)
+  local pointA = tableToPoint3F(msg.vertices[1], msg.cling, msg.offset)
+  local pointB = tableToPoint3F(msg.vertices[2], msg.cling, msg.offset)
+  local pointC = tableToPoint3F(msg.vertices[3], msg.cling, msg.offset)
   local triangle = {a=pointA, b=pointB, c=pointC, color=color}
   debugObjectCounter.triangleNum = debugObjectCounter.triangleNum + 1
   table.insert(debugObjects.triangles, debugObjectCounter.triangleNum, triangle)
   local resp = {type ='DebugTriangleAdded', triangleID = debugObjectCounter.triangleNum}
+  rcom.sendMessage(skt, resp)
+end
+
+M.handleAddDebugRectangle = function(msg)
+  local color = msg.color
+  color = ColorI(math.ceil(color[1]*255), math.ceil(color[2]*255), math.ceil(color[3]*255), math.ceil(color[4]*255))
+  local pointA = tableToPoint3F(msg.vertices[1], msg.cling, msg.offset)
+  local pointB = tableToPoint3F(msg.vertices[2], msg.cling, msg.offset)
+  local pointC = tableToPoint3F(msg.vertices[3], msg.cling, msg.offset)
+  local pointD = tableToPoint3F(msg.vertices[4], msg.cling, msg.offset)
+  local rectangle = {a=pointA, b=pointB, c=pointC, d=pointD, color=color}
+  debugObjectCounter.rectangleNum = debugObjectCounter.rectangleNum + 1
+  table.insert(debugObjects.rectangles, debugObjectCounter.rectangleNum, rectangle)
+  local resp = {type ='DebugRectangleAdded', rectangleID = debugObjectCounter.rectangleNum}
   rcom.sendMessage(skt, resp)
 end
 
@@ -1091,6 +1115,9 @@ M.onDrawDebug = function(dtReal, lastFocus)
   end
   for _, triangle in pairs(debugObjects.triangles) do 
     debugDrawer:drawTriSolid(triangle.a, triangle.b, triangle.c, triangle.color)
+  end
+  for _, rectangle in pairs(debugObjects.rectangles) do 
+    debugDrawer:drawQuadSolid(rectangle.a, rectangle.b, rectangle.c, rectangle.d, rectangle.color)
   end
 end
 

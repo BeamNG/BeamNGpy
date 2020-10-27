@@ -1575,7 +1575,7 @@ class BeamNGpy:
 
     def add_debug_triangle(self, vertices, rgba_color, cling=False, offset=0):
             data = dict(type='AddDebugTriangle')
-            data['points'] = vertices
+            data['vertices'] = vertices
             data['color'] = rgba_color
             data['cling'] = cling
             data['offset'] = offset
@@ -1589,6 +1589,24 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'triangles'
         data['objIDs'] = [triangle_id]
+        self.send(data)
+
+    def add_debug_rectangle(self, vertices, rgba_color, cling=False, offset=0):
+            data = dict(type='AddDebugRectangle')
+            data['vertices'] = vertices
+            data['color'] = rgba_color
+            data['cling'] = cling
+            data['offset'] = offset
+            self.send(data)
+            resp = self.recv()
+            assert resp['type'] == 'DebugRectangleAdded'
+            return resp['rectangleID']
+
+    @ack('DebugObjectsRemoved')
+    def remove_debug_rectangle(self, rectangle_id):
+        data = dict(type='RemoveDebugObjects')
+        data['objType'] = 'rectangles'
+        data['objIDs'] = [rectangle_id]
         self.send(data)
 
 
