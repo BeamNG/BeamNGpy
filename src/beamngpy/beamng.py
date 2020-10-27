@@ -1628,6 +1628,25 @@ class BeamNGpy:
         data['objIDs'] = [text_id]
         self.send(data)
 
+    def add_debug_square_prism(self, end_points, end_point_dims, rgba_color, cling=False, offset=0):
+            data = dict(type='AddDebugSquarePrism')
+            data['endPoints'] = end_points
+            data['dims'] = end_point_dims
+            data['color'] = rgba_color
+            data['cling'] = cling
+            data['offset'] = offset
+            self.send(data)
+            resp = self.recv()
+            assert resp['type'] == 'DebugSquarePrismAdded'
+            return resp['prismID']
+
+    @ack('DebugObjectsRemoved')
+    def remove_debug_square_prism(self, prism_id):
+        data = dict(type='RemoveDebugObjects')
+        data['objType'] = 'squarePrisms'
+        data['objIDs'] = [prism_id]
+        self.send(data)
+
     def __enter__(self):
         self.open()
         return self

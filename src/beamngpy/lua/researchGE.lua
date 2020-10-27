@@ -1008,21 +1008,23 @@ local debugObjects = { spheres = {},
                        cylinders = {}, 
                        triangles = {}, 
                        rectangles ={},
-                       text = {}
+                       text = {},
+                       squarePrisms = {}
                       }
 local debugObjectCounter = {sphereNum = 0, 
                             lineNum = 0, 
                             cylinderNum = 0, 
                             triangleNum = 0,
                             rectangleNum = 0,
-                            textNum = 0
+                            textNum = 0,
+                            prismNum = 0
                           }
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])
   if cling then 
     local z = be:getSurfaceHeightBelow(point)
-    return Point3F(point.x, point.y, z+offset)
+    point = Point3F(point.x, point.y, z+offset)
   end
   return point
 end
@@ -1114,6 +1116,23 @@ M.handleAddDebugText = function(msg)
   rcom.sendMessage(skt, resp)
 end
 
+M.handleAddDebugSquarePrism = function(msg)
+  local color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
+  local az, bz = msg.endPoints[1][3], msg.endPoints[2][3]
+  -- preserving spatial relation between endpoints if cling is used
+  local offsetA = (az <= bz) and 0 or az-bz
+  local offsetB = (bz <= az) and 0 or bz-az
+  local sideA = tableToPoint3F(msg.endPoints[1], msg.cling, msg.offset+offsetA)
+  local sideB = tableToPoint3F(msg.endPoints[2], msg.cling, msg.offset+offsetB)
+  local sideADims = Point2F(msg.dims[1][1], msg.dims[1][2])
+  local sideBDims = Point2F(msg.dims[2][1], msg.dims[2][2])
+  local prism = {sideA=sideA, sideB=sideB, sideADims=sideADims, sideBDims=sideBDims, color = color}
+  debugObjectCounter.prismNum = debugObjectCounter.prismNum + 1
+  table.insert(debugObjects.squarePrisms, debugObjectCounter.prismNum, prism)
+  local resp = {type ='DebugSquarePrismAdded', prismID = debugObjectCounter.prismNum}
+  rcom.sendMessage(skt, resp)
+end
+
 M.onDrawDebug = function(dtReal, lastFocus)
   for _, sphere in pairs(debugObjects.spheres) do 
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
@@ -1134,6 +1153,9 @@ M.onDrawDebug = function(dtReal, lastFocus)
   end
   for _, line in pairs(debugObjects.text) do 
     debugDrawer:drawText(line.origin, line.content, line.color)
+  end
+  for _, prism in pairs(debugObjects.squarePrisms) do 
+    debugDrawer:drawSquarePrism(prism.sideA, prism.sideB, prism.sideADims, prism.sideBDims, prism.color)
   end
 end
 
