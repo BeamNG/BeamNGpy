@@ -1068,7 +1068,7 @@ M.handleAddDebugPolyline = function(msg)
 end
 
 M.handleAddDebugCylinder = function(msg)
-  local down = tableToPoint3F(msg.origin, msg.cling, msg.offset)
+  local down = tableToPoint3F(msg.origin, false, 0)
   local up = Point3F(down.x, down.y, down.z+msg.height)
   local color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
   local cylinder = {down=down, up=up, radius=msg.radius, color=color}
@@ -1119,11 +1119,8 @@ end
 M.handleAddDebugSquarePrism = function(msg)
   local color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
   local az, bz = msg.endPoints[1][3], msg.endPoints[2][3]
-  -- preserving spatial relation between endpoints if cling is used
-  local offsetA = (az <= bz) and 0 or az-bz
-  local offsetB = (bz <= az) and 0 or bz-az
-  local sideA = tableToPoint3F(msg.endPoints[1], msg.cling, msg.offset+offsetA)
-  local sideB = tableToPoint3F(msg.endPoints[2], msg.cling, msg.offset+offsetB)
+  local sideA = tableToPoint3F(msg.endPoints[1], false, 0)
+  local sideB = tableToPoint3F(msg.endPoints[2], false, 0)
   local sideADims = Point2F(msg.dims[1][1], msg.dims[1][2])
   local sideBDims = Point2F(msg.dims[2][1], msg.dims[2][2])
   local prism = {sideA=sideA, sideB=sideB, sideADims=sideADims, sideBDims=sideBDims, color = color}

@@ -1553,14 +1553,12 @@ class BeamNGpy:
         data['objIDs'] = [line_id]
         self.send(data)
 
-    def add_debug_cylinder(self, origin, height, radius, rgba_color, cling=False, offset=0):
+    def add_debug_cylinder(self, origin, height, radius, rgba_color):
             data = dict(type='AddDebugCylinder')
             data['origin'] = origin
             data['height'] = height
             data['radius'] = radius
             data['color'] = rgba_color
-            data['cling'] = cling
-            data['offset'] = offset
             self.send(data)
             resp = self.recv()
             assert resp['type'] == 'DebugCylinderAdded'
@@ -1628,13 +1626,11 @@ class BeamNGpy:
         data['objIDs'] = [text_id]
         self.send(data)
 
-    def add_debug_square_prism(self, end_points, end_point_dims, rgba_color, cling=False, offset=0):
+    def add_debug_square_prism(self, end_points, end_point_dims, rgba_color):
             data = dict(type='AddDebugSquarePrism')
             data['endPoints'] = end_points
             data['dims'] = end_point_dims
             data['color'] = rgba_color
-            data['cling'] = cling
-            data['offset'] = offset
             self.send(data)
             resp = self.recv()
             assert resp['type'] == 'DebugSquarePrismAdded'
