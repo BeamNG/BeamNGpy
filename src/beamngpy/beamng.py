@@ -1609,6 +1609,24 @@ class BeamNGpy:
         data['objIDs'] = [rectangle_id]
         self.send(data)
 
+    def add_debug_text(self, origin, content, rgba_color, cling=False, offset=0):
+            data = dict(type='AddDebugText')
+            data['origin'] = origin
+            data['content'] = content
+            data['color'] = rgba_color
+            data['cling'] = cling
+            data['offset'] = offset
+            self.send(data)
+            resp = self.recv()
+            assert resp['type'] == 'DebugTextAdded'
+            return resp['textID']
+
+    @ack('DebugObjectsRemoved')
+    def remove_debug_text(self, text_id):
+        data = dict(type='RemoveDebugObjects')
+        data['objType'] = 'text'
+        data['objIDs'] = [text_id]
+        self.send(data)
 
     def __enter__(self):
         self.open()

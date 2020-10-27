@@ -1007,13 +1007,15 @@ local debugObjects = { spheres = {},
                        polylines = {}, 
                        cylinders = {}, 
                        triangles = {}, 
-                       rectangles ={}
+                       rectangles ={},
+                       text = {}
                       }
 local debugObjectCounter = {sphereNum = 0, 
                             lineNum = 0, 
                             cylinderNum = 0, 
                             triangleNum = 0,
-                            rectangleNum = 0
+                            rectangleNum = 0,
+                            textNum = 0
                           }
 
 local function tableToPoint3F(point, cling, offset)
@@ -1101,6 +1103,17 @@ M.handleAddDebugRectangle = function(msg)
   rcom.sendMessage(skt, resp)
 end
 
+M.handleAddDebugText = function(msg)
+  local color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
+  local origin = tableToPoint3F(msg.origin, msg.cling, msg.offset)
+  local content = String(msg.content)
+  local text = {origin = origin, content = content, color = color}
+  debugObjectCounter.textNum = debugObjectCounter.textNum + 1
+  table.insert(debugObjects.text, debugObjectCounter.textNum, text)
+  local resp = {type ='DebugTextAdded', textID = debugObjectCounter.textNum}
+  rcom.sendMessage(skt, resp)
+end
+
 M.onDrawDebug = function(dtReal, lastFocus)
   for _, sphere in pairs(debugObjects.spheres) do 
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
@@ -1118,6 +1131,9 @@ M.onDrawDebug = function(dtReal, lastFocus)
   end
   for _, rectangle in pairs(debugObjects.rectangles) do 
     debugDrawer:drawQuadSolid(rectangle.a, rectangle.b, rectangle.c, rectangle.d, rectangle.color)
+  end
+  for _, line in pairs(debugObjects.text) do 
+    debugDrawer:drawText(line.origin, line.content, line.color)
   end
 end
 
