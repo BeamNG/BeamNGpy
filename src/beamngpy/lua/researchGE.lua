@@ -1068,10 +1068,10 @@ M.handleAddDebugPolyline = function(msg)
 end
 
 M.handleAddDebugCylinder = function(msg)
-  local down = tableToPoint3F(msg.origin, false, 0)
-  local up = Point3F(down.x, down.y, down.z+msg.height)
+  local circleAPos = tableToPoint3F(msg.circlePositions[1], false, 0)
+  local circleBPos = tableToPoint3F(msg.circlePositions[2], false, 0)
   local color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
-  local cylinder = {down=down, up=up, radius=msg.radius, color=color}
+  local cylinder = {circleAPos=circleAPos, circleBPos=circleBPos, radius=msg.radius, color=color}
   debugObjectCounter.cylinderNum = debugObjectCounter.cylinderNum + 1
   table.insert(debugObjects.cylinders, debugObjectCounter.cylinderNum, cylinder)
   local resp = {type='DebugCylinderAdded', cylinderID=debugObjectCounter.cylinderNum}
@@ -1140,7 +1140,7 @@ M.onDrawDebug = function(dtReal, lastFocus)
     end
   end
   for _, cylinder in pairs(debugObjects.cylinders) do 
-    debugDrawer:drawCylinder(cylinder.down, cylinder.up, cylinder.radius, cylinder.color)
+    debugDrawer:drawCylinder(cylinder.circleAPos, cylinder.circleBPos, cylinder.radius, cylinder.color)
   end
   for _, triangle in pairs(debugObjects.triangles) do 
     debugDrawer:drawTriSolid(triangle.a, triangle.b, triangle.c, triangle.color)

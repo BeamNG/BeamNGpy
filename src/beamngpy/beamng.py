@@ -1553,10 +1553,9 @@ class BeamNGpy:
         data['objIDs'] = [line_id]
         self.send(data)
 
-    def add_debug_cylinder(self, origin, height, radius, rgba_color):
+    def add_debug_cylinder(self, circle_positions, radius, rgba_color):
             data = dict(type='AddDebugCylinder')
-            data['origin'] = origin
-            data['height'] = height
+            data['circlePositions'] = circle_positions
             data['radius'] = radius
             data['color'] = rgba_color
             self.send(data)
