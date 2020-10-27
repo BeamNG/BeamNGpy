@@ -1003,8 +1003,8 @@ M.handleSetRelativeCam = function(msg)
   end
 end
 
-local debugObjects = { spheres = {}, polylines = {}, cylinders = {}, triSolids = {}}
-local debugObjectCounter = {sphereNum = 0, lineNum = 0, cylinderNum = 0, triSolidNum = 0}
+local debugObjects = { spheres = {}, polylines = {}, cylinders = {}, triangles = {}}
+local debugObjectCounter = {sphereNum = 0, lineNum = 0, cylinderNum = 0, triangleNum = 0}
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])
@@ -1064,16 +1064,16 @@ M.handleAddDebugCylinder = function(msg)
   rcom.sendMessage(skt, resp)
 end
 
-M.handleAddDebugTriSolid = function(msg)
+M.handleAddDebugTriangle = function(msg)
   local color = msg.color
   color = ColorI(math.ceil(color[1]*255), math.ceil(color[2]*255), math.ceil(color[3]*255), math.ceil(color[4]*255))
   local pointA = tableToPoint3F(msg.points[1], msg.cling, msg.offset)
-  local pointB = tableToPoint3F(msg.points[1], msg.cling, msg.offset)
-  local pointC = tableToPoint3F(msg.points[1], msg.cling, msg.offset)
-  local triSolid = {a=pointA, b=pointB, c=pointC, color=color}
-  debugObjectCounter.triSolidNum = debugObjectCounter.triSolidNum + 1
-  table.insert(debugObjects.triSolids, debugObjectCounter.triSolidNum, triSolid)
-  local resp = {type='DebugTriSolidAdded', triSolidID=debugObjectCounter.triSolidNum}
+  local pointB = tableToPoint3F(msg.points[2], msg.cling, msg.offset)
+  local pointC = tableToPoint3F(msg.points[3], msg.cling, msg.offset)
+  local triangle = {a=pointA, b=pointB, c=pointC, color=color}
+  debugObjectCounter.triangleNum = debugObjectCounter.triangleNum + 1
+  table.insert(debugObjects.triangles, debugObjectCounter.triangleNum, triangle)
+  local resp = {type ='DebugTriangleAdded', triangleID = debugObjectCounter.triangleNum}
   rcom.sendMessage(skt, resp)
 end
 
@@ -1089,8 +1089,8 @@ M.onDrawDebug = function(dtReal, lastFocus)
   for _, cylinder in pairs(debugObjects.cylinders) do 
     debugDrawer:drawCylinder(cylinder.down, cylinder.up, cylinder.radius, cylinder.color)
   end
-  for _, triSolid in pairs(debugObjects.triSolids) do 
-    debugDrawer:drawTriSolid(triSolid.a, triSolid.b, triSolid.c, triSolid.color)
+  for _, triangle in pairs(debugObjects.triangles) do 
+    debugDrawer:drawTriSolid(triangle.a, triangle.b, triangle.c, triangle.color)
   end
 end
 
