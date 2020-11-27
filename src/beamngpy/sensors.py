@@ -26,10 +26,24 @@ FAR = 1000
 LIDAR_POINTS = 2000000
 
 
-class Sensor:
+class Sensor():
     """
     Sensor meta-class declaring methods common to them.
     """
+
+    _data = dict()
+    
+    @property
+    def data(self):
+        return self._data   
+
+    @data.setter
+    def data(self, data):
+        self._data.update(data)  
+
+    @data.deleter
+    def data(self):
+        self._data = None      
 
     def attach(self, vehicle, name):
         """
@@ -125,7 +139,7 @@ class Sensor:
         Called when the attached vehicle is being removed from simulation. This
         method is used to perform teardown code after the simulation.
         """
-        pass
+        del self.data
 
     def get_engine_flags(self):
         """
@@ -686,4 +700,10 @@ class Timer(Sensor):
 
     def encode_engine_request(self):
         req = dict(type='Timer')
+        return req
+
+class State(Sensor):
+
+    def encode_vehicle_request(self):
+        req  = dict(type='State')
         return req

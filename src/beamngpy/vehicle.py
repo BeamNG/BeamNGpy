@@ -10,9 +10,10 @@
 
 import base64
 import logging as log
+import warnings
 
 from .beamngcommon import *
-
+from .sensors import State
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -60,7 +61,9 @@ class Vehicle:
 
         self.extensions = options.get('extensions')
 
-        self.state = None
+        self._veh_state_sensor_id = "state"
+        state = State()
+        self.attach_sensor(self._veh_state_sensor_id, state)
         """
         This field contains the vehicle's current state in the running
         scenario. It is None if no scenario is running or the state has not
@@ -89,6 +92,18 @@ class Vehicle:
 
     def __str__(self):
         return 'V:{}'.format(self.vid)
+
+    @property
+    def state(self):
+        return self.sensors[self._veh_state_sensor_id].data
+
+    @state.setter
+    def state(self, value):
+        self.sensors[self._veh_state_sensor_id].data = value
+
+    @state.deleter
+    def state(self):
+        del self.sensors[self._veh_state_sensor_id].data
 
     def send(self, data):
         """
@@ -144,7 +159,6 @@ class Vehicle:
         self.server = None
         self.port = None
         self.skt = None
-        self.state = None
 
     def attach_sensor(self, name, sensor):
         """
@@ -237,26 +251,39 @@ class Vehicle:
         """
         Synchronises the :attr:`.Vehicle.state` field with the simulation.
         """
-        data = dict(type='UpdateVehicle')
-        self.send(data)
-        resp = self.recv()
-        self.state = resp['state']
+        warnings.warn("update_vehicle is deprecated\nthe .Vehicle.state attribute is now a default sensor for every vehicle and is updated through poll_sensors", DeprecationWarning)
+        return self.state
 
-    def poll_sensors(self, requests):
+    def poll_sensors(self, requests=None):
         """
-        Sends a sensor request to the corresponding vehicle in the simulation
-        and returns the raw response data as a dictionary.
+        Updates the vehicle's sensor readings.
+        """
+        warnings.warn("do not use 'requests' as function argument\nit will be removed in future versions", DeprecationWarning)
+        warnings.warn("return type will be None in future versions", DeprecationWarning)
 
-        Note:
-            This method automatically synchronises the
-            :attr:`.Vehicle.state` field with the simulation.
-        """
-        self.send(requests)
-        response = self.recv()
-        assert response['type'] == 'SensorData'
-        sensor_data = response['data']
-        self.state = response['state']
-        return sensor_data
+        engine_reqs, vehicle_reqs = self.encode_sensor_requests()
+        sensor_data = dict()
+        compatibility_support = None
+
+        if engine_reqs['sensors']:
+            self.bng.send(engine_reqs)
+            response = self.bng.recv()
+            assert response['type'] == 'SensorData'
+            sensor_data.update(response['data'])
+
+        if vehicle_reqs['sensors']:
+            self.send(vehicle_reqs)
+            response = self.recv()
+            assert response['type'] == 'SensorData'
+            compatibility_support = response['data']
+            sensor_data.update(response['data'])
+
+        result = self.decode_sensor_response(sensor_data)
+        for sensor, data in result.items():
+            self.sensors[sensor].data = data
+
+        self.sensor_cache = result
+        return compatibility_support
 
     @ack('ShiftModeSet')
     def set_shift_mode(self, mode):

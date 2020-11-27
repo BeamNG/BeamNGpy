@@ -181,6 +181,13 @@ sensorHandlers.Damage = function(msg)
   return resp
 end
 
+sensorHandlers.State = function(msg)
+  local resp = {type = 'VehicleUpdate'}
+  local vehicleState = getVehicleState()
+  resp['state'] = vehicleState
+  return resp
+end
+
 local function getSensorData(request)
   local response, sensor_type, handler
 
@@ -214,19 +221,18 @@ M.handleSetPartConfig = function(msg)
 end
 
 M.handleSensorRequest = function(msg)
-  local request, response, data
-  response = {}
+  local request, sensorData, data
+  sensorData = {}
   request = msg['sensors']
   for k, v in pairs(request) do
     data = getSensorData(v)
     if data == nil then
       log('E', 'Could not get data for sensor: ' .. k)
     end
-    response[k] = data
+    sensorData[k] = data
   end
 
-  response = {type = 'SensorData', data = response}
-  response['state'] = getVehicleState()
+  response = {type = 'SensorData', data = sensorData}
   rcom.sendMessage(skt, response)
 end
 
@@ -335,14 +341,6 @@ M.handleSetDriveInLane = function(msg)
   ai.driveInLane(msg['lane'])
   ai.stateChanged()
   rcom.sendACK(skt, 'AiDriveInLaneSet')
-end
-
-M.handleUpdateVehicle = function(msg)
-  local response = {type = 'VehicleUpdate'}
-  local vehicleState = getVehicleState()
-  response['state'] = vehicleState
-  rcom.sendMessage(skt, response)
-  return true
 end
 
 M.handleSetLights = function(msg)

@@ -395,7 +395,6 @@ class BeamNGpy:
         self.send(connection_msg)
 
         vehicle.connect(self, vehicle_server, port)
-        vehicle.update_vehicle()
         return vehicle_server
 
     def setup_vehicles(self, scenario):
@@ -722,6 +721,8 @@ class BeamNGpy:
 
     def poll_sensors(self, vehicle):
         """
+        This member function is deprecated and will be removed in future versions.
+        Use 'Vehicle.poll_sensors' instead.
         Retrieves sensor values for the sensors attached to the given vehicle.
         This method correctly splits requests meant for the game engine and
         requests meant for the vehicle, sending them to their supposed
@@ -738,25 +739,10 @@ class BeamNGpy:
             dictionary having a key-value pair for each sensor's name and the
             data received for it.
         """
-        engine_reqs, vehicle_reqs = vehicle.encode_sensor_requests()
-        sensor_data = dict()
+        warnings.warn("'BeamNGpy.poll_sensors' is deprecated\nuse 'Vehicle.poll_sensors' instead\nthis function is going to be removed in the future", DeprecationWarning)
 
-        if engine_reqs['sensors']:
-            start = time.time()
-            self.send(engine_reqs)
-            response = self.recv()
-            assert response['type'] == 'SensorData'
-            sensor_data.update(response['data'])
-
-        if vehicle_reqs['sensors']:
-            response = vehicle.poll_sensors(vehicle_reqs)
-            sensor_data.update(response)
-        else:
-            vehicle.update_vehicle()
-
-        result = vehicle.decode_sensor_response(sensor_data)
-        vehicle.sensor_cache = result
-        return result
+        vehicle.poll_sensors()
+        return vehicle.sensor_cache
 
     def render_cameras(self):
         """

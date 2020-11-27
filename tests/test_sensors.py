@@ -3,7 +3,7 @@ import pytest
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError, BNGError
-from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces
+from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces, State
 
 
 @pytest.fixture()
@@ -145,3 +145,24 @@ def test_damage(beamng):
         sensors = bng.poll_sensors(vehicle)
 
     assert sensors['damage']['damage'] > 100
+
+def test_state(beamng):
+    scenario = Scenario('smallgrid', 'vehicle_state_test')
+    vehicle = Vehicle('test_car', model='pickup')
+
+    state = State()
+    vehicle.attach_sensor('state', state)
+
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+    scenario.make(beamng)
+
+    with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+        bng.step(20)
+
+        sensors = bng.poll_sensors(vehicle)
+
+        assert sensors["state"] != None
+        assert vehicle.state == sensors["state"]
+
