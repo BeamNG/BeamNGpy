@@ -4,6 +4,7 @@ import pytest
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError, BNGError
 from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces, State
+from beamngpy.noise import WhiteGaussianRGBNoise
 
 
 @pytest.fixture()
@@ -45,6 +46,29 @@ def test_camera(beamng):
         assert_image_different(sensors['front_cam']['depth'])
         assert_image_different(sensors['front_cam']['annotation'])
 
+def test_noise(beamng):
+    scenario = Scenario('west_coast_usa', 'camera_test')
+    vehicle = Vehicle('test_car', model='etk800')
+
+    pos = (-0.3, 1, 1.0)
+    direction = (0, 1, 0)
+    fov = 120
+    resolution = (64, 64)
+    front_camera = Camera(pos, direction, fov, resolution,
+                          colour=True, depth=True, annotation=True)
+    front_camera = WhiteGaussianRGBNoise(front_camera, .5, 0)
+    vehicle.attach_sensor('front_cam', front_camera)
+
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
+    scenario.make(beamng)
+
+    with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.step(120)
+
+        sensors = bng.poll_sensors(vehicle)
+
+        assert_image_different(sensors['front_cam']['colour'])
 
 def test_lidar(beamng):
     scenario = Scenario('west_coast_usa', 'lidar_test')

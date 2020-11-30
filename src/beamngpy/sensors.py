@@ -26,14 +26,9 @@ FAR = 1000
 
 LIDAR_POINTS = 2000000
 
-
-class Sensor():
-    """
-    Sensor meta-class declaring methods common to them.
-    """
-
+class AbstractSensor():
     def __init__(self):
-        _data = dict()
+        self._data = dict()
     
     @property
     def data(self):
@@ -45,7 +40,14 @@ class Sensor():
 
     @data.deleter
     def data(self):
-        self._data = None      
+        self._data = None
+    
+class Sensor(AbstractSensor):
+    """
+    Sensor meta-class declaring methods common to them.
+    """
+    def __init__(self):
+        super().__init__()      
 
     def attach(self, vehicle, name):
         """
@@ -200,7 +202,7 @@ class Camera(Sensor):
             depth (bool): Whether to output depth information.
             annotation (bool): Whether to output annotation information.
         """
-        super.__init__()
+        super().__init__()
         self.pos = pos
         self.direction = direction
         self.fov = fov
@@ -426,7 +428,7 @@ class Lidar(Sensor):
     def __init__(self, offset=(0, 0, 1.7), direction=(0, -1, 0), vres=32,
                  vangle=26.9, rps=2200000, hz=20, angle=360, max_dist=200,
                  visualized=True):
-        super.__init__()
+        super().__init__()
         self.handle = None
         self.shmem = None
 
@@ -529,7 +531,7 @@ class GForces(Sensor):
     # TODO: GForce sensor for specific points on/in the vehicle
     """
     def __init__(self):
-        super.__init__()
+        super().__init__()
 
     def encode_vehicle_request(self):
         req = dict(type='GForces')
