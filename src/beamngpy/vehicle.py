@@ -258,7 +258,7 @@ class Vehicle:
         """
         Updates the vehicle's sensor readings.
         """
-        warnings.warn("do not use 'requests' as function argument\nit will be removed in future versions", DeprecationWarning)
+        warnings.warn("do not use 'requests' as function argument\nit is not used and will be removed in future versions", DeprecationWarning)
         warnings.warn("return type will be None in future versions", DeprecationWarning)
 
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()

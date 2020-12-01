@@ -16,7 +16,7 @@ import logging as log
 import mmap
 import os
 import sys
-import abc
+from abc import ABC, abstractmethod
 
 import numpy as np
 from PIL import Image
@@ -26,28 +26,41 @@ FAR = 1000
 
 LIDAR_POINTS = 2000000
 
-class AbstractSensor():
-    def __init__(self):
-        self._data = dict()
+class AbstractSensor(ABC):
     
     @property
+    @abstractmethod
     def data(self):
-        return self._data   
+        pass   
 
     @data.setter
+    @abstractmethod
     def data(self, data):
-        self._data.update(data)  
+        pass
 
     @data.deleter
+    @abstractmethod
     def data(self):
-        self._data = None
+        pass
     
 class Sensor(AbstractSensor):
     """
     Sensor meta-class declaring methods common to them.
     """
     def __init__(self):
-        super().__init__()      
+        self._data = dict()     
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        self._data = data
+    
+    @data.deleter
+    def data(self):
+        self._data = None
 
     def attach(self, vehicle, name):
         """

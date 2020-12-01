@@ -232,7 +232,7 @@ M.handleSensorRequest = function(msg)
     sensorData[k] = data
   end
 
-  response = {type = 'SensorData', data = sensorData}
+  local response = {type = 'SensorData', data = sensorData}
   rcom.sendMessage(skt, response)
 end
 

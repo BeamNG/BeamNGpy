@@ -12,11 +12,11 @@ extract data from simulations.
 """
 
 from .sensors import AbstractSensor
-from abc import ABC, abstractmethod
 import numpy as np
 from PIL import Image
+from abc import abstractmethod
 
-class Noise(ABC, AbstractSensor):
+class Noise(AbstractSensor):
     
     def __init__(self, sensor):
         self._sensor = sensor
@@ -50,28 +50,32 @@ class Noise(ABC, AbstractSensor):
     @data.deleter
     def data(self):
         self._data = None
-
+    
     def __getattr__(self, name):
-        return getattr(self._sensor, name)
+        # if noise doesn't have it, maybe the sensor has it
+        return getattr(self._sensor, name) 
     
     def __setattr__(self, name, value):
-        if name in ("_sensor"):
-            self.__dict__[name] = value
+        #it won't be possible to set values in the sensor class this way
+        if name == "data":
+            super().__setattr__(name, value)
         else:
-            setattr(self._sensor, name, value)
+            self.__dict__[name] = value
 
 class WhiteGaussianRGBNoise(Noise):
 
     def __init__(self, sensor, mu, sigma):
         super().__init__(sensor)
-        self._img_shape = sensor.resolution + (3,)
-        self.sigma = sigma
+        self._sigma = sigma
+        self._mu = mu
     
     def _generate_noisy_data(self):
         image = np.asarray(self._sensor.data["colour"], dtype=np.float64)/255
-        rgb_noise = np.random.normal(self.mu, self.sigma,self._img_shape)
+        rgb_noise = np.random.normal(self._mu, self._sigma, image.shape)
+        assert(not(np.array_equal(image, image+rgb_noise)))
         image = image+rgb_noise
         image[image>1] = 1
         image[image<0] = 0
-        image = Image.fromarray(image*255)
+        image = Image.fromarray((image*255).astype(np.uint8))
         self._data = {'colour':image}
+
