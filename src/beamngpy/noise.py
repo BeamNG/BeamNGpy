@@ -70,7 +70,7 @@ class WhiteGaussianRGBNoise(Noise):
         self._mu = mu
     
     def _generate_noisy_data(self):
-        image = np.asarray(self._sensor.data["colour"], dtype=np.float64)/255
+        image = np.array(self._sensor.data["colour"], dtype=np.float64)/255
         rgb_noise = np.random.normal(self._mu, self._sigma, image.shape)
         assert(not(np.array_equal(image, image+rgb_noise)))
         image = image+rgb_noise
