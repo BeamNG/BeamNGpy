@@ -72,6 +72,7 @@ def test_noise(beamng):
 
         noise_img = np.asarray(noise_camera.data['colour'])
         reference_img = np.asarray(reference_camera.data['colour'])
+        # since this is based on two different renders this will always be different
         assert(not(np.array_equal(noise_img, reference_img)))
         
 
