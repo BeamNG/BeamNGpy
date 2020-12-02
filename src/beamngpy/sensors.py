@@ -27,6 +27,9 @@ FAR = 1000
 LIDAR_POINTS = 2000000
 
 class AbstractSensor(ABC):
+    """
+    Abstract Sensor class declaring properties common to the ordinary and noise sensors.
+    """
     
     @property
     @abstractmethod
@@ -52,6 +55,9 @@ class Sensor(AbstractSensor):
 
     @property
     def data(self):
+        """
+        Property used to store sensor readings.
+        """
         return self._data
 
     @data.setter
@@ -730,6 +736,10 @@ class Timer(Sensor):
         return req
 
 class State(Sensor):
+    """
+    The state sensor monitors general stats of the vehicle, such as position, direction, velocity, etc.
+    It is a default sensor every vehicle has and is used to update the vehicle.state attribute.
+    """
     def __init__(self):
         super().__init__()
 

@@ -64,8 +64,23 @@ class Vehicle:
         self._veh_state_sensor_id = "state"
         state = State()
         self.attach_sensor(self._veh_state_sensor_id, state)
+        
+
+    def __hash__(self):
+        return hash(self.vid)
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.vid == other.vid
+        return False
+
+    def __str__(self):
+        return 'V:{}'.format(self.vid)
+
+    @property
+    def state(self):
         """
-        This field contains the vehicle's current state in the running
+        This property contains the vehicle's current state in the running
         scenario. It is None if no scenario is running or the state has not
         been retrieved yet. Otherwise, it contains the following key entries:
 
@@ -81,20 +96,6 @@ class Vehicle:
         convenience, a call to :meth:`.Vehicle.poll_sensors` also updates the
         vehicle state along with retrieving sensor data.
         """
-
-    def __hash__(self):
-        return hash(self.vid)
-
-    def __eq__(self, other):
-        if isinstance(other, type(self)):
-            return self.vid == other.vid
-        return False
-
-    def __str__(self):
-        return 'V:{}'.format(self.vid)
-
-    @property
-    def state(self):
         return self.sensors[self._veh_state_sensor_id].data
 
     @state.setter
@@ -257,8 +258,19 @@ class Vehicle:
     def poll_sensors(self, requests=None):
         """
         Updates the vehicle's sensor readings.
+        Args:
+            mode (str): The mode to set. Must be a string from the options
+                        listed above.
+
+        Raises:
+            DeprecationWarning: If requests parameter is used.
+            DeprecationWarning: Always, since the return type will change in the future.
+        
+        Returns:
+            Dict with sensor data to support compatibility with previous versions.
         """
-        warnings.warn("do not use 'requests' as function argument\nit is not used and will be removed in future versions", DeprecationWarning)
+        if requests!=None:
+            warnings.warn("do not use 'requests' as function argument\nit is not used and will be removed in future versions", DeprecationWarning)
         warnings.warn("return type will be None in future versions", DeprecationWarning)
 
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
