@@ -10,9 +10,10 @@
 
 import base64
 import logging as log
+import warnings
 
-from .beamngcommon import *
-
+from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
+from .sensors import State
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -60,9 +61,25 @@ class Vehicle:
 
         self.extensions = options.get('extensions')
 
-        self.state = None
+        self._veh_state_sensor_id = "state"
+        state = State()
+        self.attach_sensor(self._veh_state_sensor_id, state)
+
+    def __hash__(self):
+        return hash(self.vid)
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.vid == other.vid
+        return False
+
+    def __str__(self):
+        return 'V:{}'.format(self.vid)
+
+    @property
+    def state(self):
         """
-        This field contains the vehicle's current state in the running
+        This property contains the vehicle's current state in the running
         scenario. It is None if no scenario is running or the state has not
         been retrieved yet. Otherwise, it contains the following key entries:
 
@@ -78,17 +95,15 @@ class Vehicle:
         convenience, a call to :meth:`.Vehicle.poll_sensors` also updates the
         vehicle state along with retrieving sensor data.
         """
+        return self.sensors[self._veh_state_sensor_id].data
 
-    def __hash__(self):
-        return hash(self.vid)
+    @state.setter
+    def state(self, value):
+        self.sensors[self._veh_state_sensor_id].data = value
 
-    def __eq__(self, other):
-        if isinstance(other, type(self)):
-            return self.vid == other.vid
-        return False
-
-    def __str__(self):
-        return 'V:{}'.format(self.vid)
+    @state.deleter
+    def state(self):
+        del self.sensors[self._veh_state_sensor_id].data
 
     def send(self, data):
         """
@@ -144,7 +159,6 @@ class Vehicle:
         self.server = None
         self.port = None
         self.skt = None
-        self.state = None
 
     def attach_sensor(self, name, sensor):
         """
@@ -228,7 +242,7 @@ class Vehicle:
         returns them as one dictionary.
         """
         flags = dict()
-        for name, sensor in self.sensors.items():
+        for _, sensor in self.sensors.items():
             sensor_flags = sensor.get_engine_flags()
             flags.update(sensor_flags)
         return flags
@@ -237,26 +251,57 @@ class Vehicle:
         """
         Synchronises the :attr:`.Vehicle.state` field with the simulation.
         """
-        data = dict(type='UpdateVehicle')
-        self.send(data)
-        resp = self.recv()
-        self.state = resp['state']
+        warnings.warn('Update_vehicle is deprecated\nthe .Vehicle.state '
+                      'attribute is now a default sensor for every vehicle and'
+                      ' is updated through poll_sensors', DeprecationWarning)
+        return self.state
 
-    def poll_sensors(self, requests):
+    def poll_sensors(self, requests=None):
         """
-        Sends a sensor request to the corresponding vehicle in the simulation
-        and returns the raw response data as a dictionary.
+        Updates the vehicle's sensor readings.
+        Args:
+            mode (str): The mode to set. Must be a string from the options
+                        listed above.
 
-        Note:
-            This method automatically synchronises the
-            :attr:`.Vehicle.state` field with the simulation.
+        Raises:
+            DeprecationWarning: If requests parameter is used.
+            DeprecationWarning: Always, since the return type will change in
+                                the future.
+
+        Returns:
+            Dict with sensor data to support compatibility with
+            previous versions.
         """
-        self.send(requests)
-        response = self.recv()
-        assert response['type'] == 'SensorData'
-        sensor_data = response['data']
-        self.state = response['state']
-        return sensor_data
+        if requests != None:
+            warnings.warn('Do not use "requests" as function argument.\n'
+                          'It is not used and will be removed in future '
+                          'versions.', DeprecationWarning)
+        warnings.warn(
+            "return type will be None in future versions", DeprecationWarning)
+
+        engine_reqs, vehicle_reqs = self.encode_sensor_requests()
+        sensor_data = dict()
+        compatibility_support = None
+
+        if engine_reqs['sensors']:
+            self.bng.send(engine_reqs)
+            response = self.bng.recv()
+            assert response['type'] == 'SensorData'
+            sensor_data.update(response['data'])
+
+        if vehicle_reqs['sensors']:
+            self.send(vehicle_reqs)
+            response = self.recv()
+            assert response['type'] == 'SensorData'
+            compatibility_support = response['data']
+            sensor_data.update(response['data'])
+
+        result = self.decode_sensor_response(sensor_data)
+        for sensor, data in result.items():
+            self.sensors[sensor].data = data
+
+        self.sensor_cache = result
+        return compatibility_support
 
     @ack('ShiftModeSet')
     def set_shift_mode(self, mode):
@@ -461,7 +506,10 @@ class Vehicle:
                            minimum length of a script.
         """
         if start_dir != None or up_dir != None or teleport != None:
-            warnings.warn("The function arguments 'start_dir', 'up_dir', and 'teleport' are not used anymore and will be removed in future versions.", DeprecationWarning) 
+            warnings.warn('The function arguments "start_dir", "up_dir", '
+                          ' and "teleport" are not used anymore and will be '
+                          ' removed in future versions.', DeprecationWarning)
+
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
 
