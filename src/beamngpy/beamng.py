@@ -721,8 +721,9 @@ class BeamNGpy:
 
     def poll_sensors(self, vehicle):
         """
-        This member function is deprecated and will be removed in future versions.
-        Use 'Vehicle.poll_sensors' instead.
+        This member function is deprecated and will be removed in future
+        versions. Use 'Vehicle.poll_sensors' instead.
+
         Retrieves sensor values for the sensors attached to the given vehicle.
         This method correctly splits requests meant for the game engine and
         requests meant for the vehicle, sending them to their supposed
@@ -739,7 +740,10 @@ class BeamNGpy:
             dictionary having a key-value pair for each sensor's name and the
             data received for it.
         """
-        warnings.warn("'BeamNGpy.poll_sensors' is deprecated\nuse 'Vehicle.poll_sensors' instead\nthis function is going to be removed in the future", DeprecationWarning)
+        warnings.warn('"BeamNGpy.poll_sensors" is deprecated.\n'
+                      'Use "Vehicle.poll_sensors" instead.\n'
+                      'This function is going to be removed in the future.',
+                      DeprecationWarning)
 
         vehicle.poll_sensors()
         return vehicle.sensor_cache
@@ -1469,7 +1473,8 @@ class BeamNGpy:
                            coordinate triplets.
             point_colors (list): List of colors as (r, g, b, a) quartets, each
                                  value expressing red, green, blue, and alpha
-                                 intensity from 0 to 1. Only the first entry is used.
+                                 intensity from 0 to 1. Only the first entry is
+                                 used.
             spheres (list): Optional list of points where spheres should be
                             rendered, given as (x, y, z, r) tuples where x,y,z
                             are coordinates and r the radius of the sphere.
@@ -1488,20 +1493,29 @@ class BeamNGpy:
         Returns:
             The ID of the added debug line that can be used to remove the line
         """
-        warnings.warn('use of "add_debug_line" deprecated it will be removed in future versions, use "add_debug_polyline" and "add_debug_spheres" instead')
+        warnings.warn('Use of "add_debug_line" deprecated it will be removed '
+                      'in future versions. Use "add_debug_polyline" '
+                      'and "add_debug_spheres" instead.')
+
         if spheres:
             coordinates = [s[:3] for s in spheres]
             radii = [s[3] for s in spheres]
-            self.add_debug_spheres(coordinates, radii, sphere_colors, cling, offset)
+            self.add_debug_spheres(
+                coordinates, radii, sphere_colors, cling, offset)
 
-        lineID = self.add_debug_polyline(points, point_colors[0], cling, offset)
+        lineID = self.add_debug_polyline(
+            points, point_colors[0], cling, offset)
         return lineID
 
     def remove_debug_line(self, line_id):
-        warnings.warn('use of "remove_debug_line" deprecated it will be removed in future versions, use "add_debug_polyline" instead')
+        warnings.warn('Use of "remove_debug_line" is deprecated. It will be '
+                      'removed in future versions. Use "add_debug_polyline" '
+                      'instead.')
+
         self.remove_debug_polyline(line_id)
 
-    def add_debug_spheres(self, coordinates, radii, rgba_colors, cling=False, offset=0):
+    def add_debug_spheres(self, coordinates, radii, rgba_colors,
+                          cling=False, offset=0):
         data = dict(type="AddDebugSpheres")
         assert len(coordinates) == len(radii) == len(rgba_colors)
         data['coordinates'] = coordinates
@@ -1520,8 +1534,9 @@ class BeamNGpy:
         data['objType'] = 'spheres'
         data['objIDs'] = sphere_ids
         self.send(data)
-    
-    def add_debug_polyline(self, coordinates, rgba_color, cling=False, offset=0):
+
+    def add_debug_polyline(self, coordinates, rgba_color,
+                           cling=False, offset=0):
         data = dict(type='AddDebugPolyline')
         data['coordinates'] = coordinates
         data['color'] = rgba_color
@@ -1540,14 +1555,14 @@ class BeamNGpy:
         self.send(data)
 
     def add_debug_cylinder(self, circle_positions, radius, rgba_color):
-            data = dict(type='AddDebugCylinder')
-            data['circlePositions'] = circle_positions
-            data['radius'] = radius
-            data['color'] = rgba_color
-            self.send(data)
-            resp = self.recv()
-            assert resp['type'] == 'DebugCylinderAdded'
-            return resp['cylinderID']
+        data = dict(type='AddDebugCylinder')
+        data['circlePositions'] = circle_positions
+        data['radius'] = radius
+        data['color'] = rgba_color
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugCylinderAdded'
+        return resp['cylinderID']
 
     @ack('DebugObjectsRemoved')
     def remove_debug_cylinder(self, cylinder_id):
@@ -1557,15 +1572,15 @@ class BeamNGpy:
         self.send(data)
 
     def add_debug_triangle(self, vertices, rgba_color, cling=False, offset=0):
-            data = dict(type='AddDebugTriangle')
-            data['vertices'] = vertices
-            data['color'] = rgba_color
-            data['cling'] = cling
-            data['offset'] = offset
-            self.send(data)
-            resp = self.recv()
-            assert resp['type'] == 'DebugTriangleAdded'
-            return resp['triangleID']
+        data = dict(type='AddDebugTriangle')
+        data['vertices'] = vertices
+        data['color'] = rgba_color
+        data['cling'] = cling
+        data['offset'] = offset
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugTriangleAdded'
+        return resp['triangleID']
 
     @ack('DebugObjectsRemoved')
     def remove_debug_triangle(self, triangle_id):
@@ -1575,15 +1590,15 @@ class BeamNGpy:
         self.send(data)
 
     def add_debug_rectangle(self, vertices, rgba_color, cling=False, offset=0):
-            data = dict(type='AddDebugRectangle')
-            data['vertices'] = vertices
-            data['color'] = rgba_color
-            data['cling'] = cling
-            data['offset'] = offset
-            self.send(data)
-            resp = self.recv()
-            assert resp['type'] == 'DebugRectangleAdded'
-            return resp['rectangleID']
+        data = dict(type='AddDebugRectangle')
+        data['vertices'] = vertices
+        data['color'] = rgba_color
+        data['cling'] = cling
+        data['offset'] = offset
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugRectangleAdded'
+        return resp['rectangleID']
 
     @ack('DebugObjectsRemoved')
     def remove_debug_rectangle(self, rectangle_id):
@@ -1592,17 +1607,18 @@ class BeamNGpy:
         data['objIDs'] = [rectangle_id]
         self.send(data)
 
-    def add_debug_text(self, origin, content, rgba_color, cling=False, offset=0):
-            data = dict(type='AddDebugText')
-            data['origin'] = origin
-            data['content'] = content
-            data['color'] = rgba_color
-            data['cling'] = cling
-            data['offset'] = offset
-            self.send(data)
-            resp = self.recv()
-            assert resp['type'] == 'DebugTextAdded'
-            return resp['textID']
+    def add_debug_text(self, origin, content, rgba_color,
+                       cling=False, offset=0):
+        data = dict(type='AddDebugText')
+        data['origin'] = origin
+        data['content'] = content
+        data['color'] = rgba_color
+        data['cling'] = cling
+        data['offset'] = offset
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugTextAdded'
+        return resp['textID']
 
     @ack('DebugObjectsRemoved')
     def remove_debug_text(self, text_id):
@@ -1612,14 +1628,14 @@ class BeamNGpy:
         self.send(data)
 
     def add_debug_square_prism(self, end_points, end_point_dims, rgba_color):
-            data = dict(type='AddDebugSquarePrism')
-            data['endPoints'] = end_points
-            data['dims'] = end_point_dims
-            data['color'] = rgba_color
-            self.send(data)
-            resp = self.recv()
-            assert resp['type'] == 'DebugSquarePrismAdded'
-            return resp['prismID']
+        data = dict(type='AddDebugSquarePrism')
+        data['endPoints'] = end_points
+        data['dims'] = end_point_dims
+        data['color'] = rgba_color
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'DebugSquarePrismAdded'
+        return resp['prismID']
 
     @ack('DebugObjectsRemoved')
     def remove_debug_square_prism(self, prism_id):

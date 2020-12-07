@@ -12,7 +12,7 @@ import base64
 import logging as log
 import warnings
 
-from .beamngcommon import *
+from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
 from .sensors import State
 
 SHIFT_MODES = {
@@ -64,7 +64,6 @@ class Vehicle:
         self._veh_state_sensor_id = "state"
         state = State()
         self.attach_sensor(self._veh_state_sensor_id, state)
-        
 
     def __hash__(self):
         return hash(self.vid)
@@ -243,7 +242,7 @@ class Vehicle:
         returns them as one dictionary.
         """
         flags = dict()
-        for name, sensor in self.sensors.items():
+        for _, sensor in self.sensors.items():
             sensor_flags = sensor.get_engine_flags()
             flags.update(sensor_flags)
         return flags
@@ -252,7 +251,9 @@ class Vehicle:
         """
         Synchronises the :attr:`.Vehicle.state` field with the simulation.
         """
-        warnings.warn("update_vehicle is deprecated\nthe .Vehicle.state attribute is now a default sensor for every vehicle and is updated through poll_sensors", DeprecationWarning)
+        warnings.warn('Update_vehicle is deprecated\nthe .Vehicle.state '
+                      'attribute is now a default sensor for every vehicle and'
+                      ' is updated through poll_sensors', DeprecationWarning)
         return self.state
 
     def poll_sensors(self, requests=None):
@@ -264,14 +265,19 @@ class Vehicle:
 
         Raises:
             DeprecationWarning: If requests parameter is used.
-            DeprecationWarning: Always, since the return type will change in the future.
-        
+            DeprecationWarning: Always, since the return type will change in
+                                the future.
+
         Returns:
-            Dict with sensor data to support compatibility with previous versions.
+            Dict with sensor data to support compatibility with
+            previous versions.
         """
-        if requests!=None:
-            warnings.warn("do not use 'requests' as function argument\nit is not used and will be removed in future versions", DeprecationWarning)
-        warnings.warn("return type will be None in future versions", DeprecationWarning)
+        if requests != None:
+            warnings.warn('Do not use "requests" as function argument.\n'
+                          'It is not used and will be removed in future '
+                          'versions.', DeprecationWarning)
+        warnings.warn(
+            "return type will be None in future versions", DeprecationWarning)
 
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
@@ -500,7 +506,10 @@ class Vehicle:
                            minimum length of a script.
         """
         if start_dir != None or up_dir != None or teleport != None:
-            warnings.warn("The function arguments 'start_dir', 'up_dir', and 'teleport' are not used anymore and will be removed in future versions.", DeprecationWarning) 
+            warnings.warn('The function arguments "start_dir", "up_dir", '
+                          ' and "teleport" are not used anymore and will be '
+                          ' removed in future versions.', DeprecationWarning)
+
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
 

@@ -46,6 +46,7 @@ def test_camera(beamng):
         assert_image_different(sensors['front_cam']['depth'])
         assert_image_different(sensors['front_cam']['annotation'])
 
+
 def test_noise(beamng):
     scenario = Scenario('west_coast_usa', 'camera_test')
     vehicle = Vehicle('test_car', model='etk800')
@@ -72,9 +73,10 @@ def test_noise(beamng):
 
         noise_img = np.asarray(noise_camera.data['colour'])
         reference_img = np.asarray(reference_camera.data['colour'])
-        # since this is based on two different renders this will always be different
+        # since this is based on two different renders this will
+        # always be different
         assert(not(np.array_equal(noise_img, reference_img)))
-        
+
 
 def test_lidar(beamng):
     scenario = Scenario('west_coast_usa', 'lidar_test')
@@ -176,6 +178,7 @@ def test_damage(beamng):
 
     assert sensors['damage']['damage'] > 100
 
+
 def test_state(beamng):
     scenario = Scenario('smallgrid', 'vehicle_state_test')
     vehicle = Vehicle('test_car', model='pickup')
@@ -196,7 +199,7 @@ def test_state(beamng):
         assert sensors["state"] != None
         assert vehicle.state == sensors["state"]
 
-if __name__=="__main__":
+
+if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)
-    # test_state(bng)
     test_camera(bng)

@@ -26,15 +26,17 @@ FAR = 1000
 
 LIDAR_POINTS = 2000000
 
+
 class AbstractSensor(ABC):
     """
-    Abstract Sensor class declaring properties common to the ordinary and noise sensors.
+    Abstract Sensor class declaring properties common to the ordinary and noise
+    sensors.
     """
-    
+
     @property
     @abstractmethod
     def data(self):
-        pass   
+        pass
 
     @data.setter
     @abstractmethod
@@ -45,13 +47,15 @@ class AbstractSensor(ABC):
     @abstractmethod
     def data(self):
         pass
-    
+
+
 class Sensor(AbstractSensor):
     """
     Sensor meta-class declaring methods common to them.
     """
+
     def __init__(self):
-        self._data = dict()     
+        self._data = dict()
 
     @property
     def data(self):
@@ -63,7 +67,7 @@ class Sensor(AbstractSensor):
     @data.setter
     def data(self, data):
         self._data = data
-    
+
     @data.deleter
     def data(self):
         self._data = None
@@ -549,6 +553,7 @@ class GForces(Sensor):
 
     # TODO: GForce sensor for specific points on/in the vehicle
     """
+
     def __init__(self):
         super().__init__()
 
@@ -664,6 +669,7 @@ class Electrics(Sensor):
         'twoStep': 'two_step',
         'watertemp': 'water_temperature',
     }
+
     def __init__(self):
         super().__init__()
 
@@ -709,6 +715,7 @@ class Damage(Sensor):
     deformed the vehicle is. It's therefore more of a ground truth than
     simulated sensor data.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -728,6 +735,7 @@ class Timer(Sensor):
     When polled, this sensor provides the time in seconds since the start of
     the scenario in a dictionary under the 'time' key.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -735,14 +743,17 @@ class Timer(Sensor):
         req = dict(type='Timer')
         return req
 
+
 class State(Sensor):
     """
-    The state sensor monitors general stats of the vehicle, such as position, direction, velocity, etc.
-    It is a default sensor every vehicle has and is used to update the vehicle.state attribute.
+    The state sensor monitors general stats of the vehicle, such as position,
+    direction, velocity, etc. It is a default sensor every vehicle has and is
+    used to update the vehicle.state attribute.
     """
+
     def __init__(self):
         super().__init__()
 
     def encode_vehicle_request(self):
-        req  = dict(type='State')
+        req = dict(type='State')
         return req
