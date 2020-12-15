@@ -14,7 +14,14 @@ def beamng():
 
 
 def test_get_available_vehicles(beamng):
+    scenario = Scenario('smallgrid', 'spawn_test')
+    vehicle = Vehicle('irrelevant', model='pickup')
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+    scenario.make(beamng)
+
     with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.start_scenario()
         resp = bng.get_available_vehicles()
         assert len(resp) > 0
 
@@ -23,18 +30,20 @@ def assert_continued_movement(bng, vehicle, start_pos):
     last_pos = start_pos
     for _ in range(5):
         bng.step(120, wait=True)
-        vehicle.update_vehicle()
-        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) > 0.5
-        last_pos = vehicle.state['pos']
+        vehicle.poll_sensors()
+        current_pos = np.array(vehicle.sensors['state'].data['pos'])
+        assert np.linalg.norm(current_pos - last_pos) > 0.5
+        last_pos = current_pos
 
 
 def assert_non_movement(bng, vehicle, start_pos):
     last_pos = start_pos
     for _ in range(5):
         bng.step(60, wait=True)
-        vehicle.update_vehicle()
-        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) < 0.5
-        last_pos = vehicle.state['pos']
+        vehicle.poll_sensors()
+        current_pos = np.array(vehicle.sensors['state'].data['pos'])
+        assert np.linalg.norm(current_pos - last_pos) < 0.5
+        last_pos = current_pos
 
 
 def test_vehicle_move(beamng):
@@ -51,8 +60,8 @@ def test_vehicle_move(beamng):
         bng.pause()
         vehicle.control(throttle=1)
         bng.step(120, wait=True)
-        vehicle.update_vehicle()
-        assert np.linalg.norm(vehicle.state['pos']) > 1
+        vehicle.poll_sensors()
+        assert np.linalg.norm(vehicle.sensors['state'].data['pos']) > 1
 
     scenario.delete(beamng)
 
@@ -106,9 +115,9 @@ def test_vehicle_ai(beamng):
         ]
         vehicle.ai_set_script(script)
         bng.step(600, wait=True)
-        vehicle.update_vehicle()
+        vehicle.poll_sensors()
         ref = [script[1]['x'], script[1]['y'], script[1]['z']]
-        pos = vehicle.state['pos']
+        pos = vehicle.sensors['state'].data['pos']
         ref, pos = np.array(ref), np.array(pos)
         assert np.linalg.norm(ref - pos) < 2.5
 
@@ -127,12 +136,13 @@ def test_vehicle_spawn(beamng):
 
         other = Vehicle('relevant', model='etk800')
         scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
-        other.update_vehicle()
-        assert 'pos' in other.state
+        other.poll_sensors()
+        assert other.sensors['state'].connected
+        assert 'pos' in other.sensors['state'].data
         bng.step(120, wait=True)
         scenario.remove_vehicle(other)
         bng.step(600, wait=True)
-        assert other.state is None
+        assert not other.sensors['state'].connected
 
 
 def test_vehicle_bbox(beamng):

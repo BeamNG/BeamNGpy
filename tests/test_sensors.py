@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import pytest
 
@@ -39,6 +41,7 @@ def test_camera(beamng):
     with beamng as bng:
         bng.load_scenario(scenario)
         bng.step(120)
+        time.sleep(20)
 
         sensors = bng.poll_sensors(vehicle)
 
@@ -66,6 +69,7 @@ def test_noise(beamng):
     with beamng as bng:
         bng.load_scenario(scenario)
         bng.step(120)
+        time.sleep(20)
         vehicle.poll_sensors()
 
         reference_img = np.array(noise_cam._sensor.data['colour'])
@@ -86,10 +90,11 @@ def test_lidar(beamng):
     with beamng as bng:
         bng.load_scenario(scenario)
         bng.step(120)
+        time.sleep(20)
 
-        sensors = bng.poll_sensors(vehicle)
+        vehicle.poll_sensors()
 
-        arr = sensors['lidar']['points']
+        arr = lidar.data['points']
         ref = arr[0]
         eq = arr[np.where(arr == ref)]
         assert eq.size != arr.size
@@ -117,9 +122,9 @@ def test_gforces(beamng):
 
         for _ in range(64):
             bng.step(30)
-            sensors = bng.poll_sensors(vehicle)
-            gx.append(sensors['gforces']['gx'])
-            gy.append(sensors['gforces']['gy'])
+            vehicle.poll_sensors()
+            gx.append(gforces.data['gx'])
+            gy.append(gforces.data['gy'])
 
     assert np.var(gx) > 1 and np.var(gy) > 1
 
@@ -143,11 +148,11 @@ def test_electrics(beamng):
 
         bng.step(360)
 
-        sensors = bng.poll_sensors(vehicle)
+        vehicle.poll_sensors()
 
-    assert sensors['electrics']['airspeed'] > 0
-    assert sensors['electrics']['wheelspeed'] > 0
-    assert sensors['electrics']['throttle'] > 0
+    assert electrics.data['airspeed'] > 0
+    assert electrics.data['wheelspeed'] > 0
+    assert electrics.data['throttle_input'] > 0
 
 
 def test_damage(beamng):
@@ -169,9 +174,9 @@ def test_damage(beamng):
 
         bng.step(600)
 
-        sensors = bng.poll_sensors(vehicle)
+        vehicle.poll_sensors()
 
-    assert sensors['damage']['damage'] > 100
+    assert damage.data['damage'] > 100
 
 
 def test_state(beamng):
@@ -189,10 +194,9 @@ def test_state(beamng):
         bng.start_scenario()
         bng.step(20)
 
-        sensors = bng.poll_sensors(vehicle)
+        vehicle.poll_sensors()
 
-        assert sensors["state"] != None
-        assert vehicle.state == sensors["state"]
+    assert state.data['pos'][0] < 0.1
 
 
 if __name__ == '__main__':
