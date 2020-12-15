@@ -40,8 +40,8 @@ from .beamngcommon import raise_rot_deprecation_warning
 PROTOCOL_VERSION = 'v1.17'
 
 BINARIES = [
-    'Bin64/BeamNG.drive.x64.exe',
     'Bin64/BeamNG.research.x64.exe',
+    'Bin64/BeamNG.drive.x64.exe',
 ]
 
 

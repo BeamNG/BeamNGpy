@@ -934,11 +934,22 @@ M.handleGetAvailableVehicles = function(msg)
   local configs = core_vehicles.getConfigList().configs
 
   for model, modelData in pairs(models) do
-    local data = deepcopy(modelData)
+    local data = {
+      author = modelData.Author,
+      name = modelData.Name,
+      type = modelData.Type,
+      key = modelData.key,
+    }
     data.configurations = {}
     for key, config in pairs(configs) do
       if config.model_key == model then
-        data.configurations[config.key] = config
+        data.configurations[config.key] = {
+          author = config.Author,
+          model_key = config.model_key,
+          key = config.key,
+          name = config.Name,
+          type = config.Type
+        }
       end
     end
     resp.vehicles[model] = data
