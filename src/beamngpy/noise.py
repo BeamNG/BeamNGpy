@@ -15,6 +15,8 @@ from .sensors import AbstractSensor
 import numpy as np
 from PIL import Image
 from abc import abstractmethod
+from skimage.util import noise as skinoise
+from skimage.util import dtype as skitype
 
 
 class Noise(AbstractSensor):
@@ -24,7 +26,7 @@ class Noise(AbstractSensor):
     subclass can (almost) be used as if it was a sensor on its own. Multiple
     noise subclasses can be chained. If a member function is not part of Noise,
     the call will be forwarded to the Sensor it contains. Outside the .data
-    property it is not possible to set attributes of the sensor class.  
+    property it is not possible to set attributes of the sensor class.
     """
 
     def __init__(self, sensor):
@@ -35,7 +37,7 @@ class Noise(AbstractSensor):
     @abstractmethod
     def _generate_noisy_data(self):
         """
-        Generate and cache noisy data in self._data 
+        Generate and cache noisy data in self._data
         """
         pass
 
@@ -43,8 +45,9 @@ class Noise(AbstractSensor):
     def data(self):
         """
         Returns the added up cached noise with the one from sensor.data.
+        This does not affect the data from the original sensor.
         """
-        data = self._sensor.data
+        data = self._sensor.data.copy()
         data.update(self._data)
         return data
 
@@ -79,33 +82,42 @@ class Noise(AbstractSensor):
             self.__dict__[name] = value
 
 
-class WhiteGaussianRGBNoise(Noise):
+class RandomImageNoise(Noise):
     """
-    A noise generating class for the Camera Sensor. 
-    It generates white gaussian noise and applies it to the image.
+    A noise generating class for the Camera Sensor.
     """
 
-    def __init__(self, sensor, mu, sigma):
+    def __init__(self, sensor, colour=True, depth=True, **kwargs):
         """
-        Setting parameters for the Gauss distribution.
+        A wrapper class for the random_noise function
+        from the skimage.util.noise package.
+        The default noise type is gaussian additive noise.
+        For a list of arguments refer to the
+        scikit-image documentation.
+        The 'seed' argument is disabled, since it would cause the
+        class to generate the same noise for all images.
 
         Args:
-            mu (float): mean (centre) of the function
-            sigma (float): standard deviation (width) of the function
+            colour(bool): Whether to apply noise to the colour image.
+            depth(bool): Whether to apply noise to the depth image.
         """
         super().__init__(sensor)
-        self._sigma = sigma
-        self._mu = mu
+        img_types = ['colour', 'depth']
+        use = [colour, depth]
+        self._data = dict()
+        self._img_types = [t for t, do in zip(img_types, use)]
+        kwargs.update({'seed': None})
+        self._generate_noise = lambda img: skinoise.random_noise(img,
+                                                                     **kwargs)
 
     def _generate_noisy_data(self):
         """
-        This member function is called to generate the noise 
-        and apply it to the RGB image in the data dictionary.
+        This member function is called to generate the noise
+        and apply it to the colour and/or depth image from the camera sensor.
         """
-        image = np.array(self._sensor.data["colour"], dtype=np.float64)/255
-        rgb_noise = np.random.normal(self._mu, self._sigma, image.shape)
-        image = image+rgb_noise
-        image[image > 1] = 1
-        image[image < 0] = 0
-        image = Image.fromarray((image*255).astype(np.uint8))
-        self._data = {'colour': image}
+        for img_type in self._img_types:
+            img = np.array(self._sensor.data[img_type])
+            img = self._generate_noise(img)
+            img = skitype.img_as_ubyte(img)
+            img = Image.fromarray(img)
+            self._data.update({img_type: img})

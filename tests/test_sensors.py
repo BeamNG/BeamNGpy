@@ -4,7 +4,7 @@ import pytest
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError, BNGError
 from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces, State
-from beamngpy.noise import WhiteGaussianRGBNoise
+from beamngpy.noise import RandomImageNoise
 
 
 @pytest.fixture()
@@ -56,12 +56,9 @@ def test_noise(beamng):
     fov = 120
     resolution = (64, 64)
 
-    reference_camera = Camera(pos, direction, fov, resolution, colour=True)
-    vehicle.attach_sensor('reference_camera', reference_camera)
-
-    noise_camera = Camera(pos, direction, fov, resolution, colour=True)
-    noise_camera = WhiteGaussianRGBNoise(noise_camera, .5, 0)
-    vehicle.attach_sensor('noise_cam', noise_camera)
+    cam = Camera(pos, direction, fov, resolution, colour=True, depth=True)
+    noise_cam = RandomImageNoise(cam)
+    vehicle.attach_sensor('noise_cam', noise_cam)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
     scenario.make(beamng)
@@ -71,10 +68,8 @@ def test_noise(beamng):
         bng.step(120)
         vehicle.poll_sensors()
 
-        noise_img = np.asarray(noise_camera.data['colour'])
-        reference_img = np.asarray(reference_camera.data['colour'])
-        # since this is based on two different renders this will
-        # always be different
+        reference_img = np.array(noise_cam._sensor.data['colour'])
+        noise_img = np.array(noise_cam.data['colour'])
         assert(not(np.array_equal(noise_img, reference_img)))
 
 
