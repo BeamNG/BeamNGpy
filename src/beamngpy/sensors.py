@@ -166,7 +166,7 @@ class Sensor(AbstractSensor):
         Called when the attached vehicle is being removed from simulation. This
         method is used to perform teardown code after the simulation.
         """
-        del self.data
+        pass
 
     def get_engine_flags(self):
         """
@@ -753,7 +753,20 @@ class State(Sensor):
 
     def __init__(self):
         super().__init__()
+        self.connected = False
+
+    def connect(self, bng, vehicle):
+        self.connected = True
+
+    def disconnect(self, bng, vehicle):
+        self.connected = False
 
     def encode_vehicle_request(self):
         req = dict(type='State')
         return req
+
+    def decode_response(self, resp):
+        if 'state' in resp:
+            return resp['state']
+
+        return None
