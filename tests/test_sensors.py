@@ -1,3 +1,4 @@
+import random
 import time
 
 import numpy as np
@@ -6,6 +7,7 @@ import pytest
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError, BNGError
 from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces, State
+from beamngpy.sensors import IMU
 from beamngpy.noise import RandomImageNoise
 
 
@@ -197,6 +199,79 @@ def test_state(beamng):
         vehicle.poll_sensors()
 
     assert state.data['pos'][0] < 0.1
+
+
+def test_imu(beamng):
+    scenario = Scenario('smallgrid', 'vehicle_state_test')
+    vehicle = Vehicle('test_car', model='etk800')
+
+    imu_pos = IMU(pos=(0.73, 0.51, 0.8), debug=True)
+    imu_node = IMU(node=0, debug=True)
+    vehicle.attach_sensor('imu_pos', imu_pos)
+    vehicle.attach_sensor('imu_node', imu_node)
+
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+    scenario.make(beamng)
+
+    with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+        bng.step(20)
+
+        pax, pay, paz, pgx, pgy, pgz = [], [], [], [], [], []
+
+        for _ in range(30):
+            # Stand still, sample IMU
+            bng.step(60)
+            vehicle.poll_sensors()
+            pax.append(imu_pos.data['aX'])
+            pay.append(imu_pos.data['aY'])
+            paz.append(imu_pos.data['aZ'])
+            pgx.append(imu_pos.data['gX'])
+            pgy.append(imu_pos.data['gY'])
+            pgz.append(imu_pos.data['gZ'])
+
+        # Some slight movement is bound to happen since the engine is one and
+        # the vehicle isn't perfectly stable; hence no check for == 0
+        assert np.mean(pax) < 1
+        assert np.mean(pay) < 1
+        assert np.mean(paz) < 1
+        assert np.mean(pgx) < 1
+        assert np.mean(pgy) < 1
+        assert np.mean(pgz) < 1
+
+        pax, pay, paz, pgx, pgy, pgz = [], [], [], [], [], []
+        nax, nay, naz, ngx, ngy, ngz = [], [], [], [], [], []
+
+        for _ in range(30):
+            # Drive randomly, sample IMU
+            t = random.random() * 2 - 1
+            s = random.random() * 2 - 1
+            vehicle.control(throttle=t, steering=s)
+            bng.step(60)
+            vehicle.poll_sensors()
+            pax.append(imu_pos.data['aX'])
+            pay.append(imu_pos.data['aY'])
+            paz.append(imu_pos.data['aZ'])
+            pgx.append(imu_pos.data['gX'])
+            pgy.append(imu_pos.data['gY'])
+            pgz.append(imu_pos.data['gZ'])
+
+            nax.append(imu_node.data['aX'])
+            nay.append(imu_node.data['aY'])
+            naz.append(imu_node.data['aZ'])
+            ngx.append(imu_node.data['gX'])
+            ngy.append(imu_node.data['gY'])
+            ngz.append(imu_node.data['gZ'])
+
+        for arr in [pax, pay, paz, pgx, pgy, pgz]:
+            assert np.max(arr) > 1
+            assert np.min(arr) < -1
+
+        # See if IMU at different position ended up with different measurements
+        for parr, narr in zip([pax, pay, paz, pgx, pgy, pgz],
+                              [nax, nay, naz, ngx, ngy, ngz]):
+            assert np.mean(parr) != np.mean(narr)
 
 
 if __name__ == '__main__':

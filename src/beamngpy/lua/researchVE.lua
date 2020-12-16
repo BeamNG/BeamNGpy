@@ -188,6 +188,20 @@ sensorHandlers.State = function(msg)
   return resp
 end
 
+sensorHandlers.IMU = function(msg)
+  local name = msg['name']
+  local imu = imu.getIMU(name)
+  return {
+    name = imu.name,
+    aX = imu.aX,
+    aY = imu.aY,
+    aZ = imu.aZ,
+    gX = imu.gX,
+    gY = imu.gY,
+    gZ = imu.gZ
+  }
+end
+
 local function getSensorData(request)
   local response, sensor_type, handler
 
@@ -419,6 +433,42 @@ M.handleQueueLuaCommandVE = function(msg)
     log('E', 'compilation error in: "' .. msg.chunk .. '"')
   end
   rcom.sendACK(skt, 'ExecutedLuaChunkVE')
+end
+
+M.handleAddIMUPosition = function(msg)
+  local name = msg['name']
+  local pos = msg['pos']
+  pos = vec3(pos[1], pos[2], pos[3])
+  local debug = msg['debug']
+
+  if imu == nil then
+    extensions.load('imu')
+  end
+
+  imu.addIMU(name, pos, debug)
+  rcom.sendACK(skt, 'IMUPositionAdded')
+end
+
+M.handleAddIMUNode = function(msg)
+  local name = msg['name']
+  local node = msg['node']
+  local debug = msg['debug']
+
+  if imu == nil then
+    extensions.load('imu')
+  end
+
+  imu.addIMUAtNode(name, node, debug)
+  rcom.sendACK(skt, 'IMUNodeAdded')
+end
+
+M.handleRemoveIMU = function(msg)
+  local imu = imu.removeIMU(msg['name'])
+  if imu ~= nil then
+    rcom.sendACK(skt, 'IMURemoved')
+  else
+    rcom.sendBNGValueError('Unknown IMU: ' .. tostring(msg['name']))
+  end
 end
 
 return M
