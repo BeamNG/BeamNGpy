@@ -265,8 +265,8 @@ def test_imu(beamng):
             ngz.append(imu_node.data['gZ'])
 
         for arr in [pax, pay, paz, pgx, pgy, pgz]:
-            assert np.max(arr) > 1
-            assert np.min(arr) < -1
+            assert np.max(arr) > 0.01
+            assert np.min(arr) < -0.01
 
         # See if IMU at different position ended up with different measurements
         for parr, narr in zip([pax, pay, paz, pgx, pgy, pgz],
