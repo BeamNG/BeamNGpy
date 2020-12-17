@@ -37,7 +37,7 @@ from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError
 from .beamngcommon import BNGValueError, angle_to_quat
 from .beamngcommon import raise_rot_deprecation_warning
 
-PROTOCOL_VERSION = 'v1.17'
+PROTOCOL_VERSION = 'v1.18'
 
 BINARIES = [
     'Bin64/BeamNG.research.x64.exe',

@@ -646,6 +646,67 @@ class Vehicle:
                            'to obtain its current bounding box.')
         return self.bng.get_vehicle_bbox(self)
 
+    @ack('IMUPositionAdded')
+    def add_imu_position(self, name, pos, debug=False):
+        """
+        Adds an IMU to this vehicle at the given position identified by the
+        given name. The position is relative to the vehicle's coordinate
+        system, meaning (0, 0, 0) will always refer to the vehicle's origin
+        regardless of its position in the world. This is to make addition of
+        IMUs independent of the vehicle spawn position. To find an appropriate
+        position relative to the vehicle's origin, it's recommended to inspect
+        the vehicle's nodes in the vehicle editor ingame and retrieve the
+        original relative positions of nodes close to the desired measurement
+        point.
+
+        Args:
+            name (str): The name this IMU is identified by. This is mainly
+                        used to later remove an IMU.
+            pos (list): The measurement point relative to the vehicle's origin.
+            debug (bool): Optional flag which enables debug rendering of the
+                          IMU. Useful to verify placement.
+        """
+        data = dict(type='AddIMUPosition')
+        data['name'] = name
+        data['pos'] = pos
+        data['debug'] = debug
+        self.send(data)
+
+    @ack('IMUNodeAdded')
+    def add_imu_node(self, name, node, debug=False):
+        """
+        Adds an IMU to this vehicle at the given node identified by the given
+        name. The node is specified as a number and can be found by inspecting
+        the vehicle using the ingame vehicle editor.
+
+        Args:
+            name (str): The name this IMU is identified by. This is mainly
+                        used to later remove an IMU.
+            node (int): The node ID to perform measurements at.
+            debug (bool): Optional flag which enables debug rendering of the
+                          IMU. Useful to verify placement.
+        """
+        data = dict(type='AddIMUNode')
+        data['name'] = name
+        data['node'] = node
+        data['debug'] = debug
+        self.send(data)
+
+    @ack('IMURemoved')
+    def remove_imu(self, name):
+        """
+        Removes the IMU identified by the given name.
+
+        Args:
+            name (str): The name of the IMU to be removed.
+
+        Raises:
+            BNGValueError: If there is no IMU with the specified name.
+        """
+        data = dict(type='RemoveIMU')
+        data['name'] = name
+        self.send(data)
+
     @ack('LightsSet')
     def set_lights(self, **kwargs):
         """

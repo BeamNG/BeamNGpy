@@ -4,7 +4,7 @@
 
 local M = {}
 local logTag = 'ResearchGE'
-local version = 'v1.17'
+local version = 'v1.18'
 
 local socket = require('libs/luasocket/socket.socket')
 local rcom = require('utils/researchCommunication')

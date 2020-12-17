@@ -5,7 +5,7 @@ BeamNGPy API module.
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
-__version__ = '1.17'
+__version__ = '1.18'
 
 from . import beamngcommon, sensors
 
