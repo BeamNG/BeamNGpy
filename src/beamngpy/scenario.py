@@ -521,32 +521,30 @@ class Scenario:
         if self.bng:
             mesh.place(self.bng)
 
-    def add_checkpoints(self, positions, rotations, scales, ids=None):
+    def add_checkpoints(self, positions, scales, ids=None):
         """
         Adds checkpoints to the scenario.
 
         Args:
             positions(list): positions (tuple of length 3) of individual points
-            rotations(list): quaternion rotation (tuple of length 4)
-                       of individual points
             scales(list): scale (tuple of length 3) of individual points
             ids(list): optional, names of the individual points
         """
         if ids is None:
             ids = [f"wp{i}" for i in range(len(positions))]
-        assert(len(positions) == len(rotations) == len(scales) == len(ids))
-        options = dict(drawDebug='0',
+        assert(len(positions) == len(scales) == len(ids))
+        options = dict(rot=None,
+                       rot_quat=(0, 0, 0, 1),
+                       drawDebug='0',
                        directionalWaypoint='0',
                        mode='Ignore',
                        canSave='1',
                        canSaveDynamicFields='1')
-        for oid, p, r, s in zip(ids, positions, rotations, scales):
+        for oid, p, s in zip(ids, positions, scales):
             cp = ScenarioObject(oid=oid,
                                 name=oid,
                                 otype='BeamNGWaypoint',
                                 pos=p,
-                                rot=None,
-                                rot_quat=r,
                                 scale=s,
                                 **options)
             self.add_object(cp)
