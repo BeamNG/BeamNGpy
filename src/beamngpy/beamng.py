@@ -308,7 +308,7 @@ class BeamNGpy:
                            running one on the configured host/port. Defaults to
                            True.
         """
-        log.info('Opening BeamNPy instance...')
+        log.info('Opening BeamNGpy instance...')
         self.deploy_mod()
         self.start_server()
         if launch:
