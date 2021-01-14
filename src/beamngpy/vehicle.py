@@ -833,3 +833,65 @@ class Vehicle:
             sensor.detach(self, name)
 
         self.sensors = dict()
+
+    @ack('AppliedVSLSettings')
+    def set_in_game_logging_options_from_json(self, fileName):
+        """
+        Updates the in game logging with the settings specified
+        in the given file/json. The file is expected to be in
+        the following location:
+        <path>/<to>/<user>/Documents/BeamNG.[drive/research]/[fileName]
+
+        Args:
+            fileName
+        """
+        data = dict(type='ApplyVSLSettingsFromJSON', fileName=fileName)
+        self.send(data)
+
+    @ack('WroteVSLSettingsToJSON')
+    def write_in_game_logging_options_to_json(self, fileName='template.json'):
+        """
+        Writes all available options from the in-game-logger to a json file.
+        The purpose of this functionality is to facilitate the acquisition of
+        a valid template to adjust the options/settings of the in game logging
+        as needed.
+        Depending on the executable used the file can be found at the following
+        location:
+        <path>/<to>/<user>/Documents/BeamNG.[drive/research]/[fileName]
+
+        Args:
+            fileName(str): not the absolute file path but
+                           the name of the json
+        """
+        data = dict(type='WriteVSLSettingsToJSON', fileName=fileName)
+        self.send(data)
+
+    @ack('StartedVSLLogging')
+    def start_in_game_logging(self, outputDir):
+        """
+        Starts in game logging. Beware that any data
+        from previous logging sessions is overwritten
+        in the process.
+
+        Args:
+            outputDir(str): to avoid overwriting logging from other vehicles,
+                            specify the output directory, overwrites the
+                            outputDir set through the json. The data can be
+                            found in:
+                            <path>/<to>/<user>/Documents/BeamNG.[drive/research]/[outpuDir]
+
+        """
+        data = dict(type='StartVSLLogging', outputDir=outputDir)
+        self.send(data)
+        userpath = self.bng.determine_userpath()
+        log_msg = f'Started in game logging. The log files can be found in {userpath}\\{outputDir}.'
+        log.info(log_msg)
+
+    @ack('StoppedVSLLogging')
+    def stop_in_game_logging(self):
+        """
+        Stops in game logging.
+        """
+        data = dict(type='StopVSLLogging')
+        self.send(data)
+        log.info('Stopped in game logging.')
