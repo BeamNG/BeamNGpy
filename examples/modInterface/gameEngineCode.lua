@@ -9,7 +9,21 @@ end
 
 local function handleFoo(skt, msg)
     log("I", "Hello " .. msg['someName'] .. '!\n')
-    rcom.sendACK(skt, 'Goodbye!')
+    rcom.sendACK(skt, 'FooAck')
+    return true
+end
+
+local function handleGetListOfVehicleModels(skt, msg)
+    local models = {}
+    for k, veh in pairs(getAllVehicles()) do 
+        local vehType =  veh:getPath()
+        vehType = string.gsub(vehType, 'vehicles/', '')
+        vehType = string.gsub(vehType, '/', '')
+        table.insert(models, vehType)
+    end
+    local response = {type="ListOfVehicleModels", data=models}
+    rcom.sendMessage(skt, response)
+    return true
 end
 
 local function onSocketMessage(skt, msg)
@@ -24,5 +38,6 @@ end
 
 M.onSocketMessage = onSocketMessage
 M.handleFoo = handleFoo
+M.handleGetListOfVehicleModels = handleGetListOfVehicleModels
 
 return M

@@ -471,4 +471,25 @@ M.handleRemoveIMU = function(msg)
   end
 end
 
+M.handleApplyVSLSettingsFromJSON = function(msg)
+  extensions.vehicleStatsLogger.applySettingsFromJSON(msg['fileName'])
+  rcom.sendACK(skt, 'AppliedVSLSettings')
+end
+
+M.handleWriteVSLSettingsToJSON = function(msg)
+  extensions.vehicleStatsLogger.writeSettingsToJSON(msg['fileName'])
+  rcom.sendACK(skt, 'WroteVSLSettingsToJSON')
+end
+
+M.handleStartVSLLogging = function(msg)
+  extensions.vehicleStatsLogger.settings.outputDir = msg['outputDir']
+  extensions.vehicleStatsLogger.startLogging()
+  rcom.sendACK(skt, 'StartedVSLLogging')
+end
+
+M.handleStopVSLLogging = function(msg)
+  extensions.vehicleStatsLogger.stopLogging()
+  rcom.sendACK(skt, 'StoppedVSLLogging')
+end
+
 return M

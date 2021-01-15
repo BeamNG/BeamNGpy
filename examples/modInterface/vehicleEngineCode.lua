@@ -9,6 +9,7 @@ end
 
 local function handleBar(skt, msg)
     log("I", msg.text)
+    rcom.sendACK(skt, 'BarAck')
 end
 
 local function onSocketMessage(skt, msg)
