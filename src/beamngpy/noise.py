@@ -125,15 +125,15 @@ class RandomImageNoise(Noise):
 
 class RandomLIDARNoise(Noise):
     """
-    Class generating gaussian additive noise to the LIDAR point cloud.
+    Class generating gaussian additive noise for the LIDAR point cloud.
     """
 
     def __init__(self, sensor, mean=0.0, var=.01):
         """
         A wrapper class that applies gaussian additive noise to LIDAR
         point clouds.
-        Before applying the noise, the point cloud array is scaled to be in [-1, +1],
-        choose mean and variance accordingly.
+        Before applying the noise, the point cloud array is scaled
+        to be in [-1, +1], choose mean and variance accordingly.
 
         Args:
             mean(float): mean of gaussian distribution
