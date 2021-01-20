@@ -8,7 +8,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError, BNGError
 from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces, State
 from beamngpy.sensors import IMU
-from beamngpy.noise import RandomImageNoise
+from beamngpy.noise import RandomImageNoise, RandomLIDARNoise
 
 
 @pytest.fixture()
@@ -65,6 +65,10 @@ def test_noise(beamng):
     noise_cam = RandomImageNoise(cam)
     vehicle.attach_sensor('noise_cam', noise_cam)
 
+    lidar = Lidar()
+    noise_lidar = RandomLIDARNoise(lidar, mean=0, var=.5)
+    vehicle.attach_sensor('noise_lidar', noise_lidar)
+
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
     scenario.make(beamng)
 
@@ -77,6 +81,10 @@ def test_noise(beamng):
         reference_img = np.array(noise_cam._sensor.data['colour'])
         noise_img = np.array(noise_cam.data['colour'])
         assert(not(np.array_equal(noise_img, reference_img)))
+
+        ref_pc = lidar.data['points']
+        noise_pc = noise_lidar.data['points']
+        assert(not(np.array_equal(ref_pc, noise_pc)))
 
 
 def test_lidar(beamng):
