@@ -46,9 +46,16 @@ local frameDelayFunc = nil
 
 local debugLines = {}
 
+local vehicleColors = {}
+
 local _log = log
 local function log(level, message)
   _log(level, logTag, message)
+end
+
+local function generateVehicleColor(vid)
+  local color = ColorI(math.ceil(255 * math.random()), math.ceil(255 * math.random()), math.ceil(255 * math.random()), 255)
+  vehicleColors[vid] = color
 end
 
 local function checkMessage()
@@ -407,14 +414,28 @@ M.handleDespawnVehicle = function(msg)
   rcom.sendACK(skt, 'VehicleDespawned')
 end
 
+local function setVehicleAnnotationColor(veh, color)
+  local meshes = veh:getMeshNames()
+  for i = 1, #meshes do
+    veh:setMeshAnnotationColor(meshes[i], color)
+  end
+end
+
 sensors.Camera = function(req, callback)
   local offset, orientation, up
   local pos, direction, rot, fov, resolution, nearFar, vehicle, vehicleObj, data
-  local color, depth, annotation
+  local color, depth, annotation, instance
+  local paused = false
 
   color = req['color']
   depth = req['depth']
   annotation = req['annotation']
+  instance = req['instance']
+
+  if instance ~= nil and be:getPhysicsRunning() then
+    be:setPhysicsRunning(false)
+    paused = true
+  end
 
   if req['vehicle'] then
     vehicle = scenarioHelper.getVehicleByName(req['vehicle'])
@@ -454,7 +475,41 @@ sensors.Camera = function(req, callback)
 
   local data = Engine.renderCameraShmem(color, depth, annotation, pos, rot, resolution, fov, nearFar)
 
-  callback(data)
+  if instance ~= nil then
+    AnnotationManager.setInstanceAnnotations(true)
+
+    for k, v in pairs(map.objects) do
+      local veh = scenetree.findObject(k)
+      if vehicleColors[k] == nil then
+        generateVehicleColor(k)
+      end
+
+      local color = vehicleColors[k]
+      setVehicleAnnotationColor(veh, color)
+    end
+
+    frameDelayTimer = 1
+    frameDelayFunc = function()
+      local otherData = Engine.renderCameraShmem(color, depth, instance, pos, rot, resolution, fov, nearFar)
+      otherData['instance'] = otherData['annotation']
+      otherData['annotation'] = data['annotation']
+      AnnotationManager.setInstanceAnnotations(false)
+
+      for k, v in pairs(map.objects) do
+        local veh = scenetree.findObject(k)
+        local color = vehicleColors[k]
+        setVehicleAnnotationColor(veh, ColorI(0, 255, 0, 255))
+      end
+
+      if paused then
+        be:setPhysicsRunning(true)
+      end
+
+      callback(otherData)
+    end
+  else
+    callback(data)
+  end
 end
 
 sensors.Lidar = function(req, callback)
@@ -739,7 +794,6 @@ M.handleAnnotateParts = function(msg)
 end
 
 M.handleRevertAnnotations = function(msg)
-  print('Handling annotation reversion')
   local vehicle = scenetree.findObject(msg['vid'])
   util_partAnnotations.revertAnnotations(vehicle:getID())
   rcom.sendACK(skt, 'AnnotationsReverted')
@@ -762,6 +816,15 @@ M.handleGetPartAnnotation = function(msg)
     color = {color.r, color.g, color.b}
   end
   rcom.sendMessage(skt, {type = 'PartAnnotation', color = color})
+end
+
+M.handleGetAnnotations = function(msg)
+  local annotations = AnnotationManager.getAnnotations()
+  for k, v in pairs(annotations) do
+    annotations[k] = {v.r, v.g, v.b}
+  end
+  local ret = {type = 'Annotations', annotations = annotations}
+  rcom.sendMessage(skt, ret)
 end
 
 M.handleFindObjectsClass = function(msg)
