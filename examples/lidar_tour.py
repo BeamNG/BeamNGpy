@@ -77,8 +77,8 @@ def main():
         vehicle.ai_set_mode('span')
 
         def update():
-            sensors = bng.poll_sensors(vehicle)
-            points = sensors['lidar']['points']
+            vehicle.poll_sensors()
+            points = lidar.data['points']
             bng.step(3, wait=False)
 
             lidar_vis.update_points(points, vehicle.state)

@@ -121,3 +121,46 @@ class RandomImageNoise(Noise):
             img = skitype.img_as_ubyte(img)
             img = Image.fromarray(img)
             self._data.update({img_type: img})
+
+
+class RandomLIDARNoise(Noise):
+    """
+    Class generating gaussian additive noise for the LIDAR point cloud.
+    """
+
+    def __init__(self, sensor, mean=0.0, var=.01):
+        """
+        A wrapper class that applies gaussian additive noise to LIDAR
+        point clouds.
+        Before applying the noise, the point cloud array is scaled
+        to be in [-1, +1], choose mean and variance accordingly.
+
+        Args:
+            mean(float): mean of gaussian distribution
+            var(float): variance of gaussian distribution
+        """
+        super().__init__(sensor)
+        self._data = dict()
+
+        self._mean = mean
+        self._var = var
+
+    def _generate_noisy_data(self):
+        """
+        This member function is called to generate the noise
+        and applies it to the point cloud.
+        """
+        point_cloud = np.array(self._sensor.data['points'])
+        if point_cloud.size > 0:
+            point_cloud = point_cloud.astype(np.float64)
+            magnitude = max(point_cloud.max(), np.abs(point_cloud.min()))
+            point_cloud /= magnitude
+            point_cloud = skinoise.random_noise(point_cloud,
+                                                mode='gaussian',
+                                                mean=self._mean,
+                                                var=self._var)
+            point_cloud = point_cloud*magnitude
+            point_cloud = skitype.img_as_float32(point_cloud)
+        else:
+            point_cloud = self._sensor.data['points']
+        self._data.update({'points': point_cloud})
