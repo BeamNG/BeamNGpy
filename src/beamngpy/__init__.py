@@ -7,7 +7,7 @@ BeamNGPy API module.
 
 __version__ = '1.18'
 
-from . import beamngcommon, sensors, noise
+from . import beamngcommon, sensors
 
 from .scenario import *
 from .vehicle import *

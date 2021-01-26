@@ -1644,6 +1644,40 @@ class BeamNGpy:
         data['objIDs'] = [prism_id]
         self.send(data)
 
+    def get_annotations(self):
+        """
+        Method to obtain the annotation configuration of the simulator.
+
+        Returns:
+            A mapping of object classes to lists containing the [R, G, B] values
+            of the colors objects of that class are rendered with.
+        """
+        data = dict(type='GetAnnotations')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'Annotations'
+        return resp['annotations']
+
+    def get_annotation_classes(self, annotations):
+        """
+        Method to convert the annotation configuration of the simulator into
+        a mapping of colors to the corresponding object classes.
+
+        Args:
+            annotations (dict): The annotation configuration of the simulator.
+                                Expected to be in the format `get_annotations()`
+                                returns.
+
+        Returns:
+            A mapping of colors encoded as 24bit integers to object classes
+            according to the simulator.
+        """
+        classes = {}
+        for k, v in annotations.items():
+            key = v[0] * 256 * 256 + v[1] * 256 + v[2]
+            classes[key] = k
+        return classes
+
     def __enter__(self):
         self.open()
         return self
