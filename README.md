@@ -4,8 +4,8 @@
 
 ## About
 
-BeamNGpy is an official library providing a Python interface to BeamNG.research,
-the research-oriented fork of the video game BeamNG.drive.
+BeamNGpy is an official library providing a Python interface to BeamNG.tech,
+the academia- and industry-oriented fork of the video game BeamNG.drive.
 
 It allows remote control of the simulation, including vehicles contained in it:
 
@@ -21,17 +21,17 @@ pixel-perfect semantic annotation or a simulated Lidar sensor:
 
 ## Prerequisites
 
-Usage of BeamNGpy requires BeamNG.research to be installed. Builds of
-BeamNG.research are made available for non-commercial use upon request using
+Usage of BeamNGpy requires BeamNG.tech to be installed. Builds of
+BeamNG.tech are made available for non-commercial use upon request using
 [this form][2]. For commercial use, contact us at [licensing@beamng.gmbh][3].
-Once downloaded (and extracted, depending on whether or no BeamNG.research was
+Once downloaded (and extracted, depending on whether or no BeamNG.tech was
 obtained as a `.zip`), you can set an environment variable `BNG_HOME` to where
-BeamNG.research can be run from, or provide a path to the BeamNGpy library
+BeamNG.tech can be run from, or provide a path to the BeamNGpy library
 during initialization.
 
 The regular [Steam release of BeamNG.drive][4] is compatible to an extent as
 well. Certain sensors like the simulated LiDAR or camera will not work, but
-most of the functions that are not exclusive to a research build will likely
+most of the functions that are not exclusive to a Tech build will likely
 work.
 
 ## Installation
@@ -52,7 +52,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle
 
 # Instantiate BeamNGpy instance running the simulator from the given path,
 # communicating over localhost:64256
-bng = BeamNGpy('localhost', 64256, home='/path/to/bng/research')
+bng = BeamNGpy('localhost', 64256, home='/path/to/bng/tech')
 # Create a scenario in west_coast_usa called 'example'
 scenario = Scenario('west_coast_usa', 'example')
 # Create an ETK800 with the licence plate 'PYTHON'
@@ -62,7 +62,7 @@ scenario.add_vehicle(vehicle, pos=(-717, 101, 118), rot=None, rot_quat=(0, 0, 0.
 # Place files defining our scenario for the simulator to read
 scenario.make(bng)
 
-# Launch BeamNG.research
+# Launch BeamNG.tech
 bng.open()
 # Load and start our scenario
 bng.load_scenario(scenario)

@@ -53,7 +53,7 @@ def test_camera(beamng):
         assert_image_different(sensors['front_cam']['instance'])
         annotation = sensors['front_cam']['annotation']
         instance = sensors['front_cam']['instance']
-        assert np.array(annotation) != np.array(instance)
+        assert not (np.array(annotation) == np.array(instance)).all()
 
 
 def test_bboxes(beamng):

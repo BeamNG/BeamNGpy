@@ -40,6 +40,7 @@ from .beamngcommon import raise_rot_deprecation_warning
 PROTOCOL_VERSION = 'v1.18'
 
 BINARIES = [
+    'Bin64/BeamNG.tech.x64.exe',
     'Bin64/BeamNG.research.x64.exe',
     'Bin64/BeamNG.drive.x64.exe',
 ]
@@ -151,6 +152,8 @@ class BeamNGpy:
         user = Path.home() / 'Documents'
         if '.research' in self.binary:
             user = user / 'BeamNG.research'
+        elif '.tech' in self.binary:
+            user = user / 'BeamNG.tech'
         else:
             user = user / 'BeamNG.drive'
         return user
@@ -859,7 +862,7 @@ class BeamNGpy:
         Triggers a change to a different weather preset. Weather presets affect
         multiple settings at once (time of day, wind speed, cloud coverage,
         etc.) and need to have been defined first. Example json objects
-        defining weather presets can be found in BeamNG.research's
+        defining weather presets can be found in BeamNG.tech's
         ``art/weather/defaults.json`` file.
 
         Args:
