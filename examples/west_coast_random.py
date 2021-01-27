@@ -43,7 +43,7 @@ def main():
     beamng = BeamNGpy('localhost', 64256)
 
     # Create a scenario in west_coast_usa
-    scenario = Scenario('west_coast_usa', 'research_test',
+    scenario = Scenario('west_coast_usa', 'tech_test',
                         description='Random driving for research')
 
     # Set up first vehicle, with two cameras, gforces sensor, lidar, electrical
@@ -79,7 +79,8 @@ def main():
     vehicle.attach_sensor('damage', damage)
     vehicle.attach_sensor('timer', timer)
 
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                         rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
 
     # Compile the scenario and place it in BeamNG's map folder
     scenario.make(beamng)

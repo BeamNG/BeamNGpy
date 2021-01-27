@@ -840,7 +840,7 @@ class Vehicle:
         Updates the in game logging with the settings specified
         in the given file/json. The file is expected to be in
         the following location:
-        <path>/<to>/<user>/Documents/BeamNG.[drive/research]/[fileName]
+        <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[fileName]
 
         Args:
             fileName
@@ -857,7 +857,7 @@ class Vehicle:
         as needed.
         Depending on the executable used the file can be found at the following
         location:
-        <path>/<to>/<user>/Documents/BeamNG.[drive/research]/[fileName]
+        <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[fileName]
 
         Args:
             fileName(str): not the absolute file path but
@@ -878,7 +878,7 @@ class Vehicle:
                             specify the output directory, overwrites the
                             outputDir set through the json. The data can be
                             found in:
-                            <path>/<to>/<user>/Documents/BeamNG.[drive/research]/[outpuDir]
+                            <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[outpuDir]
 
         """
         data = dict(type='StartVSLLogging', outputDir=outputDir)
