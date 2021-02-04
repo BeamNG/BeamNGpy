@@ -1700,10 +1700,10 @@ class BeamNGpy:
         resp = self.recv()
         assert resp['type'] == 'PartConfig'
         resp = resp['config']
-        # if 'parts' not in resp or not resp['parts']:
-        #     resp['parts'] = dict()
-        # if 'vars' not in resp or not resp['vars']:
-        #     resp['vars'] = dict()
+        if 'parts' not in resp or not resp['parts']:
+            resp['parts'] = dict()
+        if 'vars' not in resp or not resp['vars']:
+            resp['vars'] = dict()
         return resp
 
     def get_part_options(self, vehicle):

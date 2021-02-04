@@ -307,8 +307,8 @@ def test_part_configs(beamng):
         config = {}
         for k, v in options.items():
             config[k] = random.choice(v)
-        vehicle.set_part_config(config)
+        vehicle.set_part_config({'parts': config})
 
         current = vehicle.get_part_config()
         for k, v in config.items():
-            assert v == current[k]
+            assert v == current['parts'][k]
