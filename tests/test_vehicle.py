@@ -1,10 +1,12 @@
 import itertools
-import numpy as np
-import pytest
+import random
 import time
 
 from beamngpy import BeamNGpy, Scenario, sensors, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError
+
+import numpy as np
+import pytest
 
 
 @pytest.fixture()
@@ -287,3 +289,26 @@ def test_traffic(beamng):
         bng.step(300, wait=True)  # Give vehicle ~5seconds to start
 
         assert_continued_movement(bng, other, pos)
+
+
+def test_part_configs(beamng):
+    with beamng as bng:
+        scenario = Scenario('smallgrid', 'parts_test')
+        vehicle = Vehicle('ego', model='etk800')
+        scenario.add_vehicle(vehicle)
+        scenario.make(bng)
+
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+
+        options = vehicle.get_part_options()
+        assert len(options) > 0
+
+        config = {}
+        for k, v in options.items():
+            config[k] = random.choice(v)
+        vehicle.set_part_config(config)
+
+        current = vehicle.get_part_config()
+        for k, v in config.items():
+            assert v == current[k]

@@ -14,6 +14,8 @@ local scenarioHelper = require('scenario/scenariohelper')
 
 local procPrimitives = require('util/trackBuilder/proceduralPrimitives')
 
+local jbeamIO = require('jbeam/io')
+
 local host = '127.0.0.1'
 local port = 64256
 
@@ -1241,6 +1243,42 @@ M.handleQueueLuaCommandGE = function(msg)
     log('E', 'compilation error in: "' .. msg.chunk .. '"')
   end
   rcom.sendACK(skt, 'ExecutedLuaChunkGE')
+end
+
+M.handleGetPartConfig = function(msg)
+  local vid = msg['vid']
+  local veh = scenetree.findObject(vid)
+  local cur = be:getPlayerVehicle(0):getID()
+  be:enterVehicle(0, veh)
+  local cfg = core_vehicle_partmgmt.getConfig()
+  local resp = {type = 'PartConfig', config = cfg}
+  veh = scenetree.findObjectById(cur)
+  be:enterVehicle(0, veh)
+  rcom.sendMessage(skt, resp)
+end
+
+M.handleGetPartOptions = function(msg)
+  local vid = msg['vid']
+  local veh = scenetree.findObject(vid)
+  local cur = be:getPlayerVehicle(0):getID()
+  be:enterVehicle(0, veh)
+  local data = core_vehicle_manager.getPlayerVehicleData()
+  local slotMap = jbeamIO.getAvailableSlotMap(data.ioCtx)
+  local resp = {type = 'PartOptions', options = slotMap}
+  veh = scenetree.findObjectById(cur)
+  be:enterVehicle(0, veh)
+  rcom.sendMessage(skt, resp)
+end
+
+M.handleSetPartConfig = function(msg)
+  local vid = msg['vid']
+  local veh = scenetree.findObject(vid)
+  local cur = be:getPlayerVehicle(0):getID()
+  be:enterVehicle(0, veh)
+  local cfg = msg['config']
+  core_vehicle_partmgmt.setConfig(cfg)
+  veh = scenetree.findObjectById(cur)
+  be:enterVehicle(0, veh)
 end
 
 return M

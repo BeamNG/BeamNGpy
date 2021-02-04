@@ -1681,6 +1681,71 @@ class BeamNGpy:
             classes[key] = k
         return classes
 
+    def get_part_config(self, vehicle):
+        """
+        Retrieves the current part configuration of the given vehicle. The
+        configuration contains both the current values of adjustable vehicle
+        parameters and a mapping of part types to their currently-selected
+        part.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to get part config of
+
+        Returns:
+            The current vehicle configuration as a dictionary.
+        """
+        data = dict(type='GetPartConfig')
+        data['vid'] = vehicle.vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PartConfig'
+        resp = resp['config']
+        # if 'parts' not in resp or not resp['parts']:
+        #     resp['parts'] = dict()
+        # if 'vars' not in resp or not resp['vars']:
+        #     resp['vars'] = dict()
+        return resp
+
+    def get_part_options(self, vehicle):
+        """
+        Retrieves a mapping of part slots for the given vehicle and their
+        possible parts.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to get part options of
+
+        Returns:
+            A mapping of part configuration options for the given.
+        """
+        data = dict(type='GetPartOptions')
+        data['vid'] = vehicle.vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PartOptions'
+        return resp['options']
+
+    def set_part_config(self, vehicle, cfg):
+        """
+        Sets the current part configuration of the given vehicle. The
+        configuration is given as a dictionary containing both adjustable
+        vehicle parameters and a mapping of part types to their selected parts.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to change the config of
+            cfg (dict): The new vehicle configuration as a dictionary.
+
+        Notes:
+            Changing parts causes the vehicle to respawn, which repairs it as
+            a side-effect.
+        """
+        data = dict(type='SetPartConfig')
+        data['vid'] = vehicle.vid
+        data['config'] = cfg
+        self.send(data)
+        self.await_vehicle_spawn(vehicle.vid)
+        vehicle.close()
+        self.connect_vehicle(vehicle, vehicle.port)
+
     def __enter__(self):
         self.open()
         return self
