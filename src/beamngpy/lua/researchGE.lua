@@ -421,6 +421,20 @@ local function setVehicleAnnotationColor(veh, color)
   end
 end
 
+local getVehiclePosRot(vid)
+  vehicle = scenarioHelper.getVehicleByName(req['vehicle'])
+  rot = vec3(vehicle:getDirectionVector())
+  up = vec3(vehicle:getDirectionVectorUp())
+  rot = quatFromDir(rot, up)
+  offset = vec3(vehicle:getPosition())
+  return {pos = position, rot = rot}
+end
+
+local computeRelativeSensorOffset(sensorOffset, vehiclePosition, vehicleRotation)
+
+  return pos
+end
+
 sensors.Camera = function(req, callback)
   local offset, orientation, up
   local pos, direction, rot, fov, resolution, nearFar, vehicle, vehicleObj, data
@@ -438,12 +452,9 @@ sensors.Camera = function(req, callback)
   end
 
   if req['vehicle'] then
-    vehicle = scenarioHelper.getVehicleByName(req['vehicle'])
-    orientation = vec3(vehicle:getDirectionVector())
-
-    up = vec3(vehicle:getDirectionVectorUp())
-    orientation = quatFromDir(orientation, up)
-    offset = vec3(vehicle:getPosition())
+    veh = getVehiclePosRot(req['vehicle'])
+    orientation = veh.rot
+    offset = veh.pos
   else
     orientation = quatFromEuler(0, 0, 0)
     offset = vec3(0, 0, 0)
@@ -528,25 +539,42 @@ sensors.Timer = function(req, callback)
   callback({time = scenario_scenarios.getScenario().timer})
 end
 
-sensors.Ultrasonic = function(req, callback)
+sensors.Ultrasonic = function(req, sendSensorData)
+  local orientation, sensorPos
   log("D", "got ultrasonic senor request")
   dump(req)
-  log("E", "todo: offset is absolute position as of now")
-  local offset = req['offset']
-  offset = Point3F(offset[1], offset[2], offset[3])
-  local rot = req['rot']
-  rot = QuatF(rot[1], rot[1], rot[3], rot[4])
+
+  local sensorOffset = req['pos']
+  sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
+  if req['vehicle'] then
+    local veh = getVehiclePosRot(req['vehicle'])
+    orientation = veh.rot
+    local vehiclePos = veh.pos
+    sensorPos = sensorOffset + orientation * vehiclePos
+  else
+    orientation = quatFromEuler(0, 0, 0)
+    sensorPos = vec3(0, 0, 0)
+  end
+  sensorPos = Point3F(sensorPos.x, sensorPos.y, sensorPos.z)
+
+  local sensorRot = req['rot']
+  sensorRot = vec3(sensorRot[1], sensorRot[2], sensorRot[3])
+  sensorRot = quatFromDir(sensorRot, vec3(0, 0, 1)) * orientation
+  sensorRot = QuatF(sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
+
   local fov = math.rad(req['fov'])
+
   local resolution = req['resolution']
   resolution = Point2F(resolution[1], resolution[2])
+
   local near_far = req['near_far']
   near_far = Point2F(near_far[1], near_far[2])
-  dump(offset, rot, resolution, fov, near_far)
-  local dist = Engine.testUltrasonic(offset, rot, resolution, fov, near_far)
-  dump(dist)
-  log("E", "todo: correct dist")
-  local distance = 5 
-  callback(distance)
+
+  dump(sensorPos, sensorRot, resolution, fov, near_far)
+
+  local dist = Engine.getUltrasonicDistanceMeasurement(sensorPos, sensorRot, resolution, fov, near_far)
+  local measurement = {distance = distance}
+  sendSensorData(measurement)
 end
 
 local function getSensorData(request, callback)

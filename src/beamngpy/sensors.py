@@ -1071,10 +1071,9 @@ class Ultrasonic(Sensor):
     def __init__(self,
                  pos,
                  rot,
-                 fov = 120,
-                 resolution = (512, 512),
+                 fov=120,
+                 resolution=(512, 512),
                  near_far=(NEAR, FAR)):
-        self.offset = offset
         self.rot = rot
         self.fov = fov
         self.resolution = resolution
@@ -1082,7 +1081,7 @@ class Ultrasonic(Sensor):
 
     def encode_engine_request(self):
         req = dict(type='Ultrasonic')
-        req['offset'] = self.offset
+        req['pos'] = self.pos
         req['rot'] = self.rot
         req['fov'] = self.fov
         req['resolution'] = self.resolution
