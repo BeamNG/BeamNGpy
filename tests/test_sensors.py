@@ -364,4 +364,3 @@ def test_ultrasonic(beamng):
 if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)
     test_ultrasonic(bng)
-

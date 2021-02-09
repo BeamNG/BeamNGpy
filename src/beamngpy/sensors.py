@@ -1068,6 +1068,12 @@ class IMU(Sensor):
 
 
 class Ultrasonic(Sensor):
+    """
+    An ultrasonic sensor (aka parking sensor) that can be placed at
+    any point outside the vehicle.
+    This is not an ideal sensor but one whose output is simulated based on
+    depth information in images.
+    """
     def __init__(self,
                  pos,
                  rot,
@@ -1092,6 +1098,17 @@ class Ultrasonic(Sensor):
         return req
 
     def startVisualization(self, bng, vehicle_id, color, radius=.1):
+        """
+        Called, after opening BeamNG, this will start the visualization
+        of a sphere at the sensor position. This functionality is intended
+        for sensors attached to vehicles and not for world sensors.
+
+        Args:
+            bng(:class:`.BeamNGpy`): instance of BeamNGpy
+            vehicle_id(string): ID of the vehicle the sensor belongs to
+            color(tuple): four floats (RGBA) defining the color of the sphere
+            radius(float): radius of the sphere
+        """
         req = dict(type='StartUSSensorVisualization')
         req['vehicle'] = vehicle_id
         req['pos'] = self.pos
@@ -1104,6 +1121,9 @@ class Ultrasonic(Sensor):
         self.vis_spec = resp['sphereID']
 
     def stopVisualization(self, bng):
+        """
+        Stops the sensor visualization.
+        """
         if self.vis_spec is not None:
             data = dict(type='StopUSSensorVisualization')
             data['dynSphereID'] = self.vis_spec
