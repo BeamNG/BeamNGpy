@@ -333,37 +333,35 @@ def test_imu(beamng):
 
 
 def test_ultrasonic(beamng):
-    setup_logging()
     scenario = Scenario('smallgrid', 'ultrasonic_test')
-
+    cube_dist = 4
     cube = ProceduralCube(name='cube',
-                          pos=(0, -20, 0),
+                          pos=(0, -cube_dist, 5),
                           rot=None,
                           rot_quat=(0, 0, 0, 1),
-                          size=(1, 20, 100))
+                          size=(1, 20, 10))
     scenario.add_procedural_mesh(cube)
 
-    offset = (0, 0, 2)
-    rot = (0, 0, 0, 1)
-    ultrasonic = Ultrasonic(offset, rot)
+    pos = (0, 1, 2)
+    rot = (0, 1, 0)
+    ultrasonic = Ultrasonic(pos, rot)
+
     vehicle = Vehicle('test', model='pickup')
     vehicle.attach_sensor('ultrasonic', ultrasonic)
+
     scenario.add_vehicle(vehicle,
                          pos=(0, 0, 0),
                          rot_quat=(0, 0, 0, 1))
     scenario.make(beamng)
 
-    bng = beamng.open()
-    bng.load_scenario(scenario)
-    bng.start_scenario()
-    bng.pause()
-    bng.step(120)
-
-    sensors = bng.poll_sensors(vehicle)
-
-    assert sensors['ultrasonic'] > 0
+    with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+        vehicle.poll_sensors()
+        assert 0 < vehicle.sensors['ultrasonic'].data['distance'] < cube_dist
 
 
 if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)
-    test_camera(bng)
+    test_ultrasonic(bng)
+

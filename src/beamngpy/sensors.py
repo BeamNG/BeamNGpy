@@ -1071,13 +1071,16 @@ class Ultrasonic(Sensor):
     def __init__(self,
                  pos,
                  rot,
-                 fov=120,
-                 resolution=(512, 512),
-                 near_far=(NEAR, FAR)):
+                 fov=(70, 35),
+                 min_resolution=256,
+                 near_far=(0.15, 5.5)):
+        self.pos = pos
         self.rot = rot
-        self.fov = fov
-        self.resolution = resolution
+        self.fov = fov[0]
+        res_height = int(min_resolution/fov[0]*fov[1])
+        self.resolution = (min_resolution, res_height)
         self.near_far = near_far
+        self.vis_spec = None
 
     def encode_engine_request(self):
         req = dict(type='Ultrasonic')
@@ -1087,3 +1090,21 @@ class Ultrasonic(Sensor):
         req['resolution'] = self.resolution
         req['near_far'] = self.near_far
         return req
+
+    def startVisualization(self, bng, vehicle_id, color, radius=.1):
+        req = dict(type='StartUSSensorVisualization')
+        req['vehicle'] = vehicle_id
+        req['pos'] = self.pos
+        req['rot'] = self.rot
+        req['color'] = color
+        req['radius'] = radius
+        req['lineLength'] = self.near_far[1]
+        bng.send(req)
+        resp = bng.recv()
+        self.vis_spec = resp['sphereID']
+
+    def stopVisualization(self, bng):
+        if self.vis_spec is not None:
+            data = dict(type='StopUSSensorVisualization')
+            data['dynSphereID'] = self.vis_spec
+            bng.send(data)

@@ -48,9 +48,34 @@ local debugLines = {}
 
 local vehicleColors = {}
 
+local debugObjects = { spheres = {},
+                       dynamicSpheres = {},
+                       polylines = {},
+                       cylinders = {},
+                       triangles = {},
+                       rectangles ={},
+                       text = {},
+                       squarePrisms = {}
+                      }
+local debugObjectCounter = {sphereNum = 0,
+                            dynamicSphereNum = 0,
+                            lineNum = 0,
+                            cylinderNum = 0,
+                            triangleNum = 0,
+                            rectangleNum = 0,
+                            textNum = 0,
+                            prismNum = 0
+                          }
+
 local _log = log
 local function log(level, message)
   _log(level, logTag, message)
+end
+
+local function addDynamicDebugSphere(getSpec)
+  debugObjectCounter.dynamicSphereNum = debugObjectCounter.dynamicSphereNum + 1
+  table.insert(debugObjects.dynamicSpheres, {getSpec = getSpec})
+  return debugObjectCounter.dynamicSphereNum
 end
 
 local function generateVehicleColor(vid)
@@ -421,18 +446,13 @@ local function setVehicleAnnotationColor(veh, color)
   end
 end
 
-local getVehiclePosRot(vid)
-  vehicle = scenarioHelper.getVehicleByName(req['vehicle'])
-  rot = vec3(vehicle:getDirectionVector())
-  up = vec3(vehicle:getDirectionVectorUp())
-  rot = quatFromDir(rot, up)
-  offset = vec3(vehicle:getPosition())
+local function getVehiclePosRot(vid)
+  local veh = scenarioHelper.getVehicleByName(vid)
+  local rot = vec3(veh:getDirectionVector())
+  local up = vec3(veh:getDirectionVectorUp())
+  local rot = quatFromDir(rot, up)
+  local position = vec3(veh:getPosition())
   return {pos = position, rot = rot}
-end
-
-local computeRelativeSensorOffset(sensorOffset, vehiclePosition, vehicleRotation)
-
-  return pos
 end
 
 sensors.Camera = function(req, callback)
@@ -452,7 +472,7 @@ sensors.Camera = function(req, callback)
   end
 
   if req['vehicle'] then
-    veh = getVehiclePosRot(req['vehicle'])
+    local veh = getVehiclePosRot(req['vehicle'])
     orientation = veh.rot
     offset = veh.pos
   else
@@ -539,28 +559,35 @@ sensors.Timer = function(req, callback)
   callback({time = scenario_scenarios.getScenario().timer})
 end
 
+local function computeAbsoluteSensorPosRot(vid, sensorPosRelToVeh, sensorRotRelToVeh)
+  -- rot
+  local veh = getVehiclePosRot(vid)
+  local vehicleRot = veh.rot
+  local vehiclePos = veh.pos
+
+  local sensorPos = vehiclePos + vehicleRot * sensorPosRelToVeh
+  local sensorRot = quatFromDir(sensorRotRelToVeh, vec3(0, 0, 1)) * vehicleRot
+
+  return sensorPos, sensorRot
+end
+
 sensors.Ultrasonic = function(req, sendSensorData)
-  local orientation, sensorPos
-  log("D", "got ultrasonic senor request")
-  dump(req)
+  local sensorPos, sensorRot
 
   local sensorOffset = req['pos']
   sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
-  if req['vehicle'] then
-    local veh = getVehiclePosRot(req['vehicle'])
-    orientation = veh.rot
-    local vehiclePos = veh.pos
-    sensorPos = sensorOffset + orientation * vehiclePos
-  else
-    orientation = quatFromEuler(0, 0, 0)
-    sensorPos = vec3(0, 0, 0)
-  end
-  sensorPos = Point3F(sensorPos.x, sensorPos.y, sensorPos.z)
 
-  local sensorRot = req['rot']
+  sensorRot = req['rot']
   sensorRot = vec3(sensorRot[1], sensorRot[2], sensorRot[3])
-  sensorRot = quatFromDir(sensorRot, vec3(0, 0, 1)) * orientation
-  sensorRot = QuatF(sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
+  if req['vehicle'] then
+    local pos, rot = computeAbsoluteSensorPosRot(req['vehicle'], sensorOffset, sensorRot)
+    sensorPos = Point3F(pos.x, pos.y, pos.z)
+    sensorRot = QuatF(rot.x, rot.y, rot.z, rot.w)
+  else
+    sensorPos = Point3F(sensorPos.x, sensorPos.y, sensorPos.z)
+    sensorRot = quatFromDir(sensorRot, vec3(0, 0, 1))
+    sensorRot = QuatF(sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
+  end
 
   local fov = math.rad(req['fov'])
 
@@ -570,11 +597,34 @@ sensors.Ultrasonic = function(req, sendSensorData)
   local near_far = req['near_far']
   near_far = Point2F(near_far[1], near_far[2])
 
-  dump(sensorPos, sensorRot, resolution, fov, near_far)
-
   local dist = Engine.getUltrasonicDistanceMeasurement(sensorPos, sensorRot, resolution, fov, near_far)
-  local measurement = {distance = distance}
+  local measurement = {distance = dist}
   sendSensorData(measurement)
+
+  -- commands.setFreeCamera()
+  -- setCameraPosRot(sensorPos.x, sensorPos.y, sensorPos.z, sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
+end
+
+M.handleStartUSSensorVisualization = function(msg)
+  local sensorOffset = msg['pos']
+  sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
+  local sensorRot = msg['rot']
+  sensorRot = vec3(sensorRot[1], sensorRot[2], sensorRot[3])
+  local color = msg.color
+  color = ColorF(color[1], color[2], color[3], color[4])
+  local radius = msg['radius']
+  local sphereCallback = function()
+    local pos, rot = computeAbsoluteSensorPosRot(msg['vehicle'], sensorOffset, sensorRot)
+    local coo = Point3F(pos.x, pos.y, pos.z)
+    return {coo=coo, radius=radius, color=color}
+  end
+  local sphereID = addDynamicDebugSphere(sphereCallback)
+  local response = {sphereID = sphereID}
+  rcom.sendMessage(skt, response)
+end
+
+M.handleStopUSSensorVisualization = function(msg)
+  table.remove(debugObjects.dynamicSpheres, msg['dynSphereID'])
 end
 
 local function getSensorData(request, callback)
@@ -1126,22 +1176,7 @@ M.handleSetRelativeCam = function(msg)
   end
 end
 
-local debugObjects = { spheres = {},
-                       polylines = {},
-                       cylinders = {},
-                       triangles = {},
-                       rectangles ={},
-                       text = {},
-                       squarePrisms = {}
-                      }
-local debugObjectCounter = {sphereNum = 0,
-                            lineNum = 0,
-                            cylinderNum = 0,
-                            triangleNum = 0,
-                            rectangleNum = 0,
-                            textNum = 0,
-                            prismNum = 0
-                          }
+
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])
@@ -1256,6 +1291,10 @@ end
 M.onDrawDebug = function(dtReal, lastFocus)
   for _, sphere in pairs(debugObjects.spheres) do
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
+  end
+  for _, dSphere in pairs(debugObjects.dynamicSpheres) do
+    local spec = dSphere.getSpec()
+    debugDrawer:drawSphere(spec.coo, spec.radius, spec.color)
   end
   for _, polyline in pairs(debugObjects.polylines) do
     for _, segment in pairs(polyline.segments) do
