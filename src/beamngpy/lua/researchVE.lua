@@ -215,25 +215,6 @@ local function getSensorData(request)
   return nil
 end
 
-M.handleGetPartConfig = function(msg)
-  local cfg = partmgmt.getConfig()
-  local resp = {type = 'PartConfig', config = cfg}
-  rcom.sendMessage(skt, resp)
-end
-
-M.handleGetPartOptions = function(msg)
-  local options = v.data.slotMap
-  local resp = {type = 'PartOptions', options = options}
-  rcom.sendMessage(skt, resp)
-end
-
-M.handleSetPartConfig = function(msg)
-  local cfg = msg['config']
-  skt = nil
-  log('I', 'Setting part config.')
-  partmgmt.setConfig(cfg)
-end
-
 M.handleSensorRequest = function(msg)
   local request, sensorData, data
   sensorData = {}
