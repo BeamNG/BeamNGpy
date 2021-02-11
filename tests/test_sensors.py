@@ -4,10 +4,10 @@ import time
 import numpy as np
 import pytest
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
+from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging, ProceduralCube
 from beamngpy.beamngcommon import BNGValueError, BNGError
 from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces, State
-from beamngpy.sensors import IMU
+from beamngpy.sensors import IMU, Ultrasonic
 from beamngpy.noise import RandomImageNoise, RandomLIDARNoise
 
 
@@ -42,6 +42,8 @@ def test_camera(beamng):
 
     with beamng as bng:
         bng.load_scenario(scenario)
+        bng.start_scenario()
+        bng.pause()
         bng.step(120)
         time.sleep(20)
 
@@ -330,6 +332,35 @@ def test_imu(beamng):
             assert np.mean(parr) != np.mean(narr)
 
 
+def test_ultrasonic(beamng):
+    scenario = Scenario('smallgrid', 'ultrasonic_test')
+    cube_dist = 4
+    cube = ProceduralCube(name='cube',
+                          pos=(0, -cube_dist, 5),
+                          rot=None,
+                          rot_quat=(0, 0, 0, 1),
+                          size=(1, 20, 10))
+    scenario.add_procedural_mesh(cube)
+
+    pos = (0, 1, 2)
+    rot = (0, 1, 0)
+    ultrasonic = Ultrasonic(pos, rot)
+
+    vehicle = Vehicle('test', model='pickup')
+    vehicle.attach_sensor('ultrasonic', ultrasonic)
+
+    scenario.add_vehicle(vehicle,
+                         pos=(0, 0, 0),
+                         rot_quat=(0, 0, 0, 1))
+    scenario.make(beamng)
+
+    with beamng as bng:
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+        vehicle.poll_sensors()
+        assert 0 < vehicle.sensors['ultrasonic'].data['distance'] < cube_dist
+
+
 if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)
-    test_camera(bng)
+    test_ultrasonic(bng)

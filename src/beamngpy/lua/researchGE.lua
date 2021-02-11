@@ -50,9 +50,34 @@ local debugLines = {}
 
 local vehicleColors = {}
 
+local debugObjects = { spheres = {},
+                       dynamicSpheres = {},
+                       polylines = {},
+                       cylinders = {},
+                       triangles = {},
+                       rectangles ={},
+                       text = {},
+                       squarePrisms = {}
+                      }
+local debugObjectCounter = {sphereNum = 0,
+                            dynamicSphereNum = 0,
+                            lineNum = 0,
+                            cylinderNum = 0,
+                            triangleNum = 0,
+                            rectangleNum = 0,
+                            textNum = 0,
+                            prismNum = 0
+                          }
+
 local _log = log
 local function log(level, message)
   _log(level, logTag, message)
+end
+
+local function addDynamicDebugSphere(getSpec)
+  debugObjectCounter.dynamicSphereNum = debugObjectCounter.dynamicSphereNum + 1
+  table.insert(debugObjects.dynamicSpheres, {getSpec = getSpec})
+  return debugObjectCounter.dynamicSphereNum
 end
 
 local function generateVehicleColor(vid)
@@ -423,6 +448,15 @@ local function setVehicleAnnotationColor(veh, color)
   end
 end
 
+local function getVehiclePosRot(vid)
+  local veh = scenarioHelper.getVehicleByName(vid)
+  local rot = vec3(veh:getDirectionVector())
+  local up = vec3(veh:getDirectionVectorUp())
+  local rot = quatFromDir(rot, up)
+  local position = vec3(veh:getPosition())
+  return {pos = position, rot = rot}
+end
+
 sensors.Camera = function(req, callback)
   local offset, orientation, up
   local pos, direction, rot, fov, resolution, nearFar, vehicle, vehicleObj, data
@@ -440,12 +474,9 @@ sensors.Camera = function(req, callback)
   end
 
   if req['vehicle'] then
-    vehicle = scenarioHelper.getVehicleByName(req['vehicle'])
-    orientation = vec3(vehicle:getDirectionVector())
-
-    up = vec3(vehicle:getDirectionVectorUp())
-    orientation = quatFromDir(orientation, up)
-    offset = vec3(vehicle:getPosition())
+    local veh = getVehiclePosRot(req['vehicle'])
+    orientation = veh.rot
+    offset = veh.pos
   else
     orientation = quatFromEuler(0, 0, 0)
     offset = vec3(0, 0, 0)
@@ -528,6 +559,74 @@ end
 
 sensors.Timer = function(req, callback)
   callback({time = scenario_scenarios.getScenario().timer})
+end
+
+local function computeAbsoluteSensorPosRot(vid, sensorPosRelToVeh, sensorRotRelToVeh)
+  -- rot
+  local veh = getVehiclePosRot(vid)
+  local vehicleRot = veh.rot
+  local vehiclePos = veh.pos
+
+  local sensorPos = vehiclePos + vehicleRot * sensorPosRelToVeh
+  local sensorRot = quatFromDir(sensorRotRelToVeh, vec3(0, 0, 1)) * vehicleRot
+
+  return sensorPos, sensorRot
+end
+
+sensors.Ultrasonic = function(req, sendSensorData)
+  local sensorPos, sensorRot
+
+  local sensorOffset = req['pos']
+  sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
+
+  sensorRot = req['rot']
+  sensorRot = vec3(sensorRot[1], sensorRot[2], sensorRot[3])
+  if req['vehicle'] then
+    local pos, rot = computeAbsoluteSensorPosRot(req['vehicle'], sensorOffset, sensorRot)
+    sensorPos = Point3F(pos.x, pos.y, pos.z)
+    sensorRot = QuatF(rot.x, rot.y, rot.z, rot.w)
+  else
+    sensorPos = Point3F(sensorPos.x, sensorPos.y, sensorPos.z)
+    sensorRot = quatFromDir(sensorRot, vec3(0, 0, 1))
+    sensorRot = QuatF(sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
+  end
+
+  local fov = math.rad(req['fov'])
+
+  local resolution = req['resolution']
+  resolution = Point2F(resolution[1], resolution[2])
+
+  local near_far = req['near_far']
+  near_far = Point2F(near_far[1], near_far[2])
+
+  local dist = Engine.getUltrasonicDistanceMeasurement(sensorPos, sensorRot, resolution, fov, near_far)
+  local measurement = {distance = dist}
+  sendSensorData(measurement)
+
+  -- commands.setFreeCamera()
+  -- setCameraPosRot(sensorPos.x, sensorPos.y, sensorPos.z, sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
+end
+
+M.handleStartUSSensorVisualization = function(msg)
+  local sensorOffset = msg['pos']
+  sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
+  local sensorRot = msg['rot']
+  sensorRot = vec3(sensorRot[1], sensorRot[2], sensorRot[3])
+  local color = msg.color
+  color = ColorF(color[1], color[2], color[3], color[4])
+  local radius = msg['radius']
+  local sphereCallback = function()
+    local pos, rot = computeAbsoluteSensorPosRot(msg['vehicle'], sensorOffset, sensorRot)
+    local coo = Point3F(pos.x, pos.y, pos.z)
+    return {coo=coo, radius=radius, color=color}
+  end
+  local sphereID = addDynamicDebugSphere(sphereCallback)
+  local response = {sphereID = sphereID}
+  rcom.sendMessage(skt, response)
+end
+
+M.handleStopUSSensorVisualization = function(msg)
+  table.remove(debugObjects.dynamicSpheres, msg['dynSphereID'])
 end
 
 local function getSensorData(request, callback)
@@ -1079,26 +1178,11 @@ M.handleSetRelativeCam = function(msg)
   end
 end
 
-local debugObjects = { spheres = {}, 
-                       polylines = {}, 
-                       cylinders = {}, 
-                       triangles = {}, 
-                       rectangles ={},
-                       text = {},
-                       squarePrisms = {}
-                      }
-local debugObjectCounter = {sphereNum = 0, 
-                            lineNum = 0, 
-                            cylinderNum = 0, 
-                            triangleNum = 0,
-                            rectangleNum = 0,
-                            textNum = 0,
-                            prismNum = 0
-                          }
+
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])
-  if cling then 
+  if cling then
     local z = be:getSurfaceHeightBelow(point)
     point = Point3F(point.x, point.y, z+offset)
   end
@@ -1107,7 +1191,7 @@ end
 
 M.handleAddDebugSpheres = function(msg)
   local sphereIDs = {}
-  for idx = 1,#msg.radii do 
+  for idx = 1,#msg.radii do
     local coo = tableToPoint3F(msg.coordinates[idx], msg.cling, msg.offset)
     local color = msg.colors[idx]
     color = ColorF(color[1], color[2], color[3], color[4])
@@ -1131,7 +1215,7 @@ M.handleAddDebugPolyline = function(msg)
   local polyline = {segments = {}}
   polyline.color = ColorF(msg.color[1], msg.color[2], msg.color[3], msg.color[4])
   local origin = tableToPoint3F(msg.coordinates[1], msg.cling, msg.offset)
-  for i = 2, #msg.coordinates do 
+  for i = 2, #msg.coordinates do
     local target = tableToPoint3F(msg.coordinates[i], msg.cling, msg.offset)
     local segment = {origin = origin, target = target}
     table.insert(polyline.segments, segment)
@@ -1207,27 +1291,31 @@ M.handleAddDebugSquarePrism = function(msg)
 end
 
 M.onDrawDebug = function(dtReal, lastFocus)
-  for _, sphere in pairs(debugObjects.spheres) do 
+  for _, sphere in pairs(debugObjects.spheres) do
     debugDrawer:drawSphere(sphere.coo, sphere.radius, sphere.color)
   end
-  for _, polyline in pairs(debugObjects.polylines) do 
-    for _, segment in pairs(polyline.segments) do 
+  for _, dSphere in pairs(debugObjects.dynamicSpheres) do
+    local spec = dSphere.getSpec()
+    debugDrawer:drawSphere(spec.coo, spec.radius, spec.color)
+  end
+  for _, polyline in pairs(debugObjects.polylines) do
+    for _, segment in pairs(polyline.segments) do
       debugDrawer:drawLine(segment.origin, segment.target, polyline.color)
     end
   end
-  for _, cylinder in pairs(debugObjects.cylinders) do 
+  for _, cylinder in pairs(debugObjects.cylinders) do
     debugDrawer:drawCylinder(cylinder.circleAPos, cylinder.circleBPos, cylinder.radius, cylinder.color)
   end
-  for _, triangle in pairs(debugObjects.triangles) do 
+  for _, triangle in pairs(debugObjects.triangles) do
     debugDrawer:drawTriSolid(triangle.a, triangle.b, triangle.c, triangle.color)
   end
-  for _, rectangle in pairs(debugObjects.rectangles) do 
+  for _, rectangle in pairs(debugObjects.rectangles) do
     debugDrawer:drawQuadSolid(rectangle.a, rectangle.b, rectangle.c, rectangle.d, rectangle.color)
   end
-  for _, line in pairs(debugObjects.text) do 
+  for _, line in pairs(debugObjects.text) do
     debugDrawer:drawText(line.origin, line.content, line.color)
   end
-  for _, prism in pairs(debugObjects.squarePrisms) do 
+  for _, prism in pairs(debugObjects.squarePrisms) do
     debugDrawer:drawSquarePrism(prism.sideA, prism.sideB, prism.sideADims, prism.sideBDims, prism.color)
   end
 end
