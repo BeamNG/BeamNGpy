@@ -1373,7 +1373,6 @@ M.handleQueueLuaCommandGE = function(skt, msg)
   rcom.sendACK(skt, 'ExecutedLuaChunkGE')
 end
 
-<<<<<<< HEAD
 M.handleGetLevels = function(skt, msg)
   local list = core_levels.getList()
   local resp = {type = 'GetLevels', result = list}
