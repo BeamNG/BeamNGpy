@@ -26,21 +26,22 @@ def assert_image_different(img):
 
 
 def test_camera(beamng):
-    scenario = Scenario('west_coast_usa', 'camera_test')
-    vehicle = Vehicle('test_car', model='etk800')
-
-    pos = (-0.3, 1, 1.0)
-    direction = (0, 1, 0)
-    fov = 120
-    resolution = (64, 64)
-    front_camera = Camera(pos, direction, fov, resolution, colour=True,
-                          depth=True, annotation=True, instance=True)
-    vehicle.attach_sensor('front_cam', front_camera)
-
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('west_coast_usa', 'camera_test')
+        vehicle = Vehicle('test_car', model='etk800')
+
+        pos = (-0.3, 1, 1.0)
+        direction = (0, 1, 0)
+        fov = 120
+        resolution = (64, 64)
+        front_camera = Camera(pos, direction, fov, resolution, colour=True,
+                              depth=True, annotation=True, instance=True)
+        vehicle.attach_sensor('front_cam', front_camera)
+
+        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                             rot=(0, 0, 45))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.step(120)
         time.sleep(20)
@@ -57,35 +58,35 @@ def test_camera(beamng):
 
 
 def test_bboxes(beamng):
-    scenario = Scenario('west_coast_usa', 'bbox_test')
-
-    ego = Vehicle('ego', model='etk800', color='White')
-    scenario.add_vehicle(ego, pos=(-725.365, 92.4684, 118.437),
-                         rot_quat=(-0.006, -0.0076, 0.921, -0.389))
-
-    camera = Camera((-0.3, 1, 1), (0, 1, 0), 75, (1024, 1024), colour=True,
-                    depth=True, annotation=True, instance=True)
-    ego.attach_sensor('camera', camera)
-
-    car1 = Vehicle('car1', model='etk800', color='Green')
-    scenario.add_vehicle(car1, pos=(-710.76, 101.50, 118.56),
-                         rot_quat=(-0.006, -0.0076, 0.921, -0.389))
-
-    car2 = Vehicle('car2', model='etk800', color='Red')
-    scenario.add_vehicle(car2, pos=(-715.83, 96.69, 118.53),
-                         rot_quat=(-0.006, -0.0076, 0.921, -0.389))
-
-    car3 = Vehicle('car3', model='etki', color='Blue')
-    scenario.add_vehicle(car3, pos=(-696.96, 126.9, 118.44),
-                         rot_quat=(0.0181, -0.0065, 0.3816, 0.924))
-
-    car4 = Vehicle('car4', model='miramar', color='Black')
-    scenario.add_vehicle(car4, pos=(-708.58203, 115.326, 118.60),
-                         rot_quat=(0.0181, -0.00645, 0.3818, 0.9240))
-
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('west_coast_usa', 'bbox_test')
+
+        ego = Vehicle('ego', model='etk800', color='White')
+        scenario.add_vehicle(ego, pos=(-725.365, 92.4684, 118.437),
+                             rot_quat=(-0.006, -0.0076, 0.921, -0.389))
+
+        camera = Camera((-0.3, 1, 1), (0, 1, 0), 75, (1024, 1024), colour=True,
+                        depth=True, annotation=True, instance=True)
+        ego.attach_sensor('camera', camera)
+
+        car1 = Vehicle('car1', model='etk800', color='Green')
+        scenario.add_vehicle(car1, pos=(-710.76, 101.50, 118.56),
+                             rot_quat=(-0.006, -0.0076, 0.921, -0.389))
+
+        car2 = Vehicle('car2', model='etk800', color='Red')
+        scenario.add_vehicle(car2, pos=(-715.83, 96.69, 118.53),
+                             rot_quat=(-0.006, -0.0076, 0.921, -0.389))
+
+        car3 = Vehicle('car3', model='etki', color='Blue')
+        scenario.add_vehicle(car3, pos=(-696.96, 126.9, 118.44),
+                             rot_quat=(0.0181, -0.0065, 0.3816, 0.924))
+
+        car4 = Vehicle('car4', model='miramar', color='Black')
+        scenario.add_vehicle(car4, pos=(-708.58203, 115.326, 118.60),
+                             rot_quat=(0.0181, -0.00645, 0.3818, 0.9240))
+
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.step(120)
         time.sleep(5)
@@ -101,26 +102,27 @@ def test_bboxes(beamng):
 
 
 def test_noise(beamng):
-    scenario = Scenario('west_coast_usa', 'camera_test')
-    vehicle = Vehicle('test_car', model='etk800')
-
-    pos = (-0.3, 1, 1.0)
-    direction = (0, 1, 0)
-    fov = 120
-    resolution = (64, 64)
-
-    cam = Camera(pos, direction, fov, resolution, colour=True, depth=True)
-    noise_cam = RandomImageNoise(cam)
-    vehicle.attach_sensor('noise_cam', noise_cam)
-
-    lidar = Lidar()
-    noise_lidar = RandomLIDARNoise(lidar, mean=0, var=.5)
-    vehicle.attach_sensor('noise_lidar', noise_lidar)
-
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('west_coast_usa', 'camera_test')
+        vehicle = Vehicle('test_car', model='etk800')
+
+        pos = (-0.3, 1, 1.0)
+        direction = (0, 1, 0)
+        fov = 120
+        resolution = (64, 64)
+
+        cam = Camera(pos, direction, fov, resolution, colour=True, depth=True)
+        noise_cam = RandomImageNoise(cam)
+        vehicle.attach_sensor('noise_cam', noise_cam)
+
+        lidar = Lidar()
+        noise_lidar = RandomLIDARNoise(lidar, mean=0, var=.5)
+        vehicle.attach_sensor('noise_lidar', noise_lidar)
+
+        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                             rot=(0, 0, 45))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.step(120)
         time.sleep(20)
@@ -136,16 +138,17 @@ def test_noise(beamng):
 
 
 def test_lidar(beamng):
-    scenario = Scenario('west_coast_usa', 'lidar_test')
-    vehicle = Vehicle('test_car', model='etk800')
-
-    lidar = Lidar()
-    vehicle.attach_sensor('lidar', lidar)
-
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('west_coast_usa', 'lidar_test')
+        vehicle = Vehicle('test_car', model='etk800')
+
+        lidar = Lidar()
+        vehicle.attach_sensor('lidar', lidar)
+
+        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                             rot=(0, 0, 45))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.step(120)
         time.sleep(20)
@@ -159,18 +162,19 @@ def test_lidar(beamng):
 
 
 def test_gforces(beamng):
-    scenario = Scenario('west_coast_usa', 'gforce_test')
-    vehicle = Vehicle('test_car', model='etk800')
-
-    gforces = GForces()
-    vehicle.attach_sensor('gforces', gforces)
-
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=(0, 0, 45))
-    scenario.make(beamng)
-
-    gx = []
-    gy = []
     with beamng as bng:
+        scenario = Scenario('west_coast_usa', 'gforce_test')
+        vehicle = Vehicle('test_car', model='etk800')
+
+        gforces = GForces()
+        vehicle.attach_sensor('gforces', gforces)
+
+        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                             rot=(0, 0, 45))
+        scenario.make(beamng)
+
+        gx = []
+        gy = []
         bng.load_scenario(scenario)
         bng.start_scenario()
         bng.step(120)
@@ -188,16 +192,16 @@ def test_gforces(beamng):
 
 
 def test_electrics(beamng):
-    scenario = Scenario('smallgrid', 'electrics_test')
-    vehicle = Vehicle('test_car', model='etk800')
-
-    electrics = Electrics()
-    vehicle.attach_sensor('electrics', electrics)
-
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('smallgrid', 'electrics_test')
+        vehicle = Vehicle('test_car', model='etk800')
+
+        electrics = Electrics()
+        vehicle.attach_sensor('electrics', electrics)
+
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
         bng.step(120)
@@ -214,16 +218,16 @@ def test_electrics(beamng):
 
 
 def test_damage(beamng):
-    scenario = Scenario('smallgrid', 'damage_test')
-    dummy = Vehicle('dummy', model='pickup')
-    scenario.add_vehicle(dummy, pos=(0, 0, 0))
-    scenario.make(beamng)
-
-    vehicle = Vehicle('test_car', model='etk800')
-    damage = Damage()
-    vehicle.attach_sensor('damage', damage)
-
     with beamng as bng:
+        scenario = Scenario('smallgrid', 'damage_test')
+        dummy = Vehicle('dummy', model='pickup')
+        scenario.add_vehicle(dummy, pos=(0, 0, 0))
+        scenario.make(beamng)
+
+        vehicle = Vehicle('test_car', model='etk800')
+        damage = Damage()
+        vehicle.attach_sensor('damage', damage)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
 
@@ -238,16 +242,16 @@ def test_damage(beamng):
 
 
 def test_state(beamng):
-    scenario = Scenario('smallgrid', 'vehicle_state_test')
-    vehicle = Vehicle('test_car', model='pickup')
-
-    state = State()
-    vehicle.attach_sensor('state', state)
-
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('smallgrid', 'vehicle_state_test')
+        vehicle = Vehicle('test_car', model='pickup')
+
+        state = State()
+        vehicle.attach_sensor('state', state)
+
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
         bng.step(20)
@@ -258,18 +262,18 @@ def test_state(beamng):
 
 
 def test_imu(beamng):
-    scenario = Scenario('smallgrid', 'vehicle_state_test')
-    vehicle = Vehicle('test_car', model='etk800')
-
-    imu_pos = IMU(pos=(0.73, 0.51, 0.8), debug=True)
-    imu_node = IMU(node=0, debug=True)
-    vehicle.attach_sensor('imu_pos', imu_pos)
-    vehicle.attach_sensor('imu_node', imu_node)
-
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('smallgrid', 'vehicle_state_test')
+        vehicle = Vehicle('test_car', model='etk800')
+
+        imu_pos = IMU(pos=(0.73, 0.51, 0.8), debug=True)
+        imu_node = IMU(node=0, debug=True)
+        vehicle.attach_sensor('imu_pos', imu_pos)
+        vehicle.attach_sensor('imu_node', imu_node)
+
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
         bng.step(20)

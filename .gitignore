@@ -159,3 +159,5 @@ MANIFEST
 html
 html/*
 .vscode
+
+pip-wheel-metadata/*

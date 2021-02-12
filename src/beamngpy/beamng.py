@@ -8,12 +8,8 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
-import base64
 import logging as log
-import mmap
-import numpy as np
 import os
-import queue
 import shutil
 import signal
 import socket
@@ -23,21 +19,23 @@ import time
 import zipfile
 import warnings
 
+import numpy as np
+
 from pathlib import Path
 from threading import Thread
 from time import sleep
 
-import msgpack
-
 from PIL import Image
 
-from .scenario import ScenarioObject
+from .level import Level
+from .scenario import Scenario, ScenarioObject
+from .vehicle import Vehicle
 
-from .beamngcommon import ack, send_msg, recv_msg, ENV, BNGError
-from .beamngcommon import BNGValueError, angle_to_quat
-from .beamngcommon import raise_rot_deprecation_warning
-
-PROTOCOL_VERSION = 'v1.18'
+from .beamngcommon import send_msg, recv_msg
+from .beamngcommon import angle_to_quat, raise_rot_deprecation_warning
+from .beamngcommon import ack
+from .beamngcommon import BNGError, BNGValueError, BNGDisconnectedError
+from .beamngcommon import PROTOCOL_VERSION, ENV
 
 BINARIES = [
     'Bin64/BeamNG.tech.x64.exe',
@@ -98,6 +96,26 @@ class BeamNGpy:
     state of the simulator.
     """
 
+    @staticmethod
+    def deploy_mod(userpath):
+        mods = Path(userpath) / 'mods'
+        if not mods.exists():
+            mods.mkdir(parents=True)
+
+        lua = Path(__file__).parent / 'lua'
+        common = lua / 'researchCommunication.lua'
+        ge = lua / 'researchGE.lua'
+        ve = lua / 'researchVE.lua'
+
+        common_name = 'lua/common/utils/researchCommunication.lua'
+        ge_name = 'lua/ge/extensions/util/researchGE.lua'
+        ve_name = 'lua/vehicle/extensions/researchVE.lua'
+
+        with zipfile.ZipFile(str(mods / 'BeamNGpy.zip'), 'w') as ziph:
+            ziph.write(common, arcname=common_name)
+            ziph.write(ge, arcname=ge_name)
+            ziph.write(ve, arcname=ve_name)
+
     def __init__(self, host, port, home=None, user=None):
         """
         Instantiates a BeamNGpy instance connecting to the simulator on the
@@ -119,8 +137,6 @@ class BeamNGpy:
         """
         self.host = host
         self.port = port
-        self.next_port = self.port + 1
-        self.server = None
 
         self.home = home
         if not self.home:
@@ -184,25 +200,6 @@ class BeamNGpy:
         log.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
 
-    def deploy_mod(self):
-        mods = self.user / 'mods'
-        if not mods.exists():
-            mods.mkdir(parents=True)
-
-        lua = Path(__file__).parent / 'lua'
-        common = lua / 'researchCommunication.lua'
-        ge = lua / 'researchGE.lua'
-        ve = lua / 'researchVE.lua'
-
-        common_name = 'lua/common/utils/researchCommunication.lua'
-        ge_name = 'lua/ge/extensions/util/researchGE.lua'
-        ve_name = 'lua/vehicle/extensions/researchVE.lua'
-
-        with zipfile.ZipFile(str(mods / 'BeamNGpy.zip'), 'w') as ziph:
-            ziph.write(common, arcname=common_name)
-            ziph.write(ge, arcname=ge_name)
-            ziph.write(ve, arcname=ve_name)
-
     def prepare_call(self, extensions, *args, **opts):
         """
         Prepares the command line call to execute to start BeamNG.*.
@@ -223,8 +220,6 @@ class BeamNGpy:
             '-console',
             '-rport',
             str(self.port),
-            '-rhost',
-            str(self.host),
             '-nosteam',
             '-physicsfps',
             '4000',
@@ -240,6 +235,18 @@ class BeamNGpy:
         if self.user:
             call.append('-userpath')
             call.append(str(self.user))
+            if ' ' in str(self.user):
+                msg = 'Your configured userpath contains a space. ' \
+                      'Unfortunately, this is known to cause issues in ' \
+                      'launching BeamNG.tech. If you require a path with a ' \
+                      'space in it, you can alternatively set it manually in' \
+                      'the file "startup.ini" contained in the directory of ' \
+                      'your BeamNG.tech installtion. This would not be ' \
+                      'automatically updated if you change the `user` ' \
+                      'parameter to `BeamNGpy`, but serves as a workaround ' \
+                      'until the issue is fixed in BeamNG.tech.'
+                log.error(msg)
+                print(msg)
 
         return call
 
@@ -256,6 +263,8 @@ class BeamNGpy:
         """
         Kills the running BeamNG.* process.
         """
+        self.quit_beamng()
+
         if not self.process:
             return
 
@@ -272,15 +281,115 @@ class BeamNGpy:
 
         self.process = None
 
-    def start_server(self):
-        """
-        Binds a server socket to the configured host & port and starts
-        listening on it.
-        """
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((self.host, self.port))
-        self.server.listen()
-        log.info('Started BeamNGpy server on %s:%s', self.host, self.port)
+    def hello(self):
+        data = dict(type='Hello')
+        data['protocolVersion'] = PROTOCOL_VERSION
+        self.send(data)
+        log.info('Sent data!')
+        resp = self.recv()
+        assert resp['type'] == 'Hello'
+        if resp['protocolVersion'] != PROTOCOL_VERSION:
+            msg = \
+                'Mismatching BeamNGpy protocol versions. ' \
+                'Please ensure both BeamNG.tech and BeamNGpy are ' \
+                'using the desired versions.\n' \
+                'BeamNGpy\'s is: {}' \
+                'BeamNG.tech\'s is: {}'.format(PROTOCOL_VERSION,
+                                               resp['version'])
+            raise BNGError(msg)
+
+    def message(self, req, **kwargs):
+        kwargs['type'] = req
+        self.send(kwargs)
+        resp = self.recv()
+        if resp['type'] != req:
+            msg = 'Got Message type "{}" but expected "{}".'
+            msg = msg.format(resp['type'], req)
+            raise BNGValueError(msg)
+
+        if 'result' in resp:
+            return resp['result']
+        return None
+
+    def get_levels(self):
+        levels = self.message('GetLevels')
+        levels = [Level.from_dict(l) for l in levels]
+        levels = {l.name: l for l in levels}
+        return levels
+
+    def get_scenarios(self, levels=None):
+        if levels is None:
+            levels = self.get_levels()
+
+        scenarios = self.message('GetScenarios')
+        scenarios = [Scenario.from_dict(s) for s in scenarios]
+        scenarios = {s.path: s for s in scenarios if s.level in levels.keys()}
+        for _, scenario in scenarios.items():
+            scenario.level = levels[scenario.level]
+
+        return scenarios
+
+    def get_level_scenarios(self, level):
+        level_name = None
+        if isinstance(level, Level):
+            level_name = level.name
+        else:
+            level_name = level
+
+        scenarios = self.message('GetScenarios')
+        scenarios = [Scenario.from_dict(s) for s in scenarios]
+        scenarios = {s.path: s for s in scenarios if s.level == level_name}
+
+        for scenario in scenarios.values():
+            scenario.level = level
+
+        return scenarios
+
+    def get_levels_and_scenarios(self):
+        levels = self.get_levels()
+        scenarios = self.get_scenarios(levels=levels)
+
+        for scenario in scenarios.values():
+            level_scenarios = scenario.level.scenarios
+            level_scenarios[scenario.path] = scenario
+
+        return levels, scenarios
+
+    def get_current_scenario(self, levels=None):
+        scenario = self.message('GetCurrentScenario')
+        scenario = Scenario.from_dict(scenario)
+
+        if levels is not None:
+            if scenario.level in levels:
+                scenario.level = levels[scenario.level]
+
+        return scenario
+
+    def get_current_vehicles(self):
+        vehicles = self.message('GetCurrentVehicles')
+        vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
+        return vehicles
+
+    def connect(self, tries=25):
+        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        log.info('Connecting to BeamNG.tech at: ({}, {})'.format(self.host,
+                                                                 self.port))
+        self.skt.settimeout(600)
+        while tries > 0:
+            try:
+                self.skt.connect((self.host, self.port))
+                break
+            except ConnectionRefusedError as err:
+                msg = 'Error connecting to BeamNG.tech. {} tries left.'
+                msg = msg.format(tries)
+                log.error(msg)
+                log.exception(err)
+                sleep(5)
+                tries -= 1
+
+        self.hello()
+
+        log.info('Connected!')
 
     def send(self, data):
         """
@@ -300,7 +409,7 @@ class BeamNGpy:
         """
         return recv_msg(self.skt)
 
-    def open(self, extensions=None, *args, launch=True, **opts):
+    def open(self, extensions=None, *args, launch=True, deploy=True, **opts):
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the
         spawned BeamNG.* process to connect. This method blocks until the
@@ -312,26 +421,16 @@ class BeamNGpy:
                            True.
         """
         log.info('Opening BeamNGpy instance...')
-        self.deploy_mod()
-        self.start_server()
+
+        if deploy:
+            BeamNGpy.deploy_mod(self.user)
+
         if launch:
             self.start_beamng(extensions, *args, **opts)
+            sleep(10)
 
-        self.server.settimeout(300)
-        self.skt, addr = self.server.accept()
-        self.skt.settimeout(300)
+        self.connect()
 
-        log.debug('Connection established. Awaiting "hello"...')
-        hello = self.recv()
-        assert hello['type'] == 'Hello'
-        if hello['version'] != PROTOCOL_VERSION:
-            print('BeamNGpy and BeamNG.* version mismatch: '
-                  'BeamNGpy {}, BeamNG.* {}'.format(PROTOCOL_VERSION,
-                                                    hello['version']))
-            print('Make sure both this library and BeamNG.* are up to date.')
-            print('Operation will proceed, but some features might not work.')
-
-        log.info('Started BeamNGpy communicating on %s', addr)
         return self
 
     def close(self):
@@ -343,7 +442,6 @@ class BeamNGpy:
             self.scenario.close()
             self.scenario = None
 
-        self.server.close()
         self.kill_beamng()
 
     def hide_hud(self):
@@ -360,7 +458,11 @@ class BeamNGpy:
         data = dict(type='ShowHUD')
         self.send(data)
 
-    def connect_vehicle(self, vehicle, port=None):
+    def sync(self):
+
+        pass
+
+    def start_vehicle_connection(self, vehicle):
         """
         Creates a server socket for the given vehicle and sends a connection
         request for it to the simulation. This method does not wait for the
@@ -375,46 +477,19 @@ class BeamNGpy:
         Returns:
             The server socket created and waiting for a conection.
         """
-        flags = vehicle.get_engine_flags()
-        self.set_engine_flags(flags)
-
-        if not port:
-            port = self.next_port
-            self.next_port += 1
-
-        vehicle_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        vehicle_server.bind((self.host, port))
-        vehicle_server.listen()
-        log.debug('Starting vehicle server for %s on: %s:%s',
-                  vehicle, self.host, port)
-
-        connection_msg = {'type': 'VehicleConnection'}
+        connection_msg = {'type': 'StartVehicleConnection'}
         connection_msg['vid'] = vehicle.vid
-        connection_msg['host'] = self.host
-        connection_msg['port'] = port
         if vehicle.extensions is not None:
             connection_msg['exts'] = vehicle.extensions
 
         self.send(connection_msg)
+        resp = self.recv()
+        assert resp['type'] == 'StartVehicleConnection'
+        vid = resp['vid']
+        assert vid == vehicle.vid
+        port = resp['result']
 
-        vehicle.connect(self, vehicle_server, port)
-        return vehicle_server
-
-    def setup_vehicles(self, scenario):
-        """
-        Goes over the current scenario's vehicles and establishes a connection
-        between their vehicle instances and the vehicles in simulation. Engine
-        flags required by the vehicles' sensor setups are sent and connect-
-        hooks of the respective sensors called upon connection. This method
-        blocks until all vehicles are fully connected.
-
-        Args:
-            scenario (:class:`.Scenario`): Calls functions to set up scenario
-                                           objects after it has been loaded.
-        """
-        vehicles = scenario.vehicles
-        for vehicle in vehicles.keys():
-            self.connect_vehicle(vehicle)
+        return port
 
     def load_scenario(self, scenario):
         """
@@ -424,16 +499,10 @@ class BeamNGpy:
         Args:
             scenario (:class:`.Scenario`): The scenario to load.
         """
-        info_path = scenario.get_info_path()
-        info_path = info_path.replace(str(self.home), '')
-        info_path = info_path.replace(str(self.user), '')
-        info_path = info_path[1:]
-        info_path = info_path.replace('\\', '/')
-        data = {'type': 'LoadScenario', 'path': info_path}
+        data = {'type': 'LoadScenario', 'path': scenario.path}
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'MapLoaded'
-        self.setup_vehicles(scenario)
         flags = scenario.get_engine_flags()
         self.set_engine_flags(flags)
         self.scenario = scenario
@@ -1022,6 +1091,12 @@ class BeamNGpy:
         assert resp['type'] == 'ScenarioName'
         return resp['name']
 
+    def get_scenetree(self):
+        return self.message('GetSceneTree')
+
+    def get_scene_object_data(self, obj_id):
+        return self.message('GetObject', id=obj_id)
+
     def spawn_vehicle(self, vehicle, pos, rot,
                       rot_quat=(0, 0, 0, 1), cling=True):
         """
@@ -1052,7 +1127,6 @@ class BeamNGpy:
         data.update(vehicle.options)
         self.send(data)
         resp = self.recv()
-        self.connect_vehicle(vehicle)
         assert resp['type'] == 'VehicleSpawned'
 
     def despawn_vehicle(self, vehicle):
@@ -1680,6 +1754,19 @@ class BeamNGpy:
             key = v[0] * 256 * 256 + v[1] * 256 + v[2]
             classes[key] = k
         return classes
+
+    def create_scenario(self, level, name, prefab, info):
+        resp = self.message('CreateScenario',
+                            level=level, name=name, prefab=prefab, info=info)
+        return resp
+
+    def delete_scenario(self, path):
+        self.message('DeleteScenario', path=path)
+
+    @ack('Quit')
+    def quit_beamng(self):
+        data = dict(type='Quit')
+        self.send(data)
 
     def __enter__(self):
         self.open()

@@ -8,11 +8,14 @@
 
 """
 
-import base64
 import logging as log
+import socket
 import warnings
 
+from time import sleep
+
 from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
+from .beamngcommon import PROTOCOL_VERSION
 from .sensors import State
 
 SHIFT_MODES = {
@@ -31,7 +34,33 @@ class Vehicle:
     sensors the user can attach to the vehicle.
     """
 
-    def __init__(self, vid, model, **options):
+    @staticmethod
+    def from_dict(d):
+        if 'name' in d:
+            vid = d['name']
+            del d['name']
+        else:
+            vid = d['id']
+
+        model = None
+        if 'model' in d:
+            model = d['model']
+            del d['model']
+
+        port = None
+        if 'port' in d:
+            port = int(d['port'])
+            del d['port']
+
+        options = {}
+        if 'options' in d:
+            options = d['options']
+            del d['options']
+
+        vehicle = Vehicle(vid, model, port=port, **options)
+        return vehicle
+
+    def __init__(self, vid, model, port=None, **options):
         """
         Creates a vehicle with the given vehicle ID. The ID must be unique
         within the scenario.
@@ -41,11 +70,11 @@ class Vehicle:
             model (str): Model of the vehicle.
         """
         self.vid = vid.replace(' ', '_')
+        self.model = model
 
-        self.port = None
+        self.port = port
 
         self.bng = None
-        self.server = None
         self.skt = None
 
         self.sensors = dict()
@@ -75,6 +104,9 @@ class Vehicle:
 
     def __str__(self):
         return 'V:{}'.format(self.vid)
+
+    def is_connected(self):
+        return self.skt is not None
 
     @property
     def state(self):
@@ -122,7 +154,10 @@ class Vehicle:
         """
         return recv_msg(self.skt)
 
-    def connect(self, bng, server, port):
+    def _start_connection(self):
+        self.port = self.bng.start_vehicle_connection(self)
+
+    def _connect_existing(self, tries=25):
         """
         Establishes socket communication with the corresponding vehicle in the
         simulation and calls the connect-hooks on the vehicle's sensors.
@@ -130,17 +165,36 @@ class Vehicle:
         Args:
             bng (:class:`.BeamNGpy`): The running BeamNGpy instance to connect
                                       with.
-            server (:class:`socket`): The server socket opened for the vehicle.
         """
-        self.bng = bng
-        self.server = server
-        self.port = port
-        self.server.settimeout(60)
-        self.skt, _ = self.server.accept()
-        self.skt.settimeout(60)
+        flags = self.get_engine_flags()
+        self.bng.set_engine_flags(flags)
+
+        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.skt.settimeout(600)
+        while tries > 0:
+            try:
+                self.skt.connect((self.bng.host, self.port))
+                break
+            except ConnectionRefusedError as err:
+                msg = \
+                    'Error connecting to BeamNG.tech vehicle {}. {} tries ' \
+                    'left.'.format(self.vid, tries)
+                log.error(msg)
+                log.exception(err)
+                sleep(5)
+                tries -= 1
+
+        self.hello()
 
         for _, sensor in self.sensors.items():
-            sensor.connect(bng, self)
+            sensor.connect(self.bng, self)
+
+    def connect(self, bng):
+        self.bng = bng
+        if self.port is None:
+            self._start_connection()
+
+        self._connect_existing()
 
     def disconnect(self):
         """
@@ -153,10 +207,10 @@ class Vehicle:
         for _, sensor in self.sensors.items():
             sensor.disconnect(self.bng, self)
 
-        self.server.close()
-        self.skt.close()
+        if self.skt is not None:
+            self.skt.close()
+
         self.bng = None
-        self.server = None
         self.port = None
         self.skt = None
 
@@ -302,6 +356,21 @@ class Vehicle:
 
         self.sensor_cache = result
         return compatibility_support
+
+    def hello(self):
+        data = dict(type='Hello')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'Hello'
+        if resp['protocolVersion'] != PROTOCOL_VERSION:
+            msg = \
+                'Mismatching BeamNGpy protocol versions. ' \
+                'Please ensure both BeamNG.tech and BeamNGpy are ' \
+                'using the desired versions.\n' \
+                'BeamNGpy\'s is: {}' \
+                'BeamNG.tech\'s is: {}'.format(PROTOCOL_VERSION,
+                                               resp['version'])
+            raise BNGError(msg)
 
     @ack('ShiftModeSet')
     def set_shift_mode(self, mode):
@@ -590,7 +659,6 @@ class Vehicle:
         self.send(data)
         self.bng.await_vehicle_spawn(self.vid)
         self.skt.close()
-        self.server.close()
         self.skt = None
         self.bng.connect_vehicle(self, self.port)
 

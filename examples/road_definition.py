@@ -14,6 +14,7 @@ from beamngpy import BeamNGpy, Scenario, Road, Vehicle, setup_logging
 
 def main():
     beamng = BeamNGpy('localhost', 64256)
+    bng = beamng.open(launch=True)
 
     scenario = Scenario('GridMap', 'road_test')
     road_a = Road('track_editor_C_center', rid='circle_road', looped=True)
@@ -34,9 +35,8 @@ def main():
     road_b.nodes.extend(nodes)
     scenario.add_road(road_b)
 
-    scenario.make(beamng)
+    scenario.make(bng)
 
-    bng = beamng.open(launch=True)
     try:
         bng.load_scenario(scenario)
         bng.start_scenario()

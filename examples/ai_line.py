@@ -16,6 +16,8 @@ def main():
     setup_logging()
 
     beamng = BeamNGpy('localhost', 64256)
+    bng = beamng.open(launch=True)
+
     scenario = Scenario('west_coast_usa', 'ai_sine')
 
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='AI')
@@ -23,7 +25,7 @@ def main():
     orig = (-769.1, 400.8, 142.8)
 
     scenario.add_vehicle(vehicle, pos=orig, rot=None, rot_quat=(0, 0, 1, 0))
-    scenario.make(beamng)
+    scenario.make(bng)
 
     script = list()
 
@@ -51,10 +53,10 @@ def main():
         point_colors.append([0, np.sin(np.radians(i)), 0, 0.1])
 
         if i % 10 == 0:
-            spheres.append([node['x'], node['y'], node['z'], np.abs(np.sin(np.radians(i))) * 0.25])
+            spheres.append([node['x'], node['y'], node['z'],
+                            np.abs(np.sin(np.radians(i))) * 0.25])
             sphere_colors.append([np.sin(np.radians(i)), 0, 0, 0.8])
 
-    bng = beamng.open(launch=True)
     try:
         bng.load_scenario(scenario)
 
