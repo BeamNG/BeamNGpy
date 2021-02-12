@@ -607,17 +607,13 @@ class Vehicle:
 
     def get_part_options(self):
         """
-        Retrieves a tree of part configuration options for this vehicle.
+        Retrieves a mapping of part slots in this vehicle and their possible
+        parts.
 
         Returns:
-            A tree of part configuration options for this vehicle expressed
-            as nested dictionaries.
+            A mapping of part configuration options for this vehicle.
         """
-        data = dict(type='GetPartOptions')
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'PartOptions'
-        return resp['options']
+        return self.bng.get_part_options(self)
 
     def get_part_config(self):
         """
@@ -629,16 +625,7 @@ class Vehicle:
         Returns:
             The current vehicle configuration as a dictionary.
         """
-        data = dict(type='GetPartConfig')
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'PartConfig'
-        resp = resp['config']
-        if not resp['parts']:
-            resp['parts'] = dict()
-        if not resp['vars']:
-            resp['vars'] = dict()
-        return resp
+        return self.bng.get_part_config(self)
 
     def set_part_config(self, cfg):
         """
@@ -653,14 +640,7 @@ class Vehicle:
             Changing parts causes the vehicle to respawn, which repairs it as
             a side-effect.
         """
-        data = dict(type='SetPartConfig')
-        data['config'] = cfg
-        data['vid'] = self.vid
-        self.send(data)
-        self.bng.await_vehicle_spawn(self.vid)
-        self.skt.close()
-        self.skt = None
-        self.bng.connect_vehicle(self, self.port)
+        return self.bng.set_part_config(self, cfg)
 
     @ack('ColorSet')
     def set_color(self, rgba=(1., 1., 1., 1.)):
