@@ -659,7 +659,7 @@ class Camera(Sensor):
                 self.depth_shmem.seek(0)
                 depth_d = self.depth_shmem.read(size)
                 depth_d = np.frombuffer(depth_d, dtype=np.float32)
-                depth_d = depth_d / FAR
+                depth_d = depth_d / (self.near_far[1] - self.near_far[0])
                 depth_d = depth_d.reshape(img_h, img_w)
                 depth_d = np.uint8(depth_d * 255)
                 decoded['depth'] = Image.fromarray(depth_d)
