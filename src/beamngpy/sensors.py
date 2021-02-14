@@ -191,7 +191,8 @@ class Camera(Sensor):
     """
 
     def __init__(self, pos, direction, fov, resolution, near_far=(NEAR, FAR),
-                 colour=False, depth=False, annotation=False):
+                 colour=False, depth=False, depth_distance=(NEAR, FAR),
+                 annotation=False):
         """
         The camera sensor is set up with a fixed offset position and
         directional vector to face relative to the vehicle. This means as the
@@ -219,6 +220,14 @@ class Camera(Sensor):
                               does not need to be changed.
             colour (bool): Whether to output colour information.
             depth (bool): Whether to output depth information.
+            depth_distance (tuple): (near,far) tuple of the distance range
+                                    depth values should be mapped between.
+                                    For example, a distance_scale of (10, 50)
+                                    would mean geometry closer than 10 would
+                                    be mapped to black and geometry further
+                                    than 50 would be mapped to white. All
+                                    distances in-between are interpolated
+                                    accordingly.
             annotation (bool): Whether to output annotation information.
         """
         super().__init__()
@@ -230,6 +239,7 @@ class Camera(Sensor):
 
         self.colour = colour
         self.depth = depth
+        self.depth_distance = depth_distance
         self.annotation = annotation
 
         self.colour_handle = None
@@ -411,9 +421,17 @@ class Camera(Sensor):
                 self.depth_shmem.seek(0)
                 depth_d = self.depth_shmem.read(size)
                 depth_d = np.frombuffer(depth_d, dtype=np.float32)
-                depth_d = depth_d / FAR
+
+                # Use linear interpolation to map the depth values
+                # between lightness values 0-255. Any distances outside
+                # of the scale are clamped to either 0 or 255
+                # respectively.
+                depth_d = np.interp(depth_d, [self.depth_distance[0],
+                            self.depth_distance[1]], [255, 0], left=255,
+                            right=0)
+
                 depth_d = depth_d.reshape(img_h, img_w)
-                depth_d = np.uint8(depth_d * 255)
+                depth_d = np.uint8(depth_d)
                 decoded['depth'] = Image.fromarray(depth_d)
             else:
                 print('Depth buffer failed to render. Check that you '
