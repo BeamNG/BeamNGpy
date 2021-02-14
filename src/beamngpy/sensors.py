@@ -192,7 +192,7 @@ class Camera(Sensor):
 
     def __init__(self, pos, direction, fov, resolution, near_far=(NEAR, FAR),
                  colour=False, depth=False, depth_distance=(NEAR, FAR),
-                 annotation=False):
+                 depth_inverse=False, annotation=False):
         """
         The camera sensor is set up with a fixed offset position and
         directional vector to face relative to the vehicle. This means as the
@@ -228,6 +228,12 @@ class Camera(Sensor):
                                     than 50 would be mapped to white. All
                                     distances in-between are interpolated
                                     accordingly.
+            depth_inverse (bool): If true, depth values are inversed so that
+                                  geometry that is closer is white instead
+                                  of black, and geometry that is further is
+                                  black instead of white. This is more
+                                  typical behaviour of real-life stereo
+                                  cameras that output depth images.
             annotation (bool): Whether to output annotation information.
         """
         super().__init__()
@@ -240,6 +246,7 @@ class Camera(Sensor):
         self.colour = colour
         self.depth = depth
         self.depth_distance = depth_distance
+        self.depth_inverse = depth_inverse
         self.annotation = annotation
 
         self.colour_handle = None
@@ -426,9 +433,14 @@ class Camera(Sensor):
                 # between lightness values 0-255. Any distances outside
                 # of the scale are clamped to either 0 or 255
                 # respectively.
-                depth_d = np.interp(depth_d, [self.depth_distance[0],
-                            self.depth_distance[1]], [255, 0], left=255,
-                            right=0)
+                if self.depth_inverse:
+                    depth_d = np.interp(depth_d, [self.depth_distance[0],
+                              self.depth_distance[1]], [255, 0], left=255,
+                              right=0)
+                else:
+                    depth_d = np.interp(depth_d, [self.depth_distance[0],
+                              self.depth_distance[1]], [0, 255], left=0,
+                              right=255)
 
                 depth_d = depth_d.reshape(img_h, img_w)
                 depth_d = np.uint8(depth_d)
