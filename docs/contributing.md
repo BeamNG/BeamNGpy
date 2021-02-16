@@ -7,7 +7,6 @@ When contributing to this repository, please first discuss the change you wish t
 ### Before Starting
 
 * make sure you sign our contributor license agreement first
-use [this form if you submit contributions on behalf of yourself]() and [this form if you submit contributions on behalf of your employer](https://github.com/BeamNG/BeamNGpy/blob/contributing/docs/CLA-entity.md)
 * if you are fixing a bug, make sure that it still exists on the dev branch
 * open up an issue to discuss the changes you want to make
 
