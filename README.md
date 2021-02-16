@@ -115,6 +115,10 @@ recommended to consult the documentation on BeamNG.drive here:
   change the userpath directly in the "startup.ini" file located in the
   directory of your BeamNG.tech installation.
 
+## Contributions
+
+We always welcome user contributions, be sure to check out our [contribution guidelines][9] first, before starting your work.
+
 [1]: https://beamngpy.readthedocs.io/en/latest/
 [2]: https://register.beamng.tech/
 [3]: mailto:licensing@beamng.gmbh
@@ -123,3 +127,4 @@ recommended to consult the documentation on BeamNG.drive here:
 [6]: https://github.com/BeamNG/BeamNGpy/tree/master/examples
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
+[9]: https://github.com/BeamNG/BeamNGpy/blob/contributions/docs/contributing.md
