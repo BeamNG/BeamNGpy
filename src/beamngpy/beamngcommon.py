@@ -11,7 +11,6 @@
 import logging as log
 import json
 import os
-import socket
 import numpy as np
 import warnings
 
@@ -22,6 +21,8 @@ import msgpack
 
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
+
+PROTOCOL_VERSION = 'v1.18'
 
 
 class BNGError(Exception):
@@ -34,6 +35,13 @@ class BNGError(Exception):
 class BNGValueError(ValueError):
     """
     Value error specific to BeamNGpy.
+    """
+    pass
+
+
+class BNGDisconnectedError(ValueError):
+    """
+    Exception class for BeamNGpy being disconnected when it shouldn't.
     """
     pass
 
@@ -223,10 +231,10 @@ def compute_rotation_matrix(quat):
         quat /= norm
     x, y, z, w = quat[0], quat[1], quat[2], quat[3]
     rot_mat = np.array([
-                            [1-2*(y**2+z**2), 2*(x*y-z*w), 2*(x*z+y*w)],
-                            [2*(x*y+z*w), 1-2*(x**2+z**2), 2*(y*z-x*w)],
-                            [2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x**2+y**2)]
-                        ], dtype=float)
+        [1-2*(y**2+z**2), 2*(x*y-z*w), 2*(x*z+y*w)],
+        [2*(x*y+z*w), 1-2*(x**2+z**2), 2*(y*z-x*w)],
+        [2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x**2+y**2)]
+    ], dtype=float)
     return rot_mat
 
 

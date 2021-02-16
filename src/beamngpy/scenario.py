@@ -12,16 +12,15 @@
 import copy
 import json
 import logging as log
-import math
 import os
 import os.path
-
-from pathlib import Path
 
 import numpy as np
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
+
+from .beamng import Level
 
 from .beamngcommon import BNGValueError, BNGError, angle_to_quat
 from .beamngcommon import compute_rotation_matrix, quat_as_rotation_mat_str
@@ -93,6 +92,40 @@ class ScenarioObject:
     scale.
     """
 
+    @staticmethod
+    def from_game_dict(d):
+        oid = None
+        name = None
+        otype = None
+        pos = None
+        rot_quat = None
+        scale = None
+        if 'id' in d:
+            oid = d['id']
+            del d['id']
+
+        if 'name' in d:
+            name = d['name']
+            del d['name']
+
+        if 'class' in d:
+            otype = d['class']
+            del d['class']
+
+        if 'pos' in d:
+            pos = d['position']
+            del d['position']
+
+        if 'rot' in d:
+            rot_quat = d['rotation']
+            del d['rotation']
+
+        if 'scale' in d:
+            scale = d['scale']
+            del d['scale']
+
+        return ScenarioObject(oid, name, otype, pos, rot_quat, scale, **d)
+
     def __init__(self, oid, name, otype, pos, rot, scale,
                  rot_quat=None, **options):
         self.id = oid
@@ -105,6 +138,7 @@ class ScenarioObject:
         self.rot = rot_quat
         self.scale = scale
         self.opts = options
+        self.children = []
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
@@ -122,6 +156,71 @@ class ScenarioObject:
 
     def __repr__(self):
         return str(self)
+
+
+class SceneObject:
+    def __init__(self, options):
+        self.id = options.get('id', None)
+        if 'id' in options:
+            del options['id']
+
+        self.name = options.get('name', None)
+        if 'name' in options:
+            del options['name']
+
+        self.type = options.get('class', None)
+        if 'type' in options:
+            del options['type']
+
+        self.pos = options.get('position', [0, 0, 0])
+        if 'position' in options:
+            del options['position']
+
+        self.rot = options.get('rotation', [0, 0, 0, 0])
+        if 'rotation' in options:
+            del options['rotation']
+
+        self.scale = options.get('scale', [0, 0, 0])
+        if 'scale' in options:
+            del options['scale']
+
+        self.options = options
+        self.children = []
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.id == other.id
+
+        return False
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __str__(self):
+        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
+        s = s.format(self.type, self.id, self.name, *self.pos)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+
+class DecalRoad(SceneObject):
+    def __init__(self, options):
+        super(DecalRoad, self).__init__(options)
+        self.lines = options.get('lines', [])
+
+        self.annotation = options.get('annotation', None)
+        self.detail = options.get('Detail', None)
+        self.material = options.get('Material', None)
+        self.break_angle = options.get('breakAngle', None)
+        self.drivability = options.get('drivability', None)
+        self.flip_direction = options.get('flipDirection', False)
+        self.improved_spline = options.get('improvedSpline', False)
+        self.lanes_left = options.get('lanesLeft', None)
+        self.lanes_right = options.get('lanesRight', None)
+        self.one_way = options.get('oneWay', False)
+        self.over_objects = options.get('overObjects', False)
 
 
 class StaticObject(ScenarioObject):
@@ -216,7 +315,36 @@ class Scenario:
     execution.
     """
 
-    def __init__(self, level, name, **options):
+    game_classes = {
+        'MissionGroup': lambda d: SceneObject(d),
+        'DecalRoad': lambda d: DecalRoad(d),
+    }
+
+    @staticmethod
+    def from_dict(d):
+        if 'sourceFile' in d:
+            path = d['sourceFile']
+            del d['sourceFile']
+        else:
+            path = None
+
+        if 'levelName' in d:
+            level = d['levelName']
+            del d['levelName']
+        else:
+            level = 'unknown'
+
+        if 'name' in d:
+            name = d['name']
+            del d['name']
+        else:
+            name = 'unknown'
+
+        scenario = Scenario(level, name, path, **d)
+
+        return scenario
+
+    def __init__(self, level, name, path=None, **options):
         """
         Instantiates a scenario instance with the given name taking place in
         the given level.
@@ -229,12 +357,12 @@ class Scenario:
         """
         self.level = level
         self.name = name
+        self.path = path
         self.options = options
 
-        self.path = None
-
-        self.vehicles = dict()
+        self.vehicles = set()
         self.transient_vehicles = set()  # Vehicles added during scenario
+        self._vehicle_locations = {}
 
         self.roads = list()
         self.waypoints = list()
@@ -244,28 +372,9 @@ class Scenario:
 
         self.cameras = dict()
 
+        self.scene = None
+
         self.bng = None
-
-    def _find_path(self, bng):
-        """
-        Attempts to find the appropriate path for this scenario and creates it
-        iff it does not exist.
-
-        Args:
-            bng (:class:`.BeamNGpy`): The BeamNGpy instance to find the path
-                                      for.
-        """
-        if bng.user is not None:
-            self.path = bng.user / 'levels'
-        else:
-            self.path = bng.home / 'levels'
-
-        self.path = self.path / self.level
-        if not self.path.exists():
-            log.warn('Level for scenario does not exist: %s', self.path)
-        self.path = self.path / 'scenarios'
-        if not self.path.exists():
-            self.path.mkdir(parents=True)
 
     def _get_objects_list(self):
         """
@@ -309,7 +418,7 @@ class Scenario:
 
         focused = False
         vehicles_dict = dict()
-        for vehicle in self.vehicles.keys():
+        for vehicle in self.vehicles:
             vehicles_dict[vehicle.vid] = {'playerUsable': True}
             if not focused:
                 # Make sure one car has startFocus set
@@ -332,8 +441,8 @@ class Scenario:
             All vehicles as a dict including position and rotation.
         """
         vehicles = list()
-        for vehicle, data in self.vehicles.items():
-            pos, rot = data
+        for vehicle in self.vehicles:
+            pos, rot = self._vehicle_locations[vehicle.vid]
             vehicle_dict = dict(vid=vehicle.vid)
             vehicle_dict.update(vehicle.options)
             vehicle_dict['position'] = ' '.join([str(p) for p in pos])
@@ -379,51 +488,11 @@ class Scenario:
 
         return template.render(vehicles=vehicles, roads=roads, objects=objs)
 
-    def _write_info_file(self):
-        """
-        Writes the information for this scenario to an appropriate file for
-        the simulator to read.
-        """
-        info_path = self.get_info_path()
-        info_dict = self._get_info_dict()
-        with open(info_path, 'w') as out_file:
-            info = json.dumps([info_dict], indent=4, sort_keys=True)
-            out_file.write(info)
-        return info_path
-
-    def _write_prefab_file(self):
-        """
-        Writes the prefab code describing this scenario to an appropriate file
-        for the simulator to read.
-
-        Returns:
-            The path to the prefab file written to.
-        """
-        prefab_path = self.get_prefab_path()
-        prefab = self._get_prefab()
-        with open(prefab_path, 'w') as out_file:
-            out_file.write(prefab)
-        return prefab_path
-
-    def get_info_path(self):
-        """
-        Returns: The path for the information file.
-        """
-        if not self.path:
-            return None
-
-        info_path = self.path / '{}.json'.format(self.name)
-        return str(info_path)
-
-    def get_prefab_path(self):
-        """
-        Returns: The path for the prefab file.
-        """
-        if not self.path:
-            return None
-
-        prefab_path = self.path / '{}.prefab'.format(self.name)
-        return str(prefab_path)
+    def _get_level_name(self):
+        if isinstance(self.level, Level):
+            return self.level.name
+        else:
+            return self.level
 
     def add_object(self, obj):
         """
@@ -454,12 +523,14 @@ class Scenario:
         if rot:
             raise_rot_deprecation_warning()
             rot_quat = angle_to_quat(rot)
-        self.vehicles[vehicle] = (pos, rot_quat)
+        self.vehicles.add(vehicle)
+        self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
 
         if self.bng:
             self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat,
                                    cling=cling)  # todo
             self.transient_vehicles.add(vehicle)
+            vehicle.connect(self.bng)
 
     def remove_vehicle(self, vehicle):
         """
@@ -474,7 +545,9 @@ class Scenario:
                 self.bng.despawn_vehicle(vehicle)
                 self.transient_vehicles.remove(vehicle)
 
-            del self.vehicles[vehicle]
+            if vehicle.vid in self._vehicle_locations:
+                del self._vehicle_locations[vehicle.vid]
+            self.vehicles.remove(vehicle)
 
     def get_vehicle(self, needle):
         """
@@ -486,7 +559,7 @@ class Scenario:
         Returns:
             The :class:`.Vehicle` with the given ID. None if it wasn't found.
         """
-        for vehicle in self.vehicles.keys():
+        for vehicle in self.vehicles:
             if vehicle.vid == needle:
                 return vehicle
         return None
@@ -550,6 +623,29 @@ class Scenario:
             self.add_object(cp)
         self.checkpoints.extend(ids)
 
+    def _convert_scene_object(self, obj):
+        data = self.bng.get_scene_object_data(obj['id'])
+        clazz = data['class']
+        if clazz in Scenario.game_classes:
+            converted = Scenario.game_classes[clazz](data)
+        else:
+            converted = SceneObject(data)
+
+        if 'children' in obj:
+            for child in obj['children']:
+                child = self._convert_scene_object(child)
+                converted.children.append(child)
+
+        return converted
+
+    def _fill_scene(self):
+        scenetree = self.bng.get_scenetree()
+        assert scenetree['class'] == 'SimGroup'
+        self.scene = self._convert_scene_object(scenetree)
+
+    def sync_scene(self):
+        self._fill_scene()
+
     def connect(self, bng):
         """
         Connects this scenario to the simulator, hooking up any cameras to
@@ -560,8 +656,11 @@ class Scenario:
         for mesh in self.proc_meshes:
             mesh.place(self.bng)
 
-        for name, cam in self.cameras.items():
+        for _, cam in self.cameras.items():
             cam.connect(self.bng, None)
+
+        for vehicle in self.vehicles:
+            vehicle.connect(bng)
 
     def decode_frames(self, camera_data):
         """
@@ -615,9 +714,12 @@ class Scenario:
         Returns:
             The path to the information file of this scenario in the simulator.
         """
-        self._find_path(bng)
-        self._write_prefab_file()
-        self._write_info_file()
+        level_name = self._get_level_name()
+
+        prefab = self._get_prefab()
+        info = self._get_info_dict()
+
+        self.path = bng.create_scenario(level_name, self.name, prefab, info)
 
     def find(self, bng):
         """
@@ -632,17 +734,20 @@ class Scenario:
             The path to the information file of his scenario found in the
             simulator as a string, None if it could not be found.
         """
-        self._find_path(bng)
-        return self.get_info_path()
+        scenarios = bng.get_level_scenarios(self.level)
+        for path, scenario in scenarios:
+            if scenario.name == self.name and scenario.level == self.level:
+                self.path = path
+        return self.path
 
     def delete(self, bng):
         """
         Deletes files created by this scenario from the given
         :class:`.BeamNGpy`'s home/user path.
         """
-        self._find_path(bng)
-        os.remove(self.get_info_path())
-        os.remove(self.get_prefab_path())
+        if self.path is None:
+            self.find(bng)
+        bng.delete_scenario(self.path)
 
     def start(self):
         """
@@ -689,7 +794,7 @@ class Scenario:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be stopped.')
 
-        for vehicle in self.vehicles.keys():
+        for vehicle in self.vehicles:
             vehicle.close()
 
         self.bng = None

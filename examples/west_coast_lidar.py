@@ -24,6 +24,7 @@ def main():
     setup_logging()
 
     beamng = BeamNGpy('localhost', 64256)
+    bng = beamng.open(launch=True)
 
     scenario = Scenario('west_coast_usa', 'lidar_demo',
                         description='Spanning the map with a lidar sensor')
@@ -34,10 +35,10 @@ def main():
     lidar = Lidar(offset=(0, 0, 1.6))
     vehicle.attach_sensor('lidar', lidar)
 
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
-    scenario.make(beamng)
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                         rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
+    scenario.make(bng)
 
-    bng = beamng.open(launch=True)
     try:
         bng.set_deterministic()  # Set simulator to be deterministic
         bng.set_steps_per_second(60)  # With 60hz temporal resolution

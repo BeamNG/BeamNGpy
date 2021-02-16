@@ -10,49 +10,49 @@ def beamng():
 
 
 def test_quats(beamng):
-    setup_logging()
-
-    scenario = Scenario('smallgrid', 'test_quat')
-
-    vehicle = Vehicle('ego_vehicle',
-                      model='etk800',
-                      color='Blue',
-                      licence="angle")
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
-
-    vehicle = Vehicle('ego_vehicle2',
-                      model='etk800',
-                      color='Green',
-                      license="quat")
-    rot_quat = (-0.00333699025, -0.00218820246, -0.689169466, 0.724589229)
-    scenario.add_vehicle(vehicle, pos=(5, 0, 0), rot_quat=rot_quat)
-
-    rb = ScenarioObject(oid='roadblock',
-                        name='sawhorse',
-                        otype='BeamNGVehicle',
-                        pos=(-10, -5, 0),
-                        rot=(0, 0, 0),
-                        scale=(1, 1, 1),
-                        JBeam='sawhorse',
-                        datablock="default_vehicle"
-                        )
-    scenario.add_object(rb)
-
-    cn = ScenarioObject(oid='cones',
-                        name='cones',
-                        otype='BeamNGVehicle',
-                        pos=(0, -5, 0),
-                        rot=None,
-                        rot_quat=(0, 0, 0, 1),
-                        scale=(1, 1, 1),
-                        JBeam='cones',
-                        datablock="default_vehicle"
-                        )
-    scenario.add_object(cn)
-
-    scenario.make(beamng)
-
     with beamng as bng:
+        setup_logging()
+
+        scenario = Scenario('smallgrid', 'test_quat')
+
+        vehicle = Vehicle('ego_vehicle',
+                          model='etk800',
+                          color='Blue',
+                          licence="angle")
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+
+        vehicle = Vehicle('ego_vehicle2',
+                          model='etk800',
+                          color='Green',
+                          license="quat")
+        rot_quat = (-0.00333699025, -0.00218820246, -0.689169466, 0.724589229)
+        scenario.add_vehicle(vehicle, pos=(5, 0, 0), rot_quat=rot_quat)
+
+        rb = ScenarioObject(oid='roadblock',
+                            name='sawhorse',
+                            otype='BeamNGVehicle',
+                            pos=(-10, -5, 0),
+                            rot=(0, 0, 0),
+                            scale=(1, 1, 1),
+                            JBeam='sawhorse',
+                            datablock="default_vehicle"
+                            )
+        scenario.add_object(rb)
+
+        cn = ScenarioObject(oid='cones',
+                            name='cones',
+                            otype='BeamNGVehicle',
+                            pos=(0, -5, 0),
+                            rot=None,
+                            rot_quat=(0, 0, 0, 1),
+                            scale=(1, 1, 1),
+                            JBeam='cones',
+                            datablock="default_vehicle"
+                            )
+        scenario.add_object(cn)
+
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
 
