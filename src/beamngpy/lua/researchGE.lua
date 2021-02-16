@@ -658,7 +658,7 @@ sensors.Ultrasonic = function(req, sendSensorData)
   -- setCameraPosRot(sensorPos.x, sensorPos.y, sensorPos.z, sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
 end
 
-M.handleStartUSSensorVisualization = function(msg)
+M.handleStartUSSensorVisualization = function(skt, msg)
   local sensorOffset = msg['pos']
   sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
   local sensorRot = msg['rot']
@@ -676,7 +676,7 @@ M.handleStartUSSensorVisualization = function(msg)
   rcom.sendMessage(skt, response)
 end
 
-M.handleStopUSSensorVisualization = function(msg)
+M.handleStopUSSensorVisualization = function(skt, msg)
   table.remove(debugObjects.dynamicSpheres, msg['dynSphereID'])
 end
 
@@ -1421,17 +1421,17 @@ M.handleCreateScenario = function(skt, msg)
     rcom.sendBNGValueError(skt, 'Scenario needs a name.')
     return false
   end
-  
+
   if level == nil then
     rcom.sendBNGValueError(skt, 'Scenario needs an associated level.')
     return false
   end
-  
+
   if info == nil then
     rcom.sendBNGValueError(skt, 'Scenario needs an info file definition.')
     return false
   end
-  
+
   local path = '/levels/' .. level .. '/scenarios/'
 
   if prefab ~= nil then
@@ -1610,7 +1610,7 @@ local function serializeGenericObject(obj)
       end
     end
   end
-  
+
   return ret
 end
 
@@ -1684,7 +1684,7 @@ M.handleGetObject = function(skt, msg)
   end
 end
 
-M.handleGetPartConfig = function(msg)
+M.handleGetPartConfig = function(skt, msg)
   local vid = msg['vid']
   local veh = scenetree.findObject(vid)
   local cur = be:getPlayerVehicle(0):getID()
@@ -1696,7 +1696,7 @@ M.handleGetPartConfig = function(msg)
   rcom.sendMessage(skt, resp)
 end
 
-M.handleGetPartOptions = function(msg)
+M.handleGetPartOptions = function(skt, msg)
   local vid = msg['vid']
   local veh = scenetree.findObject(vid)
   local cur = be:getPlayerVehicle(0):getID()
@@ -1709,7 +1709,7 @@ M.handleGetPartOptions = function(msg)
   rcom.sendMessage(skt, resp)
 end
 
-M.handleSetPartConfig = function(msg)
+M.handleSetPartConfig = function(skt, msg)
   local vid = msg['vid']
   local veh = scenetree.findObject(vid)
   local cur = be:getPlayerVehicle(0):getID()
