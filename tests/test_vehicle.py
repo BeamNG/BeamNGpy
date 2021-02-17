@@ -1,10 +1,12 @@
 import itertools
-import numpy as np
-import pytest
+import random
 import time
 
 from beamngpy import BeamNGpy, Scenario, sensors, Vehicle, setup_logging
 from beamngpy.beamngcommon import BNGValueError
+
+import numpy as np
+import pytest
 
 
 @pytest.fixture()
@@ -15,6 +17,13 @@ def beamng():
 
 def test_get_available_vehicles(beamng):
     with beamng as bng:
+        scenario = Scenario('smallgrid', 'spawn_test')
+        vehicle = Vehicle('irrelevant', model='pickup')
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.make(beamng)
+
+        bng.load_scenario(scenario)
+        bng.start_scenario()
         resp = bng.get_available_vehicles()
         assert len(resp) > 0
 
@@ -23,18 +32,20 @@ def assert_continued_movement(bng, vehicle, start_pos):
     last_pos = start_pos
     for _ in range(5):
         bng.step(120, wait=True)
-        vehicle.update_vehicle()
-        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) > 0.5
-        last_pos = vehicle.state['pos']
+        vehicle.poll_sensors()
+        current_pos = np.array(vehicle.sensors['state'].data['pos'])
+        assert np.linalg.norm(current_pos - last_pos) > 0.5
+        last_pos = current_pos
 
 
 def assert_non_movement(bng, vehicle, start_pos):
     last_pos = start_pos
     for _ in range(5):
         bng.step(60, wait=True)
-        vehicle.update_vehicle()
-        assert np.linalg.norm(np.array(vehicle.state['pos']) - last_pos) < 0.5
-        last_pos = vehicle.state['pos']
+        vehicle.poll_sensors()
+        current_pos = np.array(vehicle.sensors['state'].data['pos'])
+        assert np.linalg.norm(current_pos - last_pos) < 0.5
+        last_pos = current_pos
 
 
 def test_vehicle_move(beamng):
@@ -51,10 +62,9 @@ def test_vehicle_move(beamng):
         bng.pause()
         vehicle.control(throttle=1)
         bng.step(120, wait=True)
-        vehicle.update_vehicle()
-        assert np.linalg.norm(vehicle.state['pos']) > 1
-
-    scenario.delete(beamng)
+        vehicle.poll_sensors()
+        assert np.linalg.norm(vehicle.sensors['state'].data['pos']) > 1
+        scenario.delete(beamng)
 
 
 def test_vehicle_ai(beamng):
@@ -74,6 +84,8 @@ def test_vehicle_ai(beamng):
 
         bng.start_scenario()
         bng.pause()
+
+        bng.switch_vehicle(vehicle)
 
         vehicle.ai_set_mode('span')
         assert_continued_movement(bng, vehicle, pos)
@@ -106,46 +118,46 @@ def test_vehicle_ai(beamng):
         ]
         vehicle.ai_set_script(script)
         bng.step(600, wait=True)
-        vehicle.update_vehicle()
+        vehicle.poll_sensors()
         ref = [script[1]['x'], script[1]['y'], script[1]['z']]
-        pos = vehicle.state['pos']
+        pos = vehicle.sensors['state'].data['pos']
         ref, pos = np.array(ref), np.array(pos)
         assert np.linalg.norm(ref - pos) < 2.5
-
-    scenario.delete(beamng)
+        scenario.delete(beamng)
 
 
 def test_vehicle_spawn(beamng):
-    scenario = Scenario('smallgrid', 'spawn_test')
-    vehicle = Vehicle('irrelevant', model='pickup')
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('smallgrid', 'spawn_test')
+        vehicle = Vehicle('irrelevant', model='pickup')
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
 
         other = Vehicle('relevant', model='etk800')
         scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
-        other.update_vehicle()
-        assert 'pos' in other.state
+        other.poll_sensors()
+        assert other.sensors['state'].connected
+        assert 'pos' in other.sensors['state'].data
         bng.step(120, wait=True)
         scenario.remove_vehicle(other)
         bng.step(600, wait=True)
-        assert other.state is None
+        assert not other.sensors['state'].connected
 
 
 def test_vehicle_bbox(beamng):
-    scenario = Scenario('west_coast_usa', 'bbox_test')
-    vehicle_a = Vehicle('vehicle_a', model='etk800')
-    vehicle_b = Vehicle('vehicle_b', model='etk800')
-    pos = [-717.121, 101, 118.675]
-    scenario.add_vehicle(vehicle_a, pos=pos, rot=(0, 0, 45))
-    pos = [-453, 700, 75]
-    scenario.add_vehicle(vehicle_b, pos=pos, rot=(0, 0, 45))
-    scenario.make(beamng)
-
     with beamng as bng:
+        scenario = Scenario('west_coast_usa', 'bbox_test')
+        vehicle_a = Vehicle('vehicle_a', model='etk800')
+        vehicle_b = Vehicle('vehicle_b', model='etk800')
+        pos = [-717.121, 101, 118.675]
+        scenario.add_vehicle(vehicle_a, pos=pos, rot=(0, 0, 45))
+        pos = [-453, 700, 75]
+        scenario.add_vehicle(vehicle_b, pos=pos, rot=(0, 0, 45))
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
         bng.pause()
@@ -176,33 +188,33 @@ def _check_lights(target, data, msg_fmt):
 
 
 def test_lights(beamng):
-    scenario = Scenario('smallgrid', 'bbox_test')
-    config = 'vehicles/etk800/police.pc'
-    vehicle = Vehicle('vehicle', model='etk800', partConfig=config)
-    other = Vehicle('other', model='pickup')
-    electrics = sensors.Electrics()
-    vehicle.attach_sensor('electrics', electrics)
-    electrics = sensors.Electrics()
-    other.attach_sensor('electrics', electrics)
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
-    scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
-    scenario.make(beamng)
-
-    binary = {'left_signal', 'right_signal', 'hazard_signal'}
-    ternary = {'headlights', 'fog_lights', 'lightbar'}
-
-    all_off = {}
-    possible = []
-    for light in binary:
-        all_off[light] = False
-        possible.append((light, False))
-        possible.append((light, True))
-    for light in ternary:
-        all_off[light] = 0
-        for i in range(3):
-            possible.append((light, i))
-
     with beamng as bng:
+        scenario = Scenario('smallgrid', 'bbox_test')
+        config = 'vehicles/etk800/police.pc'
+        vehicle = Vehicle('vehicle', model='etk800', partConfig=config)
+        other = Vehicle('other', model='pickup')
+        electrics = sensors.Electrics()
+        vehicle.attach_sensor('electrics', electrics)
+        electrics = sensors.Electrics()
+        other.attach_sensor('electrics', electrics)
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
+        scenario.make(beamng)
+
+        binary = {'left_signal', 'right_signal', 'hazard_signal'}
+        ternary = {'headlights', 'fog_lights', 'lightbar'}
+
+        all_off = {}
+        possible = []
+        for light in binary:
+            all_off[light] = False
+            possible.append((light, False))
+            possible.append((light, True))
+        for light in ternary:
+            all_off[light] = 0
+            for i in range(3):
+                possible.append((light, i))
+
         bng.load_scenario(scenario)
         bng.start_scenario()
         bng.pause()
@@ -277,3 +289,26 @@ def test_traffic(beamng):
         bng.step(300, wait=True)  # Give vehicle ~5seconds to start
 
         assert_continued_movement(bng, other, pos)
+
+
+def test_part_configs(beamng):
+    with beamng as bng:
+        scenario = Scenario('smallgrid', 'parts_test')
+        vehicle = Vehicle('ego', model='etk800')
+        scenario.add_vehicle(vehicle)
+        scenario.make(bng)
+
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+
+        options = vehicle.get_part_options()
+        assert len(options) > 0
+
+        config = {}
+        for k, v in options.items():
+            config[k] = random.choice(v)
+        vehicle.set_part_config({'parts': config})
+
+        current = vehicle.get_part_config()
+        for k, v in config.items():
+            assert v == current['parts'][k]

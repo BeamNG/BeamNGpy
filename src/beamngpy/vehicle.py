@@ -8,11 +8,14 @@
 
 """
 
-import base64
 import logging as log
+import socket
 import warnings
 
-from .beamngcommon import *
+from time import sleep
+
+from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
+from .beamngcommon import PROTOCOL_VERSION
 from .sensors import State
 
 SHIFT_MODES = {
@@ -31,7 +34,33 @@ class Vehicle:
     sensors the user can attach to the vehicle.
     """
 
-    def __init__(self, vid, model, **options):
+    @staticmethod
+    def from_dict(d):
+        if 'name' in d:
+            vid = d['name']
+            del d['name']
+        else:
+            vid = d['id']
+
+        model = None
+        if 'model' in d:
+            model = d['model']
+            del d['model']
+
+        port = None
+        if 'port' in d:
+            port = int(d['port'])
+            del d['port']
+
+        options = {}
+        if 'options' in d:
+            options = d['options']
+            del d['options']
+
+        vehicle = Vehicle(vid, model, port=port, **options)
+        return vehicle
+
+    def __init__(self, vid, model, port=None, **options):
         """
         Creates a vehicle with the given vehicle ID. The ID must be unique
         within the scenario.
@@ -41,11 +70,11 @@ class Vehicle:
             model (str): Model of the vehicle.
         """
         self.vid = vid.replace(' ', '_')
+        self.model = model
 
-        self.port = None
+        self.port = port
 
         self.bng = None
-        self.server = None
         self.skt = None
 
         self.sensors = dict()
@@ -64,7 +93,6 @@ class Vehicle:
         self._veh_state_sensor_id = "state"
         state = State()
         self.attach_sensor(self._veh_state_sensor_id, state)
-        
 
     def __hash__(self):
         return hash(self.vid)
@@ -76,6 +104,9 @@ class Vehicle:
 
     def __str__(self):
         return 'V:{}'.format(self.vid)
+
+    def is_connected(self):
+        return self.skt is not None
 
     @property
     def state(self):
@@ -123,7 +154,10 @@ class Vehicle:
         """
         return recv_msg(self.skt)
 
-    def connect(self, bng, server, port):
+    def _start_connection(self):
+        self.port = self.bng.start_vehicle_connection(self)
+
+    def _connect_existing(self, tries=25):
         """
         Establishes socket communication with the corresponding vehicle in the
         simulation and calls the connect-hooks on the vehicle's sensors.
@@ -131,17 +165,36 @@ class Vehicle:
         Args:
             bng (:class:`.BeamNGpy`): The running BeamNGpy instance to connect
                                       with.
-            server (:class:`socket`): The server socket opened for the vehicle.
         """
-        self.bng = bng
-        self.server = server
-        self.port = port
-        self.server.settimeout(60)
-        self.skt, _ = self.server.accept()
-        self.skt.settimeout(60)
+        flags = self.get_engine_flags()
+        self.bng.set_engine_flags(flags)
+
+        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.skt.settimeout(600)
+        while tries > 0:
+            try:
+                self.skt.connect((self.bng.host, self.port))
+                break
+            except ConnectionRefusedError as err:
+                msg = \
+                    'Error connecting to BeamNG.tech vehicle {}. {} tries ' \
+                    'left.'.format(self.vid, tries)
+                log.error(msg)
+                log.exception(err)
+                sleep(5)
+                tries -= 1
+
+        self.hello()
 
         for _, sensor in self.sensors.items():
-            sensor.connect(bng, self)
+            sensor.connect(self.bng, self)
+
+    def connect(self, bng):
+        self.bng = bng
+        if self.port is None:
+            self._start_connection()
+
+        self._connect_existing()
 
     def disconnect(self):
         """
@@ -154,10 +207,10 @@ class Vehicle:
         for _, sensor in self.sensors.items():
             sensor.disconnect(self.bng, self)
 
-        self.server.close()
-        self.skt.close()
+        if self.skt is not None:
+            self.skt.close()
+
         self.bng = None
-        self.server = None
         self.port = None
         self.skt = None
 
@@ -243,7 +296,7 @@ class Vehicle:
         returns them as one dictionary.
         """
         flags = dict()
-        for name, sensor in self.sensors.items():
+        for _, sensor in self.sensors.items():
             sensor_flags = sensor.get_engine_flags()
             flags.update(sensor_flags)
         return flags
@@ -252,7 +305,9 @@ class Vehicle:
         """
         Synchronises the :attr:`.Vehicle.state` field with the simulation.
         """
-        warnings.warn("update_vehicle is deprecated\nthe .Vehicle.state attribute is now a default sensor for every vehicle and is updated through poll_sensors", DeprecationWarning)
+        warnings.warn('Update_vehicle is deprecated\nthe .Vehicle.state '
+                      'attribute is now a default sensor for every vehicle and'
+                      ' is updated through poll_sensors', DeprecationWarning)
         return self.state
 
     def poll_sensors(self, requests=None):
@@ -264,14 +319,19 @@ class Vehicle:
 
         Raises:
             DeprecationWarning: If requests parameter is used.
-            DeprecationWarning: Always, since the return type will change in the future.
-        
+            DeprecationWarning: Always, since the return type will change in
+                                the future.
+
         Returns:
-            Dict with sensor data to support compatibility with previous versions.
+            Dict with sensor data to support compatibility with
+            previous versions.
         """
-        if requests!=None:
-            warnings.warn("do not use 'requests' as function argument\nit is not used and will be removed in future versions", DeprecationWarning)
-        warnings.warn("return type will be None in future versions", DeprecationWarning)
+        if requests != None:
+            warnings.warn('Do not use "requests" as function argument.\n'
+                          'It is not used and will be removed in future '
+                          'versions.', DeprecationWarning)
+        warnings.warn(
+            "return type will be None in future versions", DeprecationWarning)
 
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
@@ -296,6 +356,21 @@ class Vehicle:
 
         self.sensor_cache = result
         return compatibility_support
+
+    def hello(self):
+        data = dict(type='Hello')
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'Hello'
+        if resp['protocolVersion'] != PROTOCOL_VERSION:
+            msg = \
+                'Mismatching BeamNGpy protocol versions. ' \
+                'Please ensure both BeamNG.tech and BeamNGpy are ' \
+                'using the desired versions.\n' \
+                'BeamNGpy\'s is: {}' \
+                'BeamNG.tech\'s is: {}'.format(PROTOCOL_VERSION,
+                                               resp['version'])
+            raise BNGError(msg)
 
     @ack('ShiftModeSet')
     def set_shift_mode(self, mode):
@@ -500,7 +575,10 @@ class Vehicle:
                            minimum length of a script.
         """
         if start_dir != None or up_dir != None or teleport != None:
-            warnings.warn("The function arguments 'start_dir', 'up_dir', and 'teleport' are not used anymore and will be removed in future versions.", DeprecationWarning) 
+            warnings.warn('The function arguments "start_dir", "up_dir", '
+                          ' and "teleport" are not used anymore and will be '
+                          ' removed in future versions.', DeprecationWarning)
+
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
 
@@ -529,17 +607,13 @@ class Vehicle:
 
     def get_part_options(self):
         """
-        Retrieves a tree of part configuration options for this vehicle.
+        Retrieves a mapping of part slots in this vehicle and their possible
+        parts.
 
         Returns:
-            A tree of part configuration options for this vehicle expressed
-            as nested dictionaries.
+            A mapping of part configuration options for this vehicle.
         """
-        data = dict(type='GetPartOptions')
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'PartOptions'
-        return resp['options']
+        return self.bng.get_part_options(self)
 
     def get_part_config(self):
         """
@@ -551,16 +625,7 @@ class Vehicle:
         Returns:
             The current vehicle configuration as a dictionary.
         """
-        data = dict(type='GetPartConfig')
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'PartConfig'
-        resp = resp['config']
-        if not resp['parts']:
-            resp['parts'] = dict()
-        if not resp['vars']:
-            resp['vars'] = dict()
-        return resp
+        return self.bng.get_part_config(self)
 
     def set_part_config(self, cfg):
         """
@@ -575,15 +640,7 @@ class Vehicle:
             Changing parts causes the vehicle to respawn, which repairs it as
             a side-effect.
         """
-        data = dict(type='SetPartConfig')
-        data['config'] = cfg
-        data['vid'] = self.vid
-        self.send(data)
-        self.bng.await_vehicle_spawn(self.vid)
-        self.skt.close()
-        self.server.close()
-        self.skt = None
-        self.bng.connect_vehicle(self, self.port)
+        return self.bng.set_part_config(self, cfg)
 
     @ack('ColorSet')
     def set_color(self, rgba=(1., 1., 1., 1.)):
@@ -636,6 +693,67 @@ class Vehicle:
             raise BNGError('The vehicle needs to be loaded in the simulator '
                            'to obtain its current bounding box.')
         return self.bng.get_vehicle_bbox(self)
+
+    @ack('IMUPositionAdded')
+    def add_imu_position(self, name, pos, debug=False):
+        """
+        Adds an IMU to this vehicle at the given position identified by the
+        given name. The position is relative to the vehicle's coordinate
+        system, meaning (0, 0, 0) will always refer to the vehicle's origin
+        regardless of its position in the world. This is to make addition of
+        IMUs independent of the vehicle spawn position. To find an appropriate
+        position relative to the vehicle's origin, it's recommended to inspect
+        the vehicle's nodes in the vehicle editor ingame and retrieve the
+        original relative positions of nodes close to the desired measurement
+        point.
+
+        Args:
+            name (str): The name this IMU is identified by. This is mainly
+                        used to later remove an IMU.
+            pos (list): The measurement point relative to the vehicle's origin.
+            debug (bool): Optional flag which enables debug rendering of the
+                          IMU. Useful to verify placement.
+        """
+        data = dict(type='AddIMUPosition')
+        data['name'] = name
+        data['pos'] = pos
+        data['debug'] = debug
+        self.send(data)
+
+    @ack('IMUNodeAdded')
+    def add_imu_node(self, name, node, debug=False):
+        """
+        Adds an IMU to this vehicle at the given node identified by the given
+        name. The node is specified as a number and can be found by inspecting
+        the vehicle using the ingame vehicle editor.
+
+        Args:
+            name (str): The name this IMU is identified by. This is mainly
+                        used to later remove an IMU.
+            node (int): The node ID to perform measurements at.
+            debug (bool): Optional flag which enables debug rendering of the
+                          IMU. Useful to verify placement.
+        """
+        data = dict(type='AddIMUNode')
+        data['name'] = name
+        data['node'] = node
+        data['debug'] = debug
+        self.send(data)
+
+    @ack('IMURemoved')
+    def remove_imu(self, name):
+        """
+        Removes the IMU identified by the given name.
+
+        Args:
+            name (str): The name of the IMU to be removed.
+
+        Raises:
+            BNGValueError: If there is no IMU with the specified name.
+        """
+        data = dict(type='RemoveIMU')
+        data['name'] = name
+        self.send(data)
 
     @ack('LightsSet')
     def set_lights(self, **kwargs):
@@ -763,3 +881,65 @@ class Vehicle:
             sensor.detach(self, name)
 
         self.sensors = dict()
+
+    @ack('AppliedVSLSettings')
+    def set_in_game_logging_options_from_json(self, fileName):
+        """
+        Updates the in game logging with the settings specified
+        in the given file/json. The file is expected to be in
+        the following location:
+        <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[fileName]
+
+        Args:
+            fileName
+        """
+        data = dict(type='ApplyVSLSettingsFromJSON', fileName=fileName)
+        self.send(data)
+
+    @ack('WroteVSLSettingsToJSON')
+    def write_in_game_logging_options_to_json(self, fileName='template.json'):
+        """
+        Writes all available options from the in-game-logger to a json file.
+        The purpose of this functionality is to facilitate the acquisition of
+        a valid template to adjust the options/settings of the in game logging
+        as needed.
+        Depending on the executable used the file can be found at the following
+        location:
+        <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[fileName]
+
+        Args:
+            fileName(str): not the absolute file path but
+                           the name of the json
+        """
+        data = dict(type='WriteVSLSettingsToJSON', fileName=fileName)
+        self.send(data)
+
+    @ack('StartedVSLLogging')
+    def start_in_game_logging(self, outputDir):
+        """
+        Starts in game logging. Beware that any data
+        from previous logging sessions is overwritten
+        in the process.
+
+        Args:
+            outputDir(str): to avoid overwriting logging from other vehicles,
+                            specify the output directory, overwrites the
+                            outputDir set through the json. The data can be
+                            found in:
+                            <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[outpuDir]
+
+        """
+        data = dict(type='StartVSLLogging', outputDir=outputDir)
+        self.send(data)
+        userpath = self.bng.determine_userpath()
+        log_msg = f'Started in game logging. The log files can be found in {userpath}\\{outputDir}.'
+        log.info(log_msg)
+
+    @ack('StoppedVSLLogging')
+    def stop_in_game_logging(self):
+        """
+        Stops in game logging.
+        """
+        data = dict(type='StopVSLLogging')
+        self.send(data)
+        log.info('Stopped in game logging.')

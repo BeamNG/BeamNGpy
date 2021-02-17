@@ -16,25 +16,33 @@ import logging as log
 import mmap
 import os
 import sys
+
 from abc import ABC, abstractmethod
+from xml.dom import minidom
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
+
+from .beamngcommon import BNGValueError
 
 NEAR = 0.01
 FAR = 1000
 
 LIDAR_POINTS = 2000000
 
+
 class AbstractSensor(ABC):
     """
-    Abstract Sensor class declaring properties common to the ordinary and noise sensors.
+    Abstract Sensor class declaring properties common to the ordinary and noise
+    sensors.
     """
-    
+
     @property
     @abstractmethod
     def data(self):
-        pass   
+        pass
 
     @data.setter
     @abstractmethod
@@ -45,13 +53,15 @@ class AbstractSensor(ABC):
     @abstractmethod
     def data(self):
         pass
-    
+
+
 class Sensor(AbstractSensor):
     """
     Sensor meta-class declaring methods common to them.
     """
+
     def __init__(self):
-        self._data = dict()     
+        self._data = dict()
 
     @property
     def data(self):
@@ -63,7 +73,7 @@ class Sensor(AbstractSensor):
     @data.setter
     def data(self, data):
         self._data = data
-    
+
     @data.deleter
     def data(self):
         self._data = None
@@ -162,7 +172,7 @@ class Sensor(AbstractSensor):
         Called when the attached vehicle is being removed from simulation. This
         method is used to perform teardown code after the simulation.
         """
-        del self.data
+        pass
 
     def get_engine_flags(self):
         """
@@ -185,14 +195,235 @@ class Camera(Sensor):
     * Colour images
     * Pixel-wise depth
     * Pixel-wise object annotation
+    * Pixel-wise instance annotation to separate overlapping objects of the
+      same type
 
     A single camera sensor can be configured to provide any or all of these
     data at once, ensuring they all align to the same perspective.
     """
 
+    @staticmethod
+    def extract_bboxes(semantic, instance, classes):
+        """
+        Analyzes the given semantic annotation and instance annotation images
+        for its object bounding boxes. The identified objects are returned as
+        a list of dictionaries containing their bounding box corners, class
+        of object according to the corresponding color in the semantic
+        annotations and the provided class mapping, and the color of the
+        object in the instance annotation.
+
+        Args:
+            semantic (:class:`.Image`): The image containing semantic
+                                        annotation information
+            instance (:class:`.Image`): The image containing instance
+                                        annotation information
+            classes (dict): A mapping of colors to their class names to
+                            identify object types based on the semantic
+                            annotation information. The keys in this dictionary
+                            are the respective colors expressed as a 24bit
+                            integer, i.e. r * 256^2 + g * 256 + b.
+
+        Returns:
+            A list of bounding boxes specified as dictionaries. One example
+            bounding box dictionary contains:
+
+            ```
+            {
+                'bbox': [minx, miny, maxx, maxy],
+                'color': [233, 11, 15],
+                'class': ['CAR'],
+            }
+            ```
+
+            Where minx, miny, maxx, maxy specify the corners of the bounding
+            box, color contains the RGB color of the object in the instance
+            annotations, and class the object type identified through the
+            given class mapping.
+        """
+        semantic = np.array(semantic)
+        instance = np.array(instance)
+
+        if semantic.shape != instance.shape:
+            raise BNGValueError('Provided semantic and instance annotation '
+                                'images have different sizes.')
+
+        bboxes = {}
+
+        for y in range(semantic.shape[0]):
+            for x in range(semantic.shape[1]):
+                color = instance[y, x]
+                color_key = color[0] * 256 * 256 + color[1] * 256 + color[2]
+                if color_key == 0:
+                    continue
+
+                clazz = semantic[y, x]
+                clazz_key = clazz[0] * 256 * 256 + clazz[1] * 256 + clazz[2]
+
+                if classes[clazz_key] == 'BACKGROUND':
+                    continue
+
+                if color_key in bboxes:
+                    entry = bboxes[color_key]
+                    bbox = entry['bbox']
+                    bbox[0] = min(bbox[0], x)
+                    bbox[1] = min(bbox[1], y)
+                    bbox[2] = max(bbox[2], x)
+                    bbox[3] = max(bbox[3], y)
+                else:
+                    entry = {
+                        'bbox': [x, y, x, y],
+                        'class': classes[clazz_key],
+                        'color': [*color],
+                    }
+                    bboxes[color_key] = entry
+
+        ret = []
+        for _, v in bboxes.items():
+            ret.append(v)
+        return ret
+
+    @staticmethod
+    def export_bbox_xml(bboxes, folder=None, filename=None, path=None,
+                        database=None, size=None):
+        """
+        Exports the given list of bounding boxes to the Pascal-VOC XML
+        standard. The bounding box list is expected to be in the format that
+        `extract_bboxes` returns. Additional properties to this function
+        correspond to tags in the Pascal-VOC standard.
+
+        Args:
+            bboxes (list): The list of bounding boxes the export. Consult the
+                           documentation of `extract_bboxes` for information
+                           on its expected structure.
+            folder (str): Contents of the `<folder>` tag. Optional.
+            filename (str): Contents of the `<filename>` tag. Optional.
+            path (str): Contents of the `<path>` tag. Optional.
+            database (str): Contents of the `<database>` tag. Optional.
+            size (tuple): Contents of the `<size>` tag. It's expected to be a
+                          tuple of the image width, height, and depth. Optional.
+
+        Returns:
+            XML string encoding the given list of bounding boxes according to
+            Pascal-VOC.
+        """
+        root = Element('annotation')
+
+        if folder:
+            folder_elem = SubElement(root, 'folder')
+            folder_elem.text = folder
+
+        if filename:
+            file_elem = SubElement(root, 'filename')
+            file_elem.text = filename
+
+        if path:
+            path_elem = SubElement(root, 'path')
+            path_elem.text = path
+
+        if database:
+            source = SubElement(root, 'source')
+            database_elem = SubElement(source, 'database')
+            database_elem.text = database
+
+        if size:
+            size_elem = SubElement(root, 'size')
+
+            width = SubElement(size_elem, 'width')
+            width.text = str(size[0])
+
+            height = SubElement(size_elem, 'height')
+            height.text = str(size[1])
+
+            depth = SubElement(size_elem, 'depth')
+            depth.text = str(size[2])
+
+        segmented = SubElement(root, 'segmented')
+        segmented.text = '0'
+
+        for idx, bbox in enumerate(bboxes):
+            object_elem = SubElement(root, 'object')
+            name = SubElement(object_elem, 'name')
+            name.text = '{}_{}'.format(bbox['class'], idx)
+
+            pose = SubElement(object_elem, 'pose')
+            pose.text = 'Unspecified'
+
+            truncated = SubElement(object_elem, 'truncated')
+            truncated.text = '0'
+
+            difficult = SubElement(object_elem, 'difficult')
+            difficult.text = '0'
+
+            bndbox = SubElement(object_elem, 'bndbox')
+
+            xmin = SubElement(bndbox, 'xmin')
+            xmin.text = str(bbox['bbox'][0])
+
+            ymin = SubElement(bndbox, 'ymin')
+            ymin.text = str(bbox['bbox'][1])
+
+            xmax = SubElement(bndbox, 'xmax')
+            xmax.text = str(bbox['bbox'][2])
+
+            ymax = SubElement(bndbox, 'ymax')
+            ymax.text = str(bbox['bbox'][3])
+
+        ret = ElementTree.tostring(root, 'utf-8')
+        ret = minidom.parseString(ret)
+        return ret.toprettyxml(indent='  ')
+
+    @staticmethod
+    def draw_bboxes(bboxes, color, width=3, font='arial.ttf', fontsize=14):
+        """
+        Draws the given list of bounding boxes onto the given image. The boxes
+        are drawn with the given width of outlines in pixels and the given font
+        and size configuration. The given image is not directly modified and
+        the boxes are drawn onto a copy. The bboxes are expected to be in the
+        format returned by `extract_bboxes`.
+
+        Args:
+            bboxes (list): List of bounding boxes to draw. Consult the
+                           documentation of `extract_bboxes` for information
+                           on the structure of this list.
+            color (:class:`.Image`): The image to draw bounding boxes on. Will
+                                     be copied and not modified in place.
+            width (int): The width of bounding box outlines in pixels.
+            font (str): A string specifying the font bounding box labels are
+                        supposed to have.
+            fontsize (int): The font size to draw labels with.
+
+        Returns:
+            A `:class:`.Image` that is a copy of the given image with bounding
+            boxes drawn onto it.
+        """
+
+        color = color.copy()
+        draw = ImageDraw.Draw(color)
+
+        font = ImageFont.truetype(font=font, size=fontsize)
+
+        for idx, bbox in enumerate(bboxes):
+            bbox_color = bbox['color']
+            bbox_color = (bbox_color[0], bbox_color[1], bbox_color[2])
+            bbox_corners = bbox['bbox']
+            draw.rectangle(bbox_corners, outline=bbox_color, width=width)
+
+            text = '{}_{}'.format(bbox['class'], idx)
+            text_pos = (bbox_corners[0], bbox_corners[3])
+            text_anchor = 'lt'
+
+            if text_pos[1] > color.size[1] * 0.9:
+                text_pos = (bbox_corners[0], bbox_corners[1])
+                text_anchor = 'lb'
+
+            draw.text(text_pos, text, fill='#FFFFFF', stroke_width=2,
+                      stroke_fill='#000000', font=font, anchor=text_anchor)
+
+        return color
+
     def __init__(self, pos, direction, fov, resolution, near_far=(NEAR, FAR),
                  colour=False, depth=False, depth_distance=(NEAR, FAR),
-                 depth_inverse=False, annotation=False):
+                 depth_inverse=False, annotation=False, instance=False):
         """
         The camera sensor is set up with a fixed offset position and
         directional vector to face relative to the vehicle. This means as the
@@ -205,7 +436,6 @@ class Camera(Sensor):
 
         Which sensor data to provide can be indicated using boolean flags for
         the corresponding type.
-
 
         Args:
             pos (tuple): (x,y,z) tuple of the camera's position offset relative
@@ -235,6 +465,7 @@ class Camera(Sensor):
                                   typical behaviour of real-life stereo
                                   cameras that output depth images.
             annotation (bool): Whether to output annotation information.
+            instance (bool): Whether to output instance annotation information.
         """
         super().__init__()
         self.pos = pos
@@ -248,6 +479,7 @@ class Camera(Sensor):
         self.depth_distance = depth_distance
         self.depth_inverse = depth_inverse
         self.annotation = annotation
+        self.instance = instance
 
         self.colour_handle = None
         self.colour_shmem = None
@@ -261,7 +493,6 @@ class Camera(Sensor):
         This method is called when the camera is attached and allocates
         shared memory space to house the sensor data the camera is supposed
         to provide.
-
 
         Args:
             vehicle (:class:`.Vehicle`): The vehicle the camera is being
@@ -286,8 +517,11 @@ class Camera(Sensor):
         # if self.annotation:
         self.annotation_handle = '{}.{}.{}.annotate'.format(pid, prefix, name)
         self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
-        log.debug('Bound memory for annotation: %s',
-                  self.annotation_handle)
+        log.debug('Bound memory for annotation: %s', self.annotation_handle)
+
+        self.instance_handle = '{}.{}.{}.instance'.format(pid, prefix, name)
+        self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
+        log.debug('Bound memory for instance: %s', self.instance_handle)
 
     def detach(self, vehicle, name):
         """
@@ -312,6 +546,11 @@ class Camera(Sensor):
                       self.annotation_handle)
             self.annotation_shmem.close()
 
+        if self.instance_shmem:
+            log.debug('Unbinding memory for instance: %s',
+                      self.instance_handle)
+            self.instance_shmem.close()
+
     def connect(self, bng, vehicle):
         """
         This method is called when the vehicle is set up in the simulation.
@@ -333,6 +572,9 @@ class Camera(Sensor):
         if self.annotation_shmem:
             bng.open_shmem(self.annotation_handle, size)
 
+        if self.instance_shmem:
+            bng.open_shmem(self.instance_handle, size)
+
     def disconnect(self, bng, vehicle):
         """
         This method is called when the vehicle is disconnected from the
@@ -351,6 +593,9 @@ class Camera(Sensor):
 
         if self.annotation_shmem:
             bng.close_shmem(self.annotation_handle)
+
+        if self.instance_shmem:
+            bng.close_shmem(self.instance_handle)
 
     def encode_engine_request(self):
         """
@@ -372,6 +617,9 @@ class Camera(Sensor):
 
         if self.annotation_shmem:
             req['annotation'] = self.annotation_handle
+
+        if self.instance_shmem:
+            req['instance'] = self.instance_handle
 
         req['pos'] = [float(f) for f in self.pos]
         req['direction'] = [float(f) for f in self.direction]
@@ -447,6 +695,17 @@ class Camera(Sensor):
                 decoded['depth'] = Image.fromarray(depth_d)
             else:
                 print('Depth buffer failed to render. Check that you '
+                      'aren\'t running on low settings.', file=sys.stderr)
+
+        if self.instance_shmem:
+            if 'instance' in resp.keys():
+                self.instance_shmem.seek(0)
+                instance_d = self.instance_shmem.read(size)
+                instance_d = np.frombuffer(instance_d, dtype=np.uint8)
+                instance_d = instance_d.reshape(img_h, img_w, 4)
+                decoded['instance'] = Image.fromarray(instance_d)
+            else:
+                print('Instance buffer failed to render. Check that you '
                       'aren\'t running on low settings.', file=sys.stderr)
 
         return decoded
@@ -579,6 +838,7 @@ class GForces(Sensor):
 
     # TODO: GForce sensor for specific points on/in the vehicle
     """
+
     def __init__(self):
         super().__init__()
 
@@ -694,6 +954,7 @@ class Electrics(Sensor):
         'twoStep': 'two_step',
         'watertemp': 'water_temperature',
     }
+
     def __init__(self):
         super().__init__()
 
@@ -739,6 +1000,7 @@ class Damage(Sensor):
     deformed the vehicle is. It's therefore more of a ground truth than
     simulated sensor data.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -758,6 +1020,7 @@ class Timer(Sensor):
     When polled, this sensor provides the time in seconds since the start of
     the scenario in a dictionary under the 'time' key.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -765,14 +1028,133 @@ class Timer(Sensor):
         req = dict(type='Timer')
         return req
 
+
 class State(Sensor):
     """
-    The state sensor monitors general stats of the vehicle, such as position, direction, velocity, etc.
-    It is a default sensor every vehicle has and is used to update the vehicle.state attribute.
+    The state sensor monitors general stats of the vehicle, such as position,
+    direction, velocity, etc. It is a default sensor every vehicle has and is
+    used to update the vehicle.state attribute.
     """
+
     def __init__(self):
         super().__init__()
+        self.connected = False
+
+    def connect(self, bng, vehicle):
+        self.connected = True
+
+    def disconnect(self, bng, vehicle):
+        self.connected = False
 
     def encode_vehicle_request(self):
-        req  = dict(type='State')
+        req = dict(type='State')
         return req
+
+    def decode_response(self, resp):
+        if 'state' in resp:
+            return resp['state']
+
+        return None
+
+
+class IMU(Sensor):
+    """
+    An IMU measures forces and rotational acceleration at a certain point on a
+    vehicle. This can be used to analyze forces acting on certain areas of the
+    car (like the driver's position) or estimate the trajectory of a vehicle
+    from its rotation and acceleration.
+    """
+
+    def __init__(self, pos=None, node=None, name=None, debug=False):
+        super().__init__()
+
+        if pos is not None and node is not None:
+            raise BNGValueError('Cannot specify both position and node for '
+                                'an IMU')
+
+        self._pos = pos
+        self._node = node
+
+        self._name = name
+        if self._name is None:
+            self._name = str(hash(self))
+
+        self._debug = debug
+
+    def connect(self, bng, vehicle):
+        if self._pos is not None:
+            vehicle.add_imu_position(self._name, self._pos, self._debug)
+
+        if self._node is not None:
+            vehicle.add_imu_node(self._name, self._node, self._debug)
+
+    def disconnect(self, bng, vehicle):
+        vehicle.remove_imu(self._name)
+
+    def encode_vehicle_request(self):
+        req = dict(type='IMU')
+        req['name'] = self._name
+        return req
+
+
+class Ultrasonic(Sensor):
+    """
+    An ultrasonic sensor (aka parking sensor) that can be placed at
+    any point outside the vehicle.
+    This is not an ideal sensor but one whose output is simulated based on
+    depth information in images.
+    """
+    def __init__(self,
+                 pos,
+                 rot,
+                 fov=(70, 35),
+                 min_resolution=256,
+                 near_far=(0.15, 5.5)):
+        self.pos = pos
+        self.rot = rot
+        self.fov = fov[0]
+        res_height = int(min_resolution/fov[0]*fov[1])
+        self.resolution = (min_resolution, res_height)
+        self.near_far = near_far
+        self.vis_spec = None
+
+    def encode_engine_request(self):
+        req = dict(type='Ultrasonic')
+        req['pos'] = self.pos
+        req['rot'] = self.rot
+        req['fov'] = self.fov
+        req['resolution'] = self.resolution
+        req['near_far'] = self.near_far
+        return req
+
+    def startVisualization(self, bng, vehicle_id, color, radius=.1):
+        """
+        Called, after opening BeamNG, this will start the visualization
+        of a sphere at the sensor position. This functionality is intended
+        for sensors attached to vehicles and not for world sensors.
+
+        Args:
+            bng(:class:`.BeamNGpy`): instance of BeamNGpy
+            vehicle_id(string): ID of the vehicle the sensor belongs to
+            color(tuple): four floats (RGBA) defining the color of the sphere
+            radius(float): radius of the sphere
+        """
+        req = dict(type='StartUSSensorVisualization')
+        req['vehicle'] = vehicle_id
+        req['pos'] = self.pos
+        req['rot'] = self.rot
+        req['color'] = color
+        req['radius'] = radius
+        req['lineLength'] = self.near_far[1]
+        bng.send(req)
+        resp = bng.recv()
+        self.vis_spec = resp['sphereID']
+
+    def stopVisualization(self, bng):
+        """
+        Stops the sensor visualization.
+        """
+        if self.vis_spec is not None:
+            data = dict(type='StopUSSensorVisualization')
+            data['dynSphereID'] = self.vis_spec
+            bng.send(data)

@@ -1,76 +1,99 @@
+import pytest
+import socket
 from beamngpy import BeamNGpy, Vehicle, Scenario, ScenarioObject, setup_logging
 
 
-
-def main():
-    setup_logging()
-
-    
+@pytest.fixture()
+def beamng():
     beamng = BeamNGpy('localhost', 64256)
-
-    scenario = Scenario('smallgrid', 'test_quat')
-
-    vehicle = Vehicle('ego_vehicle', model='etk800', color='Blue', licence="angle")
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+    return beamng
 
 
-    vehicle = Vehicle('ego_vehicle2', model='etk800', color='Green', license="quat")
-    scenario.add_vehicle(vehicle, pos=(5, 0, 0), rot_quat=(-0.00333699025,-0.00218820246,-0.689169466,0.724589229))
+def test_quats(beamng):
+    with beamng as bng:
+        setup_logging()
 
-    rb = ScenarioObject(oid='roadblock', 
-                              name='sawhorse',
-                              otype='BeamNGVehicle',
-                              pos=(-10, -5, 0),
-                              rot=(0,0,0),
-                              scale=(1, 1, 1),
-                              JBeam = 'sawhorse',
-                              datablock="default_vehicle"
-                              )
-    scenario.add_object(rb)
+        scenario = Scenario('smallgrid', 'test_quat')
 
-    cn = ScenarioObject(oid='cones', 
-                              name='cones',
-                              otype='BeamNGVehicle',
-                              pos=(0, -5, 0),
-                              rot=None, 
-                              rot_quat=(0,0,0,1),
-                              scale=(1, 1, 1),
-                              JBeam = 'cones',
-                              datablock="default_vehicle"
-                              )
-    scenario.add_object(cn)
+        vehicle = Vehicle('ego_vehicle',
+                          model='etk800',
+                          color='Blue',
+                          licence="angle")
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
 
-    scenario.make(beamng)
+        vehicle = Vehicle('ego_vehicle2',
+                          model='etk800',
+                          color='Green',
+                          license="quat")
+        rot_quat = (-0.00333699025, -0.00218820246, -0.689169466, 0.724589229)
+        scenario.add_vehicle(vehicle, pos=(5, 0, 0), rot_quat=rot_quat)
 
-    bng = beamng.open(launch=True)
-    try:
+        rb = ScenarioObject(oid='roadblock',
+                            name='sawhorse',
+                            otype='BeamNGVehicle',
+                            pos=(-10, -5, 0),
+                            rot=(0, 0, 0),
+                            scale=(1, 1, 1),
+                            JBeam='sawhorse',
+                            datablock="default_vehicle"
+                            )
+        scenario.add_object(rb)
+
+        cn = ScenarioObject(oid='cones',
+                            name='cones',
+                            otype='BeamNGVehicle',
+                            pos=(0, -5, 0),
+                            rot=None,
+                            rot_quat=(0, 0, 0, 1),
+                            scale=(1, 1, 1),
+                            JBeam='cones',
+                            datablock="default_vehicle"
+                            )
+        scenario.add_object(cn)
+
+        scenario.make(beamng)
+
         bng.load_scenario(scenario)
         bng.start_scenario()
 
-        input('Press Enter to spawn vehicle during sim with rot and rotquat')
         vehicle = Vehicle('ego_vehicle3', model='etk800', color='White')
-        bng.spawn_vehicle(vehicle, (-10,0,0), (0,0,0))
+        bng.spawn_vehicle(vehicle, (-10, 0, 0), (0, 0, 0))
 
-        vehicle = Vehicle('ego_vehicle4', model='pickup') 
-        pos = (-15,0,0)
-        bng.spawn_vehicle(vehicle, pos, None, rot_quat=(0,0,0,1))
+        vehicle = Vehicle('ego_vehicle4', model='pickup')
+        pos = (-15, 0, 0)
+        bng.spawn_vehicle(vehicle, pos, None, rot_quat=(0, 0, 0, 1))
+        resp = bng.get_available_vehicles()
+        assert len(resp) == 2
 
-        input('press Enter to teleport last vehicle with angle')
-        bng.teleport_vehicle(vehicle, pos, rot=(0,45,0))
+        vehicle.poll_sensors()
+        pos_before = vehicle.state['pos']
+        bng.teleport_vehicle(vehicle, pos, rot=(0, 45, 0))
+        vehicle.poll_sensors()
+        pos_after = vehicle.state['pos']
+        assert(pos_before != pos_after)
 
-        input('press Enter to teleport last vehicle with quaternion')
-        bng.teleport_vehicle(vehicle, pos, rot_quat=(-0.00333699025,-0.00218820246,-0.689169466,0.724589229))
+        vehicle.poll_sensors()
+        pos_before = vehicle.state['pos']
+        rot_quat = (-0.00333699025, -0.00218820246, -0.689169466, 0.724589229)
+        bng.teleport_vehicle(vehicle, pos, rot_quat=rot_quat)
+        vehicle.poll_sensors()
+        pos_after = vehicle.state['pos']
+        assert(pos_before != pos_after)
 
-        input('press Enter to teleport roadblock with angle')
-        bng.teleport_scenario_object(rb, (-10, 5, 0), rot=(-45,0,0))
+        try:
+            bng.teleport_scenario_object(rb, (-10, 5, 0), rot=(-45, 0, 0))
+            assert True
+        except socket.timeout:
+            assert False
 
-        input('press Enter to teleport roadblock with quaternion')
-        bng.teleport_scenario_object(rb, (-10, 5, 0), rot_quat=(-0.003337, -0.0021882, -0.6891695, 0.7245892))
-
-        input('Press ENTER to exit')
-    finally:
-        bng.close()
+        try:
+            rot_quat = (-0.003337, -0.0021882, -0.6891695, 0.7245892)
+            bng.teleport_scenario_object(rb, (-10, 5, 0), rot_quat=rot_quat)
+            assert True
+        except socket.timeout:
+            assert False
 
 
 if __name__ == '__main__':
-    main()
+    bng = BeamNGpy('localhost', 64256)
+    test_quats(bng)

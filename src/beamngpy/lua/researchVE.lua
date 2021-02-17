@@ -10,10 +10,9 @@ local rcom = require('utils/researchCommunication')
 
 local sensorHandlers = {}
 
-local skt = nil
-local clients = {}
+local server = nil
+local clients = nil
 
-local host = nil
 local port = nil
 
 local conSleep = 60
@@ -23,62 +22,38 @@ local function log(level, message)
   _log(level, logTag, message)
 end
 
-local function checkMessage()
-  local message, err = rcom.readMessage(clients)
-  if err ~= nil then
-    skt = nil
-    clients = {}
-    conSleep = 60
-    return
+M.startConnection = function()
+  if server == nil then
+    server = rcom.openServer(0)
+    local ip = nil
+    ip, port = server:getsockname()
+    local set = rcom.newSet()
+    set:insert(server)
+    server = set
+    clients = rcom.newSet()
   end
-
-  if message ~= nil then
-    local msgType = message['type']
-    if msgType ~= nil then
-      msgType = 'handle' .. msgType
-      local handler = M[msgType]
-      if handler ~= nil then
-        handler(message)
-      else
-        extensions.hook('onSocketMessage', skt, message)
-      end
-    end
-  end
-end
-
-local function connect()
-  log('I', 'Trying to connect to: ' .. host .. ':' .. tostring(port))
-  skt = socket.connect(host, port)
-  if skt ~= nil then
-    log('I', 'Connected!')
-    table.insert(clients, skt)
-  else
-    log('I', 'Could not connect...')
-  end
-end
-
-M.startConnecting = function(targetHost, targetPort)
-  host = targetHost
-  port = targetPort
+  local cmd = 'extensions.hook("onVehicleConnectionReady", ' .. tostring(obj:getID()) .. ', ' .. tostring(port) .. ')'
+  obj:queueGameEngineLua(cmd)
 end
 
 M.onDebugDraw = function()
-  if port ~= nil then
-    if skt == nil then
-      if conSleep <= 0 then
-        conSleep = 60
-        connect()
-      else
-        conSleep = conSleep - 1
+  if server ~= nil then
+    if conSleep <= 0 then
+      conSleep = 60
+      local newClients = rcom.checkForClients(server)
+      for i = 1, #newClients do
+        clients:insert(newClients[i])
+        local ip, clientPort = newClients[i]:getsockname()
+        log('I', 'Accepted new vehicle client: ' .. tostring(ip) .. '/' .. tostring(clientPort))
       end
+    else
+      conSleep = conSleep - 1
     end
-  end
-
-  if skt == nil then
+  else
     return
   end
 
-  checkMessage()
+  while rcom.checkMessages(M, clients) do end
 end
 
 local function getVehicleState()
@@ -122,7 +97,21 @@ local function getVehicleState()
   return vehicleState
 end
 
+M.requestVehicleInfo = function()
+  local info = {}
+  info['port'] = port
+  -- TODO: Add more info down the line, port's enough for now
+
+  local cmd = 'extensions.hook("onVehicleInfoReady", ' .. tostring(obj:getID()) .. ', ' .. serialize(info) .. ')'
+  obj:queueGameEngineLua(cmd)
+end
+
 -- Handlers
+
+M.handleHello = function(skt, msg)
+  local resp = {type = 'Hello', protocolVersion = rcom.protocolVersion}
+  rcom.sendMessage(skt, resp)
+end
 
 local function submitInput(inputs, key)
   local val = inputs[key]
@@ -131,7 +120,7 @@ local function submitInput(inputs, key)
   end
 end
 
-M.handleControl = function(msg)
+M.handleControl = function(skt, msg)
   submitInput(msg, 'throttle')
   submitInput(msg, 'steering')
   submitInput(msg, 'brake')
@@ -146,7 +135,7 @@ M.handleControl = function(msg)
   rcom.sendACK(skt, 'Controlled')
 end
 
-M.handleSetShiftMode = function(msg)
+M.handleSetShiftMode = function(skt, msg)
   drivetrain.setShifterMode(msg['mode'])
   rcom.sendACK(skt, 'ShiftModeSet')
 end
@@ -188,6 +177,20 @@ sensorHandlers.State = function(msg)
   return resp
 end
 
+sensorHandlers.IMU = function(msg)
+  local name = msg['name']
+  local imu = imu.getIMU(name)
+  return {
+    name = imu.name,
+    aX = imu.aX,
+    aY = imu.aY,
+    aZ = imu.aZ,
+    gX = imu.gX,
+    gY = imu.gY,
+    gZ = imu.gZ
+  }
+end
+
 local function getSensorData(request)
   local response, sensor_type, handler
 
@@ -201,26 +204,7 @@ local function getSensorData(request)
   return nil
 end
 
-M.handleGetPartConfig = function(msg)
-  local cfg = partmgmt.getConfig()
-  local resp = {type = 'PartConfig', config = cfg}
-  rcom.sendMessage(skt, resp)
-end
-
-M.handleGetPartOptions = function(msg)
-  local options = v.data.slotMap
-  local resp = {type = 'PartOptions', options = options}
-  rcom.sendMessage(skt, resp)
-end
-
-M.handleSetPartConfig = function(msg)
-  local cfg = msg['config']
-  skt = nil
-  log('I', 'Setting part config.')
-  partmgmt.setConfig(cfg)
-end
-
-M.handleSensorRequest = function(msg)
+M.handleSensorRequest = function(skt, msg)
   local request, sensorData, data
   sensorData = {}
   request = msg['sensors']
@@ -236,20 +220,20 @@ M.handleSensorRequest = function(msg)
   rcom.sendMessage(skt, response)
 end
 
-M.handleSetColor = function(msg)
+M.handleSetColor = function(skt, msg)
   local cmd = 'Point4F(' .. msg['r'] .. ', ' .. msg['g'] .. ', ' .. msg['b'] .. ', ' .. msg['a'] .. ')'
   cmd = 'be:getObjectByID(' .. obj:getID() .. '):setColor(' .. cmd .. ')'
   obj:queueGameEngineLua(cmd)
   rcom.sendACK(skt, 'ColorSet')
 end
 
-M.handleSetAiMode = function(msg)
+M.handleSetAiMode = function(skt, msg)
   ai.setMode(msg['mode'])
   ai.stateChanged()
   rcom.sendACK(skt, 'AiModeSet')
 end
 
-M.handleSetAiLine = function(msg)
+M.handleSetAiLine = function(skt, msg)
   local nodes = msg['line']
   local fauxPath = {}
   local cling = msg['cling']
@@ -282,7 +266,7 @@ M.handleSetAiLine = function(msg)
   rcom.sendACK(skt, 'AiLineSet')
 end
 
-M.handleSetAiScript = function(msg)
+M.handleSetAiScript = function(skt, msg)
   local script = msg['script']
   local cling = msg['cling']
 
@@ -300,27 +284,27 @@ M.handleSetAiScript = function(msg)
   rcom.sendACK(skt, 'AiScriptSet')
 end
 
-M.handleSetAiSpeed = function(msg)
+M.handleSetAiSpeed = function(skt, msg)
   ai.setSpeedMode(msg['mode'])
   ai.setSpeed(msg['speed'])
   ai.stateChanged()
   rcom.sendACK(skt, 'AiSpeedSet')
 end
 
-M.handleSetAiTarget = function(msg)
+M.handleSetAiTarget = function(skt, msg)
   local targetName = msg['target']
   obj:queueGameEngineLua('scenetree.findObjectById(' .. obj:getID() .. '):queueLuaCommand("ai.setTargetObjectID(" .. scenetree.findObject(\'' .. targetName .. '\'):getID() .. ")")')
   rcom.sendACK(skt, 'AiTargetSet')
 end
 
-M.handleSetAiWaypoint = function(msg)
+M.handleSetAiWaypoint = function(skt, msg)
   local targetName = msg['target']
   ai.setTarget(targetName)
   ai.stateChanged()
   rcom.sendACK(skt, 'AiWaypointSet')
 end
 
-M.handleSetAiSpan = function(msg)
+M.handleSetAiSpan = function(skt, msg)
   if msg['span'] then
     ai.spanMap(0)
   else
@@ -330,20 +314,20 @@ M.handleSetAiSpan = function(msg)
   rcom.sendACK(skt, 'AiSpanSet')
 end
 
-M.handleSetAiAggression = function(msg)
+M.handleSetAiAggression = function(skt, msg)
   local aggr = msg['aggression']
   ai.setAggression(aggr)
   ai.stateChanged()
   rcom.sendACK(skt, 'AiAggressionSet')
 end
 
-M.handleSetDriveInLane = function(msg)
+M.handleSetDriveInLane = function(skt, msg)
   ai.driveInLane(msg['lane'])
   ai.stateChanged()
   rcom.sendACK(skt, 'AiDriveInLaneSet')
 end
 
-M.handleSetLights = function(msg)
+M.handleSetLights = function(skt, msg)
   local leftSignal = msg['leftSignal']
   local rightSignal = msg['rightSignal']
   local hazardSignal = msg['hazardSignal']
@@ -408,7 +392,7 @@ M.handleSetLights = function(msg)
   rcom.sendACK(skt, 'LightsSet')
 end
 
-M.handleQueueLuaCommandVE = function(msg)
+M.handleQueueLuaCommandVE = function(skt, msg)
   local func, loading_err = load(msg.chunk)
   if func then 
     local status, err = pcall(func)
@@ -419,6 +403,63 @@ M.handleQueueLuaCommandVE = function(msg)
     log('E', 'compilation error in: "' .. msg.chunk .. '"')
   end
   rcom.sendACK(skt, 'ExecutedLuaChunkVE')
+end
+
+M.handleAddIMUPosition = function(skt, msg)
+  local name = msg['name']
+  local pos = msg['pos']
+  pos = vec3(pos[1], pos[2], pos[3])
+  local debug = msg['debug']
+
+  if imu == nil then
+    extensions.load('imu')
+  end
+
+  imu.addIMU(name, pos, debug)
+  rcom.sendACK(skt, 'IMUPositionAdded')
+end
+
+M.handleAddIMUNode = function(skt, msg)
+  local name = msg['name']
+  local node = msg['node']
+  local debug = msg['debug']
+
+  if imu == nil then
+    extensions.load('imu')
+  end
+
+  imu.addIMUAtNode(name, node, debug)
+  rcom.sendACK(skt, 'IMUNodeAdded')
+end
+
+M.handleRemoveIMU = function(skt, msg)
+  local imu = imu.removeIMU(msg['name'])
+  if imu ~= nil then
+    rcom.sendACK(skt, 'IMURemoved')
+  else
+    rcom.sendBNGValueError('Unknown IMU: ' .. tostring(msg['name']))
+  end
+end
+
+M.handleApplyVSLSettingsFromJSON = function(skt, msg)
+  extensions.vehicleStatsLogger.applySettingsFromJSON(msg['fileName'])
+  rcom.sendACK(skt, 'AppliedVSLSettings')
+end
+
+M.handleWriteVSLSettingsToJSON = function(skt, msg)
+  extensions.vehicleStatsLogger.writeSettingsToJSON(msg['fileName'])
+  rcom.sendACK(skt, 'WroteVSLSettingsToJSON')
+end
+
+M.handleStartVSLLogging = function(skt, msg)
+  extensions.vehicleStatsLogger.settings.outputDir = msg['outputDir']
+  extensions.vehicleStatsLogger.startLogging()
+  rcom.sendACK(skt, 'StartedVSLLogging')
+end
+
+M.handleStopVSLLogging = function(skt, msg)
+  extensions.vehicleStatsLogger.stopLogging()
+  rcom.sendACK(skt, 'StoppedVSLLogging')
 end
 
 return M

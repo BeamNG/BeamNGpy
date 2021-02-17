@@ -1,20 +1,9 @@
-import sys
-from setuptools import setup
+import setuptools
+import os
 
+def read(fil):
+    fil = os.path.join(os.path.dirname(__file__), fil)
+    with open(fil, encoding='utf-8') as f:
+        return f.read()
 
-def setup_package():
-    entry_points = {
-        'console_scripts': [
-            'beamngpy = beamngpy.main:cli'
-        ]
-    }
-
-    needs_sphinx = {'build_sphinx', 'upload_docs'}.intersection(sys.argv)
-    sphinx = ['sphinx'] if needs_sphinx else []
-    setup(setup_requires=['pyscaffold'] + sphinx,
-          entry_points=entry_points, include_package_data=True,
-          use_pyscaffold=True)
-
-
-if __name__ == "__main__":
-    setup_package()
+setuptools.setup(version=read('src/beamngpy/version.txt'))

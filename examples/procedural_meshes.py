@@ -15,6 +15,7 @@ from beamngpy import ProceduralCylinder, ProceduralCone, ProceduralCube, Procedu
 
 def main():
     beamng = BeamNGpy('localhost', 64256)
+    bng = beamng.open(launch=True)
 
     scenario = Scenario('smallgrid', 'mesh_test')
 
@@ -28,8 +29,8 @@ def main():
 
     bump = ProceduralBump(name='bump',
                           pos=(-10, -10, 0),
-                          rot=None,  
-                          rot_quat=(0,0,0,1),
+                          rot=None,
+                          rot_quat=(0, 0, 0, 1),
                           width=5,
                           length=7,
                           height=2,
@@ -59,15 +60,15 @@ def main():
                           rot_quat=(0, 0.7071068, 0, 0.7071068),
                           radius=2,
                           thickness=1
-                         )
+                          )
     scenario.add_procedural_mesh(ring)
 
     vehicle = Vehicle('ego_vehicle', model='etk800')
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=None, rot_quat=(0,0,0,1))
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0),
+                         rot=None, rot_quat=(0, 0, 0, 1))
 
-    scenario.make(beamng)
+    scenario.make(bng)
 
-    bng = beamng.open(launch=True)
     try:
         bng.load_scenario(scenario)
         bng.start_scenario()

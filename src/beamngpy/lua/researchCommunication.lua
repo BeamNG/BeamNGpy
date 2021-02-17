@@ -6,7 +6,44 @@ local M = {}
 
 local mp = require('libs/lua-MessagePack/MessagePack')
 local socket = require('libs/luasocket/socket.socket')
-local json = require('json')
+
+M.protocolVersion = 'v1.18'
+
+-- Simple set implementation from the LuaSocket samples
+M.newSet = function()
+  local reverse = {}
+  local set = {}
+  return setmetatable(set, {__index = {
+    insert = function(set, value)
+      if not reverse[value] then
+        table.insert(set, value)
+        reverse[value] = #set
+      end
+    end,
+    remove = function(set, value)
+      local index = reverse[value]
+      if index then
+        reverse[value] = nil
+        local top = table.remove(set)
+        if top ~= value then
+          reverse[top] = index
+          set[index] = top
+        end
+      end
+    end
+  }})
+end
+
+M.checkForClients = function(servers)
+  local ret = {}
+  local readable, _, error = socket.select(servers, nil, 0)
+  for _, input in ipairs(readable) do
+    local client = input:accept()
+    client:settimeout(0.1, 't')
+    table.insert(ret, client)
+  end
+  return ret
+end
 
 M.receive = function(skt)
   local length, err = skt:receive(16)
@@ -26,31 +63,55 @@ M.receive = function(skt)
   return data, nil
 end
 
-M.readMessage = function(clients)
-  local read, write, _ = socket.select(clients, clients, 0)
+M.checkMessages = function(E, clients)
   local message, err
+  local readable, writable, error = socket.select(clients, clients, 0)
+  local ret = true
 
-  for _, skt in ipairs(read) do
-    if write[skt] == nil then
+  for i = 1, #readable do
+    local skt = readable[i]
+
+    if writable[skt] == nil then
+      goto continue
+    end
+    
+    skt:settimeout(0.01, 't')
+    
+    message, err = M.receive(skt)
+    
+    if err ~= nil then
+      clients:remove(skt)
+      log('E', 'ResearchCom', 'Error reading from socket: ' .. tostring(skt) .. ' - ' .. tostring(err))
       goto continue
     end
 
-    skt:settimeout(0.1, 't')
-
-    message, err = M.receive(skt)
-
+    if message ~= nil then
+      message = mp.unpack(message)
+      local msgType = message['type']
+      if msgType ~= nil then
+        msgType = 'handle' .. msgType
+        local handler = E[msgType]
+        if handler ~= nil then
+          if handler(skt, message) then
+            ret = false
+          end
+        else
+          extensions.hook('onSocketMessage', skt, message)
+        end
+      else
+        log('E', 'ResearchCom', 'Got message without message type: ' .. tostring(message))
+        goto continue
+      end
+    end
+    
     ::continue::
   end
 
-  if err ~= nil then
-    return nil, err
+  if #readable > 0 then
+    return ret
+  else
+    return false
   end
-
-  if message ~= nil then
-    message = mp.unpack(message)
-  end
-
-  return message, nil
 end
 
 M.sendMessage = function(skt, message)
@@ -79,6 +140,12 @@ end
 M.sendBNGValueError = function(skt, message)
   local message = {bngValueError = message}
   M.sendMessage(skt, message)
+end
+
+M.openServer = function(port)
+  local server = assert(socket.bind('*', port))
+  server:settimeout(0.01)
+  return server
 end
 
 return M

@@ -48,6 +48,7 @@ def main():
     setup_logging()
 
     beamng = BeamNGpy('localhost', 64256)
+    bng = beamng.open(launch=True)
     scenario = Scenario('west_coast_usa', 'lidar_tour',
                         description='Tour through the west coast gathering '
                                     'Lidar data')
@@ -56,10 +57,10 @@ def main():
     lidar = Lidar()
     vehicle.attach_sensor('lidar', lidar)
 
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
-    scenario.make(beamng)
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                         rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
+    scenario.make(bng)
 
-    bng = beamng.open(launch=True)
     try:
         bng.load_scenario(scenario)
 
@@ -77,8 +78,8 @@ def main():
         vehicle.ai_set_mode('span')
 
         def update():
-            sensors = bng.poll_sensors(vehicle)
-            points = sensors['lidar']['points']
+            vehicle.poll_sensors()
+            points = lidar.data['points']
             bng.step(3, wait=False)
 
             lidar_vis.update_points(points, vehicle.state)

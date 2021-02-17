@@ -41,9 +41,10 @@ def main():
     plt.ion()
 
     beamng = BeamNGpy('localhost', 64256)
+    bng = beamng.open(launch=True)
 
     # Create a scenario in west_coast_usa
-    scenario = Scenario('west_coast_usa', 'research_test',
+    scenario = Scenario('west_coast_usa', 'tech_test',
                         description='Random driving for research')
 
     # Set up first vehicle, with two cameras, gforces sensor, lidar, electrical
@@ -79,13 +80,13 @@ def main():
     vehicle.attach_sensor('damage', damage)
     vehicle.attach_sensor('timer', timer)
 
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                         rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
 
     # Compile the scenario and place it in BeamNG's map folder
-    scenario.make(beamng)
+    scenario.make(bng)
 
     # Start BeamNG and enter the main loop
-    bng = beamng.open(launch=True)
     try:
         bng.hide_hud()
         bng.set_deterministic()  # Set simulator to be deterministic
