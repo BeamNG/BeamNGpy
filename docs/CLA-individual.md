@@ -4,7 +4,6 @@ This contributor agreement ("Agreement") documents the rights granted by contrib
 To make this document effective, please sign it and send it to Us by electronic submission, following the instructions at https://github.com/BeamNG/BeamNGpy.
 This is a legally binding document, so please read it carefully before agreeing to it.
 The Agreement may cover more than one software project managed by Us.
-
 ## 1. Definitions
 "You" means the individual who Submits a Contribution to Us.
 "Contribution" means any work of authorship that is Submitted by You to Us in which You own or assert ownership of the Copyright.
@@ -16,7 +15,6 @@ After You Submit the Contribution, it may be included in the Work.
 "Submission Date" means the date on which You Submit a Contribution to Us.
 "Effective Date" means the date You execute this Agreement or the date You first Submit a Contribution to Us, whichever is earlier.
 "Media" means any portion of a Contribution which is not software.
-
 ## 2. Grant of Rights
 ### 2.1 Copyright License
 Subject to the terms and conditions of this Agreement, You hereby grant to Us and to recipients of software distributed by Us a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute Your Contributions and such derivative works.
