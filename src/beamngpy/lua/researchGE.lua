@@ -890,10 +890,11 @@ end
 
 M.handleGameStateRequest = function(skt, msg)
   local state = core_gamestate.state.state
-  resp = {type = 'GameState'}
+  local resp = {type = 'GameState'}
   if state == 'scenario' then
     resp['state'] = 'scenario'
     resp['scenario_state'] = scenario_scenarios.getScenario().state
+    resp['level'] = getCurrentLevelIdentifier()
   else
     resp['state'] = 'menu'
   end

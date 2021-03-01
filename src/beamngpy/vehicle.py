@@ -199,10 +199,6 @@ class Vehicle:
     def disconnect(self):
         """
         Closes socket communication with the corresponding vehicle.
-
-        Args:
-            bng (:class:`.BeamNGpy`): The running BeamNGpy instance to
-                                      disconnect from.
         """
         for _, sensor in self.sensors.items():
             sensor.disconnect(self.bng, self)

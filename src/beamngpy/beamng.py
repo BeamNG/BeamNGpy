@@ -116,7 +116,7 @@ class BeamNGpy:
             ziph.write(ge, arcname=ge_name)
             ziph.write(ve, arcname=ve_name)
 
-    def __init__(self, host, port, home=None, user=None):
+    def __init__(self, host, port, home=None, user=None, remote=False):
         """
         Instantiates a BeamNGpy instance connecting to the simulator on the
         given host and port. The home directory of the simulator can be passed
@@ -134,26 +134,29 @@ class BeamNGpy:
                         used to set where custom files created during
                         executions will be placed if the home folder shall not
                         be touched.
+            remote (bool): Set to true when using the BeamNGpy library on a different system then BeamNG.tech
         """
         self.host = host
         self.port = port
-
+        self.remote = remote
         self.home = home
-        if not self.home:
-            self.home = ENV['BNG_HOME']
-        if not self.home:
-            raise BNGValueError('No BeamNG home folder given. Either specify '
-                                'one in the constructor or define an '
-                                'environment variable "BNG_HOME" that '
-                                'points to where your copy of BeamNG.* is.')
 
-        self.home = Path(self.home).resolve()
-        self.binary = self.determine_binary()
+        if not self.remote:
+            if not self.home:
+                self.home = ENV['BNG_HOME']
+            if not self.home:
+                raise BNGValueError('No BeamNG home folder given. Either specify '
+                                    'one in the constructor or define an '
+                                    'environment variable "BNG_HOME" that '
+                                    'points to where your copy of BeamNG.* is.')
 
-        if user:
-            self.user = Path(user).resolve()
-        else:
-            self.user = self.determine_userpath()
+            self.home = Path(self.home).resolve()
+            self.binary = self.determine_binary()
+
+            if user:
+                self.user = Path(user).resolve()
+            else:
+                self.user = self.determine_userpath()
 
         self.process = None
         self.skt = None
@@ -246,7 +249,6 @@ class BeamNGpy:
                       'parameter to `BeamNGpy`, but serves as a workaround ' \
                       'until the issue is fixed in BeamNG.tech.'
                 log.error(msg)
-                print(msg)
 
         return call
 
@@ -264,6 +266,10 @@ class BeamNGpy:
         Kills the running BeamNG.* process.
         """
         self.quit_beamng()
+
+        if self.remote:
+            log.warn('cannot kill remote BeamNG.research process, aborting subroutine')
+            return
 
         if not self.process:
             return
@@ -443,6 +449,17 @@ class BeamNGpy:
             self.scenario = None
 
         self.kill_beamng()
+
+    def disconnect(self):
+        """
+        Closes socket communication with the corresponding BeamNG instance.
+        """
+        if self.skt is not None:
+            self.skt.close()
+
+        self.port = None
+        self.host = None
+        self.skt = None
 
     def hide_hud(self):
         """
