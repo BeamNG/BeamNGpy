@@ -12,9 +12,9 @@ When contributing to this repository, please first discuss the change you wish t
 
 ### Accepting the Contributor License Agreement
 
-If you are a submitting work on behalf of yourself, then read through [this form](https://github.com/BeamNG/BeamNGpy/blob/contributions/docs/CLA-individual.pdf) and send a mail to  info@beamng.gmbh agreeing to the contributor license agreement. The mail should contain your full name, your GitHub username, your address, your phone number, email and explicitly state that you agree to the **"BeamNGpy Individual Contributor License Agreement"**.
+If you are a submitting work on behalf of yourself, then read through [this form](https://github.com/BeamNG/BeamNGpy/blob/dev/docs/CLA-individual.pdf) and send a mail to  info@beamng.gmbh agreeing to the contributor license agreement. The mail should contain your full name, your GitHub username, your address, your phone number, email and explicitly state that you agree to the **"BeamNGpy Individual Contributor License Agreement"**.
 
-If you are a submitting work on behalf of your employer, then read through [this form](https://github.com/BeamNG/BeamNGpy/blob/contributions/docs/CLA-entity.pdf) and send a mail to  info@beamng.gmbh agreeing to the contributor license agreement. The mail should contain your full name, the name of your organization, your GitHub username, your address, your phone number, email and explicitly state that you agree to the **"BeamNGpy Entity Contributor License Agreement"**.
+If you are a submitting work on behalf of your employer, then read through [this form](https://github.com/BeamNG/BeamNGpy/blob/dev/docs/CLA-entity.pdf) and send a mail to  info@beamng.gmbh agreeing to the contributor license agreement. The mail should contain your full name, the name of your organization, your GitHub username, your address, your phone number, email and explicitly state that you agree to the **"BeamNGpy Entity Contributor License Agreement"**.
 
 ### Submitting Your Contribution
 

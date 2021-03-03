@@ -127,4 +127,4 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [6]: https://github.com/BeamNG/BeamNGpy/tree/master/examples
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
-[9]: https://github.com/BeamNG/BeamNGpy/blob/contributions/docs/contributing.md
+[9]: https://github.com/BeamNG/BeamNGpy/blob/dev/docs/contributing.md
