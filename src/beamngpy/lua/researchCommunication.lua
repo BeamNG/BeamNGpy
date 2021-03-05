@@ -7,7 +7,7 @@ local M = {}
 local mp = require('libs/lua-MessagePack/MessagePack')
 local socket = require('libs/luasocket/socket.socket')
 
-M.protocolVersion = 'v1.18'
+M.protocolVersion = 'v1.19'
 
 -- Simple set implementation from the LuaSocket samples
 M.newSet = function()

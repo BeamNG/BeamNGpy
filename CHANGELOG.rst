@@ -2,6 +2,28 @@
 Changelog
 =========
 
+Version 1.19
+============
+- Swap client/server model to allow multiple BeamNGpy instances to connect to one running simulator simultaneously
+- Add ``Level`` class representing a level in the simulation
+- Change ``Scenario`` class to point to ``Level`` it is in
+- Add ``get_levels``, ``get_scenarios``, ``get_level_scenarios``, ``get_levels_and_scenarios`` methods to ``BeamNGpy`` class to query available content
+- Add ``get_current_scenario`` method to ``BeamNGpy`` class to query running scenario
+- Add ``get_current_vehicles`` method to ``BeamNGpy`` class to query active vehicles
+- Add ``SceneObject`` class to the ``scenario`` module as a basis for the various types of objects in a scene in BeamNG.tech, currently including ``DecalRoad``
+- Add ``get_scenetree`` and ``get_scene_object`` methods to ``BeamNGpy`` class to enable querying objects in the active scene
+- Add ``add_debug_spheres``, ``add_debug_polyline``, ``add_debug_cylinder``, ``add_debug_triangle``, ``add_debug_rectangle``, ``add_debug_text``, ``add_debug_square_prism`` methods to ``BeamNGpy`` class to visualize 3D gizmos in the simulator
+- Add Inertial Measurement Unit sensors
+- Add Ultrasonic Distance Measurement sensor
+- Add noise module to randomize sensor data for cameras and lidars
+- Add instance annotation option to ``Camera`` sensor including methods to ``extract_bboxes``, ``export_bbox_xml``, and ``draw_bboxes`` for bounding-box-related operations based on semantic and instance annotations (limited to vehicles right now)
+- Add options to use only socket-based communication for ``Camera`` and ``Lidar`` sensor
+- Add methods to configure BeamNG.tech's Vehicle Stats Logger from BeamNGpy
+- Add FAQ to README
+- Add Contributor License Agreement and guidelines
+- Fix stray dependency on PyScaffold
+- Fix lidar points being visible in camera sensor images
+
 =======
 Version 1.18
 ============

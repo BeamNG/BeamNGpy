@@ -3,18 +3,19 @@
 
 [![Documentation](https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png)][1]
 
-##### Table of Contents
-[About](#about)
-[Prerequisites](#prereqs)
-[Installation](#installation)
-[Usage](#usage)
-[Troubleshooting](#troubleshooting)
+## Table of Contents
+ - [About](#about)
+ - [Features](#features)
+ - [Prerequisites](#prereqs)
+ - [Installation](#installation)
+ - [Usage](#usage)
+ - [Troubleshooting](#troubleshooting)
 
 <a name="about" ></a>
 
 ## About
 
-BeamNGpy is an official library providing a Python interface to BeamNG.tech,
+BeamNGpy is an official library providing a Python API to BeamNG.tech,
 the academia- and industry-oriented fork of the video game [BeamNG.drive][4].
 BeamNGpy and BeamNG.tech are designed to go hand in hand, both being kept up
 to date to support each other's functions, meaning using the latest versions
@@ -22,15 +23,72 @@ of both is recommended.
 
 It allows remote control of the simulation, including vehicles contained in it:
 
-![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/master/media/throttle.gif)
-![Steering control](https://github.com/BeamNG/BeamNGpy/raw/master/media/steering.gif)
+<a name="features"></a>
+
+## Features
+
+BeamNGpy comes with a wide range of low-level functions to interact with the
+simulation and a few higher-level interfaces that make more complex actions
+easier. Some features to highlight are:
+
+### Remote Control of Vehicles
+
+Each vehicle can be controlled individually and independently during the
+simulation. This includes basic steering inputs, but also controls over
+various lights (headlights, indicators, etc.) or gear shifting.
+
+![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/master/media/throttle.gif) ![Steering control](https://github.com/BeamNG/BeamNGpy/raw/master/media/steering.gif)
+
+### AI-controlled Vehicles
+
+Besides manual control, BeamNG.tech ships with its own AI to control vehicles.
+This AI can be configured and controlled from BeamNGpy. It can be used to
+make a vehicle drive to a certain waypoint, make it follow another vehicle,
+span the map, or follow a user-defined trajectory:
+
+![AI Trajectory](media/ai_trajectory.png)
+
+### Dynamic Sensor Models
 
 Vehicles and the environment can be equipped with various sensors that provide
-simulated sensor data such as a camera feed, with options for depth values and
-pixel-perfect semantic annotation or a simulated Lidar sensor:
+simulated sensor data. These sensors include:
+
+ - Cameras
+  - Color camera
+  - Depth camera
+  - Semantic and Instance annotations
+ - Lidars
+ - Inertial Measurement Units
+ - Ultrasonic Distance Measurements
 
 ![Multiple cameras](https://github.com/BeamNG/BeamNGpy/raw/master/media/camera.png)
 ![Lidar](https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar.gif)
+
+These sensors give perfect data from the simulation by default. Therefore, some
+of them, like the camera and lidar sensor, can be equipped to also simulate
+noisy data.
+
+### Access to Road Network & Scenario Objects
+
+Geometry of roads in the currently-loaded level/scenario are made available
+via BeamNGpy. Objects and vehicles that are currently active in the scene
+are also exposed, allowing for analysis of the current simulation state.
+
+![Road Network](media/road_network.png)
+
+### Multiple Clients
+
+BeamNGpy interacts with BeamNG.tech as the client, with BeamNG.tech acting
+as the server. This allows for multiple BeamNGpy processes to connect to a
+running simulation and have each control the simulator, making it possible
+to, for example, [run a scenario in which each vehicle is controlled by
+a separate client.](about:blank)
+
+### More
+
+There is a healthy collection of usage examples in the [examples/](about:blank)
+folder of this repository. These highlight more features, but also serve
+as documentation, so be sure to check them out.
 
 <a name="prereqs"></a>
 
@@ -57,6 +115,7 @@ The library itself is available on [PyPI][5] and can therefore be installed
 using common methods like `pip`:
 
     pip install beamngpy
+
 
 <a name="usage"></a>
 

@@ -350,8 +350,8 @@ class Scenario:
         the given level.
 
         Args:
-            level (str): Name of the level to place this scenario in. This has
-                         to be a level known to the simulation.
+            level: Either the name of the level this scenario takes place in
+                   as a string or as an instance of :class:`.Level`
             name (str): The name of this scenario. Should be unique for the
                         level it's taking place in to avoid file collisions.
         """
@@ -644,6 +644,12 @@ class Scenario:
         self.scene = self._convert_scene_object(scenetree)
 
     def sync_scene(self):
+        """
+        Retrieves the current scene tree of the scenario from the simulator,
+        converting them into the most appropriate known (sub)class of
+        :class:`.SceneObject`. The result is not returned but rather stored
+        in the ``scene`` field of this class.
+        """
         self._fill_scene()
 
     def connect(self, bng):
