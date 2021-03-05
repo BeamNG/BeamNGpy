@@ -82,11 +82,11 @@ BeamNGpy interacts with BeamNG.tech as the client, with BeamNG.tech acting
 as the server. This allows for multiple BeamNGpy processes to connect to a
 running simulation and have each control the simulator, making it possible
 to, for example, [run a scenario in which each vehicle is controlled by
-a separate client.](about:blank)
+a separate client.](https://github.com/BeamNG/BeamNGpy/tree/master/examples/multi_client.ipynb)
 
 ### More
 
-There is a healthy collection of usage examples in the [examples/](about:blank)
+There is a healthy collection of usage examples in the [examples/](https://github.com/BeamNG/BeamNGpy/tree/master/examples)
 folder of this repository. These highlight more features, but also serve
 as documentation, so be sure to check them out.
 
