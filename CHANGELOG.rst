@@ -24,7 +24,6 @@ Version 1.19.1
 - Fix stray dependency on PyScaffold
 - Fix lidar points being visible in camera sensor images
 
-=======
 Version 1.18
 ============
 - Add function to switch current viewport to the relative camera mode with options to control the position of the camera
