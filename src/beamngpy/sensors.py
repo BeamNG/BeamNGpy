@@ -422,7 +422,8 @@ class Camera(Sensor):
         return color
 
     def __init__(self, pos, direction, fov, resolution, near_far=(NEAR, FAR),
-                 colour=False, depth=False, annotation=False, instance=False):
+                 colour=False, depth=False, annotation=False, instance=False,
+                 shmem=True):
         """
         The camera sensor is set up with a fixed offset position and
         directional vector to face relative to the vehicle. This means as the
@@ -434,7 +435,12 @@ class Camera(Sensor):
         clipped from view.
 
         Which sensor data to provide can be indicated using boolean flags for
-        the corresponding type.
+        the corresponding type. The way data is transmitted can be chosen via
+        the `shmem` flag. When true, the data is exchanged via a region of
+        memory shared with the simulator. This is a lot faster, but has the
+        downside of requiring the Python process and the simulator to be on the
+        same machine. When false, data is sent via a socket and thus possible
+        to be transmitted over network.
 
         Args:
             pos (tuple): (x,y,z) tuple of the camera's position offset relative
@@ -451,6 +457,8 @@ class Camera(Sensor):
             depth (bool): Whether to output depth information.
             annotation (bool): Whether to output annotation information.
             instance (bool): Whether to output instance annotation information.
+            shmem (bool): Whether to use shared memory for sensor data
+                          transmission.
         """
         super().__init__()
         self.pos = pos
@@ -464,12 +472,15 @@ class Camera(Sensor):
         self.annotation = annotation
         self.instance = instance
 
+        self.shmem = shmem
         self.colour_handle = None
         self.colour_shmem = None
         self.depth_handle = None
         self.depth_shmem = None
         self.annotation_handle = None
         self.annotation_shmem = None
+        self.instance_handle = None
+        self.instance_shmem = None
 
     def attach(self, vehicle, name):
         """
@@ -482,29 +493,33 @@ class Camera(Sensor):
                                          attached to.
             name (str): The name of the camera.
         """
-        pid = os.getpid()
-        prefix = ''
-        if vehicle:
-            prefix = vehicle.vid
-        size = self.resolution[0] * self.resolution[1] * 4  # RGBA / L are 4bbp
-        # if self.colour:
-        self.colour_handle = '{}.{}.{}.colour'.format(pid, prefix, name)
-        self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
-        log.debug('Bound memory for colour: %s', self.colour_handle)
+        if self.shmem:
+            pid = os.getpid()
+            prefix = ''
+            if vehicle:
+                prefix = vehicle.vid
+            size = self.resolution[0] * self.resolution[1] * 4
+            self.colour_handle = '{}.{}.{}.colour'
+            self.colour_handle = self.colour_handle.format(pid, prefix, name)
+            self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
+            log.debug('Bound shmem for colour: %s', self.colour_handle)
 
-        # if self.depth:
-        self.depth_handle = '{}.{}.{}.depth'.format(pid, prefix, name)
-        self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
-        log.debug('Bound memory for depth: %s', self.depth_handle)
+            self.depth_handle = '{}.{}.{}.depth'
+            self.depth_handle = self.depth_handle.format(pid, prefix, name)
+            self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
+            log.debug('Bound shmem for depth: %s', self.depth_handle)
 
-        # if self.annotation:
-        self.annotation_handle = '{}.{}.{}.annotate'.format(pid, prefix, name)
-        self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
-        log.debug('Bound memory for annotation: %s', self.annotation_handle)
+            self.annotation_handle = '{}.{}.{}.annotate'
+            self.annotation_handle = self.annotation_handle.format(pid, prefix,
+                                                                   name)
+            self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
+            log.debug('Bound shmem for annotation: %s', self.annotation_handle)
 
-        self.instance_handle = '{}.{}.{}.instance'.format(pid, prefix, name)
-        self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
-        log.debug('Bound memory for instance: %s', self.instance_handle)
+            self.instance_handle = '{}.{}.{}.instance'
+            self.instance_handle = self.instance_handle.format(pid, prefix,
+                                                               name)
+            self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
+            log.debug('Bound shmem for instance: %s', self.instance_handle)
 
     def detach(self, vehicle, name):
         """
@@ -517,21 +532,20 @@ class Camera(Sensor):
             name (str): The name of the camera.
         """
         if self.colour_shmem:
-            log.debug('Unbinding memory for color: %s', self.colour_handle)
+            log.debug('Unbinding shmem for color: %s', self.colour_handle)
             self.colour_shmem.close()
 
         if self.depth_shmem:
-            log.debug('Unbinding memory for depth: %s', self.depth_handle)
+            log.debug('Unbinding shmem for depth: %s', self.depth_handle)
             self.depth_shmem.close()
 
         if self.annotation_shmem:
-            log.debug('Unbinding memory for annotation: %s',
+            log.debug('Unbinding shmem for annotation: %s',
                       self.annotation_handle)
             self.annotation_shmem.close()
 
         if self.instance_shmem:
-            log.debug('Unbinding memory for instance: %s',
-                      self.instance_handle)
+            log.debug('Unbinding shmem for instance: %s', self.instance_handle)
             self.instance_shmem.close()
 
     def connect(self, bng, vehicle):
@@ -594,25 +608,67 @@ class Camera(Sensor):
 
         if self.colour_shmem:
             req['color'] = self.colour_handle
+        else:
+            req['color'] = self.colour
 
         if self.depth_shmem:
             req['depth'] = self.depth_handle
+        else:
+            req['depth'] = self.depth
 
         if self.annotation_shmem:
             req['annotation'] = self.annotation_handle
+        else:
+            req['annotation'] = self.annotation
 
         if self.instance_shmem:
             req['instance'] = self.instance_handle
+        else:
+            req['instance'] = self.instance
 
         req['pos'] = [float(f) for f in self.pos]
         req['direction'] = [float(f) for f in self.direction]
         req['fov'] = self.fov
         req['resolution'] = [int(i) for i in self.resolution]
         req['near_far'] = [float(f) for f in self.near_far]
+        req['shmem'] = self.shmem
 
         return req
 
-    def decode_response(self, resp):
+    def decode_image(self, buffer, width, height, channels, dtype=np.uint8):
+        img_d = base64.b64decode(buffer)
+        img_d = np.frombuffer(img_d, dtype=dtype)
+        if channels > 1:
+            img_d = img_d.reshape(height, width, channels)
+        else:
+            img_d = img_d.reshape(height, width)
+        return Image.fromarray(img_d)
+
+    def decode_b64_response(self, resp):
+        decoded = dict(type='Camera')
+        img_w = resp['width']
+        img_h = resp['height']
+
+        if self.colour:
+            decoded['colour'] = self.decode_image(resp['colorRGB8'],
+                                                  img_w, img_h, 4)
+
+        if self.annotation:
+            decoded['annotation'] = self.decode_image(resp['annotationRGB8'],
+                                                      img_w, img_h, 4)
+
+        if self.instance:
+            decoded['instance'] = self.decode_image(resp['instanceRGB8'],
+                                                    img_w, img_h, 4)
+
+        if self.depth:
+            decoded['depth'] = self.decode_image(resp['depth32F'],
+                                                 img_w, img_h, 1,
+                                                 dtype=np.float32)
+
+        return decoded
+
+    def decode_shmem_response(self, resp):
         """
         This method obtains sensor data written to shared memory and decodes
         them as images. The resulting data is returned as a dictionary. This
@@ -680,6 +736,12 @@ class Camera(Sensor):
 
         return decoded
 
+    def decode_response(self, resp):
+        if self.shmem:
+            return self.decode_shmem_response(resp)
+        else:
+            return self.decode_b64_response(resp)
+
     def get_engine_flags(self):
         """
         Called to retrieve settings for the simulation engine. Depending on the
@@ -687,26 +749,25 @@ class Camera(Sensor):
         a dictionary enabling certain render modes in the engine.
         """
         flags = dict()
-        if self.annotation_shmem:
+        if self.annotation:
             flags['annotations'] = True
         return flags
 
 
 class Lidar(Sensor):
     max_points = LIDAR_POINTS
-
-    """
-    The Lidar sensor provides 3D point clouds representing the environment
-    as detected by a pulsing laser emitted from the vehicle. The range,
-    position, and refresh rate of this sensor can be customised.
-    """
-
     shmem_size = LIDAR_POINTS * 3 * 4
 
     def __init__(self, offset=(0, 0, 1.7), direction=(0, -1, 0), vres=32,
                  vangle=26.9, rps=2200000, hz=20, angle=360, max_dist=200,
-                 visualized=True):
+                 visualized=True, shmem=True):
+        """
+        The Lidar sensor provides 3D point clouds representing the environment
+        as detected by a pulsing laser emitted from the vehicle. The range,
+        position, and refresh rate of this sensor can be customised.
+        """
         super().__init__()
+        self.use_shmem = shmem
         self.handle = None
         self.shmem = None
 
@@ -734,8 +795,9 @@ class Lidar(Sensor):
         """
         pid = os.getpid()
         self.handle = '{}.{}.{}.lidar'.format(pid, vehicle.vid, name)
-        self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
-        log.debug('Bound memory for lidar: %s', self.handle)
+        if self.use_shmem:
+            self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
+            log.debug('Bound memory for lidar: %s', self.handle)
 
     def detach(self, vehicle, name):
         """
@@ -748,14 +810,22 @@ class Lidar(Sensor):
                                          detached from.
             name (str): The name of the sensor.
         """
-        self.shmem.close()
+        if self.use_shmem:
+            self.shmem.close()
 
     def connect(self, bng, vehicle):
-        bng.open_lidar(self.handle, vehicle, self.handle, Lidar.shmem_size,
-                       offset=self.offset, direction=self.direction,
-                       vres=self.vres, vangle=self.vangle, rps=self.rps,
-                       hz=self.hz, angle=self.angle, max_dist=self.max_dist,
-                       visualized=self.visualized)
+        if self.use_shmem:
+            bng.open_lidar(self.handle, vehicle, self.handle, Lidar.shmem_size,
+                           offset=self.offset, direction=self.direction,
+                           vres=self.vres, vangle=self.vangle, rps=self.rps,
+                           hz=self.hz, angle=self.angle, max_dist=self.max_dist,
+                           visualized=self.visualized)
+        else:
+            bng.open_lidar(self.handle, vehicle, '', 0, offset=self.offset,
+                           direction=self.direction, vres=self.vres,
+                           vangle=self.vangle, rps=self.rps, hz=self.hz,
+                           angle=self.angle, max_dist=self.max_dist,
+                           visualized=self.visualized)
 
     def disconnect(self, bng, vehicle):
         bng.close_lidar(self.handle)
@@ -771,6 +841,7 @@ class Lidar(Sensor):
         """
         req = dict(type='Lidar')
         req['name'] = self.handle
+        req['shmem'] = self.use_shmem
         return req
 
     def decode_response(self, resp):
@@ -785,10 +856,17 @@ class Lidar(Sensor):
             sequence of coordinate triplets in the form of [x0, y0, z0, x1,
             y1, z1, ..., xn, yn, zn].
         """
-        size = resp['size']
-        self.shmem.seek(0)
-        points_buf = self.shmem.read(size)
-        points_buf = np.frombuffer(points_buf, dtype=np.float32)
+        points_buf = None
+
+        if self.use_shmem:
+            size = resp['size']
+            self.shmem.seek(0)
+            points_buf = self.shmem.read(size)
+            points_buf = np.frombuffer(points_buf, dtype=np.float32)
+        else:
+            points_buf = resp['points']
+            points_buf = np.array(points_buf, dtype=np.float32)
+
         assert points_buf.size % 3 == 0
         resp = dict(type='Lidar')
         resp['points'] = points_buf
@@ -1074,6 +1152,7 @@ class Ultrasonic(Sensor):
     This is not an ideal sensor but one whose output is simulated based on
     depth information in images.
     """
+
     def __init__(self,
                  pos,
                  rot,

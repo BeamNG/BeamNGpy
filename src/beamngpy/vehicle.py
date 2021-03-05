@@ -163,8 +163,8 @@ class Vehicle:
         simulation and calls the connect-hooks on the vehicle's sensors.
 
         Args:
-            bng (:class:`.BeamNGpy`): The running BeamNGpy instance to connect
-                                      with.
+            tries (int): The maximum amount of connection attempts made before
+                         giving up.
         """
         flags = self.get_engine_flags()
         self.bng.set_engine_flags(flags)
@@ -313,6 +313,7 @@ class Vehicle:
     def poll_sensors(self, requests=None):
         """
         Updates the vehicle's sensor readings.
+
         Args:
             mode (str): The mode to set. Must be a string from the options
                         listed above.

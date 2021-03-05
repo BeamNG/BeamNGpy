@@ -1,8 +1,18 @@
+"""
+.. module:: beamng
+    :platform: Windows
+    :synopsis: Contains level-related classes.
 
-from numpy import isin
+.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
+.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
+"""
 
 
 class Level:
+    """
+    Represents a level in the simulator, listing various properties like the
+    level's name, size, and available scenarios.
+    """
 
     @staticmethod
     def from_dict(d):

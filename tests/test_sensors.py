@@ -11,6 +11,10 @@ from beamngpy.sensors import IMU, Ultrasonic
 from beamngpy.noise import RandomImageNoise, RandomLIDARNoise
 
 
+SHMEM_OPTIONS = [False, True]
+SHMEM_IDS = ['Socket', 'Shmem']
+
+
 @pytest.fixture()
 def beamng():
     beamng = BeamNGpy('localhost', 64256)
@@ -25,7 +29,8 @@ def assert_image_different(img):
     assert eq.size != arr.size
 
 
-def test_camera(beamng):
+@pytest.mark.parametrize('shmem', SHMEM_OPTIONS, ids=SHMEM_IDS)
+def test_camera(beamng, shmem):
     with beamng as bng:
         scenario = Scenario('west_coast_usa', 'camera_test')
         vehicle = Vehicle('test_car', model='etk800')
@@ -35,7 +40,8 @@ def test_camera(beamng):
         fov = 120
         resolution = (64, 64)
         front_camera = Camera(pos, direction, fov, resolution, colour=True,
-                              depth=True, annotation=True, instance=True)
+                              depth=True, annotation=True, instance=True,
+                              shmem=shmem)
         vehicle.attach_sensor('front_cam', front_camera)
 
         scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
@@ -139,12 +145,13 @@ def test_noise(beamng):
         assert(not(np.array_equal(ref_pc, noise_pc)))
 
 
-def test_lidar(beamng):
+@pytest.mark.parametrize('shmem', SHMEM_OPTIONS, ids=SHMEM_IDS)
+def test_lidar(beamng, shmem):
     with beamng as bng:
         scenario = Scenario('west_coast_usa', 'lidar_test')
         vehicle = Vehicle('test_car', model='etk800')
 
-        lidar = Lidar()
+        lidar = Lidar(shmem=shmem)
         vehicle.attach_sensor('lidar', lidar)
 
         scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),

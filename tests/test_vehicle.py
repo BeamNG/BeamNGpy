@@ -221,7 +221,10 @@ def test_lights(beamng):
 
         for r in range(len(binary) + len(ternary)):
             r = r + 1
-            for combo in itertools.combinations(possible, r):
+            for idx, combo in enumerate(itertools.combinations(possible, r)):
+                if idx > 1024:
+                    break
+
                 vals = {}
                 for light, value in combo:
                     vals[light] = value
@@ -306,7 +309,8 @@ def test_part_configs(beamng):
 
         config = {}
         for k, v in options.items():
-            config[k] = random.choice(v)
+            if k.startswith('etk800'):
+                config[k] = random.choice(v)
         vehicle.set_part_config({'parts': config})
 
         current = vehicle.get_part_config()
