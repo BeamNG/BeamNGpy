@@ -46,7 +46,7 @@ This AI can be configured and controlled from BeamNGpy. It can be used to
 make a vehicle drive to a certain waypoint, make it follow another vehicle,
 span the map, or follow a user-defined trajectory:
 
-![AI Trajectory](media/ai_trajectory.png)
+![AI Trajectory](https://github.com/BeamNG/BeamNGpy/raw/master/media/ai_trajectory.png)
 
 ### Dynamic Sensor Models
 
@@ -74,7 +74,7 @@ Geometry of roads in the currently-loaded level/scenario are made available
 via BeamNGpy. Objects and vehicles that are currently active in the scene
 are also exposed, allowing for analysis of the current simulation state.
 
-![Road Network](media/road_network.png)
+![Road Network](https://github.com/BeamNG/BeamNGpy/raw/master/media/road_network.png)
 
 ### Multiple Clients
 

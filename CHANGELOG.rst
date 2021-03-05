@@ -2,8 +2,8 @@
 Changelog
 =========
 
-Version 1.19
-============
+Version 1.19.1
+==============
 - Swap client/server model to allow multiple BeamNGpy instances to connect to one running simulator simultaneously
 - Add ``Level`` class representing a level in the simulation
 - Change ``Scenario`` class to point to ``Level`` it is in
