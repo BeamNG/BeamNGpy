@@ -221,7 +221,10 @@ def test_lights(beamng):
 
         for r in range(len(binary) + len(ternary)):
             r = r + 1
-            for combo in itertools.combinations(possible, r):
+            for idx, combo in enumerate(itertools.combinations(possible, r)):
+                if idx > 1024:
+                    break
+
                 vals = {}
                 for light, value in combo:
                     vals[light] = value
