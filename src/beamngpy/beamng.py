@@ -1956,7 +1956,7 @@ class BeamNGpy:
         self.send(data)
         self.await_vehicle_spawn(vehicle.vid)
         vehicle.close()
-        self.connect_vehicle(vehicle, vehicle.port)
+        vehicle.connect(self)
 
     def __enter__(self):
         self.open()

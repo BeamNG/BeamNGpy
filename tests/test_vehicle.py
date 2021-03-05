@@ -309,7 +309,8 @@ def test_part_configs(beamng):
 
         config = {}
         for k, v in options.items():
-            config[k] = random.choice(v)
+            if k.startswith('etk800'):
+                config[k] = random.choice(v)
         vehicle.set_part_config({'parts': config})
 
         current = vehicle.get_part_config()

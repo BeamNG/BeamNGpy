@@ -32,38 +32,37 @@ def assert_image_different(img):
 @pytest.mark.parametrize('shmem', SHMEM_OPTIONS, ids=SHMEM_IDS)
 def test_camera(beamng, shmem):
     with beamng as bng:
-        for shmem in (True, False):
-            scenario = Scenario('west_coast_usa', 'camera_test')
-            vehicle = Vehicle('test_car', model='etk800')
+        scenario = Scenario('west_coast_usa', 'camera_test')
+        vehicle = Vehicle('test_car', model='etk800')
 
-            pos = (-0.3, 1, 1.0)
-            direction = (0, 1, 0)
-            fov = 120
-            resolution = (64, 64)
-            front_camera = Camera(pos, direction, fov, resolution, colour=True,
-                                  depth=True, annotation=True, instance=True,
-                                  shmem=shmem)
-            vehicle.attach_sensor('front_cam', front_camera)
+        pos = (-0.3, 1, 1.0)
+        direction = (0, 1, 0)
+        fov = 120
+        resolution = (64, 64)
+        front_camera = Camera(pos, direction, fov, resolution, colour=True,
+                              depth=True, annotation=True, instance=True,
+                              shmem=shmem)
+        vehicle.attach_sensor('front_cam', front_camera)
 
-            scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                                 rot=(0, 0, 45))
-            scenario.make(beamng)
+        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                             rot=(0, 0, 45))
+        scenario.make(beamng)
 
-            bng.load_scenario(scenario)
-            bng.start_scenario()
-            bng.pause()
-            bng.step(120)
-            time.sleep(50)
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+        bng.pause()
+        bng.step(120)
+        time.sleep(20)
 
-            sensors = bng.poll_sensors(vehicle)
+        sensors = bng.poll_sensors(vehicle)
 
-            assert_image_different(sensors['front_cam']['colour'])
-            assert_image_different(sensors['front_cam']['depth'])
-            assert_image_different(sensors['front_cam']['annotation'])
-            assert_image_different(sensors['front_cam']['instance'])
-            annotation = sensors['front_cam']['annotation']
-            instance = sensors['front_cam']['instance']
-            assert not (np.array(annotation) == np.array(instance)).all()
+        assert_image_different(sensors['front_cam']['colour'])
+        assert_image_different(sensors['front_cam']['depth'])
+        assert_image_different(sensors['front_cam']['annotation'])
+        assert_image_different(sensors['front_cam']['instance'])
+        annotation = sensors['front_cam']['annotation']
+        instance = sensors['front_cam']['instance']
+        assert not (np.array(annotation) == np.array(instance)).all()
 
 
 def test_bboxes(beamng):

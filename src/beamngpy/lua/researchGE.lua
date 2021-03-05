@@ -427,6 +427,7 @@ end
 M.handleWaitForSpawn = function(skt, msg)
   local name = msg['name']
   spawnPending = name
+  block('spawnVehicle', skt)
 end
 
 M.onVehicleSpawned = function(vID)
@@ -466,8 +467,7 @@ M.handleSpawnVehicle = function(skt, msg)
   options.licenseText = msg['licenseText']
 
   spawnPending = name
-  blocking = 'spawnVehicle'
-  waiting = skt
+  block('spawnVehicle', skt)
 
   core_vehicles.spawnNewVehicle(model, options)
 end
