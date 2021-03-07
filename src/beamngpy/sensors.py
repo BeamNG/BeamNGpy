@@ -683,9 +683,9 @@ class Camera(Sensor):
                                                  img_w, img_h, 1,
                                                  dtype=np.float32)
             # TODO: More needs to be done here to scale the lightness values
-			# between 0-255. Please see decode_shmem_response(). Currently
-			# this would generate an invalid image where each pixel's value
-			# would actually be a raw distance. I am unable to complete this
+            # between 0-255. Please see decode_shmem_response(). Currently
+            # this would generate an invalid image where each pixel's value
+            # would actually be a raw distance. I am unable to complete this
             # as using shmem=False currently does not work for me.
 
         return decoded
