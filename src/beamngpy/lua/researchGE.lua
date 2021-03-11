@@ -367,13 +367,18 @@ end
 M.handleTeleport = function(skt, msg)
   local vID = msg['vehicle']
   local veh = scenarioHelper.getVehicleByName(vID)
+  local resp = {type = 'Teleported', success = false}
+  if veh == nil then
+    rcom.sendMessage(skt, resp)
+  end
   if msg['rot'] ~= nil then
     local quat = quat(msg['rot'][1], msg['rot'][2], msg['rot'][3], msg['rot'][4])
     veh:setPositionRotation(msg['pos'][1], msg['pos'][2], msg['pos'][3], quat.x, quat.y, quat.z, quat.w)
   else
     veh:setPosition(Point3F(msg['pos'][1], msg['pos'][2], msg['pos'][3]))
   end
-  rcom.sendACK(skt, 'Teleported')
+  resp.success = true
+  rcom.sendMessage(skt, resp)
 end
 
 M.handleTeleportScenarioObject = function(skt, msg)

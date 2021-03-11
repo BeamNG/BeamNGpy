@@ -626,7 +626,6 @@ class BeamNGpy:
         data['name'] = name
         self.send(data)
 
-    @ack('Teleported')
     def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None):
         """
         Teleports the given vehicle to the given position with the given
@@ -655,6 +654,9 @@ class BeamNGpy:
             raise_rot_deprecation_warning()
             data['rot'] = angle_to_quat(rot)
         self.send(data)
+        response = self.recv()
+        assert response['type'] == 'Teleported'
+        return response['success']
 
     @ack('ScenarioObjectTeleported')
     def teleport_scenario_object(self, scenario_object, pos,
@@ -1145,6 +1147,7 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'VehicleSpawned'
+        vehicle.connect(self)
 
     def despawn_vehicle(self, vehicle):
         """
