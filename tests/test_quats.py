@@ -67,7 +67,7 @@ def test_quats(beamng):
 
         vehicle.poll_sensors()
         pos_before = vehicle.state['pos']
-        bng.teleport_vehicle(vehicle, pos, rot=(0, 45, 0))
+        bng.teleport_vehicle(vehicle.vid, pos, rot=(0, 45, 0))
         vehicle.poll_sensors()
         pos_after = vehicle.state['pos']
         assert(pos_before != pos_after)
@@ -75,7 +75,7 @@ def test_quats(beamng):
         vehicle.poll_sensors()
         pos_before = vehicle.state['pos']
         rot_quat = (-0.00333699025, -0.00218820246, -0.689169466, 0.724589229)
-        bng.teleport_vehicle(vehicle, pos, rot_quat=rot_quat)
+        bng.teleport_vehicle(vehicle.vid, pos, rot_quat=rot_quat)
         vehicle.poll_sensors()
         pos_after = vehicle.state['pos']
         assert(pos_before != pos_after)

@@ -627,13 +627,13 @@ class BeamNGpy:
         self.send(data)
 
     @ack('Teleported')
-    def teleport_vehicle(self, vehicle, pos, rot=None, rot_quat=None):
+    def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None):
         """
         Teleports the given vehicle to the given position with the given
         rotation.
 
         Args:
-            vehicle (:class:`.Vehicle`): The vehicle to teleport.
+            vehicle_id (string): The id/name of the vehicle to teleport.
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
@@ -647,7 +647,7 @@ class BeamNGpy:
             teleport.
         """
         data = dict(type='Teleport')
-        data['vehicle'] = vehicle.vid
+        data['vehicle'] = vehicle_id
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
