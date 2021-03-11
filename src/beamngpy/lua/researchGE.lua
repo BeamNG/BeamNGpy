@@ -370,6 +370,7 @@ M.handleTeleport = function(skt, msg)
   local resp = {type = 'Teleported', success = false}
   if veh == nil then
     rcom.sendMessage(skt, resp)
+    return
   end
   if msg['rot'] ~= nil then
     local quat = quat(msg['rot'][1], msg['rot'][2], msg['rot'][3], msg['rot'][4])
