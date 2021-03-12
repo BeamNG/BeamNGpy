@@ -371,8 +371,12 @@ class BeamNGpy:
 
         return scenario
 
-    def get_current_vehicles(self):
+    def get_current_vehicles_info(self):
         vehicles = self.message('GetCurrentVehicles')
+        return vehicles
+
+    def get_current_vehicles(self):
+        vehicles = self.get_current_vehicles_info()
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
 
