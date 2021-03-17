@@ -440,7 +440,7 @@ M.onVehicleSpawned = function(vID)
     local obj = scenetree.findObject(spawnPending)
     log('I', 'Vehicle spawned: ' .. tostring(vID))
     if obj ~= nil and obj:getID() == vID then
-      local resp = {type = 'VehicleSpawned', name = spawnPending}
+      local resp = {type = 'VehicleSpawned', name = spawnPending, success = true}
       spawnPending = nil
       rcom.sendMessage(waiting, resp)
       stopBlocking()
@@ -449,6 +449,11 @@ M.onVehicleSpawned = function(vID)
 end
 
 M.handleSpawnVehicle = function(skt, msg)
+  local alreadyExists = scenetree.findObject(msg['name'])
+  if alreadyExists then
+    local resp = {type = 'VehicleSpawned', name = spawnPending, success = false}
+    rcom.sendMessage(skt, resp)
+  end
   local name = msg['name']
   local model = msg['model']
   local pos = msg['pos']

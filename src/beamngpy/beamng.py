@@ -1126,7 +1126,8 @@ class BeamNGpy:
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
         that are known to be required before running the simulation should be
-        added during scenario creation instead.
+        added during scenario creation instead. Cannot spawn two vehicles with
+        the same id/name.
 
         Args:
             vehicle (:class:`.Vehicle`): The vehicle to be spawned.
@@ -1138,6 +1139,10 @@ class BeamNGpy:
                           will be set to the ground level at the given
                           position to avoid spawning the vehicle below ground
                           or in the air.
+
+        Returns:
+            bool indicating whether the spawn was successful or not
+
         """
         data = dict(type='SpawnVehicle', cling=cling)
         data['name'] = vehicle.vid
@@ -1151,7 +1156,11 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'VehicleSpawned'
-        vehicle.connect(self)
+        if resp['success']:
+            vehicle.connect(self)
+            return True
+        else:
+            return False
 
     def despawn_vehicle(self, vehicle):
         """
