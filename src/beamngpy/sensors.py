@@ -976,6 +976,7 @@ class Damage(Sensor):
 
     def encode_vehicle_request(self):
         req = dict(type='Damage')
+        req['part_damage'] = req['part_damage'] if req['partdamage'] else {}
         return req
 
 
