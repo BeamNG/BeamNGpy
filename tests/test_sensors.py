@@ -65,6 +65,37 @@ def test_camera(beamng, shmem):
         assert not (np.array(annotation) == np.array(instance)).all()
 
 
+def test_multicam(beamng):
+    with beamng as bng:
+        scenario = Scenario('west_coast_usa', 'camera_test')
+        vehicle = Vehicle('test_car', model='etk800')
+
+        pos = (-0.3, 1, 1.0)
+        direction = (0, 1, 0)
+        fov = 120
+        resolution = (64, 64)
+        front_cam1 = Camera(pos, direction, fov, resolution, colour=True,
+                            depth=True, annotation=True, instance=True,
+                            shmem=True)
+        vehicle.attach_sensor('front_cam1', front_cam1)
+        front_cam2 = Camera(pos, direction, fov, resolution, colour=True,
+                            depth=True, annotation=True, instance=True,
+                            shmem=True)
+        vehicle.attach_sensor('front_cam2', front_cam2)
+
+        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
+                             rot=(0, 0, 45))
+        scenario.make(beamng)
+
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+        bng.pause()
+        bng.step(120)
+        time.sleep(20)
+
+        vehicle.poll_sensors()
+
+
 def test_bboxes(beamng):
     with beamng as bng:
         scenario = Scenario('west_coast_usa', 'bbox_test')
@@ -256,7 +287,7 @@ def test_state(beamng):
         vehicle = Vehicle('test_car', model='pickup')
 
         state = State()
-        vehicle.attach_sensor('state', state)
+        vehicle.attach_sensor('newstate', state)
 
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)

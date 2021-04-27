@@ -15,17 +15,13 @@ import signal
 import socket
 import subprocess
 import sys
-import time
 import zipfile
 import warnings
 
-import numpy as np
 
 from pathlib import Path
-from threading import Thread
 from time import sleep
 
-from PIL import Image
 
 from .level import Level
 from .scenario import Scenario, ScenarioObject
@@ -34,7 +30,7 @@ from .vehicle import Vehicle
 from .beamngcommon import send_msg, recv_msg
 from .beamngcommon import angle_to_quat, raise_rot_deprecation_warning
 from .beamngcommon import ack
-from .beamngcommon import BNGError, BNGValueError, BNGDisconnectedError
+from .beamngcommon import BNGError, BNGValueError
 from .beamngcommon import PROTOCOL_VERSION, ENV
 
 BINARIES = [
@@ -193,7 +189,7 @@ class BeamNGpy:
         if not choice:
             raise BNGError('No BeamNG binary found in BeamNG home. Make '
                            'sure any of these exist in the BeamNG home '
-                           'folder: %s'.format(','.join(BINARIES)))
+                           f'folder: {", ".join(BINARIES)}')
 
         log.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
@@ -841,7 +837,7 @@ class BeamNGpy:
         the simulator has finished simulating the desired amount of steps. If
         not, this method resumes immediately. This can be used to queue
         commands that should be executed right after the steps have been
-        simulated. 
+        simulated.
         Args:
             count (int): The amount of steps to simulate.
             wait (bool): Optional. Whether to wait for the steps to be
@@ -1832,8 +1828,8 @@ class BeamNGpy:
         Method to obtain the annotation configuration of the simulator.
 
         Returns:
-            A mapping of object classes to lists containing the [R, G, B] values
-            of the colors objects of that class are rendered with.
+            A mapping of object classes to lists containing the [R, G, B]
+            values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')
         self.send(data)
@@ -1848,8 +1844,8 @@ class BeamNGpy:
 
         Args:
             annotations (dict): The annotation configuration of the simulator.
-                                Expected to be in the format `get_annotations()`
-                                returns.
+                                Expected to be in the format
+                                `get_annotations()` returns.
 
         Returns:
             A mapping of colors encoded as 24bit integers to object classes

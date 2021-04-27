@@ -300,7 +300,8 @@ class Camera(Sensor):
             path (str): Contents of the `<path>` tag. Optional.
             database (str): Contents of the `<database>` tag. Optional.
             size (tuple): Contents of the `<size>` tag. It's expected to be a
-                          tuple of the image width, height, and depth. Optional.
+                          tuple of the image width, height, and depth.
+                          Optional.
 
         Returns:
             XML string encoding the given list of bounding boxes according to
@@ -742,13 +743,18 @@ class Camera(Sensor):
                 # of the scale are clamped to either 0 or 255
                 # respectively.
                 if self.depth_inverse:
-                    depth_d = np.interp(depth_d, [self.depth_distance[0],
-                              self.depth_distance[1]], [255, 0], left=255,
-                              right=0)
+                    depth_dist = [self.depth_distance[0],
+                                  self.depth_distance[1]]
+                    depth_d = np.interp(depth_d,
+                                        depth_dist,
+                                        [255, 0],
+                                        left=255,
+                                        right=0)
                 else:
                     depth_d = np.interp(depth_d, [self.depth_distance[0],
-                              self.depth_distance[1]], [0, 255], left=0,
-                              right=255)
+                                        self.depth_distance[1]], [0, 255],
+                                        left=0,
+                                        right=255)
                 depth_d = depth_d.reshape(img_h, img_w)
                 depth_d = np.uint8(depth_d)
                 decoded['depth'] = Image.fromarray(depth_d)
@@ -851,8 +857,8 @@ class Lidar(Sensor):
             bng.open_lidar(self.handle, vehicle, self.handle, Lidar.shmem_size,
                            offset=self.offset, direction=self.direction,
                            vres=self.vres, vangle=self.vangle, rps=self.rps,
-                           hz=self.hz, angle=self.angle, max_dist=self.max_dist,
-                           visualized=self.visualized)
+                           hz=self.hz, angle=self.angle,
+                           max_dist=self.max_dist, visualized=self.visualized)
         else:
             bng.open_lidar(self.handle, vehicle, '', 0, offset=self.offset,
                            direction=self.direction, vres=self.vres,
