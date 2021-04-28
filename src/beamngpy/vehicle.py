@@ -225,6 +225,9 @@ class Vehicle:
             sensor (:class:`beamngpy.Sensor`): The sensor to attach to the
                                                vehicle.
         """
+        if name in self.sensors.keys():
+            raise BNGValueError('One vehicle cannot have multiple sensors'
+                                f'with the same name: "{name}"')
         self.sensors[name] = sensor
         sensor.attach(self, name)
 
@@ -327,7 +330,7 @@ class Vehicle:
             Dict with sensor data to support compatibility with
             previous versions.
         """
-        if requests != None:
+        if requests is not None:
             warnings.warn('Do not use "requests" as function argument.\n'
                           'It is not used and will be removed in future '
                           'versions.', DeprecationWarning)
@@ -575,7 +578,7 @@ class Vehicle:
             BNGValueError: If the script has fewer than three nodes, the
                            minimum length of a script.
         """
-        if start_dir != None or up_dir != None or teleport != None:
+        if start_dir is not None or up_dir != None or teleport != None:
             warnings.warn('The function arguments "start_dir", "up_dir", '
                           ' and "teleport" are not used anymore and will be '
                           ' removed in future versions.', DeprecationWarning)
@@ -933,7 +936,8 @@ class Vehicle:
         data = dict(type='StartVSLLogging', outputDir=outputDir)
         self.send(data)
         userpath = self.bng.determine_userpath()
-        log_msg = f'Started in game logging. The log files can be found in {userpath}\\{outputDir}.'
+        log_msg = ('Started in game logging.'
+                   f'The log files can be found in {userpath}/{outputDir}.')
         log.info(log_msg)
 
     @ack('StoppedVSLLogging')
