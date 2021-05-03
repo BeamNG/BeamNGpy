@@ -150,8 +150,8 @@ vehicle.ai_set_mode('span')
 input('Hit enter when done...')
 ```
 
-More examples can be found in the [examples/][6] folder of this repository and
-the documentation of the library is [available here.][7].
+We have a [guide][6] helping you getting started and navigating our collection of examples and
+the documentation of the library is available [here][7].
 
 ## Troubleshooting
 
@@ -183,7 +183,7 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [3]: mailto:licensing@beamng.gmbh
 [4]: https://store.steampowered.com/app/284160/BeamNGdrive/
 [5]: https://pypi.org/project/beamngpy/
-[6]: https://github.com/BeamNG/BeamNGpy/tree/master/examples
+[6]: https://github.com/BeamNG/BeamNGpy/blob/dev/examples/guide.md
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/dev/docs/contributing.md

@@ -10,12 +10,6 @@
 """
 
 import copy
-import json
-import logging as log
-import os
-import os.path
-
-import numpy as np
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
@@ -23,7 +17,7 @@ from jinja2.loaders import PackageLoader
 from .beamng import Level
 
 from .beamngcommon import BNGValueError, BNGError, angle_to_quat
-from .beamngcommon import compute_rotation_matrix, quat_as_rotation_mat_str
+from .beamngcommon import quat_as_rotation_mat_str
 from .beamngcommon import raise_rot_deprecation_warning
 
 
@@ -580,6 +574,9 @@ class Scenario:
             camera (:class:`beamngpy.sensors.Camera` ): The camera to add.
             name (str): The name the camera should be identified with.
         """
+        if name in self.sensors.keys():
+            raise BNGValueError('One scenario cannot have multiple cameras'
+                                f'with the same name: "{name}"')
         self.cameras[name] = camera
         camera.attach(None, name)
 
