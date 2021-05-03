@@ -524,7 +524,6 @@ sensors.Camera = function(req, callback)
   depth = req['depth']
   annotation = req['annotation']
   instance = req['instance']
-  log('I', 'Instance annotation setting: ' .. tostring(instance))
 
   local shmem = req['shmem']
 
