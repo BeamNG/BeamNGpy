@@ -515,6 +515,7 @@ sensors.Camera = function(req, callback)
   depth = req['depth']
   annotation = req['annotation']
   instance = req['instance']
+  log('I', 'Instance annotation setting: ' .. tostring(instance))
 
   local shmem = req['shmem']
 
@@ -563,7 +564,7 @@ sensors.Camera = function(req, callback)
     data = Engine.renderCameraBase64Blocking(pos, rot, resolution, fov, nearFar)
   end
 
-  if instance ~= nil then
+  if instance ~= nil and instance then
     AnnotationManager.setInstanceAnnotations(true)
 
     for k, v in pairs(map.objects) do
@@ -612,25 +613,21 @@ end
 
 sensors.Lidar = function(req, callback)
   local name = req['name']
-  log('I', 'Getting lidar data! ' .. tostring(name))
   local shmem = req['shmem']
   local lidar = lidars[name]
   if lidar ~= nil then
     if shmem then
       lidar:requestDataShmem(function(realSize)
-        log('I', 'Got data shmem!')
         callback({size = realSize})
       end)
     else
       lidar:requestData(function(points)
-        log('I', 'Got data points!')
         local res = {}
         for i, p in ipairs(points) do
           table.insert(res, tonumber(p.x))
           table.insert(res, tonumber(p.y))
           table.insert(res, tonumber(p.z))
         end
-        log('I', 'Sending points!')
         callback({points = res})
       end)
     end
@@ -809,7 +806,6 @@ M.handleGetDecalRoadEdges = function(skt, msg)
 end
 
 M.handleEngineFlags = function(skt, msg)
-  log('I', 'Setting engine flags.')
   local flags = msg['flags']
   if flags['annotations'] then
     Engine.Annotation.enable(true)
