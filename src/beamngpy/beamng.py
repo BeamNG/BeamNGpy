@@ -238,7 +238,7 @@ class BeamNGpy:
         if 'physicsfps' in usr_opts.keys():
             call_opts['physicsfps'] = usr_opts['physicsfps']
 
-        for key, val in usr_opts.items():
+        for key, val in call_opts.items():
             call.extend(['-'+key, val])
 
         if self.user:
