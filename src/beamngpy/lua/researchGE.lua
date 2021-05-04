@@ -527,7 +527,7 @@ sensors.Camera = function(req, callback)
 
   local shmem = req['shmem']
 
-  if instance ~= nil and be:getPhysicsRunning() then
+  if instance ~= nil and instance and be:getPhysicsRunning() then
     be:setPhysicsRunning(false)
     paused = true
   end
