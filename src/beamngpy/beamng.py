@@ -89,9 +89,19 @@ class BeamNGpy:
         Bundles required Lua extensions into a mod zip and places it in the
         given userpath.
 
+        Note that for BeamNG.tech version 0.23 and higher the directory
+        for the user path needs to be set up once before the first usage of BeamNGpy
+        with that user path.
+
         Args:
             userpath (str): Userpath to place the mod zip in.
         """
+        research_helper = Path(userpath) / 'researchHelper.txt'
+        if research_helper.exists():
+            with research_helper.open('r') as f:
+                content = f.readline()
+            userpath = content
+
         mods = Path(userpath) / 'mods'
         if not mods.exists():
             mods.mkdir(parents=True)
@@ -197,7 +207,7 @@ class BeamNGpy:
         log.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
 
-    def prepare_call(self, extensions, *args, **opts):
+    def prepare_call(self, extensions, *args, **usr_opts):
         """
         Prepares the command line call to execute to start BeamNG.*.
         according to this class' and the global configuration.
@@ -218,16 +228,21 @@ class BeamNGpy:
             '-rport',
             str(self.port),
             '-nosteam',
-            '-physicsfps',
-            '4000',
-            '-lua',
-            lua,
         ]
 
         for arg in args:
             call.append(arg)
-        for key, val in opts.items():
-            call.extend([key, val])
+
+        call_opts = {'physicsfps': '4000',
+                     'lua': lua}
+        if 'lua' in usr_opts.keys():
+            call_opts['lua'] = usr_opts['lua']
+
+        if 'physicsfps' in usr_opts.keys():
+            call_opts['physicsfps'] = usr_opts['physicsfps']
+
+        for key, val in call_opts.items():
+            call.extend(['-'+key, val])
 
         if self.user:
             call.append('-userpath')
