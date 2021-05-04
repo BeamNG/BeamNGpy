@@ -22,7 +22,7 @@ import msgpack
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
-PROTOCOL_VERSION = 'v1.18'
+PROTOCOL_VERSION = 'v1.19'
 
 
 class BNGError(Exception):
@@ -249,7 +249,6 @@ def quat_as_rotation_mat_str(quat):
 
     Return:
         Rotation matrix as string
-
     """
     mat = compute_rotation_matrix(quat)
     mat = mat.reshape(9).astype(str)

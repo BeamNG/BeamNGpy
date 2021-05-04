@@ -20,4 +20,4 @@ def read(fil):
         return f.read()
 
 
-__version__ = read('./version.txt')
+__version__ = read('version.txt')

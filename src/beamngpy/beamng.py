@@ -15,17 +15,13 @@ import signal
 import socket
 import subprocess
 import sys
-import time
 import zipfile
 import warnings
 
-import numpy as np
 
 from pathlib import Path
-from threading import Thread
 from time import sleep
 
-from PIL import Image
 
 from .level import Level
 from .scenario import Scenario, ScenarioObject
@@ -34,7 +30,7 @@ from .vehicle import Vehicle
 from .beamngcommon import send_msg, recv_msg
 from .beamngcommon import angle_to_quat, raise_rot_deprecation_warning
 from .beamngcommon import ack
-from .beamngcommon import BNGError, BNGValueError, BNGDisconnectedError
+from .beamngcommon import BNGError, BNGValueError
 from .beamngcommon import PROTOCOL_VERSION, ENV
 
 BINARIES = [
@@ -80,24 +76,22 @@ def setup_logging(log_file=None, activateWarnings=True):
     log.info('Started BeamNGpy logging.')
 
 
-def updating(fun):
-    def update_wrapped(*args, **kwargs):
-        update_wrapped.__doc__ = fun.__doc__
-        if args[0].scenario:
-            args[0].update_scenario()
-        return fun(*args, **kwargs)
-    return update_wrapped
-
-
 class BeamNGpy:
     """
     The BeamNGpy class is the backbone of communication with the BeamNG
-    simulation and offers methods of starting, stopping, and controlling the
-    state of the simulator.
+    simulation and offers methods of starting, stopping, connecting to, and
+    controlling the state of the simulator.
     """
 
     @staticmethod
     def deploy_mod(userpath):
+        """
+        Bundles required Lua extensions into a mod zip and places it in the
+        given userpath.
+
+        Args:
+            userpath (str): Userpath to place the mod zip in.
+        """
         mods = Path(userpath) / 'mods'
         if not mods.exists():
             mods.mkdir(parents=True)
@@ -198,7 +192,7 @@ class BeamNGpy:
         if not choice:
             raise BNGError('No BeamNG binary found in BeamNG home. Make '
                            'sure any of these exist in the BeamNG home '
-                           'folder: %s'.format(','.join(BINARIES)))
+                           f'folder: {", ".join(BINARIES)}')
 
         log.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
@@ -265,7 +259,10 @@ class BeamNGpy:
         """
         Kills the running BeamNG.* process.
         """
-        self.quit_beamng()
+        try:
+            self.quit_beamng()
+        except ConnectionResetError:
+            pass
 
         if self.remote:
             log.warn('cannot kill remote BeamNG.research process, aborting subroutine')
@@ -288,6 +285,10 @@ class BeamNGpy:
         self.process = None
 
     def hello(self):
+        """
+        First function called after connections. Exchanges the protocol version
+        with the connected simulator and raises an error upon mismatch.
+        """
         data = dict(type='Hello')
         data['protocolVersion'] = PROTOCOL_VERSION
         self.send(data)
@@ -305,6 +306,21 @@ class BeamNGpy:
             raise BNGError(msg)
 
     def message(self, req, **kwargs):
+        """
+        Generic message function which is parameterized with the type of
+        message to send and all parameters that are to be embedded in the
+        request. Responses are expected to have the same type as the request.
+        If this is not the case, an error is raised.
+
+        Args:
+            req (str): The request type.
+
+        Raises:
+            BNGValueError: If the response type does not match the request type
+
+        Returns:
+            The response received from the simulator as a dictionary.
+        """
         kwargs['type'] = req
         self.send(kwargs)
         resp = self.recv()
@@ -318,12 +334,36 @@ class BeamNGpy:
         return None
 
     def get_levels(self):
+        """
+        Queries the available levels in the simulator and returns them as a
+        mapping of level name to :class:`.Level` instances.
+
+        Returns:
+            A dictionary of available level names to a corresponding instance
+            of the :class:`.Level` class.
+        """
         levels = self.message('GetLevels')
         levels = [Level.from_dict(l) for l in levels]
         levels = {l.name: l for l in levels}
         return levels
 
     def get_scenarios(self, levels=None):
+        """
+        Queries the available scenarios and returns them as a mapping of
+        paths to :class:`.Scenario` instances. The scenarios are constructed
+        to point to their parent levels, so to avoid extra queries to the
+        simulator about existing levels, a cache of available levels can be
+        passed to this method.
+
+        Args:
+            levels (dict): A dictionary of level names to :class:`.Level`
+                           instances to fill in the parent level of returned
+                           scenarios.
+
+        Returns:
+            A mapping of scenario paths to their corresponding
+            :class:`.Scenario` instance.
+        """
         if levels is None:
             levels = self.get_levels()
 
@@ -336,6 +376,17 @@ class BeamNGpy:
         return scenarios
 
     def get_level_scenarios(self, level):
+        """
+        Queries the simulator for all scenarios available in the  given level.
+
+        Args:
+            level: The level to get scenarios for. Can either be the name of
+                   the level as a string or an instance of :class:`.Level`
+
+        Returns:
+            A mapping of scenario paths to their corresponding
+            :class:`.Scenario` instance.
+        """
         level_name = None
         if isinstance(level, Level):
             level_name = level.name
@@ -352,6 +403,13 @@ class BeamNGpy:
         return scenarios
 
     def get_levels_and_scenarios(self):
+        """
+        Utility method that retrieves all levels and scenarios and returns
+        them as a tuple of (levels, scenarios).
+
+        Returns:
+            (:meth:`~BeamNGpy.get_levels`, :meth:`~BeamNGpy.get_scenarios`)
+        """
         levels = self.get_levels()
         scenarios = self.get_scenarios(levels=levels)
 
@@ -362,6 +420,18 @@ class BeamNGpy:
         return levels, scenarios
 
     def get_current_scenario(self, levels=None):
+        """
+        Queries the currently loaded scenario from the simulator.
+
+        Args:
+            levels (dict): A mapping of level names to :class:`.Level` instances
+
+        Returns:
+            A :class:`.Scenario` instance of the currently-loaded scenario. If
+            the ``levels`` parameter contains the level the scenario is taking
+            place in, the scenario's parent level field will be filled in
+            accordingly.
+        """
         scenario = self.message('GetCurrentScenario')
         scenario = Scenario.from_dict(scenario)
 
@@ -371,7 +441,15 @@ class BeamNGpy:
 
         return scenario
 
-    def get_current_vehicles_info(self):
+    def get_current_vehicles(self):
+        """
+        Queries the currently active vehicles in the simulator.
+
+        Returns:
+            A mapping of vehicle IDs to instances of the :class:`.Vehicle`
+            class for each active vehicle. These vehicles are not connected to
+            by this function.
+        """
         vehicles = self.message('GetCurrentVehicles')
         return vehicles
 
@@ -381,6 +459,14 @@ class BeamNGpy:
         return vehicles
 
     def connect(self, tries=25):
+        """
+        Tries connecting to the running simulator over the host and port
+        configuration set in this class. Upon failure, connections are
+        re-attempted a limited amount of times.
+
+        Args:
+            tries (int): The amount of attempts to connect before giving up.
+        """
         self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         log.info('Connecting to BeamNG.tech at: ({}, {})'.format(self.host,
                                                                  self.port))
@@ -429,6 +515,10 @@ class BeamNGpy:
             launch (bool): Whether to launch a new process or connect to a
                            running one on the configured host/port. Defaults to
                            True.
+            deploy (bool): Whether to deploy the required Lua extensions as a
+                           mod zip to the configured userpath. If false, it is
+                           assumed that the Lua extensions are already
+                           installed.
         """
         log.info('Opening BeamNGpy instance...')
 
@@ -445,7 +535,7 @@ class BeamNGpy:
 
     def close(self):
         """
-        Kills the BeamNG.* process and closes the server.
+        Kills the BeamNG.* process.
         """
         log.info('Closing BeamNGpy instance...')
         if self.scenario:
@@ -479,24 +569,17 @@ class BeamNGpy:
         data = dict(type='ShowHUD')
         self.send(data)
 
-    def sync(self):
-
-        pass
-
     def start_vehicle_connection(self, vehicle):
         """
-        Creates a server socket for the given vehicle and sends a connection
-        request for it to the simulation. This method does not wait for the
-        connection to be established but rather returns the respective server
-        socket to the caller.
+        Prompts the simulator to initiate a new connection for the given
+        vehicle, opening a server socket BeamNGpy can connect to. The port
+        of this new server socket is returned.
 
         Args:
             vehicle (:class:`.Vehicle`): The vehicle instance to be connected.
-            port (int): Optional. The port the vehicle should be connecting
-                        over.
 
         Returns:
-            The server socket created and waiting for a conection.
+            The port connections to the given vehicle are available on.
         """
         connection_msg = {'type': 'StartVehicleConnection'}
         connection_msg['vid'] = vehicle.vid
@@ -537,7 +620,6 @@ class BeamNGpy:
         boolean the state to set. Possible flags are:
 
          * ``annotations``: Whether pixel-wise annotation should be enabled.
-         * ``lidar``: Whether Lidar rendering should be enabled.
 
         """
         flags = dict(type='EngineFlags', flags=flags)
@@ -584,7 +666,8 @@ class BeamNGpy:
             shmem (str): The handle of the shared memory space used to exchange
                          data.
             shmem_size (int): Size of the shared memory space that has been
-                              allocated for exchange.
+                              allocated for exchange. If 0 is given, no shmem
+                              is opened at all.
             offset (tuple): (X, Y, Z) coordinate triplet specifying the
                             position of the sensor relative to the vehicle's.
             direction (tuple): (X, Y, Z) coordinate triple specifying the
@@ -775,9 +858,9 @@ class BeamNGpy:
         Advances the simulation the given amount of steps, assuming it is
         currently paused. If the wait flag is set, this method blocks until
         the simulator has finished simulating the desired amount of steps. If
-        not, this method resumes immediatly. This can be used to queue commands
-        that should be executed right after the steps have been simulated.
-
+        not, this method resumes immediately. This can be used to queue
+        commands that should be executed right after the steps have been
+        simulated.
         Args:
             count (int): The amount of steps to simulate.
             wait (bool): Optional. Whether to wait for the steps to be
@@ -1115,9 +1198,28 @@ class BeamNGpy:
         return resp['name']
 
     def get_scenetree(self):
+        """
+        Queries the scene tree of the current scenario/level. The scene tree
+        is returned as a tree of :class:`.SceneObject` instances the root of
+        which is of the ``SimGroup`` class.
+
+        Returns:
+            A tree of :class:`.SceneObject` objects that contains all objects
+            in the current scene. The respective objects do not contain
+            type-specific information. This information can be obtained on a
+            per-object basis using :meth:`~BeamNGpy.get_scene_object_data`.
+        """
         return self.message('GetSceneTree')
 
     def get_scene_object_data(self, obj_id):
+        """
+        Retrieves all available key/value pairs the simulation offers for the
+        given object as a dictionary.
+
+        Returns:
+            A dictionary of key/values the simulator offers for the object of
+            the given ID.
+        """
         return self.message('GetObject', id=obj_id)
 
     def spawn_vehicle(self, vehicle, pos, rot,
@@ -1759,8 +1861,8 @@ class BeamNGpy:
         Method to obtain the annotation configuration of the simulator.
 
         Returns:
-            A mapping of object classes to lists containing the [R, G, B] values
-            of the colors objects of that class are rendered with.
+            A mapping of object classes to lists containing the [R, G, B]
+            values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')
         self.send(data)
@@ -1775,8 +1877,8 @@ class BeamNGpy:
 
         Args:
             annotations (dict): The annotation configuration of the simulator.
-                                Expected to be in the format `get_annotations()`
-                                returns.
+                                Expected to be in the format
+                                `get_annotations()` returns.
 
         Returns:
             A mapping of colors encoded as 24bit integers to object classes
@@ -1789,11 +1891,30 @@ class BeamNGpy:
         return classes
 
     def create_scenario(self, level, name, prefab, info):
+        """
+        Prompts the simulator to create files required for a scenario. Namely,
+        the "info.json" containing scenario information and the contents of the
+        scenario prefab containing objects in the scene.
+
+        Args:
+            level (str): The name of the level the new scenario is in
+            name (str): The name of the scenario
+            prefab (str): Contents of the scenario's prefab file
+            info (dict): Contents of the scenario's info.json
+        """
         resp = self.message('CreateScenario',
                             level=level, name=name, prefab=prefab, info=info)
         return resp
 
     def delete_scenario(self, path):
+        """
+        Prompts the simulator to delete files of the scenario at the given
+        path.
+
+        Args:
+            path (str): The path to the scenario relative to BeamNG.tech's home
+            folder.
+        """
         self.message('DeleteScenario', path=path)
 
     @ack('Quit')
@@ -1864,7 +1985,7 @@ class BeamNGpy:
         self.send(data)
         self.await_vehicle_spawn(vehicle.vid)
         vehicle.close()
-        self.connect_vehicle(vehicle, vehicle.port)
+        vehicle.connect(self)
 
     def __enter__(self):
         self.open()

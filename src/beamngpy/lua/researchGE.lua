@@ -35,8 +35,7 @@ local spawnPending = nil
 local vehicleInfoPending = 0
 local vehicleInfo = nil
 
-local frameDelayTimer = -1
-local frameDelayFunc = nil
+local frameDelayFuncQueue = {}
 
 local sensors = {}
 
@@ -75,6 +74,10 @@ local function log(level, message)
   _log(level, logTag, message)
 end
 
+local function addFrameDelayFunc(func, delay)
+  table.insert(frameDelayFuncQueue, {callback=func, frameCountDown=delay})
+end
+
 local function addDynamicDebugSphere(getSpec)
   debugObjectCounter.dynamicSphereNum = debugObjectCounter.dynamicSphereNum + 1
   table.insert(debugObjects.dynamicSpheres, {getSpec = getSpec})
@@ -101,14 +104,20 @@ M.onPreRender = function(dt)
     shutdown(0)
   end
 
-  if frameDelayTimer > 0 then
-    frameDelayTimer = frameDelayTimer - 1
-    if frameDelayTimer == 0 then
-      frameDelayFunc()
-      frameDelayFunc = nil
-      frameDelayTimer = 0
-    else
-      return
+  local obsoleteFuncIndices = {}
+  if frameDelayFuncQueue then
+    for idx, item in pairs(frameDelayFuncQueue) do
+      item.frameCountDown = item.frameCountDown-1
+      if item.frameCountDown == 0 then
+        item.callback()
+        table.insert(obsoleteFuncIndices, idx)
+      end
+    end
+  end
+
+  if obsoleteFuncIndices then
+    for k, idx in pairs(obsoleteFuncIndices) do
+      table.remove(obsoleteFuncIndices, idx)
     end
   end
 
@@ -433,6 +442,7 @@ end
 M.handleWaitForSpawn = function(skt, msg)
   local name = msg['name']
   spawnPending = name
+  block('spawnVehicle', skt)
 end
 
 M.onVehicleSpawned = function(vID)
@@ -477,8 +487,7 @@ M.handleSpawnVehicle = function(skt, msg)
   options.licenseText = msg['licenseText']
 
   spawnPending = name
-  blocking = 'spawnVehicle'
-  waiting = skt
+  block('spawnVehicle', skt)
 
   core_vehicles.spawnNewVehicle(model, options)
 end
@@ -527,6 +536,8 @@ sensors.Camera = function(req, callback)
   annotation = req['annotation']
   instance = req['instance']
 
+  local shmem = req['shmem']
+
   if instance ~= nil and be:getPhysicsRunning() then
     be:setPhysicsRunning(false)
     paused = true
@@ -565,7 +576,12 @@ sensors.Camera = function(req, callback)
   resolution = Point2F(resolution[1], resolution[2])
   nearFar = Point2F(nearFar[1], nearFar[2])
 
-  local data = Engine.renderCameraShmem(color, depth, annotation, pos, rot, resolution, fov, nearFar)
+  local data = nil
+  if shmem then
+    data = Engine.renderCameraShmem(color, depth, annotation, pos, rot, resolution, fov, nearFar)
+  else
+    data = Engine.renderCameraBase64Blocking(pos, rot, resolution, fov, nearFar)
+  end
 
   if instance ~= nil then
     AnnotationManager.setInstanceAnnotations(true)
@@ -580,11 +596,17 @@ sensors.Camera = function(req, callback)
       setVehicleAnnotationColor(veh, color)
     end
 
-    frameDelayTimer = 1
-    frameDelayFunc = function()
-      local otherData = Engine.renderCameraShmem(color, depth, instance, pos, rot, resolution, fov, nearFar)
-      otherData['instance'] = otherData['annotation']
-      otherData['annotation'] = data['annotation']
+    local func = function()
+      local otherData = nil
+      if shmem then
+        otherData = Engine.renderCameraShmem(color, depth, instance, pos, rot, resolution, fov, nearFar)
+        otherData['instance'] = otherData['annotation']
+        otherData['annotation'] = data['annotation']
+      else
+        otherData = Engine.renderCameraBase64Blocking(pos, rot, resolution, fov, nearFar)
+        otherData['instanceRGB8'] = otherData['annotationRGB8']
+        otherData['annotationRGB8'] = data['annotationRGB8']
+      end
       AnnotationManager.setInstanceAnnotations(false)
 
       for k, v in pairs(map.objects) do
@@ -600,6 +622,8 @@ sensors.Camera = function(req, callback)
       lidarsVisualized(true)
       callback(otherData)
     end
+    addFrameDelayFunc(func, 1)
+
   else
     lidarsVisualized(true)
     callback(data)
@@ -609,11 +633,28 @@ end
 
 sensors.Lidar = function(req, callback)
   local name = req['name']
+  log('I', 'Getting lidar data! ' .. tostring(name))
+  local shmem = req['shmem']
   local lidar = lidars[name]
   if lidar ~= nil then
-    lidar:requestDataShmem(function(realSize)
-      callback({size = realSize})
-    end)
+    if shmem then
+      lidar:requestDataShmem(function(realSize)
+        log('I', 'Got data shmem!')
+        callback({size = realSize})
+      end)
+    else
+      lidar:requestData(function(points)
+        log('I', 'Got data points!')
+        local res = {}
+        for i, p in ipairs(points) do
+          table.insert(res, tonumber(p.x))
+          table.insert(res, tonumber(p.y))
+          table.insert(res, tonumber(p.z))
+        end
+        log('I', 'Sending points!')
+        callback({points = res})
+      end)
+    end
   else
     callback(nil)
   end
@@ -850,7 +891,6 @@ M.handleUpdateScenario = function(skt, msg)
 end
 
 M.handleOpenLidar = function(skt, msg)
-  log('I', 'Opening lidar!')
   local name = msg['name']
   local shmem = msg['shmem']
   local shmemSize = msg['size']
@@ -870,13 +910,7 @@ M.handleOpenLidar = function(skt, msg)
   local lidar = research.LIDAR(vid, offset, direction, vRes, vAngle, rps, hz, angle, maxDist)
   lidar:open(shmem, shmemSize)
   lidar:enabled(true)
-  if msg['visualized'] then
-    log('I', 'Visualizing lidar!')
-    lidar:visualized(true)
-  else
-    log('I', 'Not visualizing lidar!')
-    lidar:visualized(false)
-  end
+  lidar:visualized(msg['visualized'])
   lidars[name] = lidar
 
   rcom.sendACK(skt, 'OpenedLidar')
@@ -1215,8 +1249,7 @@ M.handleSetRelativeCam = function(skt, msg)
   local vid = be:getPlayerVehicle(0):getID()
   local pos = msg['pos']
   local rot = msg['rot']
-  frameDelayTimer = 3
-  frameDelayFunc = function()
+  local func = function()
     pos = vec3(pos[1], pos[2], pos[3])
     core_camera.getCameraDataById(vid)['relative'].pos = pos
 
@@ -1227,10 +1260,9 @@ M.handleSetRelativeCam = function(skt, msg)
 
     rcom.sendACK(skt, 'RelativeCamSet')
   end
+  addFrameDelayFunc(func, 3)
   return false
 end
-
-
 
 local function tableToPoint3F(point, cling, offset)
   local point = Point3F(point[1], point[2], point[3])

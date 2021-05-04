@@ -10,12 +10,6 @@
 """
 
 import copy
-import json
-import logging as log
-import os
-import os.path
-
-import numpy as np
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
@@ -23,7 +17,7 @@ from jinja2.loaders import PackageLoader
 from .beamng import Level
 
 from .beamngcommon import BNGValueError, BNGError, angle_to_quat
-from .beamngcommon import compute_rotation_matrix, quat_as_rotation_mat_str
+from .beamngcommon import quat_as_rotation_mat_str
 from .beamngcommon import raise_rot_deprecation_warning
 
 
@@ -350,8 +344,8 @@ class Scenario:
         the given level.
 
         Args:
-            level (str): Name of the level to place this scenario in. This has
-                         to be a level known to the simulation.
+            level: Either the name of the level this scenario takes place in
+                   as a string or as an instance of :class:`.Level`
             name (str): The name of this scenario. Should be unique for the
                         level it's taking place in to avoid file collisions.
         """
@@ -579,6 +573,9 @@ class Scenario:
             camera (:class:`beamngpy.sensors.Camera` ): The camera to add.
             name (str): The name the camera should be identified with.
         """
+        if name in self.sensors.keys():
+            raise BNGValueError('One scenario cannot have multiple cameras'
+                                f'with the same name: "{name}"')
         self.cameras[name] = camera
         camera.attach(None, name)
 
@@ -643,6 +640,12 @@ class Scenario:
         self.scene = self._convert_scene_object(scenetree)
 
     def sync_scene(self):
+        """
+        Retrieves the current scene tree of the scenario from the simulator,
+        converting them into the most appropriate known (sub)class of
+        :class:`.SceneObject`. The result is not returned but rather stored
+        in the ``scene`` field of this class.
+        """
         self._fill_scene()
 
     def connect(self, bng):

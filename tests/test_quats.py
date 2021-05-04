@@ -61,9 +61,11 @@ def test_quats(beamng):
 
         pickup = Vehicle('ego_vehicle4', model='pickup')
         pos = (-15, 0, 0)
-        bng.spawn_vehicle(pickup, pos, None, rot_quat=(0, 0, 0, 1))
-        resp = bng.get_available_vehicles()
-        assert len(resp) == 2
+        bng.spawn_vehicle(vehicle, pos, None, rot_quat=(0, 0, 0, 1))
+        resp = bng.get_current_vehicles()
+        assert len(resp) == 4
+
+        vehicle.connect(bng)
 
         pickup.poll_sensors()
         pos_before = pickup.state['pos']
