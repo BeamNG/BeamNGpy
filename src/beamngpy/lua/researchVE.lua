@@ -62,7 +62,8 @@ local function getVehicleState()
     dir = obj:getDirectionVector(),
     up = obj:getDirectionVectorUp(),
     vel = obj:getVelocity(),
-    front = obj:getFrontPosition()
+    front = obj:getFrontPosition(),
+    rotation = quat(obj:getRotation())
   }
   vehicleState['pos'] = {
     vehicleState['pos'].x,
@@ -92,6 +93,13 @@ local function getVehicleState()
     vehicleState['front'].x,
     vehicleState['front'].y,
     vehicleState['front'].z
+  }
+
+  vehicleState['rotation'] = {
+    vehicleState['rotation'].x,
+    vehicleState['rotation'].y,
+    vehicleState['rotation'].z,
+    vehicleState['rotation'].w
   }
 
   return vehicleState
