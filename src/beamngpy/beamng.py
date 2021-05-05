@@ -456,7 +456,7 @@ class BeamNGpy:
 
         return scenario
 
-    def get_current_vehicles(self):
+    def get_current_vehicles_info(self):
         """
         Queries the currently active vehicles in the simulator.
 
