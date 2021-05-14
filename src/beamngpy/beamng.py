@@ -98,7 +98,7 @@ class BeamNGpy:
             userpath (str): Userpath to place the mod zip in.
         """
         effective_userpath = BeamNGpy.read_effective_userpath(userpath)
-        if userpath is None:
+        if effective_userpath is None:
             print(f'No workspace set up at userpath: <{userpath}>')
             print('Setup is required prior to mod deployment.')
             return
