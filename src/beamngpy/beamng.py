@@ -90,7 +90,7 @@ class BeamNGpy:
         Bundles required Lua extensions into a mod zip and places it in the
         given userpath.
 
-        Note that for BeamNG.tech version 0.23 and higher the directory
+        Note that for BeamNG.tech version 0.22 and higher the directory
         for the user path needs to be set up once before the first usage of BeamNGpy
         with that user path.
 

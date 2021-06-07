@@ -36,7 +36,7 @@ def setup_workspace(userpath, host, port):
     else:
         print(f'Could not set up workspace at <{userpath}>.'
               'Note that this step is only neccessary for '
-              'BeamNG.tech version 0.23 and above.')
+              'BeamNG.tech version 0.22 and above.')
 
 
 if __name__ == '__main__':
