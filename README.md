@@ -122,9 +122,9 @@ using common methods like `pip`:
 ## Usage
 
 **For using BeamNG.tech version 0.22 and above the workspace needs to be set up by the user.
-This step needs to be repeated for every newly installed BeamNG.tech version.**
-Simply type `beamngpy setup-workspace d:\exampleBNGworkspace` into the commandline.
-Optional parameters are provided by `--host localhost --port 65256`.
+This step needs to be repeated for every newly installed BeamNG.tech version** and helps BeamNGpy to determine the correct user directory for mod deployment.
+Create a workspace directory and then place your license file into it. Then type `beamngpy setup-workspace d:\exampleBNGworkspace` into the commandline.
+Optional parameters are `--host localhost --port 65255`.
 Note that this functionality is only available for BeamNGpy version 1.19.2 and above.
 
 Once set up, the library can be imported using `import beamngpy`. A short
