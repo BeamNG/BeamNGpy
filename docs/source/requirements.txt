@@ -3,3 +3,4 @@ sphinx==3.4.3
 sphinx_rtd_theme==0.5.1
 readthedocs-sphinx-search==0.1.0
 m2r2==0.2.7
+beamngpy==1.19.1
