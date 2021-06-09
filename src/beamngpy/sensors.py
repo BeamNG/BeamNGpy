@@ -533,11 +533,12 @@ class Camera(Sensor):
             self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
             log.debug('Bound shmem for annotation: %s', self.annotation_handle)
 
-            self.instance_handle = '{}.{}.{}.instance'
-            self.instance_handle = self.instance_handle.format(pid, prefix,
-                                                               name)
-            self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
-            log.debug('Bound shmem for instance: %s', self.instance_handle)
+            if self.instance:
+                self.instance_handle = '{}.{}.{}.instance'
+                self.instance_handle = self.instance_handle.format(pid, prefix,
+                                                                   name)
+                self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
+                log.debug('Bound shmem for instance: %s', self.instance_handle)
 
     def detach(self, vehicle, name):
         """

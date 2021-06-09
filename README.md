@@ -121,7 +121,13 @@ using common methods like `pip`:
 
 ## Usage
 
-Once installed, the library can be imported using `import beamngpy`. A short
+**For using BeamNG.tech version 0.22 and above the workspace needs to be set up by the user.
+This step needs to be repeated for every newly installed BeamNG.tech version** and helps BeamNGpy to determine the correct user directory for mod deployment.
+Create a workspace directory and then place your license file into it. Then type `beamngpy setup-workspace d:\exampleBNGworkspace` into the commandline.
+Optional parameters are `--host localhost --port 65255`.
+Note that this functionality is only available for BeamNGpy version 1.19.2 and above.
+
+Once set up, the library can be imported using `import beamngpy`. A short
 usage example setting up a scenario with one vehicle in the West Coast USA map
 that spans the area is:
 
@@ -163,6 +169,7 @@ recommended to consult the documentation on BeamNG.drive here:
 
 ### BeamNGpy cannot establish a connection
 
+ - Be sure to complete the initial set up step described in the Usage section and to repeat it with every newly released BeamNG.tech version.
  - Make sure BeamNG.tech and Python are allowed to connect to your current
    network in Windows Firewall.
 
@@ -186,4 +193,4 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [6]: https://github.com/BeamNG/BeamNGpy/blob/dev/examples/guide.md
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
-[9]: https://github.com/BeamNG/BeamNGpy/blob/dev/docs/contributing.md
+[9]: https://github.com/BeamNG/BeamNGpy/blob/dev/contributing.md

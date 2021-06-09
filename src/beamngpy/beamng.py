@@ -34,10 +34,11 @@ from .beamngcommon import BNGError, BNGValueError
 from .beamngcommon import PROTOCOL_VERSION, ENV
 
 BINARIES = [
-    'Bin64/BeamNG.tech.x64.exe',
-    'Bin64/BeamNG.research.x64.exe',
     'Bin64/BeamNG.drive.x64.exe',
+    'Bin64/BeamNG.tech.x64.exe',
 ]
+
+RESEARCH_HELPER = 'researchHelper.txt'
 
 
 def log_exception(extype, value, trace):
@@ -89,18 +90,19 @@ class BeamNGpy:
         Bundles required Lua extensions into a mod zip and places it in the
         given userpath.
 
-        Note that for BeamNG.tech version 0.23 and higher the directory
+        Note that for BeamNG.tech version 0.22 and higher the directory
         for the user path needs to be set up once before the first usage of BeamNGpy
         with that user path.
 
         Args:
             userpath (str): Userpath to place the mod zip in.
         """
-        research_helper = Path(userpath) / 'researchHelper.txt'
-        if research_helper.exists():
-            with research_helper.open('r') as f:
-                content = f.readline()
-            userpath = content
+        effective_userpath = BeamNGpy.read_effective_userpath(userpath)
+        if effective_userpath is None:
+            print(f'No workspace set up at userpath: <{userpath}>')
+            print('Setup is required prior to mod deployment.')
+            return
+        userpath = effective_userpath
 
         mods = Path(userpath) / 'mods'
         if not mods.exists():
@@ -119,6 +121,14 @@ class BeamNGpy:
             ziph.write(common, arcname=common_name)
             ziph.write(ge, arcname=ge_name)
             ziph.write(ve, arcname=ve_name)
+
+    @staticmethod
+    def read_effective_userpath(userpath):
+        reseach_helper = Path(userpath) / RESEARCH_HELPER
+        if reseach_helper.exists():
+            with open(reseach_helper) as infile:
+                return infile.read().strip()
+        return None
 
     def __init__(self, host, port, home=None, user=None, remote=False):
         """
@@ -162,10 +172,23 @@ class BeamNGpy:
             else:
                 self.user = self.determine_userpath()
 
+        self.effective_user = None
+
         self.process = None
         self.skt = None
 
         self.scenario = None
+
+    def setup_workspace(self):
+        try:
+            self.start_beamng(None, lua='shutdown(0)')
+            self.process.wait(timeout=600)
+        except Exception as err:
+            log.error('Error setting up workspace:')
+            log.exception(err)
+        finally:
+            self.kill_beamng()
+            self.process = None
 
     def determine_userpath(self):
         """
@@ -180,6 +203,13 @@ class BeamNGpy:
         else:
             user = user / 'BeamNG.drive'
         return user
+
+    def determine_effective_userpath(self):
+        effective_userpath = BeamNGpy.read_effective_userpath(self.user)
+        if not effective_userpath:
+            self.setup_workspace()
+            effective_userpath = BeamNGpy.read_effective_userpath(self.user)
+        self.effective_user = effective_userpath
 
     def determine_binary(self):
         """
@@ -242,7 +272,7 @@ class BeamNGpy:
             call_opts['physicsfps'] = usr_opts['physicsfps']
 
         for key, val in call_opts.items():
-            call.extend(['-'+key, val])
+            call.extend(['-' + key, val])
 
         if self.user:
             call.append('-userpath')
@@ -274,10 +304,11 @@ class BeamNGpy:
         """
         Kills the running BeamNG.* process.
         """
-        try:
-            self.quit_beamng()
-        except ConnectionResetError:
-            pass
+        if self.skt:
+            try:
+                self.quit_beamng()
+            except ConnectionResetError:
+                self.skt = None
 
         if self.remote:
             log.warn('cannot kill remote BeamNG.research process, aborting subroutine')
@@ -538,6 +569,8 @@ class BeamNGpy:
         log.info('Opening BeamNGpy instance...')
 
         if deploy:
+            if not self.effective_user:
+                self.determine_effective_userpath()
             BeamNGpy.deploy_mod(self.user)
 
         if launch:
