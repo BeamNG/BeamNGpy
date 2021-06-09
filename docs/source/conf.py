@@ -12,10 +12,7 @@
 #
 import os
 import sys
-import inspect
-__location__ = os.path.join(os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe())))
-sys.path.insert(0, os.path.join(__location__, '../src/beamngpy'))
-
+sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
