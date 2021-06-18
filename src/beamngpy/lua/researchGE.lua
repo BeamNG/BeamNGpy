@@ -35,8 +35,7 @@ local spawnPending = nil
 local vehicleInfoPending = 0
 local vehicleInfo = nil
 
-local frameDelayTimer = -1
-local frameDelayFunc = nil
+local frameDelayFuncQueue = {}
 
 local sensors = {}
 
@@ -75,6 +74,10 @@ local function log(level, message)
   _log(level, logTag, message)
 end
 
+local function addFrameDelayFunc(func, delay)
+  table.insert(frameDelayFuncQueue, {callback=func, frameCountDown=delay})
+end
+
 local function addDynamicDebugSphere(getSpec)
   debugObjectCounter.dynamicSphereNum = debugObjectCounter.dynamicSphereNum + 1
   table.insert(debugObjects.dynamicSpheres, {getSpec = getSpec})
@@ -101,14 +104,20 @@ M.onPreRender = function(dt)
     shutdown(0)
   end
 
-  if frameDelayTimer > 0 then
-    frameDelayTimer = frameDelayTimer - 1
-    if frameDelayTimer == 0 then
-      frameDelayFunc()
-      frameDelayFunc = nil
-      frameDelayTimer = 0
-    else
-      return
+  local obsoleteFuncIndices = {}
+  if frameDelayFuncQueue then
+    for idx, item in pairs(frameDelayFuncQueue) do
+      item.frameCountDown = item.frameCountDown-1
+      if item.frameCountDown == 0 then
+        item.callback()
+        table.insert(obsoleteFuncIndices, idx)
+      end
+    end
+  end
+
+  if obsoleteFuncIndices then
+    for k, idx in pairs(obsoleteFuncIndices) do
+      table.remove(obsoleteFuncIndices, idx)
     end
   end
 
@@ -518,7 +527,7 @@ sensors.Camera = function(req, callback)
 
   local shmem = req['shmem']
 
-  if instance ~= nil and be:getPhysicsRunning() then
+  if instance ~= nil and instance and be:getPhysicsRunning() then
     be:setPhysicsRunning(false)
     paused = true
   end
@@ -563,7 +572,7 @@ sensors.Camera = function(req, callback)
     data = Engine.renderCameraBase64Blocking(pos, rot, resolution, fov, nearFar)
   end
 
-  if instance ~= nil then
+  if instance ~= nil and instance then
     AnnotationManager.setInstanceAnnotations(true)
 
     for k, v in pairs(map.objects) do
@@ -576,8 +585,7 @@ sensors.Camera = function(req, callback)
       setVehicleAnnotationColor(veh, color)
     end
 
-    frameDelayTimer = 1
-    frameDelayFunc = function()
+    local func = function()
       local otherData = nil
       if shmem then
         otherData = Engine.renderCameraShmem(color, depth, instance, pos, rot, resolution, fov, nearFar)
@@ -603,6 +611,8 @@ sensors.Camera = function(req, callback)
       lidarsVisualized(true)
       callback(otherData)
     end
+    addFrameDelayFunc(func, 1)
+
   else
     lidarsVisualized(true)
     callback(data)
@@ -612,25 +622,21 @@ end
 
 sensors.Lidar = function(req, callback)
   local name = req['name']
-  log('I', 'Getting lidar data! ' .. tostring(name))
   local shmem = req['shmem']
   local lidar = lidars[name]
   if lidar ~= nil then
     if shmem then
       lidar:requestDataShmem(function(realSize)
-        log('I', 'Got data shmem!')
         callback({size = realSize})
       end)
     else
       lidar:requestData(function(points)
-        log('I', 'Got data points!')
         local res = {}
         for i, p in ipairs(points) do
           table.insert(res, tonumber(p.x))
           table.insert(res, tonumber(p.y))
           table.insert(res, tonumber(p.z))
         end
-        log('I', 'Sending points!')
         callback({points = res})
       end)
     end
@@ -809,7 +815,6 @@ M.handleGetDecalRoadEdges = function(skt, msg)
 end
 
 M.handleEngineFlags = function(skt, msg)
-  log('I', 'Setting engine flags.')
   local flags = msg['flags']
   if flags['annotations'] then
     Engine.Annotation.enable(true)
@@ -1227,8 +1232,7 @@ M.handleSetRelativeCam = function(skt, msg)
   local vid = be:getPlayerVehicle(0):getID()
   local pos = msg['pos']
   local rot = msg['rot']
-  frameDelayTimer = 3
-  frameDelayFunc = function()
+  local func = function()
     pos = vec3(pos[1], pos[2], pos[3])
     core_camera.getCameraDataById(vid)['relative'].pos = pos
 
@@ -1239,6 +1243,7 @@ M.handleSetRelativeCam = function(skt, msg)
 
     rcom.sendACK(skt, 'RelativeCamSet')
   end
+  addFrameDelayFunc(func, 3)
   return false
 end
 

@@ -15,17 +15,13 @@ import signal
 import socket
 import subprocess
 import sys
-import time
 import zipfile
 import warnings
 
-import numpy as np
 
 from pathlib import Path
-from threading import Thread
 from time import sleep
 
-from PIL import Image
 
 from .level import Level
 from .scenario import Scenario, ScenarioObject
@@ -34,14 +30,15 @@ from .vehicle import Vehicle
 from .beamngcommon import send_msg, recv_msg
 from .beamngcommon import angle_to_quat, raise_rot_deprecation_warning
 from .beamngcommon import ack
-from .beamngcommon import BNGError, BNGValueError, BNGDisconnectedError
+from .beamngcommon import BNGError, BNGValueError
 from .beamngcommon import PROTOCOL_VERSION, ENV
 
 BINARIES = [
-    'Bin64/BeamNG.tech.x64.exe',
-    'Bin64/BeamNG.research.x64.exe',
     'Bin64/BeamNG.drive.x64.exe',
+    'Bin64/BeamNG.tech.x64.exe',
 ]
+
+RESEARCH_HELPER = 'researchHelper.txt'
 
 
 def log_exception(extype, value, trace):
@@ -93,9 +90,20 @@ class BeamNGpy:
         Bundles required Lua extensions into a mod zip and places it in the
         given userpath.
 
+        Note that for BeamNG.tech version 0.22 and higher the directory
+        for the user path needs to be set up once before the first usage of BeamNGpy
+        with that user path.
+
         Args:
             userpath (str): Userpath to place the mod zip in.
         """
+        effective_userpath = BeamNGpy.read_effective_userpath(userpath)
+        if effective_userpath is None:
+            print(f'No workspace set up at userpath: <{userpath}>')
+            print('Setup is required prior to mod deployment.')
+            return
+        userpath = effective_userpath
+
         mods = Path(userpath) / 'mods'
         if not mods.exists():
             mods.mkdir(parents=True)
@@ -113,6 +121,14 @@ class BeamNGpy:
             ziph.write(common, arcname=common_name)
             ziph.write(ge, arcname=ge_name)
             ziph.write(ve, arcname=ve_name)
+
+    @staticmethod
+    def read_effective_userpath(userpath):
+        reseach_helper = Path(userpath) / RESEARCH_HELPER
+        if reseach_helper.exists():
+            with open(reseach_helper) as infile:
+                return infile.read().strip()
+        return None
 
     def __init__(self, host, port, home=None, user=None):
         """
@@ -153,10 +169,23 @@ class BeamNGpy:
         else:
             self.user = self.determine_userpath()
 
+        self.effective_user = None
+
         self.process = None
         self.skt = None
 
         self.scenario = None
+
+    def setup_workspace(self):
+        try:
+            self.start_beamng(None, lua='shutdown(0)')
+            self.process.wait(timeout=600)
+        except Exception as err:
+            log.error('Error setting up workspace:')
+            log.exception(err)
+        finally:
+            self.kill_beamng()
+            self.process = None
 
     def determine_userpath(self):
         """
@@ -171,6 +200,13 @@ class BeamNGpy:
         else:
             user = user / 'BeamNG.drive'
         return user
+
+    def determine_effective_userpath(self):
+        effective_userpath = BeamNGpy.read_effective_userpath(self.user)
+        if not effective_userpath:
+            self.setup_workspace()
+            effective_userpath = BeamNGpy.read_effective_userpath(self.user)
+        self.effective_user = effective_userpath
 
     def determine_binary(self):
         """
@@ -193,12 +229,12 @@ class BeamNGpy:
         if not choice:
             raise BNGError('No BeamNG binary found in BeamNG home. Make '
                            'sure any of these exist in the BeamNG home '
-                           'folder: %s'.format(','.join(BINARIES)))
+                           f'folder: {", ".join(BINARIES)}')
 
         log.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
 
-    def prepare_call(self, extensions, *args, **opts):
+    def prepare_call(self, extensions, *args, **usr_opts):
         """
         Prepares the command line call to execute to start BeamNG.*.
         according to this class' and the global configuration.
@@ -219,16 +255,21 @@ class BeamNGpy:
             '-rport',
             str(self.port),
             '-nosteam',
-            '-physicsfps',
-            '4000',
-            '-lua',
-            lua,
         ]
 
         for arg in args:
             call.append(arg)
-        for key, val in opts.items():
-            call.extend([key, val])
+
+        call_opts = {'physicsfps': '4000',
+                     'lua': lua}
+        if 'lua' in usr_opts.keys():
+            call_opts['lua'] = usr_opts['lua']
+
+        if 'physicsfps' in usr_opts.keys():
+            call_opts['physicsfps'] = usr_opts['physicsfps']
+
+        for key, val in call_opts.items():
+            call.extend(['-' + key, val])
 
         if self.user:
             call.append('-userpath')
@@ -261,10 +302,11 @@ class BeamNGpy:
         """
         Kills the running BeamNG.* process.
         """
-        try:
-            self.quit_beamng()
-        except ConnectionResetError:
-            pass
+        if self.skt:
+            try:
+                self.quit_beamng()
+            except ConnectionResetError:
+                self.skt = None
 
         if not self.process:
             return
@@ -517,6 +559,8 @@ class BeamNGpy:
         log.info('Opening BeamNGpy instance...')
 
         if deploy:
+            if not self.effective_user:
+                self.determine_effective_userpath()
             BeamNGpy.deploy_mod(self.user)
 
         if launch:
@@ -841,7 +885,7 @@ class BeamNGpy:
         the simulator has finished simulating the desired amount of steps. If
         not, this method resumes immediately. This can be used to queue
         commands that should be executed right after the steps have been
-        simulated. 
+        simulated.
         Args:
             count (int): The amount of steps to simulate.
             wait (bool): Optional. Whether to wait for the steps to be
@@ -1832,8 +1876,8 @@ class BeamNGpy:
         Method to obtain the annotation configuration of the simulator.
 
         Returns:
-            A mapping of object classes to lists containing the [R, G, B] values
-            of the colors objects of that class are rendered with.
+            A mapping of object classes to lists containing the [R, G, B]
+            values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')
         self.send(data)
@@ -1848,8 +1892,8 @@ class BeamNGpy:
 
         Args:
             annotations (dict): The annotation configuration of the simulator.
-                                Expected to be in the format `get_annotations()`
-                                returns.
+                                Expected to be in the format
+                                `get_annotations()` returns.
 
         Returns:
             A mapping of colors encoded as 24bit integers to object classes

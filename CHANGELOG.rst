@@ -2,6 +2,16 @@
 Changelog
 =========
 
+Version 1.20
+============
+- Adjust userpath handling according to changes in BeamNG.drive from 0.22 onwards
+- Overhaul documentation style and structure
+- Add function to set up userpath for BeamNG.tech usage
+- Add multicam test
+- Fix issue when multiple functions are waiting in researchGE.lua
+- Fix instance annotations always being rendered even when not desired
+
+
 Version 1.19.1
 ==============
 - Swap client/server model to allow multiple BeamNGpy instances to connect to one running simulator simultaneously
