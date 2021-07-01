@@ -8,19 +8,16 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
-import logging as log
 import os
-import shutil
 import signal
 import socket
 import subprocess
-import sys
 import zipfile
-import warnings
 
 
 from pathlib import Path
 from time import sleep
+import logging
 
 
 from .level import Level
@@ -32,6 +29,7 @@ from .beamngcommon import angle_to_quat, raise_rot_deprecation_warning
 from .beamngcommon import ack
 from .beamngcommon import BNGError, BNGValueError
 from .beamngcommon import PROTOCOL_VERSION, ENV
+from .beamngcommon import get_log_file_handler, config_logging, LOGGER_ID
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -40,13 +38,17 @@ BINARIES = [
 
 RESEARCH_HELPER = 'researchHelper.txt'
 
+module_logger = logging.getLogger(f"{LOGGER_ID}.beamng")
+module_logger.setLevel(logging.DEBUG)
+
 
 def log_exception(extype, value, trace):
     """
     Hook to log uncaught exceptions to the logging framework. Register this as
     the excepthook with `sys.excepthook = log_exception`.
     """
-    log.exception("Uncaught exception: ", exc_info=(extype, value, trace))
+    module_logger.exception("Uncaught exception: ",
+                            exc_info=(extype, value, trace))
 
 
 def setup_logging(log_file=None, activateWarnings=True):
@@ -55,26 +57,15 @@ def setup_logging(log_file=None, activateWarnings=True):
     If the path to the log_file does not exist, directories for it will be
     created.
     """
-    handlers = []
+    module_logger.warning('this function is deprecated and will be '
+                          'removed in future versions. '
+                          'Use `beamngcommon.get_log_file_handler` instead.')
+    level = logging.WARNING if activateWarnings else logging.INFO
     if log_file:
-        if os.path.exists(log_file):
-            backup = '{}.1'.format(log_file)
-            shutil.move(log_file, backup)
-        file_handler = log.FileHandler(log_file, 'w', 'utf-8')
-        handlers.append(file_handler)
-
-    term_handler = log.StreamHandler()
-    handlers.append(term_handler)
-    fmt = '%(asctime)s %(levelname)-8s %(message)s'
-    log.basicConfig(handlers=handlers, format=fmt, level=log.DEBUG)
-
-    sys.excepthook = log_exception
-
-    if activateWarnings:
-        warnings.simplefilter('default')
-        log.captureWarnings(True)
-
-    log.info('Started BeamNGpy logging.')
+        fh = get_log_file_handler(log_file)
+        config_logging(level, handlers=[fh])
+    else:
+        config_logging(level)
 
 
 class BeamNGpy:
@@ -91,8 +82,8 @@ class BeamNGpy:
         given userpath.
 
         Note that for BeamNG.tech version 0.22 and higher the directory
-        for the user path needs to be set up once before the first usage of BeamNGpy
-        with that user path.
+        for the user path needs to be set up once before the first
+        usage of BeamNGpy with that user path.
 
         Args:
             userpath (str): Userpath to place the mod zip in.
@@ -181,8 +172,8 @@ class BeamNGpy:
             self.start_beamng(None, lua='shutdown(0)')
             self.process.wait(timeout=600)
         except Exception as err:
-            log.error('Error setting up workspace:')
-            log.exception(err)
+            module_logger.error('Error setting up workspace:')
+            module_logger.exception(err)
         finally:
             self.kill_beamng()
             self.process = None
@@ -231,7 +222,7 @@ class BeamNGpy:
                            'sure any of these exist in the BeamNG home '
                            f'folder: {", ".join(BINARIES)}')
 
-        log.debug('Determined BeamNG.* binary to be: %s', choice)
+        module_logger.debug('Determined BeamNG.* binary to be: %s', choice)
         return str(choice)
 
     def prepare_call(self, extensions, *args, **usr_opts):
@@ -284,7 +275,7 @@ class BeamNGpy:
                       'automatically updated if you change the `user` ' \
                       'parameter to `BeamNGpy`, but serves as a workaround ' \
                       'until the issue is fixed in BeamNG.tech.'
-                log.error(msg)
+                module_logger.error(msg)
                 print(msg)
 
         return call
@@ -295,7 +286,7 @@ class BeamNGpy:
         termination.
         """
         call = self.prepare_call(extensions, *args, **opts)
-        log.debug('Starting BeamNG process: %s', call)
+        module_logger.debug('Starting BeamNG process: %s', call)
         self.process = subprocess.Popen(call)
 
     def kill_beamng(self):
@@ -311,7 +302,7 @@ class BeamNGpy:
         if not self.process:
             return
 
-        log.debug('Killing BeamNG process...')
+        module_logger.debug('Killing BeamNG process...')
         if os.name == "nt":
             with open(os.devnull, 'w') as devnull:
                 subprocess.call([
@@ -332,7 +323,7 @@ class BeamNGpy:
         data = dict(type='Hello')
         data['protocolVersion'] = PROTOCOL_VERSION
         self.send(data)
-        log.info('Sent data!')
+        module_logger.info('Sent data!')
         resp = self.recv()
         assert resp['type'] == 'Hello'
         if resp['protocolVersion'] != PROTOCOL_VERSION:
@@ -504,8 +495,8 @@ class BeamNGpy:
             tries (int): The amount of attempts to connect before giving up.
         """
         self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        log.info('Connecting to BeamNG.tech at: ({}, {})'.format(self.host,
-                                                                 self.port))
+        module_logger.info('Connecting to BeamNG.tech at: '
+                           f'({self.host}, {self.port})')
         self.skt.settimeout(600)
         while tries > 0:
             try:
@@ -514,14 +505,14 @@ class BeamNGpy:
             except ConnectionRefusedError as err:
                 msg = 'Error connecting to BeamNG.tech. {} tries left.'
                 msg = msg.format(tries)
-                log.error(msg)
-                log.exception(err)
+                module_logger.error(msg)
+                module_logger.exception(err)
                 sleep(5)
                 tries -= 1
 
         self.hello()
 
-        log.info('Connected!')
+        module_logger.info('Connected!')
 
     def send(self, data):
         """
@@ -556,7 +547,7 @@ class BeamNGpy:
                            assumed that the Lua extensions are already
                            installed.
         """
-        log.info('Opening BeamNGpy instance...')
+        module_logger.info('Opening BeamNGpy instance...')
 
         if deploy:
             if not self.effective_user:
@@ -575,7 +566,7 @@ class BeamNGpy:
         """
         Kills the BeamNG.* process.
         """
-        log.info('Closing BeamNGpy instance...')
+        module_logger.info('Closing BeamNGpy instance...')
         if self.scenario:
             self.scenario.close()
             self.scenario = None
@@ -943,10 +934,9 @@ class BeamNGpy:
             dictionary having a key-value pair for each sensor's name and the
             data received for it.
         """
-        warnings.warn('"BeamNGpy.poll_sensors" is deprecated.\n'
-                      'Use "Vehicle.poll_sensors" instead.\n'
-                      'This function is going to be removed in the future.',
-                      DeprecationWarning)
+        module_logger.warning('"BeamNGpy.poll_sensors" is deprecated '
+                              'and may be removed in future verions. '
+                              'Use "Vehicle.poll_sensors" instead.')
 
         vehicle.poll_sensors()
         return vehicle.sensor_cache
@@ -1720,9 +1710,10 @@ class BeamNGpy:
         Returns:
             The ID of the added debug line that can be used to remove the line
         """
-        warnings.warn('Use of "add_debug_line" deprecated it will be removed '
-                      'in future versions. Use "add_debug_polyline" '
-                      'and "add_debug_spheres" instead.')
+        module_logger.warning('`add_debug_line` is deprecated and will be '
+                              'removed in future versions. '
+                              'Use "add_debug_polyline" and '
+                              '"add_debug_spheres" instead.')
 
         if spheres:
             coordinates = [s[:3] for s in spheres]
@@ -1735,9 +1726,9 @@ class BeamNGpy:
         return lineID
 
     def remove_debug_line(self, line_id):
-        warnings.warn('Use of "remove_debug_line" is deprecated. It will be '
-                      'removed in future versions. Use "add_debug_polyline" '
-                      'instead.')
+        module_logger.warning('Use of `remove_debug_line` is deprecated. '
+                              'It will be removed in future versions. '
+                              'Use `add_debug_polyline` instead.')
 
         self.remove_debug_polyline(line_id)
 

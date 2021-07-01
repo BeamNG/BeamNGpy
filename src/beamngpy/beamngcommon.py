@@ -8,13 +8,14 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
-import logging as log
+import logging
 import json
 import os
 import numpy as np
-import warnings
 
 from functools import wraps
+from pathlib import Path
+from shutil import move
 
 import msgpack
 
@@ -23,6 +24,47 @@ ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
 PROTOCOL_VERSION = 'v1.19'
+LOGGER_ID = "beamngpy"
+LOG_FORMAT = '%(asctime)s %(levelname)-8s %(message)s'
+bngpy_logger = logging.getLogger(LOGGER_ID)
+module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
+
+
+def config_logging(level=logging.WARNING,
+                   handlers=[],
+                   disable_default_handler=False):
+    """
+    Function to configure logging.
+    """
+    global bngpy_logger
+    bngpy_logger.setLevel(level)
+    if not(disable_default_handler):
+        sh = logging.StreamHandler()
+        formatter = logging.Formatter(LOG_FORMAT)
+        sh.setFormatter(formatter)
+        bngpy_logger.addHandler(sh)
+    for h in handlers:
+        bngpy_logger.addHandler(h)
+    bngpy_logger.info('Started BeamNGpy logging.')
+
+
+def get_log_file_handler(fname):
+    """
+    Helper function getting a file handler for logging,
+    that then needs to be added to the library's logger via `config_logging`.
+    Logs to a given file name and if the file already exists,
+    its contents are written to `<FNAME>.1`.
+    For more control over the logging process use config_logging.
+    Do not use both functions, use either `log_to_file` or `config_logging`.
+    Args:
+        fname (str): file name
+    """
+    if Path(fname).exists():
+        move(fname, f'{fname}.1')
+    fh = logging.FileHandler(fname, 'w', 'utf-8')
+    formatter = logging.Formatter(LOG_FORMAT)
+    fh.setFormatter(formatter)
+    return fh
 
 
 class BNGError(Exception):
@@ -44,11 +86,6 @@ class BNGDisconnectedError(ValueError):
     Exception class for BeamNGpy being disconnected when it shouldn't.
     """
     pass
-
-
-def raise_rot_deprecation_warning():
-    warnings.warn('\'rot\' is deprecated, use rot_mat instead',
-                  DeprecationWarning)
 
 
 def ack(ack_type):
@@ -130,7 +167,7 @@ def ensure_config(cfg_file):
     if not os.path.exists(cfg_file):
         default = get_default()
         default.save(cfg_file)
-        log.debug("Saved fresh default cfg to: %s", cfg_file)
+        module_logger.debug(f"Saved fresh default cfg to: {cfg_file}")
 
     CFG.load(cfg_file)
 

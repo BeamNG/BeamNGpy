@@ -13,15 +13,21 @@ import copy
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
+from logging import getLogger
+from logging import DEBUG as DGB_LOG_LEVEL
 
 from .beamng import Level
 
 from .beamngcommon import BNGValueError, BNGError, angle_to_quat
 from .beamngcommon import quat_as_rotation_mat_str
-from .beamngcommon import raise_rot_deprecation_warning
+from .beamngcommon import LOGGER_ID
 
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
+
+
+module_logger = getLogger(f'{LOGGER_ID}.scenario')
+module_logger.setLevel(DGB_LOG_LEVEL)
 
 
 class Road:
@@ -127,7 +133,9 @@ class ScenarioObject:
         self.type = otype
         self.pos = pos
         if rot:
-            raise_rot_deprecation_warning()
+            module_logger.warning('the usage of `rot` is deprecated, '
+                                  'the argument will be removed '
+                                  'in future versions')
             rot_quat = angle_to_quat(rot)
         self.rot = rot_quat
         self.scale = scale
@@ -515,7 +523,9 @@ class Scenario:
             raise BNGValueError(error)
 
         if rot:
-            raise_rot_deprecation_warning()
+            module_logger.warning('the usage of `rot` is deprecated, '
+                                  'the argument will be removed '
+                                  'in future versions')
             rot_quat = angle_to_quat(rot)
         self.vehicles.add(vehicle)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)

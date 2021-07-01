@@ -8,15 +8,21 @@
 
 """
 
-import logging as log
 import socket
 import warnings
 
 from time import sleep
+from logging import getLogger
+from logging import DEBUG as DBG_LOG_LEVEL
 
 from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
-from .beamngcommon import PROTOCOL_VERSION
+from .beamngcommon import PROTOCOL_VERSION, LOGGER_ID
 from .sensors import State
+
+
+module_logger = getLogger(f'{LOGGER_ID}.vehicle')
+module_logger.setLevel(DBG_LOG_LEVEL)
+
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -176,11 +182,10 @@ class Vehicle:
                 self.skt.connect((self.bng.host, self.port))
                 break
             except ConnectionRefusedError as err:
-                msg = \
-                    'Error connecting to BeamNG.tech vehicle {}. {} tries ' \
-                    'left.'.format(self.vid, tries)
-                log.error(msg)
-                log.exception(err)
+                msg = 'Error connecting to BeamNG.tech vehicle '\
+                      f'{self.vid}. {tries} tries left.'
+                module_logger.error(msg)
+                module_logger.exception(err)
                 sleep(5)
                 tries -= 1
 
@@ -578,7 +583,7 @@ class Vehicle:
             BNGValueError: If the script has fewer than three nodes, the
                            minimum length of a script.
         """
-        if start_dir is not None or up_dir != None or teleport != None:
+        if (start_dir is not None) or (up_dir is not None) or (teleport is not None):
             warnings.warn('The function arguments "start_dir", "up_dir", '
                           ' and "teleport" are not used anymore and will be '
                           ' removed in future versions.', DeprecationWarning)
@@ -937,8 +942,9 @@ class Vehicle:
         self.send(data)
         userpath = self.bng.determine_userpath()
         log_msg = ('Started in game logging.'
-                   f'The log files can be found in {userpath}/{outputDir}.')
-        log.info(log_msg)
+                   'The output for the vehicle stats logging '
+                   f'can be found in {userpath}/{outputDir}.')
+        module_logger.info(log_msg)
 
     @ack('StoppedVSLLogging')
     def stop_in_game_logging(self):
@@ -947,4 +953,4 @@ class Vehicle:
         """
         data = dict(type='StopVSLLogging')
         self.send(data)
-        log.info('Stopped in game logging.')
+        module_logger.info('Stopped in game logging.')

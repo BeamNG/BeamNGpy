@@ -12,7 +12,6 @@ This module implements various sensors that can be attached to vehicles to
 extract data from simulations.
 """
 import base64
-import logging as log
 import mmap
 import os
 import sys
@@ -24,8 +23,13 @@ from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from logging import DEBUG as DBG_LOG_LEVEL
+from logging import getLogger
 
-from .beamngcommon import BNGValueError
+from .beamngcommon import BNGValueError, LOGGER_ID
+
+module_logger = getLogger(f'{LOGGER_ID}.sensors')
+module_logger.setLevel(DBG_LOG_LEVEL)
 
 NEAR = 0.01
 FAR = 1000
@@ -520,25 +524,27 @@ class Camera(Sensor):
             self.colour_handle = '{}.{}.{}.colour'
             self.colour_handle = self.colour_handle.format(pid, prefix, name)
             self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
-            log.debug('Bound shmem for colour: %s', self.colour_handle)
+            module_logger.debug('Bound shmem for colour: {self.colour_handle}')
 
             self.depth_handle = '{}.{}.{}.depth'
             self.depth_handle = self.depth_handle.format(pid, prefix, name)
             self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
-            log.debug('Bound shmem for depth: %s', self.depth_handle)
+            module_logger.debug(f'Bound shmem for depth: {self.depth_handle}')
 
             self.annotation_handle = '{}.{}.{}.annotate'
             self.annotation_handle = self.annotation_handle.format(pid, prefix,
                                                                    name)
             self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
-            log.debug('Bound shmem for annotation: %s', self.annotation_handle)
+            module_logger.debug('Bound shmem for annotation: '
+                                f'{self.annotation_handle}')
 
             if self.instance:
                 self.instance_handle = '{}.{}.{}.instance'
                 self.instance_handle = self.instance_handle.format(pid, prefix,
                                                                    name)
                 self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
-                log.debug('Bound shmem for instance: %s', self.instance_handle)
+                module_logger.debug('Bound shmem for instance: '
+                                    f'{self.instance_handle}')
 
     def detach(self, vehicle, name):
         """
@@ -551,20 +557,23 @@ class Camera(Sensor):
             name (str): The name of the camera.
         """
         if self.colour_shmem:
-            log.debug('Unbinding shmem for color: %s', self.colour_handle)
+            module_logger.debug('Unbinding shmem for color: '
+                                f'{self.colour_handle}')
             self.colour_shmem.close()
 
         if self.depth_shmem:
-            log.debug('Unbinding shmem for depth: %s', self.depth_handle)
+            module_logger.debug('Unbinding shmem for depth: '
+                                f'{self.depth_handle}')
             self.depth_shmem.close()
 
         if self.annotation_shmem:
-            log.debug('Unbinding shmem for annotation: %s',
-                      self.annotation_handle)
+            module_logger.debug('Unbinding shmem for annotation: ',
+                                f'{self.annotation_handle}')
             self.annotation_shmem.close()
 
         if self.instance_shmem:
-            log.debug('Unbinding shmem for instance: %s', self.instance_handle)
+            module_logger.debug('Unbinding shmem for instance: '
+                                f'{self.instance_handle}')
             self.instance_shmem.close()
 
     def connect(self, bng, vehicle):
@@ -837,7 +846,7 @@ class Lidar(Sensor):
         self.handle = '{}.{}.{}.lidar'.format(pid, vehicle.vid, name)
         if self.use_shmem:
             self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
-            log.debug('Bound memory for lidar: %s', self.handle)
+            module_logger.debug(f'Bound memory for lidar: {self.handle}')
 
     def detach(self, vehicle, name):
         """
