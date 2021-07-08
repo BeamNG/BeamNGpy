@@ -32,23 +32,23 @@ More quick usage examples can be found in our [test suite][1].
 |[West Coast LIDAR][18]|<ul><li>use the LIDAR sensor</li></ul>|
 |[West Coast Random][19]|<ul><li>create a simple scenario</li><li>use the simulator's AI with BeamNGpy</li></ul>|
 
-[1]: https://github.com/BeamNG/BeamNGpy/tree/master/tests
-[2]: https://github.com/BeamNG/BeamNGpy/tree/master/examples/modInterface
-[3]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/access_road_network.ipynb
-[4]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/ai_line.py
-[5]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/annotation_bounding_boxes.ipynb
-[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/change_settings.py
-[7]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/checkpoints.py
-[8]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/lidar_tour.py
-[9]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/multi_client.ipynb
-[10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/multishot_camera.ipynb
-[11]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/noise_demo.ipynb
-[12]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/object_placement.ipynb
-[13]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/procedural_meshes.py
-[14]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/road_definition.py
-[15]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/simple_driver_comfort_analysis.ipynb
-[16]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/spawning.ipynb
-[17]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_road_bounding_box.ipynb
-[18]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_state_plotting.ipynb
-[19]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_lidar.py
-[20]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_random.py
+
+[1]: https://github.com/BeamNG/BeamNGpy/tree/master/examples/modInterface
+[2]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/access_road_network.ipynb
+[3]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/ai_line.py
+[4]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/annotation_bounding_boxes.ipynb
+[5]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/change_settings.py
+[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/checkpoints.py
+[7]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/lidar_tour.py
+[8]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/multi_client.ipynb
+[9]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/multishot_camera.ipynb
+[10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/noise_demo.ipynb
+[11]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/object_placement.ipynb
+[12]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/procedural_meshes.py
+[13]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/road_definition.py
+[14]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/simple_driver_comfort_analysis.ipynb
+[15]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/spawning.ipynb
+[16]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_road_bounding_box.ipynb
+[17]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_state_plotting.ipynb
+[18]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_lidar.py
+[19]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_random.py
