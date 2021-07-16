@@ -7,6 +7,12 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
+from .beamngcommon import LOGGER_ID
+from logging import getLogger, DEBUG
+
+module_logger = getLogger(f'{LOGGER_ID}.level')
+module_logger.setLevel(DEBUG)
+
 
 class Level:
     """
@@ -42,15 +48,21 @@ class Level:
         return level
 
     def __init__(self, name, size, path, **props):
+        self.logger = getLogger(f'{LOGGER_ID}.Level')
+        self.logger.setLevel(DEBUG)
         self.name = name
         self.size = size
         self.path = path
         if path is None:
             # Use object id as path to make it unique when none is given
             path = 'unknown.{}'.format(id(self))
+            self.logger.debug(f'No path given, setting path to \'{path}\'')
 
         self.properties = {**props}
         self.scenarios = {}
+        prop_description = ', '.join(list(self.properties.keys()))
+        self.logger.debug('adding these properties to level object: '
+                          f'{prop_description}')
 
     def __str__(self):
         return self.name

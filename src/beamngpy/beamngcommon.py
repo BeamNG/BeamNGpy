@@ -25,46 +25,75 @@ ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
 PROTOCOL_VERSION = 'v1.19'
 LOGGER_ID = "beamngpy"
-LOG_FORMAT = '%(asctime)s %(levelname)-8s %(message)s'
+LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
 bngpy_logger = logging.getLogger(LOGGER_ID)
 module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
 
 
-def config_logging(level=logging.WARNING,
-                   handlers=[],
-                   disable_default_handler=False):
+def config_logging(handlers,
+                   replace=True,
+                   level=logging.DEBUG,
+                   redirect_warnings=True):
     """
     Function to configure logging.
+    Args:
+        handlers (list): list of already configured logging.Handler objects
+        replace (bool): whether to replace existing list of handlers with new ones or whether to add them, optional
+        level (int): log level of the beamngpy logger object, optional
+        redirect_warnings (bool): whether to redirect warnings to the logger, optional
     """
     global bngpy_logger
-    bngpy_logger.setLevel(level)
-    if not(disable_default_handler):
-        sh = logging.StreamHandler()
-        formatter = logging.Formatter(LOG_FORMAT)
-        sh.setFormatter(formatter)
-        bngpy_logger.addHandler(sh)
+    if replace and handlers:
+        for h in bngpy_logger.handlers:
+            bngpy_logger.removeHandler(h)
     for h in handlers:
         bngpy_logger.addHandler(h)
+    bngpy_logger.setLevel(level)
+    logging.captureWarnings(redirect_warnings)
     bngpy_logger.info('Started BeamNGpy logging.')
 
 
-def get_log_file_handler(fname):
-    """
-    Helper function getting a file handler for logging,
-    that then needs to be added to the library's logger via `config_logging`.
-    Logs to a given file name and if the file already exists,
-    its contents are written to `<FNAME>.1`.
-    For more control over the logging process use config_logging.
-    Do not use both functions, use either `log_to_file` or `config_logging`.
-    Args:
-        fname (str): file name
-    """
-    if Path(fname).exists():
-        move(fname, f'{fname}.1')
-    fh = logging.FileHandler(fname, 'w', 'utf-8')
+def _init_default_logging():
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.WARNING)
     formatter = logging.Formatter(LOG_FORMAT)
-    fh.setFormatter(formatter)
-    return fh
+    sh.setFormatter(formatter)
+    config_logging([sh])
+    module_logger.info('Setting up default logging configuration')
+
+
+def set_up_simple_logging(log_file=None,
+                          redirect_warnings=None,
+                          level=logging.INFO):
+    """
+    Helper function that provides high-level control
+    over beamng logging. For low-level control over the
+    logging system use `beamngcommon.config_logging`.
+    Sets up logging to `sys.stderr` and optionally to a given file.
+    Existing log files are moved to `<log_file>.1`.
+    By default beamngpy logs warnings and errors to `sys.stderr`,
+    so this function is only of use, if the log output should additionaly
+    be written to a file, or if the log level needs to be adjusted.
+
+    Args:
+        log_file (str): log filename, optional
+        redirect_warnings (bool): whether to redirect warnings to the logger
+        level (int): log level of handler that is created for the log file
+    """
+    sh = logging.StreamHandler()
+    sh.setLevel(level)
+    formatter = logging.Formatter(LOG_FORMAT)
+    sh.setFormatter(formatter)
+    handlers = [sh]
+    if log_file:
+        if Path(log_file).exists():
+            move(log_file, f'{log_file}.1')
+        fh = logging.FileHandler(log_file, 'w', 'utf-8')
+        formatter = logging.Formatter(LOG_FORMAT)
+        fh.setFormatter(formatter)
+        fh.setLevel(level)
+        handlers.append(fh)
+    config_logging(handlers, redirect_warnings=redirect_warnings)
 
 
 class BNGError(Exception):
@@ -290,3 +319,6 @@ def quat_as_rotation_mat_str(quat):
     mat = compute_rotation_matrix(quat)
     mat = mat.reshape(9).astype(str)
     return ' '.join(mat)
+
+
+_init_default_logging()
