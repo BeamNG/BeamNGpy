@@ -574,7 +574,7 @@ class Scenario:
             camera (:class:`beamngpy.sensors.Camera` ): The camera to add.
             name (str): The name the camera should be identified with.
         """
-        if name in self.sensors.keys():
+        if name in self.cameras.keys():
             raise BNGValueError('One scenario cannot have multiple cameras'
                                 f'with the same name: "{name}"')
         self.cameras[name] = camera
