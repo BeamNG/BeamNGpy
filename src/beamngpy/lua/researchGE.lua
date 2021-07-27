@@ -376,13 +376,19 @@ end
 M.handleTeleport = function(skt, msg)
   local vID = msg['vehicle']
   local veh = scenarioHelper.getVehicleByName(vID)
+  local resp = {type = 'Teleported', success = false}
+  if veh == nil then
+    rcom.sendMessage(skt, resp)
+    return
+  end
   if msg['rot'] ~= nil then
     local quat = quat(msg['rot'][1], msg['rot'][2], msg['rot'][3], msg['rot'][4])
     veh:setPositionRotation(msg['pos'][1], msg['pos'][2], msg['pos'][3], quat.x, quat.y, quat.z, quat.w)
   else
     veh:setPosition(Point3F(msg['pos'][1], msg['pos'][2], msg['pos'][3]))
   end
-  rcom.sendACK(skt, 'Teleported')
+  resp.success = true
+  rcom.sendMessage(skt, resp)
 end
 
 M.handleTeleportScenarioObject = function(skt, msg)
@@ -444,7 +450,7 @@ M.onVehicleSpawned = function(vID)
     local obj = scenetree.findObject(spawnPending)
     log('I', 'Vehicle spawned: ' .. tostring(vID))
     if obj ~= nil and obj:getID() == vID then
-      local resp = {type = 'VehicleSpawned', name = spawnPending}
+      local resp = {type = 'VehicleSpawned', name = spawnPending, success = true}
       spawnPending = nil
       rcom.sendMessage(waiting, resp)
       stopBlocking()
@@ -453,6 +459,11 @@ M.onVehicleSpawned = function(vID)
 end
 
 M.handleSpawnVehicle = function(skt, msg)
+  local alreadyExists = scenetree.findObject(msg['name'])
+  if alreadyExists then
+    local resp = {type = 'VehicleSpawned', name = spawnPending, success = false}
+    rcom.sendMessage(skt, resp)
+  end
   local name = msg['name']
   local model = msg['model']
   local pos = msg['pos']
@@ -919,10 +930,11 @@ end
 
 M.handleGameStateRequest = function(skt, msg)
   local state = core_gamestate.state.state
-  resp = {type = 'GameState'}
+  local resp = {type = 'GameState'}
   if state == 'scenario' then
     resp['state'] = 'scenario'
     resp['scenario_state'] = scenario_scenarios.getScenario().state
+    resp['level'] = getCurrentLevelIdentifier()
   else
     resp['state'] = 'menu'
   end

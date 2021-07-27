@@ -524,7 +524,6 @@ class Scenario:
             self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat,
                                    cling=cling)  # todo
             self.transient_vehicles.add(vehicle)
-            vehicle.connect(self.bng)
 
     def remove_vehicle(self, vehicle):
         """
