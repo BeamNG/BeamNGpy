@@ -357,6 +357,7 @@ class Scenario:
         self.vehicles = set()
         self.transient_vehicles = set()  # Vehicles added during scenario
         self._vehicle_locations = {}
+        self._focus_vehicle = None
 
         self.roads = list()
         self.waypoints = list()
@@ -410,14 +411,14 @@ class Scenario:
         info['authors'] = self.options.get('authors', 'BeamNGpy')
         info['lapConfig'] = self.checkpoints
 
-        focused = False
         vehicles_dict = dict()
         for vehicle in self.vehicles:
             vehicles_dict[vehicle.vid] = {'playerUsable': True}
-            if not focused:
-                # Make sure one car has startFocus set
-                vehicles_dict[vehicle.vid]['startFocus'] = True
-                focused = True
+
+        if self._focus_vehicle is None:
+            self._focus_vehicle = next(iter(self.vehicles)).vid
+
+        vehicles_dict[self._focus_vehicle]['startFocus'] = True
 
         info['vehicles'] = vehicles_dict
         info['prefabs'] = ['levels/{}/scenarios/{}.prefab'.format(self.level,
@@ -557,6 +558,14 @@ class Scenario:
             if vehicle.vid == needle:
                 return vehicle
         return None
+
+    def set_initial_focus(self, vehicle_id):
+        """defines which vehicle has the initial focus
+
+        Args:
+            vehicle_id (string): vehicle id of focussed vehicle
+        """
+        self._focus_vehicle = vehicle_id
 
     def add_road(self, road):
         """
