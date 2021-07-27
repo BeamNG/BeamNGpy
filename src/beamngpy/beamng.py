@@ -192,7 +192,8 @@ class BeamNGpy:
         Tries to find the userpath based on the beamng installation if the user
         did not provide a custom userpath.
         """
-        user = Path.home() / 'Documents'
+        user = Path.home() / 'AppData'
+        user = user / 'Local'
         if '.research' in self.binary:
             user = user / 'BeamNG.research'
         elif '.tech' in self.binary:
@@ -202,9 +203,9 @@ class BeamNGpy:
         return user
 
     def determine_effective_userpath(self):
+        self.setup_workspace()
         effective_userpath = BeamNGpy.read_effective_userpath(self.user)
         if not effective_userpath:
-            self.setup_workspace()
             effective_userpath = BeamNGpy.read_effective_userpath(self.user)
         self.effective_user = effective_userpath
 
@@ -275,15 +276,15 @@ class BeamNGpy:
             call.append('-userpath')
             call.append(str(self.user))
             if ' ' in str(self.user):
-                msg = 'Your configured userpath contains a space. ' \
-                      'Unfortunately, this is known to cause issues in ' \
-                      'launching BeamNG.tech. If you require a path with a ' \
-                      'space in it, you can alternatively set it manually in' \
-                      'the file "startup.ini" contained in the directory of ' \
-                      'your BeamNG.tech installtion. This would not be ' \
-                      'automatically updated if you change the `user` ' \
-                      'parameter to `BeamNGpy`, but serves as a workaround ' \
-                      'until the issue is fixed in BeamNG.tech.'
+                msg = 'Your configured userpath contains a space. '
+                'Unfortunately, this is known to cause issues in '
+                'launching BeamNG.tech. If you require a path with a '
+                'space in it, you can alternatively set it manually in'
+                'the file "startup.ini" contained in the directory of '
+                'your BeamNG.tech installtion. This would not be '
+                'automatically updated if you change the `user` '
+                'parameter to `BeamNGpy`, but serves as a workaround '
+                'until the issue is fixed in BeamNG.tech.'
                 log.error(msg)
                 print(msg)
 
@@ -557,6 +558,10 @@ class BeamNGpy:
                            installed.
         """
         log.info('Opening BeamNGpy instance...')
+
+        if deploy or launch:
+            if not self.effective_user:
+                self.determine_effective_userpath()
 
         if deploy:
             if not self.effective_user:
@@ -2001,6 +2006,59 @@ class BeamNGpy:
         self.await_vehicle_spawn(vehicle.vid)
         vehicle.close()
         vehicle.connect(self)
+
+    @ack('PlayerCameraModeSet')
+    def set_player_camera_mode(self, vid, mode, config):
+        """
+        Sets the camera mode of the vehicle identified by the given vehicle ID.
+        The mode is given as a string that identifies one of the valid modes
+        offered by the simulator. These modes can be queried using the
+        (:meth:`~BeamNGpy.get_player_camera_mode`) method.
+
+        The camera can be further configured with some common parameters,
+        but it is not guaranteed the camera mode will respect all of them.
+        These parameters include:
+
+         * rotation: The rotation of the camera as a triplet of Euler angles
+         * fov: The field of view angle
+         * offset: The (x, y, z) vector to offset the camera's position by 
+         * distance: The distance of the camera to the vehicle
+
+        Since each camera mode is implemented as a custom Lua extension, it is
+        not possible to automatically query the exact features of the mode.
+        Further information can be found in the
+        lua/ge/extensions/core/cameraModes files which contain the
+        implementations of each camera mode.
+
+        Args:
+            vid (str): Vehicle ID of the vehice to change the mode of.
+            mode (str): Camera mode to set
+            config (dict): Dictionary of further properties to set in the mode
+        """
+        data = dict(type='SetPlayerCameraMode')
+        data['vid'] = vid
+        data['mode'] = mode
+        data['config'] = config
+        self.send(data)
+
+    def get_player_camera_modes(self, vid):
+        """
+        Retrieves information about the camera modes configured for the vehicle
+        identified by the given ID.
+
+        Args:
+            vid (str): Vehicle ID of the vehicle to get camera mode information
+                       of.
+
+        Returns:
+            A dictionary mapping camera mode names to configuration options.
+        """
+        data = dict(type='GetPlayerCameraMode')
+        data['vid'] = vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PlayerCameraMode'
+        return resp['cameraData']
 
     def __enter__(self):
         self.open()

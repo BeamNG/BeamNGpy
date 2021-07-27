@@ -1747,4 +1747,47 @@ M.handleSetPartConfig = function(skt, msg)
   be:enterVehicle(0, veh)
 end
 
+M.handleSetPlayerCameraMode = function(skt, msg)
+  local vid = msg['vid']
+  local mode = msg['mode']
+  local config = msg['config']
+
+  local veh = scenetree.findObject(vid)
+  local id = veh:getID()
+  core_camera.setVehicleCameraByNameWithId(id, mode)
+
+  for k, v in pairs(config) do
+    if k == 'rotation' then
+      local rotation = vec3(v[1], v[2], v[3])
+      core_camera.setRotation(id, rotation)
+    end
+
+    if k == 'fov' then
+      core_camera.setFOV(id, v)
+    end
+
+    if k == 'offset' then
+      local offset = vec3(v[1], v[2], v[3])
+      core_camera.setOffset(id, offset)
+    end
+
+    if k == 'distance' then
+      core_camera.setDistance(id, v)
+    end
+  end
+
+  rcom.sendACK(skt, 'PlayerCameraModeSet')
+end
+
+M.handleGetPlayerCameraMode = function(skt, msg)
+  local vid = msg['vid']
+  local veh = scenetree.findObject(vid)
+  -- Serialize & deserialize to get rid of data MessagePack can't serialize
+  local cameraData = deserialize(serialize(core_camera.getCameraDataById(veh:getID())))
+  cameraData['unicycle'] = nil
+  cameraData = rcom.sanitizeTable(cameraData)
+  local resp = {type = 'PlayerCameraMode', cameraData = cameraData}
+  rcom.sendMessage(skt, resp)
+end
+
 return M
