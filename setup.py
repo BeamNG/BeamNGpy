@@ -1,7 +1,12 @@
 import setuptools
+
 import os
 import os.path
 
+import site
+import sys
+
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 def long_description():
     here = os.path.abspath(os.path.dirname(__file__))
