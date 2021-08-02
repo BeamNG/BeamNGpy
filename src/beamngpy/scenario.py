@@ -10,7 +10,6 @@
 """
 
 import copy
-import warnings
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
@@ -21,7 +20,7 @@ from .beamng import Level
 
 from .beamngcommon import BNGValueError, BNGError, angle_to_quat
 from .beamngcommon import quat_as_rotation_mat_str
-from .beamngcommon import LOGGER_ID
+from .beamngcommon import LOGGER_ID, create_warning
 
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
@@ -146,10 +145,10 @@ class ScenarioObject:
         self.type = otype
         self.pos = pos
         if rot:
-            warnings.warn('the usage of `rot` in class `ScenarioObject` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in class `ScenarioObject` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             rot_quat = angle_to_quat(rot)
         self.rot = rot_quat
         self.scale = scale
@@ -547,10 +546,10 @@ class Scenario:
             raise BNGValueError(error)
 
         if rot:
-            warnings.warn('the usage of `rot` in `Scenario.add_vehicle` '
-                          'is deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `Scenario.add_vehicle` '
+                           'is deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             rot_quat = angle_to_quat(rot)
         self.vehicles.add(vehicle)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)

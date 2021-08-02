@@ -18,7 +18,6 @@ import zipfile
 from pathlib import Path
 from time import sleep
 import logging
-import warnings
 
 from .level import Level
 from .scenario import Scenario, ScenarioObject
@@ -29,7 +28,7 @@ from .beamngcommon import angle_to_quat
 from .beamngcommon import ack
 from .beamngcommon import BNGError, BNGValueError
 from .beamngcommon import PROTOCOL_VERSION, ENV
-from .beamngcommon import set_up_simple_logging, LOGGER_ID
+from .beamngcommon import set_up_simple_logging, LOGGER_ID, create_warning
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -59,15 +58,15 @@ def setup_logging(log_file=None, activateWarnings=True, level=logging.INFO):
 
     Args:
         log_file (str): filename for log
-        activateWarnings (bool): whether to redirect warnings to the logger
-        level (int): log level of handler that is created for the log file
+        activateWarnings (bool): whether to redirect warnings to the logger. Beware that this modifies the warnings settings. Optional.
+        level (int): log level of handler that is created for the log file, optional
     """
     set_up_simple_logging(log_file, activateWarnings, level)
-    warnings.warn('The use of `beamng.setup_logging` is deprecated and will'
-                  ' be removed in future versions. '
-                  'Use `beamngcommon.set_up_simple_logging` or '
-                  '`beamngcommon.config_logging` instead.',
-                  DeprecationWarning)
+    warn_msg = str('The use of `beamng.setup_logging` is deprecated and will'
+                   ' be removed in future versions. '
+                   'Use `beamngcommon.set_up_simple_logging` or '
+                   '`beamngcommon.config_logging` instead.')
+    create_warning(warn_msg, DeprecationWarning)
 
 
 class BeamNGpy:
@@ -92,7 +91,8 @@ class BeamNGpy:
         """
         effective_userpath = BeamNGpy.read_effective_userpath(userpath)
         if effective_userpath is None:
-            module_logger.error(f'No workspace set up at userpath: <{userpath}> '
+            module_logger.error('No workspace set up at '
+                                f'userpath: <{userpath}>. '
                                 'Setup is required prior to mod deployment.')
             return
         userpath = effective_userpath
@@ -207,7 +207,6 @@ class BeamNGpy:
         self.effective_user = effective_userpath
         self.logger.debug('Automatically determined effective user path for '
                           f'mod: {self.effective_user}')
-
 
     def determine_binary(self):
         """
@@ -509,7 +508,7 @@ class BeamNGpy:
         """
         self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.logger.info('Connecting to BeamNG.tech at: '
-                           f'({self.host}, {self.port})')
+                         f'({self.host}, {self.port})')
         self.skt.settimeout(600)
         while tries > 0:
             try:
@@ -670,7 +669,8 @@ class BeamNGpy:
             size (int): The size to map in bytes.
         """
         data = dict(type='OpenShmem', name=name, size=size)
-        self.logger.info(f'Opened shared memory with id <{name}>, and of size <{size}>')
+        self.logger.info(f'Opened shared memory with id <{name}>, '
+                         f'and of size <{size}>')
         self.send(data)
 
     @ack('ClosedShmem')
@@ -778,10 +778,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         elif rot:
-            warnings.warn('the usage of `rot` in `beamng.teleport_vehicle` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `beamng.teleport_vehicle` '
+                           'is deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -808,11 +808,11 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         elif rot:
-            warnings.warn('the usage of `rot` in '
-                          '`beamng.teleport_scenario_object` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in '
+                           '`beamng.teleport_scenario_object` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -968,10 +968,10 @@ class BeamNGpy:
             dictionary having a key-value pair for each sensor's name and the
             data received for it.
         """
-        warnings.warn('`BeamNGpy.poll_sensors` is deprecated '
-                      'and may be removed in future verions. '
-                      'Use "Vehicle.poll_sensors" instead.',
-                      DeprecationWarning)
+        create_warning('`BeamNGpy.poll_sensors` is deprecated '
+                       'and may be removed in future verions. '
+                       'Use "Vehicle.poll_sensors" instead.',
+                       DeprecationWarning)
 
         vehicle.poll_sensors()
         return vehicle.sensor_cache
@@ -1295,10 +1295,10 @@ class BeamNGpy:
         data['model'] = vehicle.options['model']
         data['pos'] = pos
         if rot:
-            warnings.warn('the usage of `rot` in `beamng.spawn_vehicle` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `beamng.spawn_vehicle` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             rot_quat = angle_to_quat(rot)
         data['rot'] = rot_quat
         data.update(vehicle.options)
@@ -1379,10 +1379,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            warnings.warn('the usage of `rot` in `beamng.create_cylinder` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `beamng.create_cylinder` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1423,10 +1423,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            warnings.warn('the usage of `rot` in `beamng.create_bump` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `beamng.create_bump` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1461,10 +1461,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            warnings.warn('the usage of `rot` in `beamng.create_cone` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `beamng.create_cone` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -1493,10 +1493,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            warnings.warn('the usage of `rot` in `beamng.create_cube` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `beamng.create_cube` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
@@ -1529,10 +1529,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            warnings.warn('the usage of `rot` in `beamng.create_ring` is '
-                          'deprecated, the argument will be removed '
-                          'in future versions',
-                          DeprecationWarning)
+            create_warning('the usage of `rot` in `beamng.create_ring` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
@@ -1762,11 +1762,11 @@ class BeamNGpy:
         Returns:
             The ID of the added debug line that can be used to remove the line
         """
-        warnings.warn('`add_debug_line` is deprecated and will be '
-                      'removed in future versions. '
-                      'Use "add_debug_polyline" and '
-                      '"add_debug_spheres" instead.',
-                      DeprecationWarning)
+        create_warning('`add_debug_line` is deprecated and will be '
+                       'removed in future versions. '
+                       'Use "add_debug_polyline" and '
+                       '"add_debug_spheres" instead.',
+                       DeprecationWarning)
 
         if spheres:
             coordinates = [s[:3] for s in spheres]
@@ -1779,10 +1779,10 @@ class BeamNGpy:
         return lineID
 
     def remove_debug_line(self, line_id):
-        warnings.warn('Use of `Beamngpy.remove_debug_line` is deprecated. '
-                      'It will be removed in future versions. '
-                      'Use `add_debug_polyline` instead.',
-                      DeprecationWarning)
+        create_warning('Use of `Beamngpy.remove_debug_line` is deprecated. '
+                       'It will be removed in future versions. '
+                       'Use `add_debug_polyline` instead.',
+                       DeprecationWarning)
 
         self.remove_debug_polyline(line_id)
 

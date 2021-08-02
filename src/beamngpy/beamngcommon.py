@@ -11,6 +11,7 @@
 import logging
 import json
 import os
+import warnings
 import numpy as np
 
 from functools import wraps
@@ -28,6 +29,17 @@ LOGGER_ID = "beamngpy"
 LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
 bngpy_logger = logging.getLogger(LOGGER_ID)
 module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
+bngpy_handlers = list()
+
+
+def create_warning(msg, category=None):
+    """Helper function for BeamNGpy modules to create warnings.
+
+    Args:
+        msg (string): message to be displayed
+        category (exception, optional): Category of warning to be issued. See `warnings` documentation for more details. Defaults to None.
+    """
+    warnings.warn(msg, category=category, stacklevel=2)
 
 
 def config_logging(handlers,
@@ -40,29 +52,26 @@ def config_logging(handlers,
         handlers (list): list of already configured logging.Handler objects
         replace (bool): whether to replace existing list of handlers with new ones or whether to add them, optional
         level (int): log level of the beamngpy logger object, optional
-        redirect_warnings (bool): whether to redirect warnings to the logger, optional
+        redirect_warnings (bool): whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
     """
-    global bngpy_logger
-    if replace and handlers:
-        for h in bngpy_logger.handlers:
-            bngpy_logger.removeHandler(h)
+    global bngpy_logger, bngpy_handlers
+    root_logger = logging.getLogger()
+    if replace and bngpy_handlers:
+        for h in bngpy_handlers:
+            root_logger.removeHandler(h)
     for h in handlers:
-        bngpy_logger.addHandler(h)
+        root_logger.addHandler(h)
     bngpy_logger.setLevel(level)
-    logging.captureWarnings(redirect_warnings)
+    if redirect_warnings:
+        logging.captureWarnings(redirect_warnings)
+        warn_log = logging.getLogger('py.warnings')
+        warnings.simplefilter('once')
+        for h in handlers:
+            warn_log.addHandler(h)
     bngpy_logger.info('Started BeamNGpy logging.')
     for h in handlers:
         if isinstance(h, logging.FileHandler):
             module_logger.info(f'Logging to file: {h.baseFilename}.')
-
-
-def _init_default_logging():
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.WARNING)
-    formatter = logging.Formatter(LOG_FORMAT)
-    sh.setFormatter(formatter)
-    config_logging([sh])
-    module_logger.info('Setting up default logging configuration')
 
 
 def set_up_simple_logging(log_file=None,
@@ -80,7 +89,7 @@ def set_up_simple_logging(log_file=None,
 
     Args:
         log_file (str): log filename, optional
-        redirect_warnings (bool): whether to redirect warnings to the logger
+        redirect_warnings (bool): Whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
         level (int): log level of handler that is created for the log file
     """
     sh = logging.StreamHandler()
@@ -327,6 +336,3 @@ def quat_as_rotation_mat_str(quat):
     mat = compute_rotation_matrix(quat)
     mat = mat.reshape(9).astype(str)
     return ' '.join(mat)
-
-
-_init_default_logging()

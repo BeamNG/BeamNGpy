@@ -9,14 +9,13 @@
 """
 
 import socket
-import warnings
 
 from time import sleep
 from logging import getLogger
 from logging import DEBUG as DBG_LOG_LEVEL
 
 from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
-from .beamngcommon import PROTOCOL_VERSION, LOGGER_ID
+from .beamngcommon import PROTOCOL_VERSION, LOGGER_ID, create_warning
 from .sensors import State
 
 
@@ -315,10 +314,10 @@ class Vehicle:
         """
         Synchronises the :attr:`.Vehicle.state` field with the simulation.
         """
-        warnings.warn('`Vehicle.update_vehicle` is deprecated the '
-                      '`.Vehicle.state` attribute is now a default sensor '
-                      'for every vehicle and is updated through poll_sensors',
-                      DeprecationWarning)
+        create_warning('`Vehicle.update_vehicle` is deprecated the '
+                       '`.Vehicle.state` attribute is now a default sensor '
+                       'for every vehicle and is updated through poll_sensors',
+                       DeprecationWarning)
         return self.state
 
     def poll_sensors(self, requests=None):
@@ -342,9 +341,9 @@ class Vehicle:
             Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` instead.
         """
         if requests is not None:
-            warnings.warn('The `requests` argument in `Vehicle.poll_sensors` '
-                          'is not used and will be removed in future versions.',
-                          DeprecationWarning)
+            create_warning('The `requests` argument in `Vehicle.poll_sensors` '
+                           'is not used and will be removed in future versions.',
+                           DeprecationWarning)
 
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
@@ -370,9 +369,9 @@ class Vehicle:
 
         self.sensor_cache = result
 
-        warnings.warn('The return type of `.Vehicle.poll_sensors` will be None '
-                      'in future versions',
-                      DeprecationWarning)
+        create_warning('The return type of `.Vehicle.poll_sensors` will be None '
+                       'in future versions',
+                       DeprecationWarning)
         return compatibility_support
 
     def hello(self):
@@ -595,11 +594,11 @@ class Vehicle:
                            minimum length of a script.
         """
         if (start_dir is not None) or (up_dir is not None) or (teleport is not None):
-            warnings.warn('The arguments `start_dir`, `up_dir`, '
-                          ' and `teleport` of  `Vehicle.ai_set_script` '
-                          'are not used anymore and will be removed '
-                          'in future versions.',
-                          DeprecationWarning)
+            create_warning('The arguments `start_dir`, `up_dir`, '
+                           ' and `teleport` of  `Vehicle.ai_set_script` '
+                           'are not used anymore and will be removed '
+                           'in future versions.',
+                           DeprecationWarning)
 
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
