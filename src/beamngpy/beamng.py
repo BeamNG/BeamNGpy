@@ -205,6 +205,9 @@ class BeamNGpy:
             self.setup_workspace()
             effective_userpath = BeamNGpy.read_effective_userpath(self.user)
         self.effective_user = effective_userpath
+        self.logger.debug('Automatically determined effective user path for '
+                          f'mod: {self.effective_user}')
+
 
     def determine_binary(self):
         """
@@ -562,8 +565,6 @@ class BeamNGpy:
         if deploy:
             if not self.effective_user:
                 self.determine_effective_userpath()
-                self.logger.debug('automatically determined user path: '
-                                  f'{self.effective_user}')
             BeamNGpy.deploy_mod(self.user)
 
         if launch:

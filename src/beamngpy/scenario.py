@@ -775,9 +775,8 @@ class Scenario:
 
         prefab = self._get_prefab()
         info = self._get_info_dict()
-        fix = '\n'+('*'*20)+'\n'
-        self.logger.debug(f'Generated prefab:{fix}{prefab}{fix}')
-        self.logger.debug(f'Generated scenarios info dict:{fix}{info}{fix}')
+        self.logger.debug(f'Generated prefab:\n{prefab}\n')
+        self.logger.debug(f'Generated scenarios info dict:\n{info}\n')
 
         self.path = bng.create_scenario(level_name, self.name, prefab, info)
 

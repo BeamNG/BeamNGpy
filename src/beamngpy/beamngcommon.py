@@ -51,6 +51,9 @@ def config_logging(handlers,
     bngpy_logger.setLevel(level)
     logging.captureWarnings(redirect_warnings)
     bngpy_logger.info('Started BeamNGpy logging.')
+    for h in handlers:
+        if isinstance(h, logging.FileHandler):
+            module_logger.info(f'Logging to file: {h.baseFilename}.')
 
 
 def _init_default_logging():
@@ -85,15 +88,20 @@ def set_up_simple_logging(log_file=None,
     formatter = logging.Formatter(LOG_FORMAT)
     sh.setFormatter(formatter)
     handlers = [sh]
+    moved_log = False
+    fh = None
     if log_file:
         if Path(log_file).exists():
             move(log_file, f'{log_file}.1')
+            moved_log = True
         fh = logging.FileHandler(log_file, 'w', 'utf-8')
         formatter = logging.Formatter(LOG_FORMAT)
         fh.setFormatter(formatter)
         fh.setLevel(level)
         handlers.append(fh)
     config_logging(handlers, redirect_warnings=redirect_warnings)
+    if moved_log and fh is not None:
+        module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
 
 
 class BNGError(Exception):
