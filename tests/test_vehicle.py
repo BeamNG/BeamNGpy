@@ -126,6 +126,21 @@ def test_vehicle_ai(beamng):
         scenario.delete(beamng)
 
 
+def test_dynamic_vehicle_spawn(beamng):
+    with beamng as bng:
+        scenario = Scenario('smallgrid', 'dynamic spawn test')
+        unique_vehicle_name = 'unique'
+        vehicle = Vehicle(unique_vehicle_name, model='pickup')
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.make(beamng)
+
+        bng.load_scenario(scenario)
+        bng.start_scenario()
+
+        duplicate = Vehicle(unique_vehicle_name, model="etk800")
+        assert not bng.spawn_vehicle(duplicate, (0, 10, 0), None)
+
+
 def test_vehicle_spawn(beamng):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'spawn_test')

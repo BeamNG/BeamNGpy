@@ -62,7 +62,8 @@ local function getVehicleState()
     dir = obj:getDirectionVector(),
     up = obj:getDirectionVectorUp(),
     vel = obj:getVelocity(),
-    front = obj:getFrontPosition()
+    front = obj:getFrontPosition(),
+    rotation = quat(obj:getRotation())
   }
   vehicleState['pos'] = {
     vehicleState['pos'].x,
@@ -92,6 +93,13 @@ local function getVehicleState()
     vehicleState['front'].x,
     vehicleState['front'].y,
     vehicleState['front'].z
+  }
+
+  vehicleState['rotation'] = {
+    vehicleState['rotation'].x,
+    vehicleState['rotation'].y,
+    vehicleState['rotation'].z,
+    vehicleState['rotation'].w
   }
 
   return vehicleState
@@ -145,7 +153,6 @@ sensorHandlers.GForces = function(msg)
 
   resp['gx'] = sensors.gx
   resp['gx2'] = sensors.gx2
-  resp['gx_smooth_max'] = sensors.gxSmoothMax
   resp['gy'] = sensors.gy
   resp['gy2'] = sensors.gy2
   resp['gz'] = sensors.gz
@@ -341,7 +348,7 @@ M.handleSetLights = function(skt, msg)
     electrics.setLightsState(headLights)
   end
 
-  if hazardSignal ~= nil then 
+  if hazardSignal ~= nil then
     if hazardSignal == true then
       hazardSignal = 1
     end
@@ -372,7 +379,7 @@ M.handleSetLights = function(skt, msg)
       rightSignal = 1
     end
     if rightSignal == false then
-      rightSignal = 0 
+      rightSignal = 0
     end
     if state.signal_right_input ~= rightSignal then
       electrics.toggle_right_signal()
@@ -394,7 +401,7 @@ end
 
 M.handleQueueLuaCommandVE = function(skt, msg)
   local func, loading_err = load(msg.chunk)
-  if func then 
+  if func then
     local status, err = pcall(func)
     if not status then
       log('E', 'execution error: "' .. err .. '"')

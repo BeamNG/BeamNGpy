@@ -114,6 +114,36 @@ M.checkMessages = function(E, clients)
   end
 end
 
+M.sanitizeTable = function(tab)
+  local ret = {}
+
+  for k, v in pairs(tab) do
+    k = tostring(k)
+
+    local t =  type(v)
+
+    print(k .. ': ' .. tostring(t))
+
+    if t == 'table' then
+      ret[k] = M.sanitizeTable(v)
+    end
+
+    if t == 'vec3' then
+      ret[k] = {v.x, v.y, v.z}
+    end
+    
+    if t == 'quat' then
+      ret[k] = {v.x, v.y, v.z, v.w}
+    end
+
+    if t == 'number' or t == 'boolean' or t == 'string' then
+      ret[k] = v
+    end
+  end
+
+  return ret
+end
+
 M.sendMessage = function(skt, message)
   local length
   if skt == nil then

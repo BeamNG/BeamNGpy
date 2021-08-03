@@ -126,7 +126,7 @@ class BeamNGpy:
                 return infile.read().strip()
         return None
 
-    def __init__(self, host, port, home=None, user=None):
+    def __init__(self, host, port, home=None, user=None, remote=False):
         """
         Instantiates a BeamNGpy instance connecting to the simulator on the
         given host and port. The home directory of the simulator can be passed
@@ -144,28 +144,31 @@ class BeamNGpy:
                         used to set where custom files created during
                         executions will be placed if the home folder shall not
                         be touched.
+            remote (bool): Set to true when using the BeamNGpy library on a different system then BeamNG.tech
         """
         self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
         self.logger.setLevel(logging.DEBUG)
         self.host = host
         self.port = port
-
+        self.remote = remote
         self.home = home
-        if not self.home:
-            self.home = ENV['BNG_HOME']
-        if not self.home:
-            raise BNGValueError('No BeamNG home folder given. Either specify '
-                                'one in the constructor or define an '
-                                'environment variable "BNG_HOME" that '
-                                'points to where your copy of BeamNG.* is.')
 
-        self.home = Path(self.home).resolve()
-        self.binary = self.determine_binary()
+        if not self.remote:
+            if not self.home:
+                self.home = ENV['BNG_HOME']
+            if not self.home:
+                raise BNGValueError('No BeamNG home folder given. Either specify '
+                                    'one in the constructor or define an '
+                                    'environment variable "BNG_HOME" that '
+                                    'points to where your copy of BeamNG.* is.')
 
-        if user:
-            self.user = Path(user).resolve()
-        else:
-            self.user = self.determine_userpath()
+            self.home = Path(self.home).resolve()
+            self.binary = self.determine_binary()
+
+            if user:
+                self.user = Path(user).resolve()
+            else:
+                self.user = self.determine_userpath()
 
         self.effective_user = None
 
@@ -189,7 +192,8 @@ class BeamNGpy:
         Tries to find the userpath based on the beamng installation if the user
         did not provide a custom userpath.
         """
-        user = Path.home() / 'Documents'
+        user = Path.home() / 'AppData'
+        user = user / 'Local'
         if '.research' in self.binary:
             user = user / 'BeamNG.research'
         elif '.tech' in self.binary:
@@ -200,9 +204,9 @@ class BeamNGpy:
         return user
 
     def determine_effective_userpath(self):
+        self.setup_workspace()
         effective_userpath = BeamNGpy.read_effective_userpath(self.user)
         if not effective_userpath:
-            self.setup_workspace()
             effective_userpath = BeamNGpy.read_effective_userpath(self.user)
         self.effective_user = effective_userpath
         self.logger.debug('Automatically determined effective user path for '
@@ -310,6 +314,10 @@ class BeamNGpy:
                 self.quit_beamng()
             except ConnectionResetError:
                 self.skt = None
+
+        if self.remote:
+            log.warn('cannot kill remote BeamNG.research process, aborting subroutine')
+            return
 
         if not self.process:
             return
@@ -484,7 +492,7 @@ class BeamNGpy:
 
         return scenario
 
-    def get_current_vehicles(self):
+    def get_current_vehicles_info(self):
         """
         Queries the currently active vehicles in the simulator.
 
@@ -494,6 +502,10 @@ class BeamNGpy:
             by this function.
         """
         vehicles = self.message('GetCurrentVehicles')
+        return vehicles
+
+    def get_current_vehicles(self):
+        vehicles = self.get_current_vehicles_info()
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
 
@@ -561,6 +573,10 @@ class BeamNGpy:
         """
         self.logger.info('Opening BeamNGpy instance.')
 
+        if deploy or launch:
+            if not self.effective_user:
+                self.determine_effective_userpath()
+
         if deploy:
             if not self.effective_user:
                 self.determine_effective_userpath()
@@ -584,6 +600,17 @@ class BeamNGpy:
             self.scenario = None
 
         self.kill_beamng()
+
+    def disconnect(self):
+        """
+        Closes socket communication with the corresponding BeamNG instance.
+        """
+        if self.skt is not None:
+            self.skt.close()
+
+        self.port = None
+        self.host = None
+        self.skt = None
 
     def hide_hud(self):
         """
@@ -751,14 +778,13 @@ class BeamNGpy:
         self.send(data)
         self.logger.info(f'Closed lidar: "{name}"')
 
-    @ack('Teleported')
-    def teleport_vehicle(self, vehicle, pos, rot=None, rot_quat=None):
+    def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None):
         """
         Teleports the given vehicle to the given position with the given
         rotation.
 
         Args:
-            vehicle (:class:`.Vehicle`): The vehicle to teleport.
+            vehicle_id (string): The id/name of the vehicle to teleport.
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
@@ -773,7 +799,7 @@ class BeamNGpy:
         """
         self.logger.info(f'Teleporting vehicle <{vehicle.vid}>.')
         data = dict(type='Teleport')
-        data['vehicle'] = vehicle.vid
+        data['vehicle'] = vehicle_id
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
@@ -784,6 +810,9 @@ class BeamNGpy:
                            DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         self.send(data)
+        response = self.recv()
+        assert response['type'] == 'Teleported'
+        return response['success']
 
     @ack('ScenarioObjectTeleported')
     def teleport_scenario_object(self, scenario_object, pos,
@@ -1277,7 +1306,8 @@ class BeamNGpy:
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
         that are known to be required before running the simulation should be
-        added during scenario creation instead.
+        added during scenario creation instead. Cannot spawn two vehicles with
+        the same id/name.
 
         Args:
             vehicle (:class:`.Vehicle`): The vehicle to be spawned.
@@ -1289,6 +1319,10 @@ class BeamNGpy:
                           will be set to the ground level at the given
                           position to avoid spawning the vehicle below ground
                           or in the air.
+
+        Returns:
+            bool indicating whether the spawn was successful or not
+
         """
         data = dict(type='SpawnVehicle', cling=cling)
         data['name'] = vehicle.vid
@@ -1305,6 +1339,11 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'VehicleSpawned'
+        if resp['success']:
+            vehicle.connect(self)
+            return True
+        else:
+            return False
 
     def despawn_vehicle(self, vehicle):
         """
@@ -2046,6 +2085,59 @@ class BeamNGpy:
         self.await_vehicle_spawn(vehicle.vid)
         vehicle.close()
         vehicle.connect(self)
+
+    @ack('PlayerCameraModeSet')
+    def set_player_camera_mode(self, vid, mode, config):
+        """
+        Sets the camera mode of the vehicle identified by the given vehicle ID.
+        The mode is given as a string that identifies one of the valid modes
+        offered by the simulator. These modes can be queried using the
+        (:meth:`~BeamNGpy.get_player_camera_mode`) method.
+
+        The camera can be further configured with some common parameters,
+        but it is not guaranteed the camera mode will respect all of them.
+        These parameters include:
+
+         * rotation: The rotation of the camera as a triplet of Euler angles
+         * fov: The field of view angle
+         * offset: The (x, y, z) vector to offset the camera's position by
+         * distance: The distance of the camera to the vehicle
+
+        Since each camera mode is implemented as a custom Lua extension, it is
+        not possible to automatically query the exact features of the mode.
+        Further information can be found in the
+        lua/ge/extensions/core/cameraModes files which contain the
+        implementations of each camera mode.
+
+        Args:
+            vid (str): Vehicle ID of the vehice to change the mode of.
+            mode (str): Camera mode to set
+            config (dict): Dictionary of further properties to set in the mode
+        """
+        data = dict(type='SetPlayerCameraMode')
+        data['vid'] = vid
+        data['mode'] = mode
+        data['config'] = config
+        self.send(data)
+
+    def get_player_camera_modes(self, vid):
+        """
+        Retrieves information about the camera modes configured for the vehicle
+        identified by the given ID.
+
+        Args:
+            vid (str): Vehicle ID of the vehicle to get camera mode information
+                       of.
+
+        Returns:
+            A dictionary mapping camera mode names to configuration options.
+        """
+        data = dict(type='GetPlayerCameraMode')
+        data['vid'] = vid
+        self.send(data)
+        resp = self.recv()
+        assert resp['type'] == 'PlayerCameraMode'
+        return resp['cameraData']
 
     def __enter__(self):
         self.open()
