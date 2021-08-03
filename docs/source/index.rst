@@ -12,6 +12,7 @@ Welcome to BeamNGpy's documentation!
 
    readme.rst
    modules.rst
+   bngros.rst
    changelog.rst
 
 
