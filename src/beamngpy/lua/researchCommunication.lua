@@ -7,6 +7,8 @@ local M = {}
 local mp = require('libs/lua-MessagePack/MessagePack')
 local socket = require('libs/luasocket/socket.socket')
 
+local BUF_SIZE = 4096
+
 M.protocolVersion = 'v1.19'
 
 -- Simple set implementation from the LuaSocket samples
@@ -39,7 +41,6 @@ M.checkForClients = function(servers)
   local readable, _, error = socket.select(servers, nil, 0)
   for _, input in ipairs(readable) do
     local client = input:accept()
-    client:settimeout(0.1, 't')
     table.insert(ret, client)
   end
   return ret
@@ -53,7 +54,26 @@ M.receive = function(skt)
     return nil, err
   end
 
-  local data, err = skt:receive(tonumber(length))
+  length = tonumber(length)
+
+  local data = ''
+
+  while true do
+    local toRead = math.min(length, BUF_SIZE)
+    local received, err = skt:receive(toRead)
+
+    if err then
+      log('E', 'ResearchCom', 'Error reading from socket: '..tostring(err))
+      return nil, err
+    end
+
+    data = data .. received
+    length = length - BUF_SIZE
+
+    if length <= 0 then
+      break
+    end
+  end
 
   if err then
     log('E', 'ResearchCom', 'Error reading from socket: '..tostring(err))
@@ -74,8 +94,6 @@ M.checkMessages = function(E, clients)
     if writable[skt] == nil then
       goto continue
     end
-    
-    skt:settimeout(0.01, 't')
     
     message, err = M.receive(skt)
     
@@ -122,8 +140,6 @@ M.sanitizeTable = function(tab)
 
     local t =  type(v)
 
-    print(k .. ': ' .. tostring(t))
-
     if t == 'table' then
       ret[k] = M.sanitizeTable(v)
     end
@@ -152,9 +168,21 @@ M.sendMessage = function(skt, message)
 
   message = mp.pack(message)
   length = #message
-  length = string.format('%016d', length)
-  skt:send(length)
-  skt:send(message)
+
+  local stringLength = string.format('%016d', length)
+  skt:send(stringLength)
+
+  local chunk = 0
+  while true do
+    local toSend = math.min(length, BUF_SIZE)
+    local start = chunk * BUF_SIZE + 1
+    skt:send(message, start, start + toSend - 1)
+    chunk = chunk + 1
+    length = length - toSend
+    if length <= 0 then
+      break
+    end
+  end
 end
 
 M.sendACK = function(skt, type)
@@ -174,7 +202,6 @@ end
 
 M.openServer = function(port)
   local server = assert(socket.bind('*', port))
-  server:settimeout(0.01)
   return server
 end
 

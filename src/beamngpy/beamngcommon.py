@@ -24,6 +24,8 @@ ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
 PROTOCOL_VERSION = 'v1.19'
 
+BUF_SIZE = 4096
+
 
 class BNGError(Exception):
     """
@@ -151,7 +153,8 @@ def send_msg(skt, data):
     data = msgpack.packb(data, use_bin_type=True)
     length = '{:016}'.format(len(data))
     skt.send(bytes(length, 'ascii'))
-    skt.send(data)
+    for i in range(0, len(data), BUF_SIZE):
+        skt.send(data[i:i + BUF_SIZE])
 
 
 def recv_msg(skt):
@@ -171,12 +174,11 @@ def recv_msg(skt):
     length = int(str(length, 'ascii'))
     buf = bytearray()
     while length > 0:
-        chunk = min(4096, length)
+        chunk = min(BUF_SIZE, length)
         received = skt.recv(chunk)
         buf.extend(received)
         length -= len(received)
     assert length == 0
-    data = skt.recv(length)
     data = msgpack.unpackb(buf, raw=False)
     if 'bngError' in data:
         raise BNGError(data['bngError'])
