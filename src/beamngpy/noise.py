@@ -12,11 +12,16 @@ to generate non-ideal data.
 """
 
 from .sensors import AbstractSensor
+from .beamngcommon import LOGGER_ID
 import numpy as np
 from PIL import Image
 from abc import abstractmethod
+from logging import getLogger, DEBUG
 from skimage.util import noise as skinoise
 from skimage.util import dtype as skitype
+
+module_logger = getLogger(f'{LOGGER_ID}.noise')
+module_logger.setLevel(DEBUG)
 
 
 class Noise(AbstractSensor):
@@ -101,14 +106,21 @@ class RandomImageNoise(Noise):
             colour(bool): Whether to apply noise to the colour image.
             depth(bool): Whether to apply noise to the depth image.
         """
+        self.logger = getLogger(f'{LOGGER_ID}.RandomImageNoise')
+        self.logger.setLevel(DEBUG)
         super().__init__(sensor)
         img_types = ['colour', 'depth']
         use = [colour, depth]
         self._data = dict()
-        self._img_types = [t for t, do in zip(img_types, use)]
+        self._img_types = [t for t, do in zip(img_types, use) if do]
+        self.logger.debug('Creating noise for the following image types: '
+                          f'{", ".join(self._img_types)}')
+        if 'seed' in kwargs:
+            self.logger.debug('The seed option is disabled and will '
+                              'be removed from argument list.')
         kwargs.update({'seed': None})
         self._generate_noise = lambda img: skinoise.random_noise(img,
-                                                                     **kwargs)
+                                                                 **kwargs)
 
     def _generate_noisy_data(self):
         """

@@ -5,12 +5,12 @@ BeamNGPy API module.
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
+from . import beamngcommon, sensors
 from .beamng import *
 from .visualiser import *
 from .vehicle import *
 from .scenario import *
 from .level import *
-from . import beamngcommon, sensors
 import os
 
 
