@@ -946,9 +946,23 @@ class Scenario:
 
         Raises:
             BNGError: If the scenario is currently not loaded.
+            DeprecationWarning: Always, return type will be None in future
+                                versions, we recommend to access sensor data
+                                through the Camera object instead of relying
+                                on the return value of this function.
+
         """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance for rendering cameras.')
 
-        return self.bng.render_cameras()
+        sensor_data = self.bng.render_cameras()
+        for cam_name, cam_data in sensor_data.items():
+            cam_data.pop('type')
+            self.cameras[cam_name].data = cam_data
+
+        create_warning('The return type of `.Scenario.render_cameras` '
+                       'will be None in future versions',
+                       DeprecationWarning)
+
+        return sensor_data
