@@ -59,11 +59,11 @@ def test_multi_vehicle(beamng):
 
 def test_multi_scenario(beamng):
     """
-    Test that a second client can connect to a running instance and ask 
+    Test that a second client can connect to a running instance and ask
     information about the loaded scenario.
     """
     with beamng as a_client:
-        scenario = Scenario('GridMap', 'multi_scenario')
+        scenario = Scenario('gridmap_v2', 'multi_scenario')
         vehicle = Vehicle('vehicle', model='etk800')
         scenario.add_vehicle(vehicle)
         scenario.make(a_client)

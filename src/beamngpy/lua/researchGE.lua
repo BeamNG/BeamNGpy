@@ -1726,12 +1726,20 @@ end
 M.handleGetPartConfig = function(skt, msg)
   local vid = msg['vid']
   local veh = scenetree.findObject(vid)
-  local cur = be:getPlayerVehicle(0):getID()
+  local cur = be:getPlayerVehicle(0)
+  if cur ~= nil then
+    cur = cur:getID()
+  end
+
   be:enterVehicle(0, veh)
   local cfg = core_vehicle_partmgmt.getConfig()
   local resp = {type = 'PartConfig', config = cfg}
-  veh = scenetree.findObjectById(cur)
-  be:enterVehicle(0, veh)
+
+  if cur ~= nil then
+    veh = scenetree.findObjectById(cur)
+    be:enterVehicle(0, veh)
+  end
+
   rcom.sendMessage(skt, resp)
 end
 

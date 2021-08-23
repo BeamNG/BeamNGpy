@@ -16,7 +16,7 @@ def main():
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
 
-    scenario = Scenario('GridMap', 'road_test')
+    scenario = Scenario('gridmap_v2', 'road_test')
     road_a = Road('track_editor_C_center', rid='circle_road', looped=True)
     nodes = [
         (-25, 300, 0, 5),

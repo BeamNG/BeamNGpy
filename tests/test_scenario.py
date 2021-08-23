@@ -69,16 +69,16 @@ def test_get_scenarios(beamng):
         scenarios = bng.get_scenarios()
         assert len(scenarios) > 0
 
-        gridmap_scenarios = bng.get_level_scenarios('GridMap')
+        gridmap_scenarios = bng.get_level_scenarios('gridmap_v2')
         assert len(gridmap_scenarios.values()) > 0
 
         for scenario in gridmap_scenarios.values():
             assert scenario.level is not None
             assert isinstance(scenario.level, str)
-            assert scenario.level == 'GridMap'
+            assert scenario.level == 'gridmap_v2'
 
         levels = bng.get_levels()
-        gridmap = levels['GridMap']
+        gridmap = levels['gridmap_v2']
 
         ref = gridmap_scenarios
         gridmap_scenarios = bng.get_level_scenarios(gridmap)
@@ -151,19 +151,18 @@ def find_object_name(scene, name):
 
 
 def test_get_scenetree(beamng):
-    bng = beamng.open()
-    # with beamng as bng:
-    scenario = Scenario('GridMap', 'test_scenario')
-    vehicle = Vehicle('egoVehicle', model='etk800')
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
-    scenario.make(bng)
-    bng.load_scenario(scenario)
-    bng.start_scenario()
+    with beamng as bng:
+        scenario = Scenario('gridmap_v2', 'test_scenario')
+        vehicle = Vehicle('egoVehicle', model='etk800')
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.make(bng)
+        bng.load_scenario(scenario)
+        bng.start_scenario()
 
-    scenario.sync_scene()
+        scenario.sync_scene()
 
-    assert scenario.scene is not None
-    assert scenario.scene.type == 'SimGroup'
+        assert scenario.scene is not None
+        assert scenario.scene.type == 'SimGroup'
 
-    prefab = find_object_name(scenario.scene, 'test_scenario')
-    assert prefab is not None
+        prefab = find_object_name(scenario.scene, 'test_scenario')
+        assert prefab is not None
