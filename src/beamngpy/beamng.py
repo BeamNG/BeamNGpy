@@ -8,30 +8,27 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
-import logging as log
 import os
-import shutil
 import signal
 import socket
 import subprocess
-import sys
 import zipfile
-import warnings
 
 
 from pathlib import Path
 from time import sleep
-
+import logging
 
 from .level import Level
 from .scenario import Scenario, ScenarioObject
 from .vehicle import Vehicle
 
 from .beamngcommon import send_msg, recv_msg
-from .beamngcommon import angle_to_quat, raise_rot_deprecation_warning
+from .beamngcommon import angle_to_quat
 from .beamngcommon import ack
 from .beamngcommon import BNGError, BNGValueError
 from .beamngcommon import PROTOCOL_VERSION, ENV
+from .beamngcommon import set_up_simple_logging, LOGGER_ID, create_warning
 
 BINARIES = [
     'Bin64/BeamNG.drive.x64.exe',
@@ -40,41 +37,36 @@ BINARIES = [
 
 RESEARCH_HELPER = 'researchHelper.txt'
 
+module_logger = logging.getLogger(f"{LOGGER_ID}.beamng")
+module_logger.setLevel(logging.DEBUG)
+
 
 def log_exception(extype, value, trace):
     """
     Hook to log uncaught exceptions to the logging framework. Register this as
     the excepthook with `sys.excepthook = log_exception`.
     """
-    log.exception("Uncaught exception: ", exc_info=(extype, value, trace))
+    module_logger.exception("Uncaught exception: ",
+                            exc_info=(extype, value, trace))
 
 
-def setup_logging(log_file=None, activateWarnings=True):
+def setup_logging(log_file=None, activateWarnings=True, level=logging.INFO):
     """
     Sets up the logging framework to log to the given log_file and to STDOUT.
     If the path to the log_file does not exist, directories for it will be
     created.
+
+    Args:
+        log_file (str): filename for log
+        activateWarnings (bool): whether to redirect warnings to the logger. Beware that this modifies the warnings settings. Optional.
+        level (int): log level of handler that is created for the log file, optional
     """
-    handlers = []
-    if log_file:
-        if os.path.exists(log_file):
-            backup = '{}.1'.format(log_file)
-            shutil.move(log_file, backup)
-        file_handler = log.FileHandler(log_file, 'w', 'utf-8')
-        handlers.append(file_handler)
-
-    term_handler = log.StreamHandler()
-    handlers.append(term_handler)
-    fmt = '%(asctime)s %(levelname)-8s %(message)s'
-    log.basicConfig(handlers=handlers, format=fmt, level=log.DEBUG)
-
-    sys.excepthook = log_exception
-
-    if activateWarnings:
-        warnings.simplefilter('default')
-        log.captureWarnings(True)
-
-    log.info('Started BeamNGpy logging.')
+    set_up_simple_logging(log_file, activateWarnings, level)
+    warn_msg = str('The use of `beamng.setup_logging` is deprecated and will'
+                   ' be removed in future versions. '
+                   'Use `beamngcommon.set_up_simple_logging` or '
+                   '`beamngcommon.config_logging` instead.')
+    create_warning(warn_msg, DeprecationWarning)
 
 
 class BeamNGpy:
@@ -91,22 +83,26 @@ class BeamNGpy:
         given userpath.
 
         Note that for BeamNG.tech version 0.22 and higher the directory
-        for the user path needs to be set up once before the first usage of BeamNGpy
-        with that user path.
+        for the user path needs to be set up once before the first
+        usage of BeamNGpy with that user path.
 
         Args:
             userpath (str): Userpath to place the mod zip in.
         """
         effective_userpath = BeamNGpy.read_effective_userpath(userpath)
         if effective_userpath is None:
-            print(f'No workspace set up at userpath: <{userpath}>')
-            print('Setup is required prior to mod deployment.')
+            module_logger.error('No workspace set up at '
+                                f'userpath: <{userpath}>. '
+                                'Setup is required prior to mod deployment.')
             return
         userpath = effective_userpath
 
         mods = Path(userpath) / 'mods'
         if not mods.exists():
             mods.mkdir(parents=True)
+
+        module_logger.debug('The research mod is being '
+                            f'deployed to `{mods.as_posix()}`.')
 
         lua = Path(__file__).parent / 'lua'
         common = lua / 'researchCommunication.lua'
@@ -150,6 +146,8 @@ class BeamNGpy:
                         be touched.
             remote (bool): Set to true when using the BeamNGpy library on a different system then BeamNG.tech
         """
+        self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
+        self.logger.setLevel(logging.DEBUG)
         self.host = host
         self.port = port
         self.remote = remote
@@ -184,8 +182,7 @@ class BeamNGpy:
             self.start_beamng(None, lua='shutdown(0)')
             self.process.wait(timeout=600)
         except Exception as err:
-            log.error('Error setting up workspace:')
-            log.exception(err)
+            self.logger.exception(err)
         finally:
             self.kill_beamng()
             self.process = None
@@ -203,6 +200,7 @@ class BeamNGpy:
             user = user / 'BeamNG.tech'
         else:
             user = user / 'BeamNG.drive'
+        self.logger.debug(f'Userpath is set to {user.as_posix()}')
         return user
 
     def determine_effective_userpath(self):
@@ -211,6 +209,8 @@ class BeamNGpy:
         if not effective_userpath:
             effective_userpath = BeamNGpy.read_effective_userpath(self.user)
         self.effective_user = effective_userpath
+        self.logger.debug('Automatically determined effective user path for '
+                          f'mod: {self.effective_user}')
 
     def determine_binary(self):
         """
@@ -235,7 +235,7 @@ class BeamNGpy:
                            'sure any of these exist in the BeamNG home '
                            f'folder: {", ".join(BINARIES)}')
 
-        log.debug('Determined BeamNG.* binary to be: %s', choice)
+        self.logger.debug(f'Determined BeamNG.* binary to be: {choice}')
         return str(choice)
 
     def prepare_call(self, extensions, *args, **usr_opts):
@@ -279,17 +279,20 @@ class BeamNGpy:
             call.append('-userpath')
             call.append(str(self.user))
             if ' ' in str(self.user):
-                msg = 'Your configured userpath contains a space. '
-                'Unfortunately, this is known to cause issues in '
-                'launching BeamNG.tech. If you require a path with a '
-                'space in it, you can alternatively set it manually in'
-                'the file "startup.ini" contained in the directory of '
-                'your BeamNG.tech installtion. This would not be '
-                'automatically updated if you change the `user` '
-                'parameter to `BeamNGpy`, but serves as a workaround '
-                'until the issue is fixed in BeamNG.tech.'
-                log.error(msg)
+                msg = 'Your configured userpath contains a space. ' \
+                      'Unfortunately, this is known to cause issues in ' \
+                      'launching BeamNG.tech. If you require a path with a ' \
+                      'space in it, you can alternatively set it manually in' \
+                      'the file "startup.ini" contained in the directory of ' \
+                      'your BeamNG.tech installtion. This would not be ' \
+                      'automatically updated if you change the `user` ' \
+                      'parameter to `BeamNGpy`, but serves as a workaround ' \
+                      'until the issue is fixed in BeamNG.tech.'
+                self.logger.error(msg)
 
+        call_str = ' '.join(call)
+        self.logger.debug('Created system call for starting '
+                          f'BeamNG process: `{call_str}`')
         return call
 
     def start_beamng(self, extensions, *args, **opts):
@@ -298,13 +301,14 @@ class BeamNGpy:
         termination.
         """
         call = self.prepare_call(extensions, *args, **opts)
-        log.debug('Starting BeamNG process: %s', call)
         self.process = subprocess.Popen(call)
+        self.logger.info("Started BeamNG.")
 
     def kill_beamng(self):
         """
         Kills the running BeamNG.* process.
         """
+        self.logger.info('Terminating BeamNG.tech process.')
         if self.skt:
             try:
                 self.quit_beamng()
@@ -318,7 +322,6 @@ class BeamNGpy:
         if not self.process:
             return
 
-        log.debug('Killing BeamNG process...')
         if os.name == "nt":
             with open(os.devnull, 'w') as devnull:
                 subprocess.call([
@@ -339,18 +342,16 @@ class BeamNGpy:
         data = dict(type='Hello')
         data['protocolVersion'] = PROTOCOL_VERSION
         self.send(data)
-        log.info('Sent data!')
         resp = self.recv()
         assert resp['type'] == 'Hello'
         if resp['protocolVersion'] != PROTOCOL_VERSION:
-            msg = \
-                'Mismatching BeamNGpy protocol versions. ' \
-                'Please ensure both BeamNG.tech and BeamNGpy are ' \
-                'using the desired versions.\n' \
-                'BeamNGpy\'s is: {}' \
-                'BeamNG.tech\'s is: {}'.format(PROTOCOL_VERSION,
-                                               resp['version'])
+            msg = 'Mismatching BeamNGpy protocol versions. ' \
+                  'Please ensure both BeamNG.tech and BeamNGpy are ' \
+                  'using the desired versions.\n' \
+                  f'BeamNGpy\'s is: {PROTOCOL_VERSION}' \
+                  f'BeamNG.tech\'s is: { resp["version"] }'
             raise BNGError(msg)
+        self.logger.info('Successfully connected to BeamNG.tech.')
 
     def message(self, req, **kwargs):
         """
@@ -368,6 +369,8 @@ class BeamNGpy:
         Returns:
             The response received from the simulator as a dictionary.
         """
+        self.logger.debug(f'Sending message of type "{req}" to '
+                          'BeamNG.tech\'s game engine in blocking mode.')
         kwargs['type'] = req
         self.send(kwargs)
         resp = self.recv()
@@ -375,6 +378,7 @@ class BeamNGpy:
             msg = 'Got Message type "{}" but expected "{}".'
             msg = msg.format(resp['type'], req)
             raise BNGValueError(msg)
+        self.logger.debug(f"Got response for message of type {req}.")
 
         if 'result' in resp:
             return resp['result']
@@ -515,8 +519,8 @@ class BeamNGpy:
             tries (int): The amount of attempts to connect before giving up.
         """
         self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        log.info('Connecting to BeamNG.tech at: ({}, {})'.format(self.host,
-                                                                 self.port))
+        self.logger.info('Connecting to BeamNG.tech at: '
+                         f'({self.host}, {self.port})')
         self.skt.settimeout(600)
         while tries > 0:
             try:
@@ -525,14 +529,14 @@ class BeamNGpy:
             except ConnectionRefusedError as err:
                 msg = 'Error connecting to BeamNG.tech. {} tries left.'
                 msg = msg.format(tries)
-                log.error(msg)
-                log.exception(err)
+                self.logger.error(msg)
+                self.logger.exception(err)
                 sleep(5)
                 tries -= 1
 
         self.hello()
 
-        log.info('Connected!')
+        self.logger.info('BeamNGpy successfully connected to BeamNG.')
 
     def send(self, data):
         """
@@ -567,7 +571,7 @@ class BeamNGpy:
                            assumed that the Lua extensions are already
                            installed.
         """
-        log.info('Opening BeamNGpy instance...')
+        self.logger.info('Opening BeamNGpy instance.')
 
         if deploy or launch:
             if not self.effective_user:
@@ -590,7 +594,7 @@ class BeamNGpy:
         """
         Kills the BeamNG.* process.
         """
-        log.info('Closing BeamNGpy instance...')
+        self.logger.info('Closing BeamNGpy instance.')
         if self.scenario:
             self.scenario.close()
             self.scenario = None
@@ -645,6 +649,7 @@ class BeamNGpy:
         vid = resp['vid']
         assert vid == vehicle.vid
         port = resp['result']
+        self.logger.debug(f"Created new vehicle connection on port {port}")
 
         return port
 
@@ -660,6 +665,7 @@ class BeamNGpy:
         self.send(data)
         resp = self.recv()
         assert resp['type'] == 'MapLoaded'
+        self.logger.info("Loaded map.")
         flags = scenario.get_engine_flags()
         self.set_engine_flags(flags)
         self.scenario = scenario
@@ -676,6 +682,7 @@ class BeamNGpy:
 
         """
         flags = dict(type='EngineFlags', flags=flags)
+        self.logger.debug(f'set following engine flags: {flags}')
         self.send(flags)
 
     @ack('OpenedShmem')
@@ -689,6 +696,8 @@ class BeamNGpy:
             size (int): The size to map in bytes.
         """
         data = dict(type='OpenShmem', name=name, size=size)
+        self.logger.info(f'Opened shared memory with id <{name}>, '
+                         f'and of size <{size}>')
         self.send(data)
 
     @ack('ClosedShmem')
@@ -700,6 +709,7 @@ class BeamNGpy:
             name (str): The name of the shared memory space to close.
         """
         data = dict(type='CloseShmem', name=name)
+        self.logger.info(f'Closed shared memory with id <{name}>')
         self.send(data)
 
     @ack('OpenedLidar')
@@ -753,6 +763,7 @@ class BeamNGpy:
         data['maxDist'] = max_dist
         data['visualized'] = visualized
         self.send(data)
+        self.logger.info(f'Opened lidar: "{name}')
 
     @ack('ClosedLidar')
     def close_lidar(self, name):
@@ -765,6 +776,7 @@ class BeamNGpy:
         data = dict(type='CloseLidar')
         data['name'] = name
         self.send(data)
+        self.logger.info(f'Closed lidar: "{name}"')
 
     def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None):
         """
@@ -776,7 +788,7 @@ class BeamNGpy:
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
-                         axes in degrees.
+                         axes in degrees. Deprecated.
             rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
                               rotation as quaternion
 
@@ -785,13 +797,17 @@ class BeamNGpy:
             specified, the vehicle will be repaired to its initial state during
             teleport.
         """
+        self.logger.info(f'Teleporting vehicle <{vehicle.vid}>.')
         data = dict(type='Teleport')
         data['vehicle'] = vehicle_id
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
         elif rot:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `beamng.teleport_vehicle` '
+                           'is deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         self.send(data)
         response = self.recv()
@@ -811,7 +827,7 @@ class BeamNGpy:
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
             rot (tuple): Optional tuple specifying rotations around the (x,y,z)
-                         axes in degrees.
+                         axes in degrees. Deprecated.
             rot_quat (tuple): Optional tuple specifying object rotation as a
                               quaternion
         """
@@ -821,7 +837,11 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         elif rot:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in '
+                           '`beamng.teleport_scenario_object` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -834,6 +854,7 @@ class BeamNGpy:
         """
         data = dict(type="StartScenario")
         self.send(data)
+        self.logger.info("Starting scenario.")
 
     @ack('ScenarioRestarted')
     def restart_scenario(self):
@@ -847,6 +868,7 @@ class BeamNGpy:
 
         data = dict(type='RestartScenario')
         self.send(data)
+        self.logger.info("Restarting scenario.")
 
     @ack('ScenarioStopped')
     def stop_scenario(self):
@@ -861,6 +883,7 @@ class BeamNGpy:
 
         data = dict(type='StopScenario')
         self.send(data)
+        self.logger.info("Stopping scenario.")
 
     @ack('SetPhysicsDeterministic')
     def set_deterministic(self):
@@ -931,6 +954,7 @@ class BeamNGpy:
             if resp['type'] != 'Stepped':
                 raise BNGError('Wrong ACK: {} != {}'.format('Stepped',
                                                             resp['type']))
+        self.logger.info(f"Advancing the simulation by {count} steps.")
 
     @ack('Paused')
     def pause(self):
@@ -940,6 +964,7 @@ class BeamNGpy:
         """
         data = dict(type='Pause')
         self.send(data)
+        self.logger.info('Pausing the simulation.')
 
     @ack('Resumed')
     def resume(self):
@@ -949,6 +974,7 @@ class BeamNGpy:
         """
         data = dict(type='Resume')
         self.send(data)
+        self.logger.info('Resuming the simulation.')
 
     def poll_sensors(self, vehicle):
         """
@@ -971,10 +997,10 @@ class BeamNGpy:
             dictionary having a key-value pair for each sensor's name and the
             data received for it.
         """
-        warnings.warn('"BeamNGpy.poll_sensors" is deprecated.\n'
-                      'Use "Vehicle.poll_sensors" instead.\n'
-                      'This function is going to be removed in the future.',
-                      DeprecationWarning)
+        create_warning('`BeamNGpy.poll_sensors` is deprecated '
+                       'and may be removed in future verions. '
+                       'Use "Vehicle.poll_sensors" instead.',
+                       DeprecationWarning)
 
         vehicle.poll_sensors()
         return vehicle.sensor_cache
@@ -996,7 +1022,6 @@ class BeamNGpy:
         if not self.scenario:
             raise BNGError('Need to be in a started scenario to render its '
                            'cameras.')
-
         engine_reqs = self.scenario.encode_requests()
         self.send(engine_reqs)
         response = self.recv()
@@ -1288,7 +1313,7 @@ class BeamNGpy:
             vehicle (:class:`.Vehicle`): The vehicle to be spawned.
             pos (tuple): Where to spawn the vehicle as a (x, y, z) triplet.
             rot (tuple): The rotation of the vehicle as a triplet of Euler
-                         angles.
+                         angles. Deprecated.
             rot_quat (tuple): Vehicle rotation in form of a quaternion
             cling (bool): If set, the z-coordinate of the vehicle's position
                           will be set to the ground level at the given
@@ -1304,7 +1329,10 @@ class BeamNGpy:
         data['model'] = vehicle.options['model']
         data['pos'] = pos
         if rot:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `beamng.spawn_vehicle` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             rot_quat = angle_to_quat(rot)
         data['rot'] = rot_quat
         data.update(vehicle.options)
@@ -1378,7 +1406,7 @@ class BeamNGpy:
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes.
+                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the cylinder's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1390,7 +1418,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `beamng.create_cylinder` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1416,7 +1447,7 @@ class BeamNGpy:
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes.
+                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the bump's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1431,7 +1462,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `beamng.create_bump` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['name'] = name
         data['material'] = material
@@ -1452,7 +1486,7 @@ class BeamNGpy:
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes.
+                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the cone's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1466,7 +1500,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `beamng.create_cone` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         self.send(data)
 
@@ -1484,7 +1521,7 @@ class BeamNGpy:
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes.
+                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the cube's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1495,7 +1532,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `beamng.create_cube` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
@@ -1516,7 +1556,7 @@ class BeamNGpy:
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
             rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes.
+                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the ring's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1528,7 +1568,10 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         else:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `beamng.create_ring` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
         data['material'] = material
         data['name'] = name
@@ -1722,7 +1765,7 @@ class BeamNGpy:
                        spheres=None, sphere_colors=None,
                        cling=False, offset=0):
         """
-        Function use is deprecated, use 'add_debug_polyline' instead!
+        The function is deprecated, use 'add_debug_polyline' instead!
         Adds a visual line to be rendered by BeamNG. This is mainly used for
         debugging purposes, but can also be used to add visual indicators to
         the user. A line is given as a series of points encoded as (x, y, z)
@@ -1758,9 +1801,11 @@ class BeamNGpy:
         Returns:
             The ID of the added debug line that can be used to remove the line
         """
-        warnings.warn('Use of "add_debug_line" deprecated it will be removed '
-                      'in future versions. Use "add_debug_polyline" '
-                      'and "add_debug_spheres" instead.')
+        create_warning('`add_debug_line` is deprecated and will be '
+                       'removed in future versions. '
+                       'Use "add_debug_polyline" and '
+                       '"add_debug_spheres" instead.',
+                       DeprecationWarning)
 
         if spheres:
             coordinates = [s[:3] for s in spheres]
@@ -1773,9 +1818,10 @@ class BeamNGpy:
         return lineID
 
     def remove_debug_line(self, line_id):
-        warnings.warn('Use of "remove_debug_line" is deprecated. It will be '
-                      'removed in future versions. Use "add_debug_polyline" '
-                      'instead.')
+        create_warning('Use of `Beamngpy.remove_debug_line` is deprecated. '
+                       'It will be removed in future versions. '
+                       'Use `add_debug_polyline` instead.',
+                       DeprecationWarning)
 
         self.remove_debug_polyline(line_id)
 
@@ -1965,8 +2011,8 @@ class BeamNGpy:
         path.
 
         Args:
-            path (str): The path to the scenario relative to BeamNG.tech's home
-            folder.
+            path (str): The path to the scenario relative to the
+            user directory.
         """
         self.message('DeleteScenario', path=path)
 
@@ -2054,7 +2100,7 @@ class BeamNGpy:
 
          * rotation: The rotation of the camera as a triplet of Euler angles
          * fov: The field of view angle
-         * offset: The (x, y, z) vector to offset the camera's position by 
+         * offset: The (x, y, z) vector to offset the camera's position by
          * distance: The distance of the camera to the vehicle
 
         Since each camera mode is implemented as a custom Lua extension, it is

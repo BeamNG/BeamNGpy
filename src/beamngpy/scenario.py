@@ -13,15 +13,21 @@ import copy
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
+from logging import getLogger
+from logging import DEBUG as DGB_LOG_LEVEL
 
 from .beamng import Level
 
 from .beamngcommon import BNGValueError, BNGError, angle_to_quat
 from .beamngcommon import quat_as_rotation_mat_str
-from .beamngcommon import raise_rot_deprecation_warning
+from .beamngcommon import LOGGER_ID, create_warning
 
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
+
+
+module_logger = getLogger(f'{LOGGER_ID}.scenario')
+module_logger.setLevel(DGB_LOG_LEVEL)
 
 
 class Road:
@@ -122,12 +128,27 @@ class ScenarioObject:
 
     def __init__(self, oid, name, otype, pos, rot, scale,
                  rot_quat=None, **options):
+        """Creates a scenario object with the given parameters.
+
+        Args:
+            oid (string): name of the asset
+            name (string): asset id
+            otype (string): type of the object according to the BeamNG classification
+            pos (tupel): x, y, and z coordinates
+            rot (tupel): Euler angles defining the initial orientation.
+                         Deprecated.
+            scale (tupel): defining the scale along the x,y, and z axis.
+            rot_quat (tupel, optional): Quatertnion describing the initial orientation. Defaults to None.
+        """
         self.id = oid
         self.name = name
         self.type = otype
         self.pos = pos
         if rot:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in class `ScenarioObject` is '
+                           'deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             rot_quat = angle_to_quat(rot)
         self.rot = rot_quat
         self.scale = scale
@@ -371,6 +392,9 @@ class Scenario:
 
         self.bng = None
 
+        self.logger = getLogger(f'{LOGGER_ID}.Scenario')
+        self.logger.setLevel(DGB_LOG_LEVEL)
+
     def _get_objects_list(self):
         """
         Encodes extra objects to be placed in the scene as dictionaries for the
@@ -393,6 +417,8 @@ class Scenario:
             obj_dict['options']['scale'] = scale_str
 
             objs.append(obj_dict)
+        self.logger.debug(f'The scenario {self.name} has {len(objs)} '
+                          'objects of type `beamngpy.ScenarioObject`')
         return objs
 
     def _get_info_dict(self):
@@ -443,6 +469,9 @@ class Scenario:
             vehicle_dict['position'] = ' '.join([str(p) for p in pos])
             vehicle_dict['rotationMatrix'] = quat_as_rotation_mat_str(rot)
             vehicles.append(vehicle_dict)
+        vehicle_names = [v.vid for v in self.vehicles]
+        self.logger.debug(f'The scenario {self.name} has {len(vehicles)} '
+                          f'vehicles: {", ".join(vehicle_names)}')
         return vehicles
 
     def _get_roads_list(self):
@@ -465,6 +494,8 @@ class Scenario:
             road_dict['render_priority'] = idx
 
             ret.append(road_dict)
+        self.logger.debug(f'The scenario {self.name} has {len(ret)} '
+                          'scenario-specific roads.')
         return ret
 
     def _get_prefab(self):
@@ -506,9 +537,9 @@ class Scenario:
         Args:
             pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
             rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
-                         in Euler angles around each axis.
-            rot_quat (tuple): Optional tuple (x, y, z, w) specifying the
-                              rotation as quaternion
+                         in Euler angles around each axis. Deprecated.
+            rot_quat (tuple, optional): (x, y, z, w) tuple specifying
+                                        the rotation as quaternion
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
@@ -516,15 +547,23 @@ class Scenario:
             raise BNGValueError(error)
 
         if rot:
-            raise_rot_deprecation_warning()
+            create_warning('the usage of `rot` in `Scenario.add_vehicle` '
+                           'is deprecated, the argument will be removed '
+                           'in future versions',
+                           DeprecationWarning)
             rot_quat = angle_to_quat(rot)
         self.vehicles.add(vehicle)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
+        self.logger.debug(f'Added vehicle with id \'{vehicle.vid}\'.')
 
         if self.bng:
             self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat,
                                    cling=cling)  # todo
             self.transient_vehicles.add(vehicle)
+            vehicle.connect(self.bng)
+        else:
+            self.logger.debug('No beamngpy instance available. '
+                              f'Did not spawn vehicle with id \'{vehicle.vid}\'.')
 
     def remove_vehicle(self, vehicle):
         """
@@ -538,24 +577,30 @@ class Scenario:
             if self.bng:
                 self.bng.despawn_vehicle(vehicle)
                 self.transient_vehicles.remove(vehicle)
+            else:
+                self.logger.debug('No beamngpy instance available, cannot '
+                                  f'despawn vehicle with id \'{vehicle.vid}\'')
 
             if vehicle.vid in self._vehicle_locations:
                 del self._vehicle_locations[vehicle.vid]
             self.vehicles.remove(vehicle)
+        else:
+            self.logger.debug(f'No vehicle with id {vehicle.vid} found.')
 
-    def get_vehicle(self, needle):
+    def get_vehicle(self, vehicle_id):
         """
         Retrieves the vehicle with the given ID from this scenario.
 
         Args:
-            needle (str): The ID of the vehicle to find.
+            vehicle_id (str): The ID of the vehicle to find.
 
         Returns:
             The :class:`.Vehicle` with the given ID. None if it wasn't found.
         """
         for vehicle in self.vehicles:
-            if vehicle.vid == needle:
+            if vehicle.vid == vehicle_id:
                 return vehicle
+        self.logger.debug(f'Could not find vehicle with id {vehicle_id}')
         return None
 
     def set_initial_focus(self, vehicle_id):
@@ -567,8 +612,10 @@ class Scenario:
         self._focus_vehicle = vehicle_id
 
     def add_road(self, road):
-        """
-        Adds a :class:`.Road` to this scenario.
+        """Adds a road to this scenario.
+
+        Args:
+            road (:class:`beamngpy.Road`): road to be added to the scenario.
         """
         self.roads.append(road)
 
@@ -664,14 +711,19 @@ class Scenario:
         """
         self.bng = bng
 
+        self.logger.debug(f'{len(self.proc_meshes)} procedural meshes.')
         for mesh in self.proc_meshes:
             mesh.place(self.bng)
 
+        self.logger.debug(f'Connecting to {len(self.cameras)} cameras.')
         for _, cam in self.cameras.items():
             cam.connect(self.bng, None)
 
+        self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles:
             vehicle.connect(bng)
+
+        self.logger.info(f'Connected to scenario: {self.name}')
 
     def decode_frames(self, camera_data):
         """
@@ -696,6 +748,8 @@ class Scenario:
         for name, cam in self.cameras.items():
             request = cam.encode_engine_request()
             requests[name] = request
+            self.logger.debug('Added engine request for '
+                              f'camera with id <{name}>.')
 
         requests = dict(type='SensorRequest', sensors=requests)
         return requests
@@ -729,6 +783,8 @@ class Scenario:
 
         prefab = self._get_prefab()
         info = self._get_info_dict()
+        self.logger.debug(f'Generated prefab:\n{prefab}\n')
+        self.logger.debug(f'Generated scenarios info dict:\n{info}\n')
 
         self.path = bng.create_scenario(level_name, self.name, prefab, info)
 
@@ -759,6 +815,7 @@ class Scenario:
         if self.path is None:
             self.find(bng)
         bng.delete_scenario(self.path)
+        self.logger.info(f'Deleted scenario from simulation: "{self.name}".')
 
     def start(self):
         """
@@ -773,6 +830,7 @@ class Scenario:
                            'instance to be started.')
 
         self.bng.start_scenario()
+        self.logger(f'Started scenario: "{self.name}"')
 
     def restart(self):
         """
@@ -796,6 +854,7 @@ class Scenario:
             if vehicle in self.vehicles:
                 self.bng.despawn_vehicle(vehicle)
                 del self.vehicles[vehicle]
+        self.logger.info(f'Restarted scenario: "{self.name}"')
 
     def close(self):
         """
@@ -809,6 +868,7 @@ class Scenario:
             vehicle.close()
 
         self.bng = None
+        self.logger.debug('Removed beamngpy instance from scenario class.')
 
     def find_waypoints(self):
         """
@@ -886,9 +946,23 @@ class Scenario:
 
         Raises:
             BNGError: If the scenario is currently not loaded.
+            DeprecationWarning: Always, return type will be None in future
+                                versions, we recommend to access sensor data
+                                through the Camera object instead of relying
+                                on the return value of this function.
+
         """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance for rendering cameras.')
 
-        return self.bng.render_cameras()
+        sensor_data = self.bng.render_cameras()
+        for cam_name, cam_data in sensor_data.items():
+            cam_data.pop('type')
+            self.cameras[cam_name].data = cam_data
+
+        create_warning('The return type of `.Scenario.render_cameras` '
+                       'will be None in future versions',
+                       DeprecationWarning)
+
+        return sensor_data

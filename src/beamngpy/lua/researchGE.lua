@@ -368,7 +368,9 @@ end
 M.handleStep = function(skt, msg)
   local count = msg["count"]
   stepsLeft = count
-  block('step', skt)
+  if msg['ack'] then
+    block('step', skt)
+  end
   be:physicsStep(count)
   return true
 end

@@ -159,6 +159,20 @@ input('Hit enter when done...')
 We have a [guide][6] helping you getting started and navigating our collection of examples and
 the documentation of the library is available [here][7].
 
+## Compatibility
+
+BeamNG.tech is not a finished product but is still under development.
+Thus frequent changes on the simulation side are to be expected.
+While the BeamNGpy library maintains compatibility between minor versions for the user, this doesn't extend to the BeamNG.tech side. Not all BeamNGpy versions are compatible with all BeamNG.tech versions.
+Below is a list of compatible BeamNG.tech and BeamNGpy versions.
+However we do not maintain minor versions: bug fixes and new featrures will only be available for the newest BeamNG.tech and BeamNGpy releases.
+
+| BeamNG.tech version | BeamNGpy version |
+|---------------------|------------------|
+| 0.23                | 1.21             |
+| 0.22                | 1.20             |
+| 0.21                | 1.19             |
+
 ## Troubleshooting
 
 This section lists common issues with BeamNGpy in particular. Since this

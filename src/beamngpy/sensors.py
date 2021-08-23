@@ -12,10 +12,8 @@ This module implements various sensors that can be attached to vehicles to
 extract data from simulations.
 """
 import base64
-import logging as log
 import mmap
 import os
-import sys
 
 from abc import ABC, abstractmethod
 from xml.dom import minidom
@@ -24,8 +22,11 @@ from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from logging import DEBUG as DBG_LOG_LEVEL
+from logging import getLogger
 
-from .beamngcommon import BNGValueError
+from .beamngcommon import BNGValueError, LOGGER_ID
+
 
 NEAR = 0.01
 FAR = 1000
@@ -477,6 +478,8 @@ class Camera(Sensor):
                           transmission.
         """
         super().__init__()
+        self.logger = getLogger(f'{LOGGER_ID}.Camera')
+        self.logger.setLevel(DBG_LOG_LEVEL)
         self.pos = pos
         self.direction = direction
         self.fov = fov
@@ -489,6 +492,11 @@ class Camera(Sensor):
         self.depth_inverse = depth_inverse
         self.annotation = annotation
         self.instance = instance
+        id = ['colour', 'depth', 'annotation', 'instance']
+        properties = [self.colour, self.depth, self.annotation, self.instance]
+        properties = [id for id, prop in zip(id, properties) if properties]
+        properties = ', '.join(properties)
+        self.logger.debug(f'Set up camera to render {properties} images.')
 
         self.shmem = shmem
         self.colour_handle = None
@@ -512,6 +520,7 @@ class Camera(Sensor):
             name (str): The name of the camera.
         """
         if self.shmem:
+            self.logger.debug('Initializing shared memory.')
             pid = os.getpid()
             prefix = ''
             if vehicle:
@@ -520,25 +529,27 @@ class Camera(Sensor):
             self.colour_handle = '{}.{}.{}.colour'
             self.colour_handle = self.colour_handle.format(pid, prefix, name)
             self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
-            log.debug('Bound shmem for colour: %s', self.colour_handle)
+            self.logger.debug('Bound shmem for colour: {self.colour_handle}')
 
             self.depth_handle = '{}.{}.{}.depth'
             self.depth_handle = self.depth_handle.format(pid, prefix, name)
             self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
-            log.debug('Bound shmem for depth: %s', self.depth_handle)
+            self.logger.debug(f'Bound shmem for depth: {self.depth_handle}')
 
             self.annotation_handle = '{}.{}.{}.annotate'
             self.annotation_handle = self.annotation_handle.format(pid, prefix,
                                                                    name)
             self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
-            log.debug('Bound shmem for annotation: %s', self.annotation_handle)
+            self.logger.debug('Bound shmem for annotation: '
+                              f'{self.annotation_handle}')
 
             if self.instance:
                 self.instance_handle = '{}.{}.{}.instance'
                 self.instance_handle = self.instance_handle.format(pid, prefix,
                                                                    name)
                 self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
-                log.debug('Bound shmem for instance: %s', self.instance_handle)
+                self.logger.debug('Bound shmem for instance: '
+                                  f'{self.instance_handle}')
 
     def detach(self, vehicle, name):
         """
@@ -551,20 +562,23 @@ class Camera(Sensor):
             name (str): The name of the camera.
         """
         if self.colour_shmem:
-            log.debug('Unbinding shmem for color: %s', self.colour_handle)
+            self.logger.debug('Unbinding shmem for color: '
+                              f'{self.colour_handle}')
             self.colour_shmem.close()
 
         if self.depth_shmem:
-            log.debug('Unbinding shmem for depth: %s', self.depth_handle)
+            self.logger.debug('Unbinding shmem for depth: '
+                              f'{self.depth_handle}')
             self.depth_shmem.close()
 
         if self.annotation_shmem:
-            log.debug('Unbinding shmem for annotation: %s',
-                      self.annotation_handle)
+            self.logger.debug('Unbinding shmem for annotation: ',
+                              f'{self.annotation_handle}')
             self.annotation_shmem.close()
 
         if self.instance_shmem:
-            log.debug('Unbinding shmem for instance: %s', self.instance_handle)
+            self.logger.debug('Unbinding shmem for instance: '
+                              f'{self.instance_handle}')
             self.instance_shmem.close()
 
     def connect(self, bng, vehicle):
@@ -720,8 +734,9 @@ class Camera(Sensor):
                 colour_d = colour_d.reshape(img_h, img_w, 4)
                 decoded['colour'] = Image.fromarray(colour_d)
             else:
-                print('Color buffer failed to render. Check that you '
-                      'aren\'t running on low settings.', file=sys.stderr)
+                msg = 'Color buffer failed to render. '\
+                      'Check that you aren\'t running on low settings.'
+                self.logger.error(msg)
 
         if self.annotation_shmem:
             if 'annotation' in resp.keys():
@@ -731,8 +746,9 @@ class Camera(Sensor):
                 annotate_d = annotate_d.reshape(img_h, img_w, 4)
                 decoded['annotation'] = Image.fromarray(annotate_d)
             else:
-                print('Annotation buffer failed to render. Check that you '
-                      'aren\'t running on low settings.', file=sys.stderr)
+                msg = 'Color buffer failed to render. '\
+                      'Check that you aren\'t running on low settings.'
+                self.logger.error(msg)
 
         if self.depth_shmem:
             if 'depth' in resp.keys():
@@ -760,8 +776,9 @@ class Camera(Sensor):
                 depth_d = np.uint8(depth_d)
                 decoded['depth'] = Image.fromarray(depth_d)
             else:
-                print('Depth buffer failed to render. Check that you '
-                      'aren\'t running on low settings.', file=sys.stderr)
+                self.logger.error('Depth buffer failed to render. '
+                                  'Check that you aren\'t running '
+                                  'on low settings.')
 
         if self.instance_shmem:
             if 'instance' in resp.keys():
@@ -771,8 +788,8 @@ class Camera(Sensor):
                 instance_d = instance_d.reshape(img_h, img_w, 4)
                 decoded['instance'] = Image.fromarray(instance_d)
             else:
-                print('Instance buffer failed to render. Check that you '
-                      'aren\'t running on low settings.', file=sys.stderr)
+                self.logger.error('Instance buffer failed to render. '
+                                  'Check that you aren\'t running on low settings.')
 
         return decoded
 
@@ -807,6 +824,8 @@ class Lidar(Sensor):
         position, and refresh rate of this sensor can be customised.
         """
         super().__init__()
+        self.logger = getLogger(f"{LOGGER_ID}.Lidar")
+        self.logger.setLevel(DBG_LOG_LEVEL)
         self.use_shmem = shmem
         self.handle = None
         self.shmem = None
@@ -837,7 +856,7 @@ class Lidar(Sensor):
         self.handle = '{}.{}.{}.lidar'.format(pid, vehicle.vid, name)
         if self.use_shmem:
             self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
-            log.debug('Bound memory for lidar: %s', self.handle)
+            self.logger.debug(f'Bound memory for lidar: {self.handle}')
 
     def detach(self, vehicle, name):
         """
@@ -851,6 +870,7 @@ class Lidar(Sensor):
             name (str): The name of the sensor.
         """
         if self.use_shmem:
+            self.logger.debug('Closing shmem.')
             self.shmem.close()
 
     def connect(self, bng, vehicle):
@@ -1201,6 +1221,8 @@ class Ultrasonic(Sensor):
                  fov=(70, 35),
                  min_resolution=256,
                  near_far=(0.15, 5.5)):
+        self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
+        self.logger.setLevel(DBG_LOG_LEVEL)
         self.pos = pos
         self.rot = rot
         self.fov = fov[0]
@@ -1249,3 +1271,6 @@ class Ultrasonic(Sensor):
             data = dict(type='StopUSSensorVisualization')
             data['dynSphereID'] = self.vis_spec
             bng.send(data)
+        else:
+            self.logger.debug('Cannot stop visualization '
+                              'since no sphere ID is available.')

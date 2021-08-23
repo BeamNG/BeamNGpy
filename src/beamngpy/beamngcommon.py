@@ -8,13 +8,15 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
-import logging as log
+import logging
 import json
 import os
-import numpy as np
 import warnings
+import numpy as np
 
 from functools import wraps
+from pathlib import Path
+from shutil import move
 
 import msgpack
 
@@ -23,6 +25,92 @@ ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
 PROTOCOL_VERSION = 'v1.19'
+LOGGER_ID = "beamngpy"
+LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
+bngpy_logger = logging.getLogger(LOGGER_ID)
+module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
+bngpy_handlers = list()
+
+
+def create_warning(msg, category=None):
+    """Helper function for BeamNGpy modules to create warnings.
+
+    Args:
+        msg (string): message to be displayed
+        category (exception, optional): Category of warning to be issued. See `warnings` documentation for more details. Defaults to None.
+    """
+    warnings.warn(msg, category=category, stacklevel=2)
+
+
+def config_logging(handlers,
+                   replace=True,
+                   level=logging.DEBUG,
+                   redirect_warnings=True):
+    """
+    Function to configure logging.
+    Args:
+        handlers (list): list of already configured logging.Handler objects
+        replace (bool): whether to replace existing list of handlers with new ones or whether to add them, optional
+        level (int): log level of the beamngpy logger object, optional
+        redirect_warnings (bool): whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
+    """
+    global bngpy_logger, bngpy_handlers
+    root_logger = logging.getLogger()
+    if replace and bngpy_handlers:
+        for h in bngpy_handlers:
+            root_logger.removeHandler(h)
+    for h in handlers:
+        root_logger.addHandler(h)
+    bngpy_logger.setLevel(level)
+    if redirect_warnings:
+        logging.captureWarnings(redirect_warnings)
+        warn_log = logging.getLogger('py.warnings')
+        warnings.simplefilter('once')
+        for h in handlers:
+            warn_log.addHandler(h)
+    bngpy_logger.info('Started BeamNGpy logging.')
+    for h in handlers:
+        if isinstance(h, logging.FileHandler):
+            module_logger.info(f'Logging to file: {h.baseFilename}.')
+
+
+def set_up_simple_logging(log_file=None,
+                          redirect_warnings=None,
+                          level=logging.INFO):
+    """
+    Helper function that provides high-level control
+    over beamng logging. For low-level control over the
+    logging system use `beamngcommon.config_logging`.
+    Sets up logging to `sys.stderr` and optionally to a given file.
+    Existing log files are moved to `<log_file>.1`.
+    By default beamngpy logs warnings and errors to `sys.stderr`,
+    so this function is only of use, if the log output should additionaly
+    be written to a file, or if the log level needs to be adjusted.
+
+    Args:
+        log_file (str): log filename, optional
+        redirect_warnings (bool): Whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
+        level (int): log level of handler that is created for the log file
+    """
+    sh = logging.StreamHandler()
+    sh.setLevel(level)
+    formatter = logging.Formatter(LOG_FORMAT)
+    sh.setFormatter(formatter)
+    handlers = [sh]
+    moved_log = False
+    fh = None
+    if log_file:
+        if Path(log_file).exists():
+            move(log_file, f'{log_file}.1')
+            moved_log = True
+        fh = logging.FileHandler(log_file, 'w', 'utf-8')
+        formatter = logging.Formatter(LOG_FORMAT)
+        fh.setFormatter(formatter)
+        fh.setLevel(level)
+        handlers.append(fh)
+    config_logging(handlers, redirect_warnings=redirect_warnings)
+    if moved_log and fh is not None:
+        module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
 
 BUF_SIZE = 4096
 
@@ -46,11 +134,6 @@ class BNGDisconnectedError(ValueError):
     Exception class for BeamNGpy being disconnected when it shouldn't.
     """
     pass
-
-
-def raise_rot_deprecation_warning():
-    warnings.warn('\'rot\' is deprecated, use rot_mat instead',
-                  DeprecationWarning)
 
 
 def ack(ack_type):
@@ -132,7 +215,7 @@ def ensure_config(cfg_file):
     if not os.path.exists(cfg_file):
         default = get_default()
         default.save(cfg_file)
-        log.debug("Saved fresh default cfg to: %s", cfg_file)
+        module_logger.debug(f"Saved fresh default cfg to: {cfg_file}")
 
     CFG.load(cfg_file)
 

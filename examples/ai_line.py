@@ -1,13 +1,6 @@
-import sys
-
-from time import sleep
-
-
 import numpy as np
 
-from scipy import interpolate
-
-from beamngpy import BeamNGpy, Scenario, Road, Vehicle, setup_logging
+from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
 
 SIZE = 1024
 

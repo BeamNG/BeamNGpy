@@ -8,15 +8,16 @@
 
 """
 
-import logging as log
 import socket
-import warnings
 
 from time import sleep
+from logging import getLogger
+from logging import DEBUG as DBG_LOG_LEVEL
 
 from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
-from .beamngcommon import PROTOCOL_VERSION
+from .beamngcommon import PROTOCOL_VERSION, LOGGER_ID, create_warning
 from .sensors import State
+
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -69,6 +70,9 @@ class Vehicle:
             vid (str): The vehicle's ID.
             model (str): Model of the vehicle.
         """
+        self.logger = getLogger(f'{LOGGER_ID}.Vehicle')
+        self.logger.setLevel(DBG_LOG_LEVEL)
+
         self.vid = vid.replace(' ', '_')
         self.model = model
 
@@ -156,6 +160,7 @@ class Vehicle:
 
     def _start_connection(self):
         self.port = self.bng.start_vehicle_connection(self)
+        self.logger.info(f'Vehicle {self.vid} connected to simulation.')
 
     def _connect_existing(self, tries=25):
         """
@@ -173,18 +178,19 @@ class Vehicle:
         self.skt.settimeout(600)
         while tries > 0:
             try:
+                self.logger.info('Attempting to connect '
+                                 f'to vehicle \'{self.vid}\'')
                 self.skt.connect((self.bng.host, self.port))
                 break
             except ConnectionRefusedError as err:
-                msg = \
-                    'Error connecting to BeamNG.tech vehicle {}. {} tries ' \
-                    'left.'.format(self.vid, tries)
-                log.error(msg)
-                log.exception(err)
+                msg = 'Error connecting to BeamNG.tech vehicle '\
+                      f'{self.vid}. {tries} tries left.'
+                self.logger.error(msg)
+                self.logger.exception(err)
                 sleep(5)
                 tries -= 1
-
         self.hello()
+        self.logger.info(f'Successfully connected to vehicle {self.vid}.')
 
         for _, sensor in self.sensors.items():
             sensor.connect(self.bng, self)
@@ -304,9 +310,10 @@ class Vehicle:
         """
         Synchronises the :attr:`.Vehicle.state` field with the simulation.
         """
-        warnings.warn('Update_vehicle is deprecated\nthe .Vehicle.state '
-                      'attribute is now a default sensor for every vehicle and'
-                      ' is updated through poll_sensors', DeprecationWarning)
+        create_warning('`Vehicle.update_vehicle` is deprecated the '
+                       '`.Vehicle.state` attribute is now a default sensor '
+                       'for every vehicle and is updated through poll_sensors',
+                       DeprecationWarning)
         return self.state
 
     def poll_sensors(self, requests=None):
@@ -314,8 +321,8 @@ class Vehicle:
         Updates the vehicle's sensor readings.
 
         Args:
-            mode (str): The mode to set. Must be a string from the options
-                        listed above.
+            requests (None): This function parameter is not used and will be
+                             removed in future versions.
 
         Raises:
             DeprecationWarning: If requests parameter is used.
@@ -325,13 +332,14 @@ class Vehicle:
         Returns:
             Dict with sensor data to support compatibility with
             previous versions.
+            The return argument is deprecated and will be removed
+            in future versions.
+            Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` instead.
         """
         if requests is not None:
-            warnings.warn('Do not use "requests" as function argument.\n'
-                          'It is not used and will be removed in future '
-                          'versions.', DeprecationWarning)
-        warnings.warn(
-            "return type will be None in future versions", DeprecationWarning)
+            create_warning('The `requests` argument in `Vehicle.poll_sensors` '
+                           'is not used and will be removed in future versions.',
+                           DeprecationWarning)
 
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
@@ -341,6 +349,7 @@ class Vehicle:
             self.bng.send(engine_reqs)
             response = self.bng.recv()
             assert response['type'] == 'SensorData'
+            compatibility_support = response['data']
             sensor_data.update(response['data'])
 
         if vehicle_reqs['sensors']:
@@ -355,6 +364,10 @@ class Vehicle:
             self.sensors[sensor].data = data
 
         self.sensor_cache = result
+
+        create_warning('The return type of `.Vehicle.poll_sensors` will be None '
+                       'in future versions',
+                       DeprecationWarning)
         return compatibility_support
 
     def hello(self):
@@ -371,6 +384,8 @@ class Vehicle:
                 'BeamNG.tech\'s is: {}'.format(PROTOCOL_VERSION,
                                                resp['version'])
             raise BNGError(msg)
+        self.logger.debug('Connected to simulation using '
+                          f'protocol version {PROTOCOL_VERSION}.')
 
     @ack('ShiftModeSet')
     def set_shift_mode(self, mode):
@@ -400,7 +415,7 @@ class Vehicle:
         """
         mode = mode.lower().strip()
         if mode not in SHIFT_MODES:
-            raise BNGValueError('Non-existent shift mode: {}'.format(mode))
+            raise BNGValueError(f'Non-existent shift mode: {mode}')
 
         mode = SHIFT_MODES[mode]
         data = dict(type='SetShiftMode')
@@ -574,10 +589,12 @@ class Vehicle:
             BNGValueError: If the script has fewer than three nodes, the
                            minimum length of a script.
         """
-        if start_dir is not None or up_dir != None or teleport != None:
-            warnings.warn('The function arguments "start_dir", "up_dir", '
-                          ' and "teleport" are not used anymore and will be '
-                          ' removed in future versions.', DeprecationWarning)
+        if (start_dir is not None) or (up_dir is not None) or (teleport is not None):
+            create_warning('The arguments `start_dir`, `up_dir`, '
+                           ' and `teleport` of  `Vehicle.ai_set_script` '
+                           'are not used anymore and will be removed '
+                           'in future versions.',
+                           DeprecationWarning)
 
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
@@ -881,6 +898,8 @@ class Vehicle:
             sensor.detach(self, name)
 
         self.sensors = dict()
+        self.logger.info(f'Disconnected from vehicle {self.vid} '
+                         'and detached sensors.')
 
     @ack('AppliedVSLSettings')
     def set_in_game_logging_options_from_json(self, fileName):
@@ -888,7 +907,7 @@ class Vehicle:
         Updates the in game logging with the settings specified
         in the given file/json. The file is expected to be in
         the following location:
-        <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[fileName]
+        <userpath>/<version_number>/<fileName>
 
         Args:
             fileName
@@ -905,7 +924,7 @@ class Vehicle:
         as needed.
         Depending on the executable used the file can be found at the following
         location:
-        <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[fileName]
+        <userpath>/<BeamNG version number>/<fileName>
 
         Args:
             fileName(str): not the absolute file path but
@@ -926,15 +945,15 @@ class Vehicle:
                             specify the output directory, overwrites the
                             outputDir set through the json. The data can be
                             found in:
-                            <path>/<to>/<user>/Documents/BeamNG.[drive/research/tech]/[outpuDir]
+                            <userpath>/<BeamNG version number>/<outpuDir>
 
         """
         data = dict(type='StartVSLLogging', outputDir=outputDir)
         self.send(data)
-        userpath = self.bng.determine_userpath()
         log_msg = ('Started in game logging.'
-                   f'The log files can be found in {userpath}/{outputDir}.')
-        log.info(log_msg)
+                   'The output for the vehicle stats logging can be found in '
+                   f'{self.bng.user}/<BeamNG version number>/{outputDir}.')
+        self.logger.info(log_msg)
 
     @ack('StoppedVSLLogging')
     def stop_in_game_logging(self):
@@ -943,4 +962,4 @@ class Vehicle:
         """
         data = dict(type='StopVSLLogging')
         self.send(data)
-        log.info('Stopped in game logging.')
+        self.logger.info('Stopped in game logging.')
