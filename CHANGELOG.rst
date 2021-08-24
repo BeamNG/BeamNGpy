@@ -2,6 +2,14 @@
 Changelog
 =========
 
+Version 1.21
+============
+- Fix and restructure ``logging`` usage
+- Add more verbose logging
+- Fix message chunking in networking
+- Update examples/tests to address GridMap being gone
+- Improve handling of userpath discovery and mod deployment
+
 Version 1.20
 ============
 - Adjust userpath handling according to changes in BeamNG.drive from 0.22 onwards
