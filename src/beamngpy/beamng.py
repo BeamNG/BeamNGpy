@@ -1154,7 +1154,7 @@ class BeamNGpy:
 
         data = dict(type='UpdateScenario')
         data['vehicles'] = list()
-        for vehicle in self.scenario.vehicles.keys():
+        for vehicle in self.scenario.vehicles:
             data['vehicles'].append(vehicle.vid)
         self.send(data)
         resp = self.recv()
