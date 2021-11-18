@@ -797,7 +797,7 @@ class BeamNGpy:
             specified, the vehicle will be repaired to its initial state during
             teleport.
         """
-        self.logger.info(f'Teleporting vehicle <{vehicle.vid}>.')
+        self.logger.info(f'Teleporting vehicle <{vehicle_id}>.')
         data = dict(type='Teleport')
         data['vehicle'] = vehicle_id
         data['pos'] = pos
