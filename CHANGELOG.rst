@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.21.1
+============
+- Fix example notebooks
+
 Version 1.21
 ============
 - Fix and restructure ``logging`` usage
