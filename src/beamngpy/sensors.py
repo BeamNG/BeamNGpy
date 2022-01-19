@@ -526,22 +526,25 @@ class Camera(Sensor):
             if vehicle:
                 prefix = vehicle.vid
             size = self.resolution[0] * self.resolution[1] * 4
-            self.colour_handle = '{}.{}.{}.colour'
-            self.colour_handle = self.colour_handle.format(pid, prefix, name)
-            self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
-            self.logger.debug('Bound shmem for colour: {self.colour_handle}')
+            if self.colour:
+                self.colour_handle = '{}.{}.{}.colour'
+                self.colour_handle = self.colour_handle.format(pid, prefix, name)
+                self.colour_shmem = mmap.mmap(0, size, self.colour_handle)
+                self.logger.debug('Bound shmem for colour: {self.colour_handle}')
 
-            self.depth_handle = '{}.{}.{}.depth'
-            self.depth_handle = self.depth_handle.format(pid, prefix, name)
-            self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
-            self.logger.debug(f'Bound shmem for depth: {self.depth_handle}')
+            if self.depth:
+                self.depth_handle = '{}.{}.{}.depth'
+                self.depth_handle = self.depth_handle.format(pid, prefix, name)
+                self.depth_shmem = mmap.mmap(0, size, self.depth_handle)
+                self.logger.debug(f'Bound shmem for depth: {self.depth_handle}')
 
-            self.annotation_handle = '{}.{}.{}.annotate'
-            self.annotation_handle = self.annotation_handle.format(pid, prefix,
-                                                                   name)
-            self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
-            self.logger.debug('Bound shmem for annotation: '
-                              f'{self.annotation_handle}')
+            if self.annotation:
+                self.annotation_handle = '{}.{}.{}.annotate'
+                self.annotation_handle = self.annotation_handle.format(pid, prefix,
+                                                                    name)
+                self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
+                self.logger.debug('Bound shmem for annotation: '
+                                f'{self.annotation_handle}')
 
             if self.instance:
                 self.instance_handle = '{}.{}.{}.instance'
@@ -642,22 +645,22 @@ class Camera(Sensor):
         if self.colour_shmem:
             req['color'] = self.colour_handle
         else:
-            req['color'] = self.colour
+            req['color'] = None
 
         if self.depth_shmem:
             req['depth'] = self.depth_handle
         else:
-            req['depth'] = self.depth
+            req['depth'] = None
 
         if self.annotation_shmem:
             req['annotation'] = self.annotation_handle
         else:
-            req['annotation'] = self.annotation
+            req['annotation'] = None
 
         if self.instance_shmem:
             req['instance'] = self.instance_handle
         else:
-            req['instance'] = self.instance
+            req['instance'] = None
 
         req['pos'] = [float(f) for f in self.pos]
         req['direction'] = [float(f) for f in self.direction]
