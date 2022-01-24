@@ -206,8 +206,9 @@ class Vehicle:
         """
         Closes socket communication with the corresponding vehicle.
         """
-        for _, sensor in self.sensors.items():
-            sensor.disconnect(self.bng, self)
+        for name, sensor in self.sensors.items():
+            if name != self._veh_state_sensor_id:
+                sensor.disconnect(self.bng, self)
 
         if self.skt is not None:
             self.skt.close()
