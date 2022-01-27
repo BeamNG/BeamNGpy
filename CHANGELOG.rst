@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 1.22
+============
+- Hide menu on a scenario start
+- Do not detach the state sensor on disconnecting a vehicle, as this disallows the reuse of vehicle objects
+- Fix camera sensor logging error
+- Fix 'Using mods with BeamNGpy' demo notebook
+
 Version 1.21.1
 ============
 - Fix example notebooks
