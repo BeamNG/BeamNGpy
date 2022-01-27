@@ -304,6 +304,7 @@ M.handleStartScenario = function(skt, msg)
   scenario_scenarios.getScenario().showCountdown = false
   scenario_scenarios.getScenario().countDownTime = 0
   guihooks.trigger("ChangeState", "menu")
+  guihooks.trigger("MenuHide")
   block('startScenario', skt)
   return true
 end
