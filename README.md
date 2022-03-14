@@ -121,7 +121,7 @@ using common methods like `pip`:
 
 ## Usage
 
-**For using BeamNG.tech version 0.22 and above the workspace needs to be set up by the user.
+**For using BeamNG.tech version 0.22 to 0.24 the workspace needs to be set up by the user.
 This step needs to be repeated for every newly installed BeamNG.tech version** and helps BeamNGpy to determine the correct user directory for mod deployment.
 Create a workspace directory and then place your license file into it. Then type `beamngpy setup-workspace d:\exampleBNGworkspace` into the commandline.
 Optional parameters are `--host localhost --port 65255`.
@@ -169,6 +169,7 @@ However we do not maintain minor versions: bug fixes and new features will only 
 
 | BeamNG.tech version | BeamNGpy version |
 |---------------------|------------------|
+| 0.25                | 1.23             |
 | 0.24                | 1.22             |
 | 0.23                | 1.21             |
 | 0.22                | 1.20             |
