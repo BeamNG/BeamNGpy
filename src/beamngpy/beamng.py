@@ -31,8 +31,8 @@ from .beamngcommon import PROTOCOL_VERSION, ENV
 from .beamngcommon import set_up_simple_logging, LOGGER_ID, create_warning
 
 BINARIES = [
-    'Bin64/BeamNG.drive.x64.exe',
     'Bin64/BeamNG.tech.x64.exe',
+    'Bin64/BeamNG.drive.x64.exe',
 ]
 
 RESEARCH_HELPER = 'researchHelper.txt'
