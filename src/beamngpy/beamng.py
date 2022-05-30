@@ -6,6 +6,7 @@
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
+.. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
 """
 
 import os
@@ -151,7 +152,6 @@ class BeamNGpy:
         self.host = host
         self.port = port
         self.remote = remote
-        self.home = home
 
         if not self.remote:
             if not self.home:
@@ -713,9 +713,12 @@ class BeamNGpy:
         self.send(data)
 
     @ack('OpenedLidar')
-    def open_lidar(self, name, vehicle, shmem, shmem_size, offset=(0, 0, 0),
-                   direction=(0, -1, 0), vres=64, vangle=26.9, rps=2200000,
-                   hz=20, angle=360, max_dist=120, visualized=True):
+    def open_lidar(self, name, vehicle, 
+                    useSharedMemory=False, shmem='', shmemSize=0, 
+                    pos=(0, 0, 1.7), dir=(0, -1, 0), 
+                    vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120, 
+                    isVisualised=True, isAnnotated=False,
+                    isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
         """
         Opens a Lidar sensor instance in the simulator with the given
         parameters writing its data to the given shared memory space. The Lidar
@@ -723,45 +726,43 @@ class BeamNGpy:
         closing.
 
         Args:
-            name (str): The name of the Lidar instance to open. Has to be
-                        unique relative to other Lidars currently opened.
+            name (str): The name of the LiDAR instance to open. Must be unique (relative to other LiDARS currently opened).
             vehicle (:class:`.Vehicle`): The vehicle this Lidar is attached to.
-            shmem (str): The handle of the shared memory space used to exchange
-                         data.
-            shmem_size (int): Size of the shared memory space that has been
-                              allocated for exchange. If 0 is given, no shmem
-                              is opened at all.
-            offset (tuple): (X, Y, Z) coordinate triplet specifying the
-                            position of the sensor relative to the vehicle's.
-            direction (tuple): (X, Y, Z) coordinate triple specifying the
-                               direction the Lidar is pointing towards.
-            vres (int): Vertical resolution, i.e. how many lines are sampled
-                        vertically.
-            vangle (float): The vertical angle, i.e. how many degrees up and
-                            down points are scattered.
-            rps (int): The rays per second shot by the sensor.
-            hz (int): The refresh rate of the sensor in Hz
-            angle (float): The horizontal degrees covered, i.e. 360 degrees
-                           covers the entire surroundings of the vehicle.
-            max_dist (float): Maximum distance of points. Any dot farther away
-                              will not show up in the sample.
-            visualized (bool): Whether or not to render the Lidar sensor's
-                              points in the simulator.
+            shmem (str): The handle of the shared memory space used to exchange data, if required.
+            shmemSize (int): Size of the shared memory space that has been allocated for exchange.
+            pos (tuple): (X, Y, Z) the sensor position in vehicle space.
+            dir (tuple): (X, Y, Z) the sensor direction.
+            vres (int): Vertical resolution, i.e. how many lines are sampled vertically.
+            vAngle (float): The vertical LiDAR sensor angle, in degrees.
+            rps (int): The rays per second emmited by the LiDAR sensor.
+            hz (int): The refresh rate of the LiDAR sensor, in Hz.
+            hAngle (float): The horizontal degrees covered, i.e. 360 degrees covers the entire surroundings of the vehicle.
+            maxDist (float): Maximum distance of points. Any dot farther away will not show up in the sample.
+            isVisualised (bool): Whether or not to render the LiDAR sensor points in the simulator.
+            isAnnotated (bool): Whether or not to use LiDAR annotations in the visualisation.
+            isStatic (bool): Whether or not the LiDAR sensor should be static (fixed position) or attached to a vehicle.
+            isSnappingDesired (bool): Whether or not to snap the LiDAR sensor to the nearest vehicle triangle.
+            isForceInsideTriangle (bool): Whether or not to force the LiDAR sensor to be inside the nearest vehicle triangle.
         """
         data = dict(type='OpenLidar')
+        data['useSharedMemory'] = useSharedMemory
         data['name'] = name
         data['shmem'] = shmem
-        data['size'] = shmem_size
+        data['size'] = shmemSize
         data['vid'] = vehicle.vid
-        data['offset'] = offset
-        data['direction'] = direction
+        data['pos'] = pos
+        data['dir'] = dir
         data['vRes'] = vres
-        data['vAngle'] = vangle
+        data['vAngle'] = vAngle
         data['rps'] = rps
         data['hz'] = hz
-        data['angle'] = angle
-        data['maxDist'] = max_dist
-        data['visualized'] = visualized
+        data['hAngle'] = hAngle
+        data['maxDist'] = maxDist
+        data['isVisualised'] = isVisualised
+        data['isAnnotated'] = isAnnotated
+        data['isStatic'] = isStatic
+        data['isSnappingDesired'] = isSnappingDesired
+        data['isForceInsideTriangle'] = isForceInsideTriangle
         self.send(data)
         self.logger.info(f'Opened lidar: "{name}')
 
@@ -777,6 +778,78 @@ class BeamNGpy:
         data['name'] = name
         self.send(data)
         self.logger.info(f'Closed lidar: "{name}"')
+
+    @ack('OpenedUltrasonic')
+    def open_ultrasonic(self, name, vehicle, pos=(0.0, -1.0, 0.0), dir=(0.0, 1.0, 0.0),
+                        size=(200, 200), fov=0.3, near_far_planes=(0.05, 10.0), 
+                        range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3, 
+                        range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=10.6, 
+                        sensitivity=3.0, fixed_window_size=10.0,
+                        isVisualised=True,
+                        isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
+        """
+        Opens an ultrasonic sensor instance in the simulator with the given parameters. 
+        The ultrasonic instance has to be assigned a unique name that is later used for
+        closing.
+
+        Args:
+            name (str): The name of the ultrasonic sensor instance to open. Has to be unique relative to other ultrasonic sensors currently opened.
+            vehicle (:class:`.Vehicle`): The vehicle this ultrasonic sensor is attached to.
+            pos (tuple): (X, Y, Z) coordinate triplet specifying the position of the sensor, in world space.
+            dir (tuple): (X, Y, Z) coordinate triplet specifying the direction of the ultrasonic sensor.
+            size (tuple): (X, Y) the resolution of the ultrasonic sensor.
+            fov (float): (X, Y) the ultrasonic sensor field of view parameters.
+            near_far_planes (tuple): (X, Y) the ultrasonic sensor near and far plane distances.
+            range_roundness (float): the general roudness of the ultrasonic sensor range-shape. Can be negative.
+            range_cutoff_sensitivity (float): a cutoff sensitivity parameter for the ultrasonic sensor range-shape.
+            range_shape (float): the shape of the ultrasonic sensor range-shape in [0, 1], from conical to circular.
+            range_focus (float): the focus parameter for the ultrasonic sensor range-shape.
+            range_min_cutoff (float): the minimum cut-off distance for the ultrasonic sensor range-shape. Nothing closer than this will be detected.
+            range_direct_max_cutoff (float): the maximum cut-off distance for the ultrasonic sensor range-shape. 
+                This parameter is a hard cutoff - nothing further than this will be detected, although other parameters can also control the max distance.
+            sensitivity (float): an ultrasonic sensor sensitivity parameter.
+            fixed_window_size (float): an ultrasonic sensor sensitivity parameter.
+            isVisualised (bool): Whether or not to render the ultrasonic sensor points in the simulator.
+            isStatic (bool): Whether or not the ultrasonic sensor should be static (fixed position) or attached to a vehicle.
+            isSnappingDesired (bool): Whether or not to snap the ultrasonic sensor to the nearest vehicle triangle.
+            isForceInsideTriangle (bool): Whether or not to force the ultrasonic sensor to be inside the nearest vehicle triangle.
+        """
+        data = dict(type='OpenUltrasonic')
+        data['name'] = name
+        data['vid'] = vehicle.vid
+        data['pos'] = pos
+        data['dir'] = dir
+        data['size'] = size
+        data['fov'] = fov
+        data['near_far_planes'] = near_far_planes
+        data['range_roundness'] = range_roundness
+        data['range_cutoff_sensitivity'] = range_cutoff_sensitivity
+        data['range_shape'] = range_shape
+        data['range_focus'] = range_focus
+        data['range_min_cutoff'] = range_min_cutoff
+        data['range_direct_max_cutoff'] = range_direct_max_cutoff
+        data['sensitivity'] = sensitivity
+        data['fixed_window_size'] = fixed_window_size
+        data['isVisualised'] = isVisualised
+        data['isStatic'] = isStatic
+        data['isSnappingDesired'] = isSnappingDesired
+        data['isForceInsideTriangle'] = isForceInsideTriangle
+
+        self.send(data)
+        self.logger.info(f'Opened ultrasonic sensor: "{name}')
+
+    @ack('ClosedUltrasonic')
+    def close_ultrasonic(self, name):
+        """
+        Closes the ultrasonic sensor instance of the given name in the simulator.
+
+        Args:
+            name (str): The name of the ultrasonic sensor instance to close.
+        """
+        data = dict(type='CloseUltrasonic')
+        data['name'] = name
+        self.send(data)
+        self.logger.info(f'Closed ultrasonic sensor: "{name}"')
 
     def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None):
         """

@@ -5,6 +5,7 @@
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
+.. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
 
 """
 
@@ -258,7 +259,6 @@ class Vehicle:
         """
         engine_reqs = dict()
         vehicle_reqs = dict()
-
         for name, sensor in self.sensors.items():
             engine_req = sensor.encode_engine_request()
             vehicle_req = sensor.encode_vehicle_request()
@@ -341,11 +341,9 @@ class Vehicle:
             create_warning('The `requests` argument in `Vehicle.poll_sensors` '
                            'is not used and will be removed in future versions.',
                            DeprecationWarning)
-
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
         compatibility_support = None
-
         if engine_reqs['sensors']:
             self.bng.send(engine_reqs)
             response = self.bng.recv()
@@ -359,7 +357,6 @@ class Vehicle:
             assert response['type'] == 'SensorData'
             compatibility_support = response['data']
             sensor_data.update(response['data'])
-
         result = self.decode_sensor_response(sensor_data)
         for sensor, data in result.items():
             self.sensors[sensor].data = data
