@@ -1,20 +1,15 @@
 """
 .. module:: west_coast_random
     :platform: Windows
-    :synopsis: Example code making a scenario in west_coast_usa and having the
-               vehicle span the map while emitting Lidar.
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
+    :synopsis: Using an ultrasonic parking sensor on the vehicle front bumper.
+.. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
 """
-import mmap
 import random
-import sys
 
 from time import sleep
 
-import numpy as np
-
 from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
-from beamngpy.sensors import Lidar
+from beamngpy.sensors import Ultrasonic
 
 
 def main():
@@ -24,14 +19,12 @@ def main():
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
 
-    scenario = Scenario('west_coast_usa', 'lidar_demo',
-                        description='Spanning the map with a lidar sensor')
+    scenario = Scenario('west_coast_usa', 'ultrasonic_demo', description='Spanning the map with an ultrasonic sensor')
 
-    vehicle = Vehicle('ego_vehicle', model='etk800',
-                      licence='RED', color='Red')
+    vehicle = Vehicle('ego_vehicle', model='etk800', licence='RED', color='Red')
 
-    lidar = Lidar(useSharedMemory=True)
-    vehicle.attach_sensor('lidar', lidar)
+    ultrasonic = Ultrasonic(isSnappingDesired=True, isForceInsideTriangle=True)
+    vehicle.attach_sensor('ultrasonic', ultrasonic)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
                          rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
@@ -45,7 +38,7 @@ def main():
         bng.hide_hud()
         bng.start_scenario()
 
-        vehicle.ai_set_mode('span')
+        #vehicle.ai_set_mode('span')
         print('Driving around for 60 seconds...')
         sleep(60)
     finally:

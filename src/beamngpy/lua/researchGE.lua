@@ -41,6 +41,8 @@ local sensors = {}
 
 local lidars = {}
 
+local ultrasonics = {}
+
 local objectCount = 1
 
 local debugLines = {}
@@ -511,23 +513,20 @@ local function setVehicleAnnotationColor(veh, color)
   end
 end
 
-local function lidarsVisualized(state)
-  for l, lidar in pairs(lidars) do
-    lidar:visualized(state)
+local function getVehiclePosRot(vid)
+  local veh = scenarioHelper.getVehicleByName(vid)
+  if veh ~= nil then
+    local rot = vec3(veh:getDirectionVector())
+    local up = vec3(veh:getDirectionVectorUp())
+    local rot = quatFromDir(rot, up)
+    local position = vec3(veh:getPosition())
+    return {pos = position, rot = rot}
+  else
+    return {}
   end
 end
 
-local function getVehiclePosRot(vid)
-  local veh = scenarioHelper.getVehicleByName(vid)
-  local rot = vec3(veh:getDirectionVector())
-  local up = vec3(veh:getDirectionVectorUp())
-  local rot = quatFromDir(rot, up)
-  local position = vec3(veh:getPosition())
-  return {pos = position, rot = rot}
-end
-
 sensors.Camera = function(req, callback)
-  lidarsVisualized(false)
 
   local offset, orientation, up
   local pos, direction, rot, fov, resolution, nearFar, vehicle, vehicleObj, data
@@ -622,29 +621,28 @@ sensors.Camera = function(req, callback)
         be:setPhysicsRunning(true)
       end
 
-      lidarsVisualized(true)
       callback(otherData)
     end
     addFrameDelayFunc(func, 1)
 
   else
-    lidarsVisualized(true)
     callback(data)
   end
 
 end
 
+-- Gets the latest LiDAR sensor readings.
 sensors.Lidar = function(req, callback)
   local name = req['name']
   local shmem = req['shmem']
-  local lidar = lidars[name]
-  if lidar ~= nil then
+  local sensorId = lidars[name]
+  if sensorId ~= nil then
     if shmem then
-      lidar:requestDataShmem(function(realSize)
+      research.LIDAR.RequestDataShmem(sensorId, function(realSize)
         callback({size = realSize})
       end)
     else
-      lidar:requestData(function(points)
+      research.LIDAR.RequestData(sensorId, function(points)
         local res = {}
         for i, p in ipairs(points) do
           table.insert(res, tonumber(p.x))
@@ -659,76 +657,20 @@ sensors.Lidar = function(req, callback)
   end
 end
 
+-- Gets the latest ultrasonic sensor readings.
+sensors.Ultrasonic = function(req, callback)
+  local name = req['name']
+  local sensorId = ultrasonics[name]
+  if sensorId ~= nil then
+    local reading = research.Ultrasonic.GetLastDistanceMeasurement(sensorId)
+    local windowMin = research.Ultrasonic.GetLastWindowMinMeasurement(sensorId)
+    local windowMax = research.Ultrasonic.GetLastWindowMaxMeasurement(sensorId)
+    callback({lastDistance = reading, lastWindowMin = windowMin, lastWindowMax = windowMax})
+  end
+end
+
 sensors.Timer = function(req, callback)
   callback({time = scenario_scenarios.getScenario().timer})
-end
-
-local function computeAbsoluteSensorPosRot(vid, sensorPosRelToVeh, sensorRotRelToVeh)
-  -- rot
-  local veh = getVehiclePosRot(vid)
-  local vehicleRot = veh.rot
-  local vehiclePos = veh.pos
-
-  local sensorPos = vehiclePos + vehicleRot * sensorPosRelToVeh
-  local sensorRot = quatFromDir(sensorRotRelToVeh, vec3(0, 0, 1)) * vehicleRot
-
-  return sensorPos, sensorRot
-end
-
-sensors.Ultrasonic = function(req, sendSensorData)
-  local sensorPos, sensorRot
-
-  local sensorOffset = req['pos']
-  sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
-
-  sensorRot = req['rot']
-  sensorRot = vec3(sensorRot[1], sensorRot[2], sensorRot[3])
-  if req['vehicle'] then
-    local pos, rot = computeAbsoluteSensorPosRot(req['vehicle'], sensorOffset, sensorRot)
-    sensorPos = Point3F(pos.x, pos.y, pos.z)
-    sensorRot = QuatF(rot.x, rot.y, rot.z, rot.w)
-  else
-    sensorPos = Point3F(sensorPos.x, sensorPos.y, sensorPos.z)
-    sensorRot = quatFromDir(sensorRot, vec3(0, 0, 1))
-    sensorRot = QuatF(sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
-  end
-
-  local fov = math.rad(req['fov'])
-
-  local resolution = req['resolution']
-  resolution = Point2F(resolution[1], resolution[2])
-
-  local near_far = req['near_far']
-  near_far = Point2F(near_far[1], near_far[2])
-
-  local dist = Engine.getUltrasonicDistanceMeasurement(sensorPos, sensorRot, resolution, fov, near_far)
-  local measurement = {distance = dist}
-  sendSensorData(measurement)
-
-  -- commands.setFreeCamera()
-  -- setCameraPosRot(sensorPos.x, sensorPos.y, sensorPos.z, sensorRot.x, sensorRot.y, sensorRot.z, sensorRot.w)
-end
-
-M.handleStartUSSensorVisualization = function(skt, msg)
-  local sensorOffset = msg['pos']
-  sensorOffset = vec3(sensorOffset[1], sensorOffset[2], sensorOffset[3])
-  local sensorRot = msg['rot']
-  sensorRot = vec3(sensorRot[1], sensorRot[2], sensorRot[3])
-  local color = msg.color
-  color = ColorF(color[1], color[2], color[3], color[4])
-  local radius = msg['radius']
-  local sphereCallback = function()
-    local pos, rot = computeAbsoluteSensorPosRot(msg['vehicle'], sensorOffset, sensorRot)
-    local coo = Point3F(pos.x, pos.y, pos.z)
-    return {coo=coo, radius=radius, color=color}
-  end
-  local sphereID = addDynamicDebugSphere(sphereCallback)
-  local response = {sphereID = sphereID}
-  rcom.sendMessage(skt, response)
-end
-
-M.handleStopUSSensorVisualization = function(skt, msg)
-  table.remove(debugObjects.dynamicSpheres, msg['dynSphereID'])
 end
 
 local function getSensorData(request, callback)
@@ -889,28 +831,46 @@ M.handleUpdateScenario = function(skt, msg)
 end
 
 M.handleOpenLidar = function(skt, msg)
+  local useSharedMemory = msg['useSharedMemory']
   local name = msg['name']
   local shmem = msg['shmem']
   local shmemSize = msg['size']
-  local vid = msg['vid']
-  local vid = scenetree.findObject(vid):getID()
+  local vid = scenetree.findObject(msg['vid']):getID()
+  local pos = msg['pos']
+  position = Point3F(pos[1], pos[2], pos[3])
+  local dir = msg['dir']
+  direction = Point3F(dir[1], dir[2], dir[3])
   local vRes = msg['vRes']
   local vAngle = math.rad(msg['vAngle'])
   local rps = msg['rps']
   local hz = msg['hz']
-  local angle = math.rad(msg['angle'])
+  local hAngle = math.rad(msg['hAngle'])
   local maxDist = msg['maxDist']
-  local offset = msg['offset']
-  offset = Point3F(offset[1], offset[2], offset[3])
-  local direction = msg['direction']
-  direction = Point3F(direction[1], direction[2], direction[3])
+  local isVisualised = msg['isVisualised']
+  local isAnnotated = msg['isAnnotated']
+  local isStatic = msg['isStatic'] 
+  local isSnappingDesired = msg['isSnappingDesired']
+  local isForceInsideTriangle = msg['isForceInsideTriangle']
 
-  local lidar = research.LIDAR(vid, offset, direction, vRes, vAngle, rps, hz, angle, maxDist)
-  lidar:open(shmem, shmemSize)
-  lidar:enabled(true)
-  lidar:visualized(msg['visualized'])
-  lidars[name] = lidar
-
+  -- Create the LiDAR instance either with or without shared memory
+  if useSharedMemory == true then
+    lidars[name] = extensions.tech_sensors.createLidarWithSharedMemory(
+        shmem, shmemSize, 
+        vid, 
+        position, direction, 
+        vRes, vAngle, rps, hz, hAngle, maxDist, 
+        isVisualised, isAnnotated,
+        isStatic, isSnappingDesired, isForceInsideTriangle)
+        log('I', 'Opened LiDAR sensor (with shared memory)')
+  else
+    lidars[name] = extensions.tech_sensors.createLidar( 
+        vid, 
+        position, direction, 
+        vRes, vAngle, rps, hz, hAngle, maxDist, 
+        isVisualised, isAnnotated,
+        isStatic, isSnappingDesired, isForceInsideTriangle)
+        log('I', 'Opened LiDAR sensor (without shared memory)')
+  end
   rcom.sendACK(skt, 'OpenedLidar')
 end
 
@@ -918,10 +878,56 @@ M.handleCloseLidar = function(skt, msg)
   local name = msg['name']
   local lidar = lidars[name]
   if lidar ~= nil then
-    -- lidar:close()
+    extensions.tech_sensors.removeLidar(lidar)
     lidars[name] = nil
   end
+
   rcom.sendACK(skt, 'ClosedLidar')
+end
+
+M.handleOpenUltrasonic = function(skt, msg)
+  local vid = scenetree.findObject(msg['vid']):getID()
+  local pos = msg['pos']
+  local dir = msg['dir']
+  local name = msg['name']
+  local size = msg['size']
+  local fov = msg['fov']
+  local near_far_planes = msg['near_far_planes']
+  local range_roundness = msg['range_roundness']
+  local range_cutoff_sensitivity = msg['range_cutoff_sensitivity']
+  local range_shape = msg['range_shape']
+  local range_focus = msg['range_focus']
+  local range_min_cutoff = msg['range_min_cutoff']
+  local range_direct_max_cutoff = msg['range_direct_max_cutoff']
+  local sensitivity = msg['sensitivity']
+  local fixed_window_size = msg['fixed_window_size']
+  local isVisualised = msg['isVisualised']
+  local isStatic = msg['isStatic']
+  local isSnappingDesired = msg['isSnappingDesired']
+  local isForceInsideTriangle = msg['isForceInsideTriangle']
+
+  ultrasonics[name] = extensions.tech_sensors.createUltrasonic( 
+    vid,
+    size[1], size[2], fov[1], fov[2], near_far_planes[1], near_far_planes[2],
+    range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff, range_direct_max_cutoff,
+    sensitivity, fixed_window_size,
+    pos[1], pos[2], pos[3],
+    dir[1], dir[2], dir[3], 
+    isVisualised,
+    isStatic, isSnappingDesired, isForceInsideTriangle)
+    log('I', 'Opened ultrasonic sensor')
+  rcom.sendACK(skt, 'OpenedUltrasonic')
+end
+
+M.handleCloseUltrasonic = function(skt, msg)
+  local name = msg['name']
+  local ultrasonic = ultrasonics[name]
+  if ultrasonic ~= nil then
+    extensions.tech_sensors.removeUltrasonic(ultrasonic)
+    ultrasonics[name] = nil
+  end
+
+  rcom.sendACK(skt, 'ClosedUltrasonic')
 end
 
 M.handleSetWeatherPreset = function(skt, msg)

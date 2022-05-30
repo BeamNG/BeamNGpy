@@ -7,6 +7,7 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 .. moduleauthor:: Sedonas <https://github.com/Sedonas>
+.. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
 
 This module implements various sensors that can be attached to vehicles to
 extract data from simulations.
@@ -815,37 +816,41 @@ class Lidar(Sensor):
     max_points = LIDAR_POINTS
     shmem_size = LIDAR_POINTS * 3 * 4
 
-    def __init__(self, offset=(0, 0, 1.7), direction=(0, -1, 0), vres=32,
-                 vangle=26.9, rps=2200000, hz=20, angle=360, max_dist=200,
-                 visualized=True, shmem=True):
+    def __init__(self, useSharedMemory=False, 
+                    pos=(0, 0, 1.7), dir=(0, -1, 0), 
+                    vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120, 
+                    isVisualised=True, isAnnotated=False,
+                    isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
         """
-        The Lidar sensor provides 3D point clouds representing the environment
+        The LiDAR sensor provides 3D point clouds representing the environment
         as detected by a pulsing laser emitted from the vehicle. The range,
         position, and refresh rate of this sensor can be customised.
         """
         super().__init__()
         self.logger = getLogger(f"{LOGGER_ID}.Lidar")
         self.logger.setLevel(DBG_LOG_LEVEL)
-        self.use_shmem = shmem
+
+        self.useSharedMemory = useSharedMemory
         self.handle = None
         self.shmem = None
-
-        self.offset = offset
-        self.direction = direction
-
+        self.pos = pos
+        self.dir = dir
         self.vres = vres
-        self.vangle = vangle
+        self.vAngle = vAngle
         self.rps = rps
         self.hz = hz
-        self.angle = angle
-        self.max_dist = max_dist
-
-        self.visualized = visualized
+        self.hAngle = hAngle
+        self.maxDist = maxDist
+        self.isVisualised = isVisualised
+        self.isAnnotated = isAnnotated
+        self.isStatic = isStatic
+        self.isSnappingDesired = isSnappingDesired
+        self.isForceInsideTriangle = isForceInsideTriangle
 
     def attach(self, vehicle, name):
         """
-        Called when the lidar sensor is attached to a vehicle. This method
-        allocates shared memory space to exchange lidar data with the engine.
+        Called when the liDAR sensor is attached to a vehicle. This method
+        allocates shared memory space to exchange liDAR data with the engine.
 
         Args:
             vehicle (:class:`.Vehicle`): The vehicle the sensor is being
@@ -854,14 +859,14 @@ class Lidar(Sensor):
         """
         pid = os.getpid()
         self.handle = '{}.{}.{}.lidar'.format(pid, vehicle.vid, name)
-        if self.use_shmem:
+        if self.useSharedMemory:
             self.shmem = mmap.mmap(0, Lidar.shmem_size, self.handle)
-            self.logger.debug(f'Bound memory for lidar: {self.handle}')
+            self.logger.debug(f'Bound memory for LiDAR: {self.handle}')
 
     def detach(self, vehicle, name):
         """
-        Called when the lidar sensor is detached from a vehicle. This method
-        de-allocates the shared memory used to exchange lidar data with the
+        Called when the LiDAR sensor is detached from a vehicle. This method
+        de-allocates the shared memory used to exchange LiDAR data with the
         engine.
 
         Args:
@@ -869,39 +874,50 @@ class Lidar(Sensor):
                                          detached from.
             name (str): The name of the sensor.
         """
-        if self.use_shmem:
+        if self.useSharedMemory:
             self.logger.debug('Closing shmem.')
             self.shmem.close()
 
     def connect(self, bng, vehicle):
-        if self.use_shmem:
-            bng.open_lidar(self.handle, vehicle, self.handle, Lidar.shmem_size,
-                           offset=self.offset, direction=self.direction,
-                           vres=self.vres, vangle=self.vangle, rps=self.rps,
-                           hz=self.hz, angle=self.angle,
-                           max_dist=self.max_dist, visualized=self.visualized)
+        """
+        Called when the LiDAR sensor is connected to a vehicle.
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle the sensor is being connected to.
+        """
+        if self.useSharedMemory:
+            bng.open_lidar(self.handle, vehicle, 
+                           self.useSharedMemory, self.handle, Lidar.shmem_size,
+                           pos=self.pos, dir=self.dir,
+                           vres=self.vres, vAngle=self.vAngle, rps=self.rps,
+                           hz=self.hz, hAngle=self.hAngle, maxDist=self.maxDist, 
+                           isVisualised=self.isVisualised, isAnnotated=self.isAnnotated,
+                           isStatic=self.isStatic, isSnappingDesired=self.isSnappingDesired,
+                           isForceInsideTriangle = self.isForceInsideTriangle)
         else:
-            bng.open_lidar(self.handle, vehicle, '', 0, offset=self.offset,
-                           direction=self.direction, vres=self.vres,
-                           vangle=self.vangle, rps=self.rps, hz=self.hz,
-                           angle=self.angle, max_dist=self.max_dist,
-                           visualized=self.visualized)
+            bng.open_lidar(self.handle, vehicle, 
+                           self.useSharedMemory, '', 0, 
+                           pos=self.pos, dir=self.dir,
+                           vres=self.vres, vAngle=self.vAngle, rps=self.rps,
+                           hz=self.hz, hAngle=self.hAngle, maxDist=self.maxDist, 
+                           isVisualised=self.isVisualised, isAnnotated=self.isAnnotated,
+                           isStatic=self.isStatic, isSnappingDesired=self.isSnappingDesired,
+                           isForceInsideTriangle = self.isForceInsideTriangle)
 
     def disconnect(self, bng, vehicle):
         bng.close_lidar(self.handle)
 
     def encode_engine_request(self):
         """
-        Called to obtain the engine request for this lidar sensor. Encodes the
-        properties of this lidar to obtain data according to them.
+        Called to obtain the engine request for this LiDAR sensor. Encodes the
+        properties of this LiDAR  to obtain data according to them.
 
         Returns:
-            The engine request containing the settings of this lidar sensor as
+            The engine request containing the settings of this LiDAR  sensor as
             a dictionary.
         """
         req = dict(type='Lidar')
         req['name'] = self.handle
-        req['shmem'] = self.use_shmem
+        req['shmem'] = self.useSharedMemory
         return req
 
     def decode_response(self, resp):
@@ -909,7 +925,6 @@ class Lidar(Sensor):
         Reads the raw point cloud the simulation wrote to the shared memory and
         creates a numpy array of points from them. The recoded response is
         returned as a dictionary with the numpy array in the ``points`` entry.
-
         Returns:
             The decoded response as a dictionary with the point cloud as a
             numpy array in the ``points`` entry. The numpy array is a linear
@@ -918,8 +933,8 @@ class Lidar(Sensor):
         """
         points_buf = None
 
-        if self.use_shmem:
-            size = resp['size']
+        if self.useSharedMemory:
+            size = self.shmem_size
             self.shmem.seek(0)
             points_buf = self.shmem.read(size)
             points_buf = np.frombuffer(points_buf, dtype=np.float32)
@@ -1209,68 +1224,121 @@ class IMU(Sensor):
 
 class Ultrasonic(Sensor):
     """
-    An ultrasonic sensor (aka parking sensor) that can be placed at
-    any point outside the vehicle.
-    This is not an ideal sensor but one whose output is simulated based on
-    depth information in images.
+    An ultrasonic sensor (eg parking sensor).
     """
 
     def __init__(self,
-                 pos,
-                 rot,
-                 fov=(70, 35),
-                 min_resolution=256,
-                 near_far=(0.15, 5.5)):
+                 pos=(0, -3, 0), dir=(0, -1, 0),
+                 size=(200, 200), fov=(0.15, 0.15), near_far_planes=(0.05, 10.0),
+                 range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3,
+                 range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=5.0,
+                 sensitivity=3.0, fixed_window_size=10.0,
+                 isVisualised=True,
+                 isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
         self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
         self.logger.setLevel(DBG_LOG_LEVEL)
         self.pos = pos
-        self.rot = rot
-        self.fov = fov[0]
-        res_height = int(min_resolution/fov[0]*fov[1])
-        self.resolution = (min_resolution, res_height)
-        self.near_far = near_far
+        self.dir = dir
+        self.size = size
+        self.fov = fov
+        self.near_far_planes = near_far_planes
+        self.range_roundness = range_roundness
+        self.range_cutoff_sensitivity = range_cutoff_sensitivity
+        self.range_shape = range_shape
+        self.range_focus = range_focus
+        self.range_min_cutoff = range_min_cutoff
+        self.range_direct_max_cutoff = range_direct_max_cutoff
+        self.sensitivity = sensitivity
+        self.fixed_window_size = fixed_window_size
+        self.isVisualised = isVisualised
+        self.isStatic = isStatic
+        self.isSnappingDesired = isSnappingDesired
+        self.isForceInsideTriangle = isForceInsideTriangle
+        self.handle = None
         self.vis_spec = None
 
     def encode_engine_request(self):
-        req = dict(type='Ultrasonic')
-        req['pos'] = self.pos
-        req['rot'] = self.rot
-        req['fov'] = self.fov
-        req['resolution'] = self.resolution
-        req['near_far'] = self.near_far
-        return req
-
-    def startVisualization(self, bng, vehicle_id, color, radius=.1):
         """
-        Called, after opening BeamNG, this will start the visualization
-        of a sphere at the sensor position. This functionality is intended
-        for sensors attached to vehicles and not for world sensors.
+        Called to obtain the engine request for this ultrasonic sensor.
+
+        Returns:
+            The engine request containing the settings of this ultrasonic sensor as
+            a dictionary.
+        """
+        req = dict(type='Ultrasonic')
+        req['name'] = self.handle
+        req['pos'] = self.pos
+        req['dir'] = self.dir
+        req['fov'] = self.fov
+        req['resolution'] = self.size
+        req['near_far_planes'] = self.near_far_planes
+        req['range_roundness'] = self.range_roundness
+        req['range_cutoff_sensitivity'] = self.range_cutoff_sensitivity
+        req['range_shape'] = self.range_shape
+        req['range_focus'] = self.range_focus
+        req['range_min_cutoff'] = self.range_min_cutoff
+        req['range_direct_max_cutoff'] = self.range_direct_max_cutoff
+        req['sensitivity'] = self.sensitivity
+        req['fixed_window_size'] = self.fixed_window_size
+        req['isVisualised'] = self.isVisualised
+        req['isStatic'] = self.isStatic
+        req['isSnappingDesired'] = self.isSnappingDesired
+        req['isForceInsideTriangle'] = self.isForceInsideTriangle
+        return req
+        
+    def decode_response(self, resp):
+        """
+        Reads the raw point cloud the simulation wrote to the shared memory and
+        creates a numpy array of points from them. The recoded response is
+        returned as a dictionary with the numpy array in the ``points`` entry.
+        Returns:
+            The decoded response as a dictionary with the point cloud as a
+            numpy array in the ``points`` entry. The numpy array is a linear
+            sequence of coordinate triplets in the form of [x0, y0, z0, x1,
+            y1, z1, ..., xn, yn, zn].
+        """
+        data = resp
+        resp = dict(type='Ultrasonic')
+        resp['distance'] = data['lastDistance']
+        resp['windowMin'] = data['lastWindowMin']
+        resp['windowMax'] = data['lastWindowMax']
+        return resp
+
+    def connect(self, bng, vehicle):
+        bng.open_ultrasonic(self.handle, vehicle, pos=self.pos, dir=self.dir, 
+                            size = self.size, fov = self.fov,
+                            near_far_planes = self.near_far_planes, range_roundness = self.range_roundness, 
+                            range_cutoff_sensitivity = self.range_cutoff_sensitivity, 
+                            range_shape = self.range_shape, range_focus = self.range_focus,
+                            range_min_cutoff = self.range_min_cutoff, 
+                            range_direct_max_cutoff = self.range_direct_max_cutoff, 
+                            sensitivity = self.sensitivity, fixed_window_size = self.fixed_window_size,
+                            isVisualised = self.isVisualised,
+                            isStatic = self.isStatic, 
+                            isSnappingDesired = self.isSnappingDesired,
+                            isForceInsideTriangle = self.isForceInsideTriangle)
+						   
+    def disconnect(self, bng, vehicle):
+        bng.close_ultrasonic(self.handle)
+
+    def attach(self, vehicle, name):
+        """
+        Called when the ultrasonic sensor is attached to a vehicle.
 
         Args:
-            bng(:class:`.BeamNGpy`): instance of BeamNGpy
-            vehicle_id(string): ID of the vehicle the sensor belongs to
-            color(tuple): four floats (RGBA) defining the color of the sphere
-            radius(float): radius of the sphere
+            vehicle (:class:`.Vehicle`): The vehicle the sensor is being attached to.
+            name (str): The name of the sensor.
         """
-        req = dict(type='StartUSSensorVisualization')
-        req['vehicle'] = vehicle_id
-        req['pos'] = self.pos
-        req['rot'] = self.rot
-        req['color'] = color
-        req['radius'] = radius
-        req['lineLength'] = self.near_far[1]
-        bng.send(req)
-        resp = bng.recv()
-        self.vis_spec = resp['sphereID']
+        pid = os.getpid()
+        self.handle = '{}.{}.{}.ultrasonic'.format(pid, vehicle.vid, name)
 
-    def stopVisualization(self, bng):
+    def detach(self, vehicle, name):
         """
-        Stops the sensor visualization.
+        Called when the ultrasonic sensor is detached from a vehicle.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle the sensor is being
+                                         detached from.
+            name (str): The name of the sensor.
         """
-        if self.vis_spec is not None:
-            data = dict(type='StopUSSensorVisualization')
-            data['dynSphereID'] = self.vis_spec
-            bng.send(data)
-        else:
-            self.logger.debug('Cannot stop visualization '
-                              'since no sphere ID is available.')
+        pass
