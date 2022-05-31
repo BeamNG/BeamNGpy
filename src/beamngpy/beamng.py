@@ -7,6 +7,7 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 .. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
+.. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
 
 import os
@@ -32,8 +33,8 @@ from .beamngcommon import PROTOCOL_VERSION, ENV
 from .beamngcommon import set_up_simple_logging, LOGGER_ID, create_warning
 
 BINARIES = [
-    'Bin64/BeamNG.drive.x64.exe',
     'Bin64/BeamNG.tech.x64.exe',
+    'Bin64/BeamNG.drive.x64.exe',
 ]
 
 RESEARCH_HELPER = 'researchHelper.txt'
@@ -76,49 +77,6 @@ class BeamNGpy:
     simulation and offers methods of starting, stopping, connecting to, and
     controlling the state of the simulator.
     """
-
-    @staticmethod
-    def deploy_mod(userpath):
-        """
-        Bundles required Lua extensions into a mod zip and places it in the
-        given userpath.
-
-        Note that for BeamNG.tech version 0.22 and higher the directory
-        for the user path needs to be set up once before the first
-        usage of BeamNGpy with that user path.
-
-        Args:
-            userpath (str): Userpath to place the mod zip in.
-        """
-        effective_userpath = BeamNGpy.read_effective_userpath(userpath)
-        if effective_userpath is None:
-            module_logger.error('No workspace set up at '
-                                f'userpath: <{userpath}>. '
-                                'Setup is required prior to mod deployment.')
-            return
-        userpath = effective_userpath
-
-        mods = Path(userpath) / 'mods'
-        if not mods.exists():
-            mods.mkdir(parents=True)
-
-        module_logger.debug('The research mod is being '
-                            f'deployed to `{mods.as_posix()}`.')
-
-        lua = Path(__file__).parent / 'lua'
-        common = lua / 'researchCommunication.lua'
-        ge = lua / 'researchGE.lua'
-        ve = lua / 'researchVE.lua'
-
-        common_name = 'lua/common/utils/researchCommunication.lua'
-        ge_name = 'lua/ge/extensions/util/researchGE.lua'
-        ve_name = 'lua/vehicle/extensions/researchVE.lua'
-
-        with zipfile.ZipFile(str(mods / 'BeamNGpy.zip'), 'w') as ziph:
-            ziph.write(common, arcname=common_name)
-            ziph.write(ge, arcname=ge_name)
-            ziph.write(ve, arcname=ve_name)
-
     @staticmethod
     def read_effective_userpath(userpath):
         reseach_helper = Path(userpath) / RESEARCH_HELPER
@@ -152,6 +110,7 @@ class BeamNGpy:
         self.host = host
         self.port = port
         self.remote = remote
+        self.home = home
 
         if not self.remote:
             if not self.home:
@@ -250,7 +209,7 @@ class BeamNGpy:
         if extensions is None:
             extensions = []
 
-        extensions.insert(0, 'util/researchGE')
+        extensions.insert(0, 'tech/techCore')
         lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
         lua = lua.format(*extensions)
         call = [
@@ -569,18 +528,13 @@ class BeamNGpy:
             deploy (bool): Whether to deploy the required Lua extensions as a
                            mod zip to the configured userpath. If false, it is
                            assumed that the Lua extensions are already
-                           installed.
+                           installed. Deprecated.
         """
         self.logger.info('Opening BeamNGpy instance.')
 
         if deploy or launch:
             if not self.effective_user:
                 self.determine_effective_userpath()
-
-        if deploy:
-            if not self.effective_user:
-                self.determine_effective_userpath()
-            BeamNGpy.deploy_mod(self.user)
 
         if launch:
             self.start_beamng(extensions, *args, **opts)

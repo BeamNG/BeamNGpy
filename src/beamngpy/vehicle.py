@@ -674,6 +674,26 @@ class Vehicle:
         data['a'] = rgba[3]
         self.send(data)
 
+    @ack('VelocitySet')
+    def set_velocity(self, velocity, dt=1.0):
+        """
+        Sets the velocity of this vehicle. The velocity is not achieved instantly,
+        it is acquired gradually over the time interval set by the `dt` argument.
+
+        As the method of setting velocity uses physical forces, at high velocities
+        it is important to set `dt` to an appropriately high value. The default
+        `dt` value of 1.0 is suitable for velocities up to 30 m/s.
+
+        Args:
+            velocity (float): The target velocity in m/s.
+            dt (float): The time interval over which the vehicle reaches the
+                        target velocity. Defaults to 1.0.
+        """
+        data = dict(type='SetVelocity')
+        data['velocity'] = velocity
+        data['dt'] = dt
+        self.send(data)
+
     set_colour = set_color
 
     def get_bbox(self):
