@@ -805,7 +805,7 @@ class BeamNGpy:
         self.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{name}"')
 
-    def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None):
+    def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None, reset=True):
         """
         Teleports the given vehicle to the given position with the given
         rotation.
@@ -818,16 +818,19 @@ class BeamNGpy:
                          axes in degrees. Deprecated.
             rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
                               rotation as quaternion
+            reset (bool): Specifies if the vehicle will be reset to its initial
+                          state during teleport (including its velocity). 
 
         Notes:
-            In the current implementation, if both ``pos`` and ``rot`` are
-            specified, the vehicle will be repaired to its initial state during
-            teleport.
+            The ``reset=False`` option is incompatible with setting rotation of
+            the vehicle. With the current implementation, it is not possible to
+            set the rotation of the vehicle and to keep its velocity during teleport.
         """
         self.logger.info(f'Teleporting vehicle <{vehicle_id}>.')
         data = dict(type='Teleport')
         data['vehicle'] = vehicle_id
         data['pos'] = pos
+        data['reset'] = reset
         if rot_quat:
             data['rot'] = rot_quat
         elif rot:
@@ -836,6 +839,11 @@ class BeamNGpy:
                            'in future versions',
                            DeprecationWarning)
             data['rot'] = angle_to_quat(rot)
+        if not reset and (rot_quat or rot):
+            create_warning('the usage of `reset=False` is incompatible with '
+                           'the usage of `rot` in `beamng.teleport_vehicle`; '
+                           'rotation will not be applied to the vehicle',
+                           RuntimeWarning)
         self.send(data)
         response = self.recv()
         assert response['type'] == 'Teleported'
