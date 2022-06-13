@@ -11,10 +11,10 @@
 """
 
 import os
+import platform
 import signal
 import socket
 import subprocess
-import zipfile
 
 
 from pathlib import Path
@@ -35,6 +35,10 @@ from .beamngcommon import set_up_simple_logging, LOGGER_ID, create_warning
 BINARIES = [
     'Bin64/BeamNG.tech.x64.exe',
     'Bin64/BeamNG.drive.x64.exe',
+]
+BINARIES_LINUX = [
+    'BinLinux/BeamNG.tech.x64',
+    'BinLinux/BeamNG.drive.x64'
 ]
 
 RESEARCH_HELPER = 'researchHelper.txt'
@@ -183,7 +187,8 @@ class BeamNGpy:
             BNGError: If no binary could be determined.
         """
         choice = None
-        for option in BINARIES:
+        binaries = BINARIES_LINUX if platform.system() == 'Linux' else BINARIES
+        for option in binaries:
             binary = self.home / option
             if binary.exists():
                 choice = binary
@@ -192,7 +197,7 @@ class BeamNGpy:
         if not choice:
             raise BNGError('No BeamNG binary found in BeamNG home. Make '
                            'sure any of these exist in the BeamNG home '
-                           f'folder: {", ".join(BINARIES)}')
+                           f'folder: {", ".join(binaries)}')
 
         self.logger.debug(f'Determined BeamNG.* binary to be: {choice}')
         return str(choice)
@@ -289,7 +294,10 @@ class BeamNGpy:
                     stderr=devnull
                 )
         else:
-            os.kill(self.process.pid, signal.SIGTERM)
+            try:
+                os.kill(self.process.pid, signal.SIGTERM)
+            except:
+                pass
 
         self.process = None
 
@@ -485,7 +493,7 @@ class BeamNGpy:
             try:
                 self.skt.connect((self.host, self.port))
                 break
-            except ConnectionRefusedError as err:
+            except (ConnectionRefusedError, ConnectionAbortedError) as err:
                 msg = 'Error connecting to BeamNG.tech. {} tries left.'
                 msg = msg.format(tries)
                 self.logger.error(msg)
