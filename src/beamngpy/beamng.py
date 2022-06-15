@@ -980,6 +980,7 @@ class BeamNGpy:
         not, this method resumes immediately. This can be used to queue
         commands that should be executed right after the steps have been
         simulated.
+
         Args:
             count (int): The amount of steps to simulate.
             wait (bool): Optional. Whether to wait for the steps to be

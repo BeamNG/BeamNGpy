@@ -3,6 +3,7 @@
     :platform: Windows
     :synopsis: Module containing the various sensors one can attach to a
                vehicle.
+    :noindex:
 
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
@@ -223,25 +224,24 @@ class Camera(Sensor):
                             identify object types based on the semantic
                             annotation information. The keys in this dictionary
                             are the respective colors expressed as a 24bit
-                            integer, i.e. r * 256^2 + g * 256 + b.
+                            integer, i.e. `r * 256^2 + g * 256 + b`.
 
         Returns:
             A list of bounding boxes specified as dictionaries. One example
             bounding box dictionary contains:
 
-            ```
-            {
+            .. code-block:: python
+
                 'bbox': [minx, miny, maxx, maxy],
                 'color': [233, 11, 15],
                 'class': ['CAR'],
-            }
-            ```
 
             Where minx, miny, maxx, maxy specify the corners of the bounding
             box, color contains the RGB color of the object in the instance
             annotations, and class the object type identified through the
             given class mapping.
         """
+
         semantic = np.array(semantic)
         instance = np.array(instance)
 
@@ -928,6 +928,7 @@ class Lidar(Sensor):
         Reads the raw point cloud the simulation wrote to the shared memory and
         creates a numpy array of points from them. The recoded response is
         returned as a dictionary with the numpy array in the ``points`` entry.
+
         Returns:
             The decoded response as a dictionary with the point cloud as a
             numpy array in the ``points`` entry. The numpy array is a linear
@@ -995,8 +996,7 @@ class Electrics(Sensor):
     - driveshaft (float): Driveshaft
     - engine_load (float):
     - engine_throttle (int): Engine throttle state
-    - esc (int): ESC state. 0 = not present/inactive, 1 = disabled,
-                 Blink = active
+    - esc (int): ESC state. 0 = not present/inactive, 1 = disabled, Blink = active
     - esc_active (bool):
     - exhaust_flow (float):
     - fog_lights (int): Fog light state
@@ -1036,15 +1036,13 @@ class Electrics(Sensor):
     - signal_r (int): Right signal state. 0.5 = halfway to full blink
     - steering (int): Steering state
     - steering_input (int): Steering input state
-    - tcs (int): TCS state. 0 = not present/inactive, 1 = disabled,
-                 Blink = active
+    - tcs (int): TCS state. 0 = not present/inactive, 1 = disabled, Blink = active
     - tcs_active (bool):
     - throttle (int): Throttle state
     - throttle_factor (int):
     - throttle_input (int): Throttle input state
     - turnsignal (int): Turn signal value. -1 = Left, 1 = Right,
-                        gradually 'fades' between values. Use "signal_L" and
-                        "signal_R" for flashing indicators.
+    gradually 'fades' between values. Use "signal_L" and "signal_R" for flashing indicators.
     - two_step (bool):
     - water_temperature (float): Water temperature [C].
     - wheelspeed (float): Wheel speed [m/s].
@@ -1294,6 +1292,7 @@ class Ultrasonic(Sensor):
         Reads the raw point cloud the simulation wrote to the shared memory and
         creates a numpy array of points from them. The recoded response is
         returned as a dictionary with the numpy array in the ``points`` entry.
+
         Returns:
             The decoded response as a dictionary with the point cloud as a
             numpy array in the ``points`` entry. The numpy array is a linear

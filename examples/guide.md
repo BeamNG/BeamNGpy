@@ -4,9 +4,9 @@ To help you getting started wih our library, we have added a collection of examp
 This guide helps exploring the collection and can help in finding examples for specific problems and features.
 
 For getting started we suggest taking a look at the following examples:
-* [West Coast Random][19]
-* [Vehicle Road Bounding Box][16]
-* [Annotation and Bounding Boxes][4]
+* [West Coast Random][20]
+* [Vehicle Road Bounding Box][17]
+* [Annotation and Bounding Boxes][5]
 
 More quick usage examples can be found in our [test suite][1].
 

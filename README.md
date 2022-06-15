@@ -1,27 +1,21 @@
 # BeamNGpy
+<a href="https://beamngpy.readthedocs.io/en/latest/"><img src="https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png" /></a>
 
-
-[![Documentation](https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png)][1]
-
-## Table of Contents
- - [About](#about)
- - [Features](#features)
- - [Prerequisites](#prereqs)
- - [Installation](#installation)
- - [Usage](#usage)
- - [Troubleshooting](#troubleshooting)
-
-<a name="about" ></a>
-
-## About
-
-BeamNGpy is an official library providing a Python API to BeamNG.tech,
+**BeamNGpy** is an official library providing a Python API to BeamNG.tech,
 the academia- and industry-oriented fork of the video game [BeamNG.drive][4].
 BeamNGpy and BeamNG.tech are designed to go hand in hand, both being kept up
 to date to support each other's functions, meaning using the latest versions
 of both is recommended.
 
-It allows remote control of the simulation, including vehicles contained in it:
+It allows remote control of the simulation, including vehicles contained in it. See [Features](#features).
+
+## Table of Contents
+
+ - [Features](#features)
+ - [Installation](#installation)
+ - [Usage](#usage)
+ - [Prerequisites](#prereqs)
+ - [Troubleshooting](#troubleshooting)
 
 <a name="features"></a>
 
@@ -116,18 +110,16 @@ using common methods like `pip`:
 
     pip install beamngpy
 
+If you use [Anaconda](https://www.anaconda.com/products/distribution#download-section), you can
+install BeamNGpy from the `conda-forge` channel by:
+
+    conda install beamngpy -c conda-forge
 
 <a name="usage"></a>
 
 ## Usage
 
-**For using BeamNG.tech version 0.22 to 0.24 the workspace needs to be set up by the user.
-This step needs to be repeated for every newly installed BeamNG.tech version** and helps BeamNGpy to determine the correct user directory for mod deployment.
-Create a workspace directory and then place your license file into it. Then type `beamngpy setup-workspace d:\exampleBNGworkspace` into the commandline.
-Optional parameters are `--host localhost --port 65255`.
-Note that this functionality is only available for BeamNGpy version 1.19.2 and above.
-
-Once set up, the library can be imported using `import beamngpy`. A short
+The library can be imported using `import beamngpy`. A short
 usage example setting up a scenario with one vehicle in the West Coast USA map
 that spans the area is:
 
@@ -136,7 +128,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle
 
 # Instantiate BeamNGpy instance running the simulator from the given path,
 # communicating over localhost:64256
-bng = BeamNGpy('localhost', 64256, home='/path/to/bng/tech')
+bng = BeamNGpy('localhost', 64256, home='/path/to/bng/tech', user='/path/to/bng/tech/userfolder')
 # Launch BeamNG.tech
 bng.open()
 # Create a scenario in west_coast_usa called 'example'
@@ -167,13 +159,13 @@ While the BeamNGpy library maintains compatibility between minor versions for th
 Below is a list of compatible BeamNG.tech and BeamNGpy versions.
 However we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
 
-| BeamNG.tech version | BeamNGpy version |
-|---------------------|------------------|
-| 0.25                | 1.23             |
-| 0.24                | 1.22             |
-| 0.23                | 1.21             |
-| 0.22                | 1.20             |
-| 0.21                | 1.19             |
+| BeamNG.tech version | BeamNGpy version                                          |
+| ------------------- | --------------------------------------------------------- |
+| 0.25                | [1.23](https://github.com/BeamNG/BeamNGpy/tree/v1.23)     |
+| 0.24                | [1.22](https://github.com/BeamNG/BeamNGpy/tree/v1.22)     |
+| 0.23                | [1.21.1](https://github.com/BeamNG/BeamNGpy/tree/v1.21.1) |
+| 0.22                | [1.20](https://github.com/BeamNG/BeamNGpy/tree/v1.20)     |
+| 0.21                | [1.19.1](https://github.com/BeamNG/BeamNGpy/tree/v1.19.1) |
 
 ## Troubleshooting
 
@@ -206,7 +198,7 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [3]: mailto:licensing@beamng.gmbh
 [4]: https://store.steampowered.com/app/284160/BeamNGdrive/
 [5]: https://pypi.org/project/beamngpy/
-[6]: https://github.com/BeamNG/BeamNGpy/blob/dev/examples/guide.md
+[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/guide.md
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
-[9]: https://github.com/BeamNG/BeamNGpy/blob/dev/contributing.md
+[9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md

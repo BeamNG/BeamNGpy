@@ -2,6 +2,18 @@
 Changelog
 =========
 
+Version 1.23
+============
+- Fix semantic annotations (supported maps are Italy and ECA)
+- Add option to teleport vehicle without resetting its physics state
+- Add option to set velocity of a vehicle by applying force to it
+- Support for updated ultrasonic sensor
+- New sensor API - LiDAR, ultrasonic sensor
+- Fix camera sensor creating three shared memories even when not needed
+- Add BeamNGpy feature overview example notebook
+- Remove research mod deployment and ``setup-workspace`` phase of setup
+- (Experimental) Support for Linux BeamNG.tech servers
+
 Version 1.22
 ============
 - Hide menu on a scenario start
@@ -10,7 +22,7 @@ Version 1.22
 - Fix 'Using mods with BeamNGpy' demo notebook
 
 Version 1.21.1
-============
+==============
 - Fix example notebooks
 
 Version 1.21

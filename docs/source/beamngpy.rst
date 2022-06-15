@@ -28,14 +28,6 @@ beamngpy.level module
    :undoc-members:
    :show-inheritance:
 
-beamngpy.main module
---------------------
-
-.. automodule:: beamngpy.main
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 beamngpy.noise module
 ---------------------
 
