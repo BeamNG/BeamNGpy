@@ -12,9 +12,12 @@ import sys
 
 import numpy as np
 
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from OpenGL.GLUT import *
+try:
+    from OpenGL.GL import *
+    from OpenGL.GLU import *
+    from OpenGL.GLUT import *
+except AttributeError: # workaround to fix conda build
+    pass
 
 CLEAR_COLOUR = (0.1, 0.1, 0.1, 1.0)
 MAX_DISTANCE = 120 / 3
