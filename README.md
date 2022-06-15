@@ -91,8 +91,7 @@ as documentation, so be sure to check them out.
 Usage of BeamNGpy requires BeamNG.tech to be installed. Builds of
 BeamNG.tech are made available for non-commercial use upon request using
 [this form][2]. For commercial use, contact us at [licensing@beamng.gmbh][3].
-Once downloaded (and extracted, depending on whether or no BeamNG.tech was
-obtained as a `.zip`), you can set an environment variable `BNG_HOME` to where
+Once downloaded, you can use the environment variable `BNG_HOME` to where
 BeamNG.tech can be run from, or provide a path to the BeamNGpy library
 during initialization.
 
@@ -118,6 +117,9 @@ install BeamNGpy from the `conda-forge` channel by:
 <a name="usage"></a>
 
 ## Usage
+
+**DISCLAIMER:** If you are using an older version of `beamngpy` and BeamNG.tech, please follow the
+instructions of the corresponding `README` file (for example, [1.22 instructions](https://github.com/BeamNG/BeamNGpy/tree/v1.22)).
 
 The library can be imported using `import beamngpy`. A short
 usage example setting up a scenario with one vehicle in the West Coast USA map
