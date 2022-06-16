@@ -43,7 +43,7 @@ def main():
     bng.hide_hud()
     bng.start_scenario()
 
-    # Run for 1000 seconds. Every second, we display the LiDAR point cloud data.
+    # Run for 1000 seconds. Every second, we display the ultrasonic measurement data.
     for i in range(1000):
 
         vehicle.poll_sensors()
