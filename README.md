@@ -7,14 +7,16 @@ BeamNGpy and BeamNG.tech are designed to go hand in hand, both being kept up
 to date to support each other's functions, meaning using the latest versions
 of both is recommended.
 
-It allows remote control of the simulation, including vehicles contained in it. See [Features](#features).
+It allows remote control of the simulation, including vehicles contained in it.
+See [Features](#features) or go through the [Feature Overview][10] Jupyter notebook.
 
 ## Table of Contents
 
  - [Features](#features)
+ - [Prerequisites](#prereqs)
  - [Installation](#installation)
  - [Usage](#usage)
- - [Prerequisites](#prereqs)
+ - [Compatibility](#compatibility)
  - [Troubleshooting](#troubleshooting)
 
 <a name="features"></a>
@@ -204,3 +206,4 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
+[10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb
