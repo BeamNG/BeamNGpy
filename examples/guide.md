@@ -13,7 +13,7 @@ More quick usage examples can be found in our [test suite][1].
 
 | Name     | How to           |
 | ------------- |-------------|
-|[Feature Overview][22]|<ul><li>see what the basics of what can be done with BeamNGpy</li></ul>|
+|[Feature Overview][22]|<ul><li>see the basics of what can be done with BeamNGpy</li></ul>|
 |[Modding Interface][2]|<ul><li>write and deploy a mod that interacts with BeamNGpy</li><li>write python functions that interact with functions of the custom mod</li></ul>|
 |[Road Network][3]|<ul><li>fetch information about the current level's road network</li></ul>|
 |[AI Line][4]|<ul><li>use the simulator's AI with BeamNGpy</li></ul>|
