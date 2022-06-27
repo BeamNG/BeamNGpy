@@ -18,21 +18,19 @@ def main():
 
     scenario = Scenario('gridmap_v2', 'road_test')
     road_a = Road('track_editor_C_center', rid='circle_road', looped=True)
-    nodes = [
+    road_a.add_nodes(
         (-25, 300, 0, 5),
         (25, 300, 0, 6),
         (25, 350, 0, 4),
         (-25, 350, 0, 5),
-    ]
-    road_a.nodes.extend(nodes)
+    )
     scenario.add_road(road_a)
 
     road_b = Road('track_editor_C_center', rid='center_road')
-    nodes = [
-        (0, 325, 0, 5),
-        (50, 375, 0, 5),
-    ]
-    road_b.nodes.extend(nodes)
+    road_b.add_nodes(
+        (0, 325, 0, 5)
+        (50, 375, 0, 5)
+    )
     scenario.add_road(road_b)
 
     scenario.make(bng)

@@ -7,6 +7,7 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 .. moduleauthor:: Sedonas <https://github.com/Sedonas>
+.. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
 
 import copy
@@ -35,11 +36,9 @@ class Road:
     This class represents a DecalRoad in the environment. It contains
     information about the road's material, direction-ness of lanes,
     and geometry of the edges that make up the road.
-
-
     """
 
-    def __init__(self, material, rid=None, interpolate=True, **options):
+    def __init__(self, material, rid=None, interpolate=True, default_width=10.0, **options):
         """
         Creates a new road instance using the given material name. The material
         name needs to match a material that is part of the level in the
@@ -56,7 +55,9 @@ class Road:
             interpolate (bool): Whether to apply Catmull-Rom spline
                                 interpolation to smooth transition between the
                                 road's nodes.
+            default_width (float): Default width of the road nodes.
         """
+        self.default_width = default_width
         self.material = material
 
         self.rid = rid
@@ -83,6 +84,88 @@ class Road:
             self.break_angle = 359.9
 
         self.nodes = list()
+
+    def add_nodes(self, *nodes):
+        """
+        Adds a list of nodes to this decal road.
+
+        Args:
+            nodes (list): List of (x, y, z) or (x, y, z, width) tuples of the
+                          road's nodes.
+        """
+        for node in nodes:
+            if len(node) == 3:
+                self.nodes.append((*node, self.default_width))
+            elif len(node) == 4:
+                self.nodes.append(node)
+            else:
+                raise BNGValueError(
+                    'A decal road node should be either a 3-tuple (x, y, z) or a 4-tuple (x, y, z, width).')
+
+
+class MeshRoad:
+    """
+    This class represents a MeshRoad in the environment. It contains
+    information about the road's materials, direction-ness of lanes,
+    and geometry of the edges that make up the road.
+    """
+
+    def __init__(self, top_material, bottom_material=None, side_material=None, rid=None,
+                 default_width=10.0, default_depth=5.0, **options):
+        """
+        Creates a new road instance using the given material name. The material
+        name needs to match a material that is part of the level in the
+        simulator this road will be placed in.
+
+        Args:
+            top_material (str): Name of the material this road uses for the top part.
+                                This affects how the road looks visually and needs to
+                                match a material that's part of the level this road is
+                                placed in.
+            bottom_material (str): Name of the material this road uses for the bottom part.
+                                   Defaults to ``top_material``.
+            side_material (str): Name of the material this road uses for the side part.
+                                 Defaults to ``top_material``.
+            rid (str): Optional string setting this road's name. If specified,
+                       needs to be unique with respect to other roads in the
+                       level/scenario.
+            default_width (float): Default width of the road nodes.
+            default_depth (float): Default depth of the road nodes.
+        """
+        self.default_width = default_width
+        self.default_depth = default_depth
+
+        self.rid = rid
+
+        self.top_material = top_material
+        self.bottom_material = bottom_material or top_material
+        self.side_material = side_material or top_material
+        self.texture_length = options.get('texture_length', 5)
+        self.break_angle = options.get('break_angle', 3)
+        self.width_subdivisions = options.get('width_subdivisions', 0)
+
+        self.nodes = list()
+
+    def add_nodes(self, *nodes):
+        """
+        Adds a list of nodes to this decal road.
+
+        Args:
+            nodes (list): List of (x, y, z), (x, y, z, width) or (x, y, z, width, depth)
+                          tuples of the road's nodes.
+        """
+        for node in nodes:
+            if len(node) == 3:
+                self.nodes.append(
+                    (*node, self.default_width, self.default_depth))
+            elif len(node) == 4:
+                self.nodes.append((*node, self.default_depth))
+            elif len(node) == 5:
+                self.nodes.append(node)
+            else:
+                raise BNGValueError(
+                    'A decal road node should be either a 3-tuple (x, y, z), '
+                    '4-tuple (x, y, z, width) or a 5-tuple (x, y, z, width, depth).')
 
 
 class ScenarioObject:
@@ -381,6 +464,7 @@ class Scenario:
         self._focus_vehicle = None
 
         self.roads = list()
+        self.mesh_roads = list()
         self.waypoints = list()
         self.checkpoints = list()
         self.proc_meshes = list()
@@ -498,6 +582,30 @@ class Scenario:
                           'scenario-specific roads.')
         return ret
 
+    def _get_mesh_roads_list(self):
+        """
+        Gets the mesh roads defined in this scenario encoded as a dict and put into
+        one list ready to be placed in the simulator.
+
+        Returns:
+            All mesh roads encoded as a dict in one list.
+        """
+        ret = list()
+        for idx, road in enumerate(self.mesh_roads):
+            road_dict = dict(**road.__dict__)
+
+            if road.rid is None:
+                road_id = 'beamngpy_mesh_road_{}_{:03}'.format(self.name, idx)
+            else:
+                road_id = road.rid
+            road_dict['road_id'] = road_id
+            road_dict['render_priority'] = idx
+
+            ret.append(road_dict)
+        self.logger.debug(f'The scenario {self.name} has {len(ret)} '
+                          'scenario-specific mesh roads.')
+        return ret
+
     def _get_prefab(self):
         """
         Generates prefab code to describe this scenario to the simulation
@@ -510,9 +618,10 @@ class Scenario:
 
         vehicles = self._get_vehicles_list()
         roads = self._get_roads_list()
+        mesh_roads = self._get_mesh_roads_list()
         objs = self._get_objects_list()
 
-        return template.render(vehicles=vehicles, roads=roads, objects=objs)
+        return template.render(vehicles=vehicles, roads=roads, mesh_roads=mesh_roads, objects=objs)
 
     def _get_level_name(self):
         if isinstance(self.level, Level):
@@ -618,6 +727,14 @@ class Scenario:
             road (:class:`beamngpy.Road`): road to be added to the scenario.
         """
         self.roads.append(road)
+
+    def add_mesh_road(self, road):
+        """Adds a mesh road to this scenario.
+
+        Args:
+            road (:class:`beamngpy.MeshRoad`): mesh road to be added to the scenario.
+        """
+        self.mesh_roads.append(road)
 
     def add_camera(self, camera, name):
         """
