@@ -29,6 +29,7 @@ LOGGER_ID = "beamngpy"
 LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
 bngpy_logger = logging.getLogger(LOGGER_ID)
 module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
+comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
 bngpy_handlers = list()
 
 
@@ -45,7 +46,8 @@ def create_warning(msg, category=None):
 def config_logging(handlers,
                    replace=True,
                    level=logging.DEBUG,
-                   redirect_warnings=True):
+                   redirect_warnings=True,
+                   log_communication=False):
     """
     Function to configure logging.
     Args:
@@ -53,6 +55,7 @@ def config_logging(handlers,
         replace (bool): whether to replace existing list of handlers with new ones or whether to add them, optional
         level (int): log level of the beamngpy logger object, optional
         redirect_warnings (bool): whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
+        log_communication (bool): whether to log the BeamNGpy protocol messages between BeamNGpy and BeamNG.tech, optional
     """
     global bngpy_logger, bngpy_handlers
     root_logger = logging.getLogger()
@@ -61,7 +64,11 @@ def config_logging(handlers,
             root_logger.removeHandler(h)
     for h in handlers:
         root_logger.addHandler(h)
+
     bngpy_logger.setLevel(level)
+    comm_logger.setLevel(level)
+    comm_logger.disabled = not log_communication
+
     if redirect_warnings:
         logging.captureWarnings(redirect_warnings)
         warn_log = logging.getLogger('py.warnings')
@@ -76,7 +83,8 @@ def config_logging(handlers,
 
 def set_up_simple_logging(log_file=None,
                           redirect_warnings=None,
-                          level=logging.INFO):
+                          level=logging.INFO,
+                          log_communication=False):
     """
     Helper function that provides high-level control
     over beamng logging. For low-level control over the
@@ -91,6 +99,7 @@ def set_up_simple_logging(log_file=None,
         log_file (str): log filename, optional
         redirect_warnings (bool): Whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
         level (int): log level of handler that is created for the log file
+        log_communication (bool): whether to log the BeamNGpy protocol messages between BeamNGpy and BeamNG.tech, optional
     """
     sh = logging.StreamHandler()
     sh.setLevel(level)
@@ -108,7 +117,8 @@ def set_up_simple_logging(log_file=None,
         fh.setFormatter(formatter)
         fh.setLevel(level)
         handlers.append(fh)
-    config_logging(handlers, redirect_warnings=redirect_warnings)
+    config_logging(handlers, redirect_warnings=redirect_warnings,
+                   log_communication=log_communication)
     if moved_log and fh is not None:
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
 
@@ -233,6 +243,7 @@ def send_msg(skt, data):
         skt (:class:`socket`): The socket to write to
         data (dict): The data to encode and send
     """
+    comm_logger.debug(f'Sending {data}.')
     data = msgpack.packb(data, use_bin_type=True)
     length = '{:016}'.format(len(data))
     skt.send(bytes(length, 'ascii'))
@@ -263,6 +274,8 @@ def recv_msg(skt):
         length -= len(received)
     assert length == 0
     data = msgpack.unpackb(buf, raw=False)
+    comm_logger.debug(f'Received {data}.')
+
     if 'bngError' in data:
         raise BNGError(data['bngError'])
     if 'bngValueError' in data:
