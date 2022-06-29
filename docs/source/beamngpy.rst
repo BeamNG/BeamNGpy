@@ -1,5 +1,5 @@
-BeamNGpy Documentation
-======================
+BeamNGpy Reference
+==================
 
 Submodules
 ----------

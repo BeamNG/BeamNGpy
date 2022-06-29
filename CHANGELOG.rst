@@ -2,6 +2,14 @@
 Changelog
 =========
 
+Version 1.23.1
+==============
+- Add Feature Overview notebook
+- Add argument checking to the IMU sensor
+- Add support for Mesh Roads
+- Add option to log BeamNGpy protocol messages
+- Fix duplicate logging when calling ``config_logging`` multiple times
+
 Version 1.23
 ============
 - Fix semantic annotations (supported maps are Italy and ECA)
