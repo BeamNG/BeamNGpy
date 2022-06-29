@@ -64,6 +64,7 @@ def config_logging(handlers,
             root_logger.removeHandler(h)
     for h in handlers:
         root_logger.addHandler(h)
+    bngpy_handlers = handlers
 
     bngpy_logger.setLevel(level)
     comm_logger.setLevel(level)
