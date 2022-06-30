@@ -48,6 +48,7 @@ setup `catkin_ws <http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSE
 Install and build ROS bridge
 
 ``git@github.com:BeamNG/beamng-ros-integration.git``
+
 ``cd ~/catkin_ws/ && catkin_make``
 
 WSL2 dependencies:
