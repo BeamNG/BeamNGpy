@@ -41,8 +41,6 @@ BINARIES_LINUX = [
     'BinLinux/BeamNG.drive.x64'
 ]
 
-RESEARCH_HELPER = 'researchHelper.txt'
-
 module_logger = logging.getLogger(f"{LOGGER_ID}.beamng")
 module_logger.setLevel(logging.DEBUG)
 
@@ -81,14 +79,6 @@ class BeamNGpy:
     simulation and offers methods of starting, stopping, connecting to, and
     controlling the state of the simulator.
     """
-    @staticmethod
-    def read_effective_userpath(userpath):
-        reseach_helper = Path(userpath) / RESEARCH_HELPER
-        if reseach_helper.exists():
-            with open(reseach_helper) as infile:
-                return infile.read().strip()
-        return None
-
     def __init__(self, host, port, home=None, user=None, remote=False):
         """
         Instantiates a BeamNGpy instance connecting to the simulator on the
@@ -133,22 +123,10 @@ class BeamNGpy:
             else:
                 self.user = self.determine_userpath()
 
-        self.effective_user = None
-
         self.process = None
         self.skt = None
 
         self.scenario = None
-
-    def setup_workspace(self):
-        try:
-            self.start_beamng(None, lua='shutdown(0)')
-            self.process.wait(timeout=600)
-        except Exception as err:
-            self.logger.exception(err)
-        finally:
-            self.kill_beamng()
-            self.process = None
 
     def determine_userpath(self):
         """
@@ -165,15 +143,6 @@ class BeamNGpy:
             user = user / 'BeamNG.drive'
         self.logger.debug(f'Userpath is set to {user.as_posix()}')
         return user
-
-    def determine_effective_userpath(self):
-        self.setup_workspace()
-        effective_userpath = BeamNGpy.read_effective_userpath(self.user)
-        if not effective_userpath:
-            effective_userpath = BeamNGpy.read_effective_userpath(self.user)
-        self.effective_user = effective_userpath
-        self.logger.debug('Automatically determined effective user path for '
-                          f'mod: {self.effective_user}')
 
     def determine_binary(self):
         """
@@ -280,7 +249,7 @@ class BeamNGpy:
                 self.skt = None
 
         if self.remote:
-            log.warn('cannot kill remote BeamNG.research process, aborting subroutine')
+            self.logger.warn('cannot kill remote BeamNG.research process, aborting subroutine')
             return
 
         if not self.process:
@@ -539,11 +508,6 @@ class BeamNGpy:
                            installed. Deprecated.
         """
         self.logger.info('Opening BeamNGpy instance.')
-
-        if deploy or launch:
-            if not self.effective_user:
-                self.determine_effective_userpath()
-
         if launch:
             self.start_beamng(extensions, *args, **opts)
             sleep(10)
