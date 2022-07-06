@@ -16,6 +16,7 @@ extract data from simulations.
 import base64
 import mmap
 import os
+import math
 
 from abc import ABC, abstractmethod
 from xml.dom import minidom
@@ -194,13 +195,11 @@ class Camera(Sensor):
     A camera sensor provides several types of image data from a user-defined
     perspective relative to the vehicle. It can provide the following types of
     data:
-
     * Colour images
     * Pixel-wise depth
     * Pixel-wise object annotation
     * Pixel-wise instance annotation to separate overlapping objects of the
       same type
-
     A single camera sensor can be configured to provide any or all of these
     data at once, ensuring they all align to the same perspective.
     """
@@ -214,7 +213,6 @@ class Camera(Sensor):
         of object according to the corresponding color in the semantic
         annotations and the provided class mapping, and the color of the
         object in the instance annotation.
-
         Args:
             semantic (:class:`.Image`): The image containing semantic
                                         annotation information
@@ -225,17 +223,13 @@ class Camera(Sensor):
                             annotation information. The keys in this dictionary
                             are the respective colors expressed as a 24bit
                             integer, i.e. `r * 256^2 + g * 256 + b`.
-
         Returns:
             A list of bounding boxes specified as dictionaries. One example
             bounding box dictionary contains:
-
             .. code-block:: python
-
                 'bbox': [minx, miny, maxx, maxy],
                 'color': [233, 11, 15],
                 'class': ['CAR'],
-
             Where minx, miny, maxx, maxy specify the corners of the bounding
             box, color contains the RGB color of the object in the instance
             annotations, and class the object type identified through the
@@ -292,7 +286,6 @@ class Camera(Sensor):
         standard. The bounding box list is expected to be in the format that
         `extract_bboxes` returns. Additional properties to this function
         correspond to tags in the Pascal-VOC standard.
-
         Args:
             bboxes (list): The list of bounding boxes the export. Consult the
                            documentation of `extract_bboxes` for information
@@ -304,7 +297,6 @@ class Camera(Sensor):
             size (tuple): Contents of the `<size>` tag. It's expected to be a
                           tuple of the image width, height, and depth.
                           Optional.
-
         Returns:
             XML string encoding the given list of bounding boxes according to
             Pascal-VOC.
@@ -383,7 +375,6 @@ class Camera(Sensor):
         and size configuration. The given image is not directly modified and
         the boxes are drawn onto a copy. The bboxes are expected to be in the
         format returned by `extract_bboxes`.
-
         Args:
             bboxes (list): List of bounding boxes to draw. Consult the
                            documentation of `extract_bboxes` for information
@@ -394,7 +385,6 @@ class Camera(Sensor):
             font (str): A string specifying the font bounding box labels are
                         supposed to have.
             fontsize (int): The font size to draw labels with.
-
         Returns:
             A `:class:`.Image` that is a copy of the given image with bounding
             boxes drawn onto it.
@@ -432,12 +422,10 @@ class Camera(Sensor):
         The camera sensor is set up with a fixed offset position and
         directional vector to face relative to the vehicle. This means as the
         vehicle moves and rotates, the camera is moved and rotated accordingly.
-
         Besides position and orientation, the image can further be customised
         with the FoV angle the camera should have, the resolution of the
         image(s) it outputs, and the near/far plane at which objects get
         clipped from view.
-
         Which sensor data to provide can be indicated using boolean flags for
         the corresponding type. The way data is transmitted can be chosen via
         the `shmem` flag. When true, the data is exchanged via a region of
@@ -445,7 +433,6 @@ class Camera(Sensor):
         downside of requiring the Python process and the simulator to be on the
         same machine. When false, data is sent via a socket and thus possible
         to be transmitted over network.
-
         Args:
             pos (tuple): (x,y,z) tuple of the camera's position offset relative
                          to the vehicle it's attached to.
@@ -514,7 +501,6 @@ class Camera(Sensor):
         This method is called when the camera is attached and allocates
         shared memory space to house the sensor data the camera is supposed
         to provide.
-
         Args:
             vehicle (:class:`.Vehicle`): The vehicle the camera is being
                                          attached to.
@@ -559,7 +545,6 @@ class Camera(Sensor):
         """
         This method is called when the camera is detached from the vehicle. It
         de-allocates the shared memory space obtained for sensor data.
-
         Args:
             vehicle (:class:`.Vehicle`): The vehicle the camera is being
                                          detached from.
@@ -590,7 +575,6 @@ class Camera(Sensor):
         This method is called when the vehicle is set up in the simulation.
         It's used to inform the simulation about the shared memory used to
         exchange sensor data for this camera.
-
         Args:
             bng (:class:`.BeamNGpy`): Running instance of BeamNGpy.
             vehicle (:class:`.Vehicle`): The vehicle being connected.
@@ -614,7 +598,6 @@ class Camera(Sensor):
         This method is called when the vehicle is disconnected from the
         simulation. It's used to tell the simulation to close the shared memory
         used to exchange sensor data for this camera.
-
         Args:
             bng (:class:`.BeamNGpy`): Running instance of BeamNGpy.
             vehicle (:class:`.Vehicle`): The vehicle being disconnected.
@@ -635,7 +618,6 @@ class Camera(Sensor):
         """
         This method encodes a render request to the simulation engine along
         with the properties this camera is configured with.
-
         Returns:
             The request to the engine as a dictionary. This dictionary contains
             fields for each property of the requested render and which modes
@@ -681,6 +663,48 @@ class Camera(Sensor):
             img_d = img_d.reshape(height, width)
         return Image.fromarray(img_d)
 
+    def depth_buffer_processing(self, depth_d):
+
+        # Sort the depth values, and cache the sorting map.
+        s_data = sorted(depth_d)
+        sort_index = np.argsort(depth_d)
+
+        # Compute an array of unique depth values, sensitive to some epsilon.
+        size = len(s_data)
+        unique = []
+        unique.append(s_data[0])
+        current = s_data[0]
+        for i in range(1, size):
+            if abs(s_data[i] - current) > 0.01:
+                unique.append(s_data[i])
+                current = s_data[i]
+
+        # Distribute (mark) the individual intensity values throughout the sorted unique distance array.
+        intensity_marks = []
+        intensity_marks.append(0)
+        i_recip = 1 / 255
+        for i in range(254):
+            intensity_marks.append(unique[math.floor(len(unique) * i * i_recip)])
+        intensity_marks.append(1e12)
+
+        # In the sorted depth values array, convert the depth value array into intensity values.
+        depth_intensity_sorted = np.zeros((size))
+        im_index = 0
+        for i in range(size):
+            depth_intensity_sorted[i] = im_index
+            if s_data[i] >= intensity_marks[im_index + 1]:
+                im_index = im_index + 1
+
+        # Re-map the depth values back to their original order.
+        depth_intensity = np.zeros((size))
+        for i in range(len(depth_d)):
+            if self.depth_inverse:
+                depth_intensity[sort_index[i]] = 255 - depth_intensity_sorted[i]
+            else:
+                depth_intensity[sort_index[i]] = depth_intensity_sorted[i]
+
+        return depth_intensity
+
     def decode_b64_response(self, resp):
         decoded = dict(type='Camera')
         img_w = resp['width']
@@ -699,14 +723,12 @@ class Camera(Sensor):
                                                     img_w, img_h, 4)
 
         if self.depth:
-            decoded['depth'] = self.decode_image(resp['depth32F'],
-                                                 img_w, img_h, 1,
-                                                 dtype=np.float32)
-            # TODO: More needs to be done here to scale the lightness values
-            # between 0-255. Please see decode_shmem_response(). Currently
-            # this would generate an invalid image where each pixel's value
-            # would actually be a raw distance. I am unable to complete this
-            # as using shmem=False currently does not work for me.
+            raw_depth_data = resp['depth32F']
+            img_d = base64.b64decode(raw_depth_data)
+            img_d = np.frombuffer(img_d, dtype=np.float32)
+            img_d = self.depth_buffer_processing(img_d)
+            img_d = img_d.reshape(img_h, img_w)
+            decoded['depth'] = Image.fromarray(img_d)
 
         return decoded
 
@@ -716,11 +738,9 @@ class Camera(Sensor):
         them as images. The resulting data is returned as a dictionary. This
         dictionary contains an entry for each requested image type that is
         mapped to a :class:`PIL.Image` instance.
-
         Args:
             resp (dict): The raw sensor data as a dictionary that was returned
                          by the simulation.
-
         Returns:
             The decoded response as a dictionary.
         """
@@ -759,26 +779,12 @@ class Camera(Sensor):
                 self.depth_shmem.seek(0)
                 depth_d = self.depth_shmem.read(size)
                 depth_d = np.frombuffer(depth_d, dtype=np.float32)
-                # Use linear interpolation to map the depth values
-                # between lightness values 0-255. Any distances outside
-                # of the scale are clamped to either 0 or 255
-                # respectively.
-                if self.depth_inverse:
-                    depth_dist = [self.depth_distance[0],
-                                  self.depth_distance[1]]
-                    depth_d = np.interp(depth_d,
-                                        depth_dist,
-                                        [255, 0],
-                                        left=255,
-                                        right=0)
-                else:
-                    depth_d = np.interp(depth_d, [self.depth_distance[0],
-                                        self.depth_distance[1]], [0, 255],
-                                        left=0,
-                                        right=255)
-                depth_d = depth_d.reshape(img_h, img_w)
-                depth_d = np.uint8(depth_d)
-                decoded['depth'] = Image.fromarray(depth_d)
+
+                depth_intensity = self.depth_buffer_processing(depth_d)
+                
+                depth_intensity = depth_intensity.reshape(img_h, img_w)
+                depth_intensity= np.uint8(depth_intensity)
+                decoded['depth'] = Image.fromarray(depth_intensity)
             else:
                 self.logger.error('Depth buffer failed to render. '
                                   'Check that you aren\'t running '
@@ -814,12 +820,12 @@ class Camera(Sensor):
             flags['annotations'] = True
         return flags
 
-
 class Lidar(Sensor):
     max_points = LIDAR_POINTS
     shmem_size = LIDAR_POINTS * 3 * 4
 
     def __init__(self, useSharedMemory=False, 
+                    updateTime=0.05, updatePriority=0.0,
                     pos=(0, 0, 1.7), dir=(0, -1, 0), 
                     vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120, 
                     isVisualised=True, isAnnotated=False,
@@ -836,6 +842,8 @@ class Lidar(Sensor):
         self.useSharedMemory = useSharedMemory
         self.handle = None
         self.shmem = None
+        self.updateTime = updateTime
+        self.updatePriority = updatePriority
         self.pos = pos
         self.dir = dir
         self.vres = vres
@@ -890,6 +898,7 @@ class Lidar(Sensor):
         if self.useSharedMemory:
             bng.open_lidar(self.handle, vehicle, 
                            self.useSharedMemory, self.handle, Lidar.shmem_size,
+                           updateTime=self.updateTime, updatePriority=self.updatePriority,
                            pos=self.pos, dir=self.dir,
                            vres=self.vres, vAngle=self.vAngle, rps=self.rps,
                            hz=self.hz, hAngle=self.hAngle, maxDist=self.maxDist, 
@@ -898,7 +907,8 @@ class Lidar(Sensor):
                            isForceInsideTriangle = self.isForceInsideTriangle)
         else:
             bng.open_lidar(self.handle, vehicle, 
-                           self.useSharedMemory, '', 0, 
+                           self.useSharedMemory, '', 0,
+                           updateTime=self.updateTime, updatePriority=self.updatePriority,
                            pos=self.pos, dir=self.dir,
                            vres=self.vres, vAngle=self.vAngle, rps=self.rps,
                            hz=self.hz, hAngle=self.hAngle, maxDist=self.maxDist, 
@@ -936,7 +946,6 @@ class Lidar(Sensor):
             y1, z1, ..., xn, yn, zn].
         """
         points_buf = None
-
         if self.useSharedMemory:
             size = self.shmem_size
             self.shmem.seek(0)
@@ -1197,9 +1206,6 @@ class IMU(Sensor):
         if pos is not None and node is not None:
             raise BNGValueError('Cannot specify both position and node for '
                                 'an IMU')
-        if pos is None and node is None:
-            raise BNGValueError('Either position or node have to be specified '
-                                'for an IMU')
 
         self._pos = pos
         self._node = node
@@ -1233,6 +1239,7 @@ class Ultrasonic(Sensor):
 
     def __init__(self,
                  pos=(0, -3, 0), dir=(0, -1, 0),
+                 updateTime=0.1, priority=0.0,
                  size=(200, 200), fov=(0.15, 0.15), near_far_planes=(0.05, 10.0),
                  range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3,
                  range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=5.0,
@@ -1241,6 +1248,8 @@ class Ultrasonic(Sensor):
                  isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
         self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
         self.logger.setLevel(DBG_LOG_LEVEL)
+        self.updateTime = updateTime
+        self.priority = priority
         self.pos = pos
         self.dir = dir
         self.size = size
@@ -1270,31 +1279,11 @@ class Ultrasonic(Sensor):
             a dictionary.
         """
         req = dict(type='Ultrasonic')
-        req['name'] = self.handle
-        req['pos'] = self.pos
-        req['dir'] = self.dir
-        req['fov'] = self.fov
-        req['resolution'] = self.size
-        req['near_far_planes'] = self.near_far_planes
-        req['range_roundness'] = self.range_roundness
-        req['range_cutoff_sensitivity'] = self.range_cutoff_sensitivity
-        req['range_shape'] = self.range_shape
-        req['range_focus'] = self.range_focus
-        req['range_min_cutoff'] = self.range_min_cutoff
-        req['range_direct_max_cutoff'] = self.range_direct_max_cutoff
-        req['sensitivity'] = self.sensitivity
-        req['fixed_window_size'] = self.fixed_window_size
-        req['isVisualised'] = self.isVisualised
-        req['isStatic'] = self.isStatic
-        req['isSnappingDesired'] = self.isSnappingDesired
-        req['isForceInsideTriangle'] = self.isForceInsideTriangle
         return req
         
     def decode_response(self, resp):
         """
-        Reads the raw point cloud the simulation wrote to the shared memory and
-        creates a numpy array of points from them. The recoded response is
-        returned as a dictionary with the numpy array in the ``points`` entry.
+        Populates a dictionary containing the ultrasonic sensor readings data.
 
         Returns:
             The decoded response as a dictionary with the point cloud as a
@@ -1310,7 +1299,8 @@ class Ultrasonic(Sensor):
         return resp
 
     def connect(self, bng, vehicle):
-        bng.open_ultrasonic(self.handle, vehicle, pos=self.pos, dir=self.dir, 
+        bng.open_ultrasonic(self.handle, vehicle, pos=self.pos, dir=self.dir,
+                            updateTime=self.updateTime, priority=self.priority,
                             size = self.size, fov = self.fov,
                             near_far_planes = self.near_far_planes, range_roundness = self.range_roundness, 
                             range_cutoff_sensitivity = self.range_cutoff_sensitivity, 

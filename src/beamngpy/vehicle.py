@@ -2,11 +2,9 @@
 .. module:: vehicle
     :platform: Windows
     :synopsis: Contains vehicle-related classes/functions  for BeamNGpy.
-
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 .. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
-
 """
 
 import socket
@@ -66,7 +64,6 @@ class Vehicle:
         """
         Creates a vehicle with the given vehicle ID. The ID must be unique
         within the scenario.
-
         Args:
             vid (str): The vehicle's ID.
             model (str): Model of the vehicle.
@@ -119,13 +116,11 @@ class Vehicle:
         This property contains the vehicle's current state in the running
         scenario. It is None if no scenario is running or the state has not
         been retrieved yet. Otherwise, it contains the following key entries:
-
          * ``pos``: The vehicle's position as an (x,y,z) triplet
          * ``dir``: The vehicle's direction vector as an (x,y,z) triplet
          * ``up``: The vehicle's up vector as an (x,y,z) triplet
          * ``vel``: The vehicle's velocity along each axis in metres per
                     second as an (x,y,z) triplet
-
         Note that the `state` variable represents a *snapshot* of the last
         state. It has to be updated through :meth:`.Vehicle.update_vehicle`,
         which is made to retrieve the current state. Alternatively, for
@@ -153,7 +148,6 @@ class Vehicle:
         """
         Reads a message from the corresponding vehicle's socket and returns it
         as a dictionary.
-
         Returns:
             The message received as a dictionary.
         """
@@ -167,7 +161,6 @@ class Vehicle:
         """
         Establishes socket communication with the corresponding vehicle in the
         simulation and calls the connect-hooks on the vehicle's sensors.
-
         Args:
             tries (int): The maximum amount of connection attempts made before
                          giving up.
@@ -223,7 +216,6 @@ class Vehicle:
         Enters a sensor into this vehicle's map of known sensors and calls the
         attach-hook of said sensor. The sensor is identified using the given
         name, which has to be unique among the other sensors of the vehicle.
-
         Args:
             name (str): The name of the sensor.
             sensor (:class:`beamngpy.Sensor`): The sensor to attach to the
@@ -239,7 +231,6 @@ class Vehicle:
         """
         Detaches a sensor from the vehicle's map of known sensors and calls the
         detach-hook of said sensor.
-
         Args:
             name (str): The name of the sensor to disconnect.
         """
@@ -252,7 +243,6 @@ class Vehicle:
         """
         Encodes engine and vehicle requests for this vehicle's sensors and
         returns them as a tuple of (engine requests, vehicle requests).
-
         Returns:
             A tuple of two lists: the engine requests and the vehicle requests
             to send to the simulation.
@@ -279,12 +269,10 @@ class Vehicle:
         they have a corresponding sensor to handle the data in this vehicle.
         The given map of sensor data is expected to have an entries that match
         up with sensor names in this vehicle.
-
         Args:
             sensor_data (dict): The sensor data to decode as a dictionary,
                                 identifying which sensor to decode data with by
                                 the name it is known under in this vehicle.
-
         Returns:
             The decoded data as a dictionary with entries for each sensor name
             and corresponding decoded data.
@@ -320,16 +308,13 @@ class Vehicle:
     def poll_sensors(self, requests=None):
         """
         Updates the vehicle's sensor readings.
-
         Args:
             requests (None): This function parameter is not used and will be
                              removed in future versions.
-
         Raises:
             DeprecationWarning: If requests parameter is used.
             DeprecationWarning: Always, since the return type will change in
                                 the future.
-
         Returns:
             Dict with sensor data to support compatibility with
             previous versions.
@@ -390,7 +375,6 @@ class Vehicle:
         """
         Sets the shifting mode of the vehicle. This changes whether or not and
         how the vehicle shifts gears depending on the RPM. Available modes are:
-
          * ``realistic_manual``: Gears have to be shifted manually by the
                                  user, including engaging the clutch.
          * ``realistic_manual_auto_clutch``: Gears have to be shifted manually
@@ -403,11 +387,9 @@ class Vehicle:
          * ``realistic_automatic``: Gears shift up automatically, but reverse
                                     and parking need to be shifted to
                                     manually.
-
         Args:
             mode (str): The mode to set. Must be a string from the options
                         listed above.
-
         Raises:
             BNGValueError: If an invalid mode is given.
         """
@@ -425,14 +407,12 @@ class Vehicle:
         """
         Sends a control message to the vehicle, setting vehicle inputs
         accordingly. Possible values to set are:
-
          * ``steering``: Rotation of the steering wheel, from -1.0 to 1.0.
          * ``throttle``: Intensity of the throttle, from 0.0 to 1.0.
          * ``brake``: Intensity of the brake, from 0.0 to 1.0.
          * ``parkingbrake``: Intensity of the parkingbrake, from 0.0 to 1.0.
          * ``clutch``: Clutch level, from 0.0 to 1.0.
          * ``gear``: Gear to shift to, -1 eq backwards, 0 eq neutral, 1 to X eq nth gear
-
         Args:
             **kwargs (dict): The input values to set.
         """
@@ -444,7 +424,6 @@ class Vehicle:
         """
         Sets the desired mode of the simulator's built-in AI for this vehicle.
         Possible values are:
-
          * ``disabled``: Turn the AI off (default state)
          * ``random``: Drive from random points to random points on the map
          * ``span``: Drive along the entire road network of the map
@@ -454,11 +433,9 @@ class Vehicle:
          * ``stopping``: Make the vehicle come to a halt (AI disables itself
                                                             once the vehicle
                                                             stopped.)
-
         Note:
             Some AI methods automatically set appropriate modes, meaning a call
             to this method might be optional.
-
         Args:
             mode (str): The AI mode to set.
         """
@@ -471,11 +448,9 @@ class Vehicle:
         """
         Sets the target speed for the AI in m/s. Speed can be maintained in two
         modes:
-
          * ``limit``: Drive speeds between 0 and the limit, as the AI
                         sees fit.
          * ``set``: Try to maintain the given speed at all times.
-
         Args:
             speed (float): The target speed in m/s.
             mode (str): The speed mode.
@@ -491,7 +466,6 @@ class Vehicle:
         Sets the target to chase or flee. The target should be the ID of
         another vehicle in the simulation. The AI is automatically set to the
         given mode.
-
         Args:
             target (str): ID of the target vehicle as a string.
             mode(str): How the target should be treated. `chase` to chase the
@@ -507,7 +481,6 @@ class Vehicle:
         """
         Sets the waypoint the AI should drive to in manual mode. The AI gets
         automatically set to manual mode when this method is called.
-
         Args:
             waypoint (str): ID of the target waypoint as a string.
         """
@@ -521,7 +494,6 @@ class Vehicle:
         """
         Sets the drive in lane flag of the AI. If True, the AI only drives
         within the lane it can legally drive in.
-
         Args:
             lane (bool): Lane flag to set.
         """
@@ -540,7 +512,6 @@ class Vehicle:
         of dictionaries where each dictionary has a `pos` entry specifying the
         supposed position as an (x, y, z) triplet and a `speed` entry
         specifying the speed in m/s.
-
         Args:
             line (list): Polyline as list of dicts as described above.
             cling (bool): Whether or not to align the z coordinate of
@@ -558,7 +529,6 @@ class Vehicle:
         timestamped positions defining where a vehicle should be at what time.
         This can be used to make the vehicle drive a long a polyline with speed
         implicitly expressed in the time between points.
-
         Args:
             script (list): A list of nodes in the script. Each node is expected
                            to be a dict-like that has `x`, `y`, and `z`
@@ -572,7 +542,6 @@ class Vehicle:
                           cumbersome, this flag is used to automatically set
                           z-coordinates in the script to the ground height.
                           Defaults to True.
-
         Notes:
             The AI follows the given script the best it can. It cannot drive
             along scripts that would be physically impossible, e.g. specifying
@@ -582,7 +551,6 @@ class Vehicle:
             Furthermore, if the AI falls behind schedule, it will start
             skipping points in the script in an effort to make up for
             lost time.
-
         Raises:
             BNGValueError: If the script has fewer than three nodes, the
                            minimum length of a script.
@@ -612,7 +580,6 @@ class Vehicle:
     def queue_lua_command(self, chunk):
         """
         Executes lua chunk in the vehicle engine VM.
-
         Args:
             chunk(str): lua chunk as a string
         """
@@ -624,7 +591,6 @@ class Vehicle:
         """
         Retrieves a mapping of part slots in this vehicle and their possible
         parts.
-
         Returns:
             A mapping of part configuration options for this vehicle.
         """
@@ -636,7 +602,6 @@ class Vehicle:
         configuration contains both the current values of adjustable vehicle
         parameters and a mapping of part types to their currently-selected
         part.
-
         Returns:
             The current vehicle configuration as a dictionary.
         """
@@ -647,10 +612,8 @@ class Vehicle:
         Sets the current part configuration of this vehicle. The configuration
         is given as a dictionary containing both adjustable vehicle parameters
         and a mapping of part types to their selected parts.
-
         Args:
             cfg (dict): The new vehicle configuration as a dictionary.
-
         Notes:
             Changing parts causes the vehicle to respawn, which repairs it as
             a side-effect.
@@ -662,7 +625,6 @@ class Vehicle:
         """
         Sets the color of this vehicle. Colour can be adjusted on the RGB
         spectrum and the "shininess" of the paint.
-
         Args:
             rgba (tuple): The new colour given as a tuple of RGBA floats, where
                           the alpha channel encodes the shininess of the paint.
@@ -679,11 +641,9 @@ class Vehicle:
         """
         Sets the velocity of this vehicle. The velocity is not achieved instantly,
         it is acquired gradually over the time interval set by the `dt` argument.
-
         As the method of setting velocity uses physical forces, at high velocities
         it is important to set `dt` to an appropriately high value. The default
         `dt` value of 1.0 is suitable for velocities up to 30 m/s.
-
         Args:
             velocity (float): The target velocity in m/s.
             dt (float): The time interval over which the vehicle reaches the
@@ -700,13 +660,11 @@ class Vehicle:
         """
         Returns this vehicle's current bounding box as a dictionary containing
         eight points.
-
         Returns:
             The vehicle's current bounding box as a dictionary of eight points.
             Points are named following the convention that the cuboid has a
             "near" rectangle towards the rear of the vehicle and "far"
             rectangle towards the front. The points are then named like this:
-
             * `front_bottom_left`: Bottom left point of the front rectangle as
                                    an (x, y ,z) triplet
             * `front_bottom_right`: Bottom right point of the front rectangle
@@ -741,7 +699,6 @@ class Vehicle:
         the vehicle's nodes in the vehicle editor ingame and retrieve the
         original relative positions of nodes close to the desired measurement
         point.
-
         Args:
             name (str): The name this IMU is identified by. This is mainly
                         used to later remove an IMU.
@@ -761,7 +718,6 @@ class Vehicle:
         Adds an IMU to this vehicle at the given node identified by the given
         name. The node is specified as a number and can be found by inspecting
         the vehicle using the ingame vehicle editor.
-
         Args:
             name (str): The name this IMU is identified by. This is mainly
                         used to later remove an IMU.
@@ -779,10 +735,8 @@ class Vehicle:
     def remove_imu(self, name):
         """
         Removes the IMU identified by the given name.
-
         Args:
             name (str): The name of the IMU to be removed.
-
         Raises:
             BNGValueError: If there is no IMU with the specified name.
         """
@@ -796,19 +750,15 @@ class Vehicle:
         Sets the vehicle's lights to given intensity values. The lighting
         system features lights that are simply binary on/off, but also ones
         where the intensity can be varied. Binary lights include:
-
             * `left_signal`
             * `right_signal`
             * `hazard_signal`
-
         Non-binary lights vary between 0 for off, 1 for on, 2 for higher
         intensity. For example, headlights can be turned on with 1 and set to
         be more intense with 2. Non-binary lights include:
-
             * `headlights`
             * `fog_lights`
             * `lightbar`
-
         Args:
             left_signal (bool): On/off state of the left signal
             right_signal (bool): On/off state of the right signal
@@ -816,22 +766,18 @@ class Vehicle:
             headlights (int): Value from 0 to 2 indicating headlight intensity
             fog_lights (int): Value from 0 to 2 indicating fog light intensity
             lightbar (int): Value from 0 to 2 indicating lightbar intensity
-
         Note:
             Not every vehicle has every type of light. For example, the
             `lightbar` refers to the kind of lights typically found on top of
             police cars. Setting values for non-existent lights will not cause
             an error, but also achieve no effect.
-
             Note also that lights are not independent. For example, turning on
             the hazard lights will make both signal indicators blink, meaning
             they will be turned on as well. Opposing indicators also turn each
             other off, i.e. turning on the left signal turns off the right one,
             and turning on the left signal during
-
         Raises:
             BNGValueError: If an invalid light value is given.
-
         Returns:
             Nothing. To query light states, attach an
             :class:`.sensors.Electrics` sensor and poll it.
@@ -926,7 +872,6 @@ class Vehicle:
         in the given file/json. The file is expected to be in
         the following location:
         <userpath>/<version_number>/<fileName>
-
         Args:
             fileName
         """
@@ -943,7 +888,6 @@ class Vehicle:
         Depending on the executable used the file can be found at the following
         location:
         <userpath>/<BeamNG version number>/<fileName>
-
         Args:
             fileName(str): not the absolute file path but
                            the name of the json
@@ -957,14 +901,12 @@ class Vehicle:
         Starts in game logging. Beware that any data
         from previous logging sessions is overwritten
         in the process.
-
         Args:
             outputDir(str): to avoid overwriting logging from other vehicles,
                             specify the output directory, overwrites the
                             outputDir set through the json. The data can be
                             found in:
                             <userpath>/<BeamNG version number>/<outpuDir>
-
         """
         data = dict(type='StartVSLLogging', outputDir=outputDir)
         self.send(data)

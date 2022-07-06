@@ -16,7 +16,6 @@ import signal
 import socket
 import subprocess
 
-
 from pathlib import Path
 from time import sleep
 import logging
@@ -89,7 +88,7 @@ class BeamNGpy:
                 return infile.read().strip()
         return None
 
-    def __init__(self, host, port, home=None, user=None, remote=False):
+    def __init__(self, host, port, home="C:/game", user=None, remote=False):
         """
         Instantiates a BeamNGpy instance connecting to the simulator on the
         given host and port. The home directory of the simulator can be passed
@@ -126,6 +125,7 @@ class BeamNGpy:
                                     'points to where your copy of BeamNG.* is.')
 
             self.home = Path(self.home).resolve()
+
             self.binary = self.determine_binary()
 
             if user:
@@ -674,115 +674,169 @@ class BeamNGpy:
         self.logger.info(f'Closed shared memory with id <{name}>')
         self.send(data)
 
-    @ack('OpenedLidar')
-    def open_lidar(self, name, vehicle, 
-                    useSharedMemory=False, shmem='', shmemSize=0, 
-                    pos=(0, 0, 1.7), dir=(0, -1, 0), 
-                    vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120, 
-                    isVisualised=True, isAnnotated=False,
-                    isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
-        """
-        Opens a Lidar sensor instance in the simulator with the given
-        parameters writing its data to the given shared memory space. The Lidar
-        instance has to be assigned a unique name that is later used for
-        closing.
+    @ack('OpenedAutoCamera')
+    def open_auto_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view, near_far_planes, pos, dir, is_using_shared_memory, 
+        colour_shmem_handle, colour_shmem_size, annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size, is_render_colours, 
+        is_render_annotations, is_render_instance, is_render_depth, is_static, is_snapping_desired, is_force_inside_triangle):
 
-        Args:
-            name (str): The name of the LiDAR instance to open. Must be unique (relative to other LiDARS currently opened).
-            vehicle (:class:`.Vehicle`): The vehicle this Lidar is attached to.
-            shmem (str): The handle of the shared memory space used to exchange data, if required.
-            shmemSize (int): Size of the shared memory space that has been allocated for exchange.
-            pos (tuple): (X, Y, Z) the sensor position in vehicle space.
-            dir (tuple): (X, Y, Z) the sensor direction.
-            vres (int): Vertical resolution, i.e. how many lines are sampled vertically.
-            vAngle (float): The vertical LiDAR sensor angle, in degrees.
-            rps (int): The rays per second emmited by the LiDAR sensor.
-            hz (int): The refresh rate of the LiDAR sensor, in Hz.
-            hAngle (float): The horizontal degrees covered, i.e. 360 degrees covers the entire surroundings of the vehicle.
-            maxDist (float): Maximum distance of points. Any dot farther away will not show up in the sample.
-            isVisualised (bool): Whether or not to render the LiDAR sensor points in the simulator.
-            isAnnotated (bool): Whether or not to use LiDAR annotations in the visualisation.
-            isStatic (bool): Whether or not the LiDAR sensor should be static (fixed position) or attached to a vehicle.
-            isSnappingDesired (bool): Whether or not to snap the LiDAR sensor to the nearest vehicle triangle.
-            isForceInsideTriangle (bool): Whether or not to force the LiDAR sensor to be inside the nearest vehicle triangle.
         """
-        data = dict(type='OpenLidar')
-        data['useSharedMemory'] = useSharedMemory
+        Opens a camera sensor instance in the simulator with the given parameters, either writing its data to the given shared memory space (if requested),
+        or sending it through the socket directly. For argument details, see the sensor class.
+        """
+
+        data = dict(type='OpenAutoCamera')
         data['name'] = name
-        data['shmem'] = shmem
-        data['size'] = shmemSize
         data['vid'] = vehicle.vid
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
+        data['size'] = size
+        data['fov'] = field_of_view
+        data['nearFarPlanes'] = near_far_planes
         data['pos'] = pos
         data['dir'] = dir
-        data['vRes'] = vres
-        data['vAngle'] = vAngle
-        data['rps'] = rps
-        data['hz'] = hz
-        data['hAngle'] = hAngle
-        data['maxDist'] = maxDist
-        data['isVisualised'] = isVisualised
-        data['isAnnotated'] = isAnnotated
-        data['isStatic'] = isStatic
-        data['isSnappingDesired'] = isSnappingDesired
-        data['isForceInsideTriangle'] = isForceInsideTriangle
+        data['useSharedMemory'] = is_using_shared_memory
+        data['colourShmemName'] = colour_shmem_handle
+        data['colourShmemSize'] = colour_shmem_size
+        data['annotationShmemName'] = annotation_shmem_handle
+        data['annotationShmemSize'] = annotation_shmem_size
+        data['depthShmemName'] = depth_shmem_handle
+        data['depthShmemSize'] = depth_shmem_size
+        data['renderColours'] = is_render_colours
+        data['renderAnnotations'] = is_render_annotations
+        data['renderInstance'] = is_render_instance
+        data['renderDepth'] = is_render_depth
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
+        self.send(data)
+        self.logger.info(f'Opened Auto Camera: "{name}')
+
+    @ack('ClosedAutoCamera')
+    def close_auto_camera(self, name):
+
+        """
+        Closes the Auto Camera instance of the given name in the simulator.
+
+        Args:
+            name (str): The name of the Auto Camera instance to close.
+        """
+
+        data = dict(type='CloseAutoCamera')
+        data['name'] = name
+        self.send(data)
+        self.logger.info(f'Closed Auto Camera: "{name}"')
+
+    @ack('PolledAutoCamera')
+    def poll_auto_camera(self, name, is_using_shared_memory):
+
+        """
+        Polls the Auto Camera for the latest readings.
+
+        Args:
+            name (str): The name of the Camera sensor.
+            is_using_shared_memory (bool): A flag which indicates if this sensor is using shared memory, or not.
+        """
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollAutoCamera')
+        data['name'] = name
+        data['isUsingSharedMemory'] = is_using_shared_memory
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('OpenedLidar')
+    def open_lidar(self, name, vehicle, is_using_shared_memory, shmem_handle, shmem_size, requested_update_time, update_priority, pos, dir, 
+        vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance, is_visualised, is_annotated, is_static, 
+        is_snapping_desired, is_force_inside_triangle):
+
+        """
+        Opens a LiDAR sensor instance in the simulator with the given parameters, either writing its data to the given shared memory space (if requested),
+        or sending it directly over the socket. For argument details, see the sensor class.
+        """
+
+        data = dict(type='OpenLidar')
+        data['useSharedMemory'] = is_using_shared_memory
+        data['name'] = name
+        data['shmem'] = shmem_handle
+        data['size'] = shmem_size
+        data['vid'] = vehicle.vid
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
+        data['pos'] = pos
+        data['dir'] = dir
+        data['vRes'] = vertical_resolution
+        data['vAngle'] = vertical_angle
+        data['rps'] = rays_per_second
+        data['hz'] = frequency
+        data['hAngle'] = horizontal_angle
+        data['maxDist'] = max_distance
+        data['isVisualised'] = is_visualised
+        data['isAnnotated'] = is_annotated
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
         self.send(data)
         self.logger.info(f'Opened lidar: "{name}')
 
     @ack('ClosedLidar')
     def close_lidar(self, name):
+
         """
         Closes the Lidar instance of the given name in the simulator.
 
         Args:
             name (str): The name of the Lidar instance to close.
         """
+
         data = dict(type='CloseLidar')
         data['name'] = name
         self.send(data)
         self.logger.info(f'Closed lidar: "{name}"')
 
-    @ack('OpenedUltrasonic')
-    def open_ultrasonic(self, name, vehicle, pos=(0.0, -1.0, 0.0), dir=(0.0, 1.0, 0.0),
-                        size=(200, 200), fov=0.3, near_far_planes=(0.05, 10.0), 
-                        range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3, 
-                        range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=10.6, 
-                        sensitivity=3.0, fixed_window_size=10.0,
-                        isVisualised=True,
-                        isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
+    @ack('PolledLidar')
+    def poll_lidar(self, name, is_using_shared_memory):
+
         """
-        Opens an ultrasonic sensor instance in the simulator with the given parameters. 
-        The ultrasonic instance has to be assigned a unique name that is later used for
-        closing.
+        Polls the LiDAR sensor for the latest readings.
 
         Args:
-            name (str): The name of the ultrasonic sensor instance to open. Has to be unique relative to other ultrasonic sensors currently opened.
-            vehicle (:class:`.Vehicle`): The vehicle this ultrasonic sensor is attached to.
-            pos (tuple): (X, Y, Z) coordinate triplet specifying the position of the sensor, in world space.
-            dir (tuple): (X, Y, Z) coordinate triplet specifying the direction of the ultrasonic sensor.
-            size (tuple): (X, Y) the resolution of the ultrasonic sensor.
-            fov (float): (X, Y) the ultrasonic sensor field of view parameters.
-            near_far_planes (tuple): (X, Y) the ultrasonic sensor near and far plane distances.
-            range_roundness (float): the general roudness of the ultrasonic sensor range-shape. Can be negative.
-            range_cutoff_sensitivity (float): a cutoff sensitivity parameter for the ultrasonic sensor range-shape.
-            range_shape (float): the shape of the ultrasonic sensor range-shape in [0, 1], from conical to circular.
-            range_focus (float): the focus parameter for the ultrasonic sensor range-shape.
-            range_min_cutoff (float): the minimum cut-off distance for the ultrasonic sensor range-shape. Nothing closer than this will be detected.
-            range_direct_max_cutoff (float): the maximum cut-off distance for the ultrasonic sensor range-shape. 
-                This parameter is a hard cutoff - nothing further than this will be detected, although other parameters can also control the max distance.
-            sensitivity (float): an ultrasonic sensor sensitivity parameter.
-            fixed_window_size (float): an ultrasonic sensor sensitivity parameter.
-            isVisualised (bool): Whether or not to render the ultrasonic sensor points in the simulator.
-            isStatic (bool): Whether or not the ultrasonic sensor should be static (fixed position) or attached to a vehicle.
-            isSnappingDesired (bool): Whether or not to snap the ultrasonic sensor to the nearest vehicle triangle.
-            isForceInsideTriangle (bool): Whether or not to force the ultrasonic sensor to be inside the nearest vehicle triangle.
+            name (str): The name of the LiDAR sensor.
+            is_using_shared_memory (bool): A flag which indicates if this sensor is using shared memory, or not.
         """
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollLidar')
+        data['name'] = name
+        data['isUsingSharedMemory'] = is_using_shared_memory
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('OpenedUltrasonic')
+    def open_ultrasonic(self, name, vehicle, requested_update_time, update_priority, pos, dir, size, field_of_view, near_far_planes, range_roundness, 
+        range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff, range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised,
+        is_static, is_snapping_desired, is_force_inside_triangle):
+
+        """
+        Opens an ultrasonic sensor in the simulator with the given parameters. For argument details, see the sensor class.
+        """
+
         data = dict(type='OpenUltrasonic')
         data['name'] = name
         data['vid'] = vehicle.vid
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
         data['pos'] = pos
         data['dir'] = dir
         data['size'] = size
-        data['fov'] = fov
+        data['fov'] = field_of_view
         data['near_far_planes'] = near_far_planes
         data['range_roundness'] = range_roundness
         data['range_cutoff_sensitivity'] = range_cutoff_sensitivity
@@ -792,26 +846,48 @@ class BeamNGpy:
         data['range_direct_max_cutoff'] = range_direct_max_cutoff
         data['sensitivity'] = sensitivity
         data['fixed_window_size'] = fixed_window_size
-        data['isVisualised'] = isVisualised
-        data['isStatic'] = isStatic
-        data['isSnappingDesired'] = isSnappingDesired
-        data['isForceInsideTriangle'] = isForceInsideTriangle
+        data['isVisualised'] = is_visualised
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
 
         self.send(data)
         self.logger.info(f'Opened ultrasonic sensor: "{name}')
 
     @ack('ClosedUltrasonic')
     def close_ultrasonic(self, name):
+
         """
         Closes the ultrasonic sensor instance of the given name in the simulator.
 
         Args:
             name (str): The name of the ultrasonic sensor instance to close.
         """
+
         data = dict(type='CloseUltrasonic')
         data['name'] = name
         self.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{name}"')
+
+    @ack('PolledUltrasonic')
+    def poll_ultrasonic(self, name):
+
+        """
+        Polls the ultrasonic sensor for the latest readings.
+
+        Args:
+            name (str): The name of the ultrasonic sensor.
+        """
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollUltrasonic')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
 
     def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None, reset=True):
         """
