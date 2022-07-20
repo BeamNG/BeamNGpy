@@ -2147,6 +2147,19 @@ class BeamNGpy:
         assert resp['type'] == 'PlayerCameraMode'
         return resp['cameraData']
 
+    @ack('TrackBuilderTrackLoaded')
+    def load_trackbuilder_track(self, path):
+        """
+        Spawns a TrackBuilder track provided by the given path to a TrackBuilder
+        ``.json`` file.
+
+        Args:
+            path (str): Path to a ``.json`` file created by TrackBuilder.
+        """
+        data = dict(type='LoadTrackBuilderTrack')
+        data['path'] = path
+        self.send(data)
+
     def __enter__(self):
         self.open()
         return self
