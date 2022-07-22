@@ -525,10 +525,11 @@ class Scenario:
         for vehicle in self.vehicles:
             vehicles_dict[vehicle.vid] = {'playerUsable': True}
 
-        if self._focus_vehicle is None:
-            self._focus_vehicle = next(iter(self.vehicles)).vid
+        if self.vehicles:
+            if self._focus_vehicle is None:
+                self._focus_vehicle = next(iter(self.vehicles)).vid
 
-        vehicles_dict[self._focus_vehicle]['startFocus'] = True
+            vehicles_dict[self._focus_vehicle]['startFocus'] = True
 
         info['vehicles'] = vehicles_dict
         info['prefabs'] = ['levels/{}/scenarios/{}.prefab'.format(self.level,
