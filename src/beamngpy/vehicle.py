@@ -981,3 +981,25 @@ class Vehicle:
         data = dict(type='StopVSLLogging')
         self.send(data)
         self.logger.info('Stopped in game logging.')
+
+    def teleport(self, pos, rot=None, rot_quat=None, reset=True):
+        """
+        Teleports the vehicle to the given position with the given
+        rotation.
+
+        Args:
+            pos (tuple): The target position as an (x,y,z) tuple containing
+                         world-space coordinates.
+            rot (tuple): Optional tuple specifying rotations around the (x,y,z)
+                         axes in degrees. Deprecated.
+            rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
+                              rotation as quaternion
+            reset (bool): Specifies if the vehicle will be reset to its initial
+                          state during teleport (including its velocity). 
+
+        Notes:
+            The ``reset=False`` option is incompatible with setting rotation of
+            the vehicle. With the current implementation, it is not possible to
+            set the rotation of the vehicle and to keep its velocity during teleport.
+        """
+        return self.bng.teleport_vehicle(self.vid, pos, rot, rot_quat, reset)
