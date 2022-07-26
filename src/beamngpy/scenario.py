@@ -822,10 +822,17 @@ class Scenario:
         """
         self._fill_scene()
 
-    def connect(self, bng):
+    def connect(self, bng, connect_existing=True):
         """
         Connects this scenario to the simulator, hooking up any cameras to
         their counterpart in the simulator.
+
+        Args:
+            bng (:class:`.BeamNGpy`): The BeamNGpy instance to generate the
+                                      scenario for.
+            connect_existing (bool): Whether vehicles spawned already
+                                     in the scenario should be connected to
+                                     this (:class:``.Scenario``) instance.
         """
         self.bng = bng
 
@@ -837,6 +844,16 @@ class Scenario:
         for _, cam in self.cameras.items():
             cam.connect(self.bng, None)
 
+        if connect_existing:
+            current_vehicles = set(bng.get_current_vehicles().values())
+            self.logger.debug(
+                f'Got {len(current_vehicles)} vehicles from scenario.')
+
+            for vehicle in self.vehicles:
+                current_vehicles.discard(vehicle)
+                current_vehicles.add(vehicle)
+
+            self.vehicles = current_vehicles
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles:
             vehicle.connect(bng)
