@@ -37,7 +37,7 @@ class Scenario:
 
     game_classes = {
         'MissionGroup': lambda d: SceneObject(d),
-        'DecalRoad': lambda d: __import__(".road").DecalRoad(d),
+        'DecalRoad': lambda d: __import__("beamngpy").DecalRoad(d),
     }
 
     @staticmethod
@@ -264,7 +264,7 @@ class Scenario:
                     rot=None, rot_quat=(0, 0, 0, 1), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
-        orientation. This method has to be called before a scenario is started.
+        orientation.
 
         Args:
             pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
@@ -308,7 +308,7 @@ class Scenario:
         if vehicle in self.vehicles:
             if self.bng:
                 self.bng.despawn_vehicle(vehicle)
-                self.transient_vehicles.remove(vehicle)
+                self.transient_vehicles.discard(vehicle)
             else:
                 self.logger.debug('No beamngpy instance available, cannot '
                                   f'despawn vehicle with id \'{vehicle.vid}\'')
@@ -470,8 +470,10 @@ class Scenario:
             current_vehicles = set(bng.get_current_vehicles().values())
             self.logger.debug(
                 f'Got {len(current_vehicles)} vehicles from scenario.')
+            self.transient_vehicles = current_vehicles.copy()
 
             for vehicle in self.vehicles:
+                self.transient_vehicles.discard(vehicle)
                 current_vehicles.discard(vehicle)
                 current_vehicles.add(vehicle)
 
@@ -613,7 +615,7 @@ class Scenario:
             vehicle = self.transient_vehicles.pop()
             if vehicle in self.vehicles:
                 self.bng.despawn_vehicle(vehicle)
-                del self.vehicles[vehicle]
+                self.vehicles.discard(vehicle)
         self.logger.info(f'Restarted scenario: "{self.name}"')
 
     def close(self):
