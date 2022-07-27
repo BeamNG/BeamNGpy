@@ -24,7 +24,7 @@ def test_quats(beamng):
         blue_etk = Vehicle('ego_vehicle2',
                       model='etk800',
                       color='Green',
-                      license="quat")
+                      licence="quat")
         rot_quat = (-0.00333699025, -0.00218820246, -0.689169466, 0.724589229)
         scenario.add_vehicle(blue_etk, pos=(5, 0, 0), rot_quat=rot_quat)
 

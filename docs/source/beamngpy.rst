@@ -36,6 +36,22 @@ beamngpy.noise module
    :undoc-members:
    :show-inheritance:
 
+beamngpy.procedural module
+--------------------------
+
+.. automodule:: beamngpy.procedural
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+beamngpy.road module
+--------------------
+
+.. automodule:: beamngpy.road
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 beamngpy.scenario module
 ------------------------
 

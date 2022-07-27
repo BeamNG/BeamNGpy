@@ -38,7 +38,6 @@ class Scenario:
     game_classes = {
         'MissionGroup': lambda d: SceneObject(d),
         'DecalRoad': lambda d: __import__(".road").DecalRoad(d),
-        'MeshRoad': lambda d: __import__(".road").MeshRoad(d)
     }
 
     @staticmethod
