@@ -587,6 +587,11 @@ class BeamNGpy:
         Args:
             scenario (:class:`.Scenario`): The scenario to load.
         """
+        # clean up the vehicle connections if the `scenario` object is reused multiple times
+        for vehicle in scenario.vehicles:
+            if vehicle.skt:
+                vehicle.disconnect()
+
         data = {'type': 'LoadScenario', 'path': scenario.path}
         self.send(data)
         resp = self.recv()
@@ -853,13 +858,19 @@ class BeamNGpy:
         self.send(data)
 
     @ack('ScenarioStarted')
-    def start_scenario(self):
+    def start_scenario(self, restrict_actions=False):
         """
         Starts the scenario; equivalent to clicking the "Start" button in the
         game after loading a scenario. This method blocks until the countdown
         to the scenario's start has finished.
+
+        Args:
+            restrict_actions (bool): Whether to keep scenario restrictions,
+                                     such as limited menu options and controls.
+                                     Defaults to False.
         """
         data = dict(type="StartScenario")
+        data['restrict_actions'] = restrict_actions
         self.send(data)
         self.logger.info("Starting scenario.")
 
