@@ -271,8 +271,12 @@ class Scenario:
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
-                ' Scenario={}, Vehicle={}'.format(self.name, vehicle.vid)
+                    f' Scenario={self.name}, Vehicle={vehicle.vid}'
             raise BNGValueError(error)
+
+        if vehicle in self.vehicles:
+            error = f'The vehicle \'{vehicle.vid}\' is already in the scenario.'
+            raise BNGError(error)
 
         self.vehicles.add(vehicle)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
