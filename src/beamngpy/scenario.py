@@ -11,14 +11,13 @@
 """
 
 import copy
-from logging import DEBUG
-from logging import getLogger
+from logging import DEBUG, getLogger
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
 from .beamng import Level
-from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError, angle_to_quat,
+from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError,
                            create_warning, quat_as_rotation_mat_str)
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
@@ -260,16 +259,13 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle, pos=(0, 0, 0),
-                    rot=None, rot_quat=(0, 0, 0, 1), cling=True):
+    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation.
 
         Args:
             pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
-            rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
-                         in Euler angles around each axis. Deprecated.
             rot_quat (tuple, optional): (x, y, z, w) tuple specifying
                                         the rotation as quaternion
         """
@@ -278,19 +274,13 @@ class Scenario:
                 ' Scenario={}, Vehicle={}'.format(self.name, vehicle.vid)
             raise BNGValueError(error)
 
-        if rot:
-            create_warning('the usage of `rot` in `Scenario.add_vehicle` '
-                           'is deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            rot_quat = angle_to_quat(rot)
         self.vehicles.add(vehicle)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
         self.logger.debug(f'Added vehicle with id \'{vehicle.vid}\'.')
 
         if self.bng:
-            self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat,
-                                   cling=cling)  # todo
+            self.bng.spawn_vehicle(
+                vehicle, pos, rot_quat=rot_quat, cling=cling)
             self.transient_vehicles.add(vehicle)
             vehicle.connect(self.bng)
         else:
@@ -769,32 +759,23 @@ class ScenarioObject:
             scale = d['scale']
             del d['scale']
 
-        return ScenarioObject(oid, name, otype, pos, rot_quat, scale, **d)
+        return ScenarioObject(oid, name, otype, pos, scale, rot_quat, **d)
 
-    def __init__(self, oid, name, otype, pos, rot, scale,
-                 rot_quat=None, **options):
+    def __init__(self, oid, name, otype, pos, scale, rot_quat=None, **options):
         """Creates a scenario object with the given parameters.
 
         Args:
             oid (string): name of the asset
             name (string): asset id
             otype (string): type of the object according to the BeamNG classification
-            pos (tupel): x, y, and z coordinates
-            rot (tupel): Euler angles defining the initial orientation.
-                         Deprecated.
-            scale (tupel): defining the scale along the x,y, and z axis.
-            rot_quat (tupel, optional): Quatertnion describing the initial orientation. Defaults to None.
+            pos (tuple): x, y, and z coordinates
+            scale (tuple): defining the scale along the x,y, and z axis.
+            rot_quat (tuple, optional): Quatertnion describing the initial orientation. Defaults to None.
         """
         self.id = oid
         self.name = name
         self.type = otype
         self.pos = pos
-        if rot:
-            create_warning('the usage of `rot` in class `ScenarioObject` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            rot_quat = angle_to_quat(rot)
         self.rot = rot_quat
         self.scale = scale
         self.opts = options

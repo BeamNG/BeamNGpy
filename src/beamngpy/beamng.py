@@ -10,27 +10,21 @@
 .. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
 
+import logging
 import os
 import platform
 import signal
 import socket
 import subprocess
-
-
 from pathlib import Path
 from time import sleep
-import logging
 
+from .beamngcommon import (ENV, LOGGER_ID, PROTOCOL_VERSION, BNGError,
+                           BNGValueError, ack, angle_to_quat, create_warning,
+                           recv_msg, send_msg)
 from .level import Level
 from .scenario import Scenario, ScenarioObject
 from .vehicle import Vehicle
-
-from .beamngcommon import send_msg, recv_msg
-from .beamngcommon import angle_to_quat
-from .beamngcommon import ack
-from .beamngcommon import BNGError, BNGValueError
-from .beamngcommon import PROTOCOL_VERSION, ENV
-from .beamngcommon import set_up_simple_logging, LOGGER_ID, create_warning
 
 BINARIES = [
     'Bin64/BeamNG.tech.x64.exe',
@@ -54,31 +48,13 @@ def log_exception(extype, value, trace):
                             exc_info=(extype, value, trace))
 
 
-def setup_logging(log_file=None, activateWarnings=True, level=logging.INFO):
-    """
-    Sets up the logging framework to log to the given log_file and to STDOUT.
-    If the path to the log_file does not exist, directories for it will be
-    created.
-
-    Args:
-        log_file (str): filename for log
-        activateWarnings (bool): whether to redirect warnings to the logger. Beware that this modifies the warnings settings. Optional.
-        level (int): log level of handler that is created for the log file, optional
-    """
-    set_up_simple_logging(log_file, activateWarnings, level)
-    warn_msg = str('The use of `beamng.setup_logging` is deprecated and will'
-                   ' be removed in future versions. '
-                   'Use `beamngcommon.set_up_simple_logging` or '
-                   '`beamngcommon.config_logging` instead.')
-    create_warning(warn_msg, DeprecationWarning)
-
-
 class BeamNGpy:
     """
     The BeamNGpy class is the backbone of communication with the BeamNG
     simulation and offers methods of starting, stopping, connecting to, and
     controlling the state of the simulator.
     """
+
     def __init__(self, host, port, home=None, user=None, remote=False):
         """
         Instantiates a BeamNGpy instance connecting to the simulator on the
@@ -97,7 +73,8 @@ class BeamNGpy:
                         used to set where custom files created during
                         executions will be placed if the home folder shall not
                         be touched.
-            remote (bool): Set to true when using the BeamNGpy library on a different system then BeamNG.tech
+            remote (bool): Set to true if using the BeamNGpy library on a
+                           different system than BeamNG.tech.
         """
         self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
         self.logger.setLevel(logging.DEBUG)
@@ -249,7 +226,8 @@ class BeamNGpy:
                 self.skt = None
 
         if self.remote:
-            self.logger.warn('cannot kill remote BeamNG.research process, aborting subroutine')
+            self.logger.warn(
+                'cannot kill remote BeamNG.research process, aborting subroutine')
             return
 
         if not self.process:
@@ -492,7 +470,7 @@ class BeamNGpy:
         """
         return recv_msg(self.skt)
 
-    def open(self, extensions=None, *args, launch=True, deploy=True, **opts):
+    def open(self, extensions=None, *args, launch=True, **opts):
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the
         spawned BeamNG.* process to connect. This method blocks until the
@@ -502,10 +480,6 @@ class BeamNGpy:
             launch (bool): Whether to launch a new process or connect to a
                            running one on the configured host/port. Defaults to
                            True.
-            deploy (bool): Whether to deploy the required Lua extensions as a
-                           mod zip to the configured userpath. If false, it is
-                           assumed that the Lua extensions are already
-                           installed. Deprecated.
         """
         self.logger.info('Opening BeamNGpy instance.')
         if launch:
@@ -513,7 +487,6 @@ class BeamNGpy:
             sleep(10)
 
         self.connect()
-
         return self
 
     def close(self):
@@ -644,12 +617,12 @@ class BeamNGpy:
         self.send(data)
 
     @ack('OpenedLidar')
-    def open_lidar(self, name, vehicle, 
-                    useSharedMemory=False, shmem='', shmemSize=0, 
-                    pos=(0, 0, 1.7), dir=(0, -1, 0), 
-                    vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120, 
-                    isVisualised=True, isAnnotated=False,
-                    isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
+    def open_lidar(self, name, vehicle,
+                   useSharedMemory=False, shmem='', shmemSize=0,
+                   pos=(0, 0, 1.7), dir=(0, -1, 0),
+                   vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120,
+                   isVisualised=True, isAnnotated=False,
+                   isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
         """
         Opens a Lidar sensor instance in the simulator with the given
         parameters writing its data to the given shared memory space. The Lidar
@@ -712,9 +685,9 @@ class BeamNGpy:
 
     @ack('OpenedUltrasonic')
     def open_ultrasonic(self, name, vehicle, pos=(0.0, -1.0, 0.0), dir=(0.0, 1.0, 0.0),
-                        size=(200, 200), fov=0.3, near_far_planes=(0.05, 10.0), 
-                        range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3, 
-                        range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=10.6, 
+                        size=(200, 200), fov=0.3, near_far_planes=(0.05, 10.0),
+                        range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3,
+                        range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=10.6,
                         sensitivity=3.0, fixed_window_size=10.0,
                         isVisualised=True,
                         isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
@@ -782,7 +755,7 @@ class BeamNGpy:
         self.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{name}"')
 
-    def teleport_vehicle(self, vehicle_id, pos, rot=None, rot_quat=None, reset=True):
+    def teleport_vehicle(self, vehicle_id, pos, rot_quat=None, reset=True):
         """
         Teleports the given vehicle to the given position with the given
         rotation.
@@ -791,8 +764,6 @@ class BeamNGpy:
             vehicle_id (string): The id/name of the vehicle to teleport.
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
-            rot (tuple): Optional tuple specifying rotations around the (x,y,z)
-                         axes in degrees. Deprecated.
             rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
                               rotation as quaternion
             reset (bool): Specifies if the vehicle will be reset to its initial
@@ -810,15 +781,9 @@ class BeamNGpy:
         data['reset'] = reset
         if rot_quat:
             data['rot'] = rot_quat
-        elif rot:
-            create_warning('the usage of `rot` in `beamng.teleport_vehicle` '
-                           'is deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            data['rot'] = angle_to_quat(rot)
-        if not reset and (rot_quat or rot):
+        if not reset and rot_quat:
             create_warning('the usage of `reset=False` is incompatible with '
-                           'the usage of `rot` in `beamng.teleport_vehicle`; '
+                           'the usage of `rot_quat` in `beamng.teleport_vehicle`; '
                            'rotation will not be applied to the vehicle',
                            RuntimeWarning)
         self.send(data)
@@ -827,8 +792,7 @@ class BeamNGpy:
         return response['success']
 
     @ack('ScenarioObjectTeleported')
-    def teleport_scenario_object(self, scenario_object, pos,
-                                 rot=None, rot_quat=None):
+    def teleport_scenario_object(self, scenario_object, pos, rot_quat=None):
         """
         Teleports the given scenario object to the given position with the
         given rotation.
@@ -838,8 +802,6 @@ class BeamNGpy:
                                                         teleport.
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
-            rot (tuple): Optional tuple specifying rotations around the (x,y,z)
-                         axes in degrees. Deprecated.
             rot_quat (tuple): Optional tuple specifying object rotation as a
                               quaternion
         """
@@ -848,13 +810,6 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        elif rot:
-            create_warning('the usage of `rot` in '
-                           '`beamng.teleport_scenario_object` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            data['rot'] = angle_to_quat(rot)
         self.send(data)
 
     @ack('ScenarioStarted')
@@ -994,35 +949,6 @@ class BeamNGpy:
         data = dict(type='Resume')
         self.send(data)
         self.logger.info('Resuming the simulation.')
-
-    def poll_sensors(self, vehicle):
-        """
-        This member function is deprecated and will be removed in future
-        versions. Use 'Vehicle.poll_sensors' instead.
-
-        Retrieves sensor values for the sensors attached to the given vehicle.
-        This method correctly splits requests meant for the game engine and
-        requests meant for the vehicle, sending them to their supposed
-        destinations and waiting for results from them. Results from either are
-        merged into one dictionary for ease of use. The received data is
-        decoded by each sensor and returned, but also stored in the vehicle's
-        sensor cache to avoid repeated requests.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle whose sensors are polled.
-
-        Returns:
-            The decoded sensor data from both engine and vehicle as one
-            dictionary having a key-value pair for each sensor's name and the
-            data received for it.
-        """
-        create_warning('`BeamNGpy.poll_sensors` is deprecated '
-                       'and may be removed in future verions. '
-                       'Use "Vehicle.poll_sensors" instead.',
-                       DeprecationWarning)
-
-        vehicle.poll_sensors()
-        return vehicle.sensor_cache
 
     def render_cameras(self):
         """
@@ -1319,8 +1245,7 @@ class BeamNGpy:
         """
         return self.message('GetObject', id=obj_id)
 
-    def spawn_vehicle(self, vehicle, pos, rot,
-                      rot_quat=(0, 0, 0, 1), cling=True):
+    def spawn_vehicle(self, vehicle, pos, rot_quat=(0, 0, 0, 1), cling=True):
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
@@ -1331,8 +1256,6 @@ class BeamNGpy:
         Args:
             vehicle (:class:`.Vehicle`): The vehicle to be spawned.
             pos (tuple): Where to spawn the vehicle as a (x, y, z) triplet.
-            rot (tuple): The rotation of the vehicle as a triplet of Euler
-                         angles. Deprecated.
             rot_quat (tuple): Vehicle rotation in form of a quaternion
             cling (bool): If set, the z-coordinate of the vehicle's position
                           will be set to the ground level at the given
@@ -1347,12 +1270,6 @@ class BeamNGpy:
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
         data['pos'] = pos
-        if rot:
-            create_warning('the usage of `rot` in `beamng.spawn_vehicle` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            rot_quat = angle_to_quat(rot)
         data['rot'] = rot_quat
         data.update(vehicle.options)
         self.send(data)
@@ -1400,7 +1317,6 @@ class BeamNGpy:
         for obj in resp['objects']:
             sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
                                   tuple(obj['position']),
-                                  None,
                                   tuple(obj['scale']),
                                   rot_quat=tuple(obj['rotation']),
                                   **obj['options'])
@@ -1409,8 +1325,7 @@ class BeamNGpy:
         return ret
 
     @ack('CreatedCylinder')
-    def create_cylinder(self, name, radius, height, pos, rot,
-                        rot_quat=None, material=None):
+    def create_cylinder(self, name, radius, height, pos, rot_quat=None, material=None):
         """
         Creates a procedurally generated cylinder mesh with the given
         radius and height at the given position and rotation. The material
@@ -1424,8 +1339,6 @@ class BeamNGpy:
                             cylinder.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
-            rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the cylinder's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1434,21 +1347,14 @@ class BeamNGpy:
         data['radius'] = radius
         data['height'] = height
         data['pos'] = pos
-        if rot_quat:
-            data['rot'] = rot_quat
-        else:
-            create_warning('the usage of `rot` in `beamng.create_cylinder` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            data['rot'] = angle_to_quat(rot)
+        data['rot'] = rot_quat
         data['name'] = name
         data['material'] = material
         self.send(data)
 
     @ack('CreatedBump')
     def create_bump(self, name, width, length, height, upper_length,
-                    upper_width, pos, rot, rot_quat=None, material=None):
+                    upper_width, pos, rot_quat=None, material=None):
         """
         Creates a procedurally generated bump with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1465,8 +1371,6 @@ class BeamNGpy:
             upper_width (float): The width of the tip.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
-            rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the bump's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1478,21 +1382,13 @@ class BeamNGpy:
         data['upperLength'] = upper_length
         data['upperWidth'] = upper_width
         data['pos'] = pos
-        if rot_quat:
-            data['rot'] = rot_quat
-        else:
-            create_warning('the usage of `rot` in `beamng.create_bump` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            data['rot'] = angle_to_quat(rot)
+        data['rot'] = rot_quat
         data['name'] = name
         data['material'] = material
         self.send(data)
 
     @ack('CreatedCone')
-    def create_cone(self, name, radius, height, pos, rot, rot_quat=None,
-                    material=None):
+    def create_cone(self, name, radius, height, pos, rot_quat=None, material=None):
         """
         Creates a procedurally generated cone with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1504,8 +1400,6 @@ class BeamNGpy:
             height (float): Distance of the tip to the base circle.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
-            rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the cone's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1516,18 +1410,11 @@ class BeamNGpy:
         data['material'] = material
         data['name'] = name
         data['pos'] = pos
-        if rot_quat:
-            data['rot'] = rot_quat
-        else:
-            create_warning('the usage of `rot` in `beamng.create_cone` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            data['rot'] = angle_to_quat(rot)
+        data['rot'] = rot_quat
         self.send(data)
 
     @ack('CreatedCube')
-    def create_cube(self, name, size, pos, rot, rot_quat=None, material=None):
+    def create_cube(self, name, size, pos, rot_quat=None, material=None):
         """
         Creates a procedurally generated cube with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1539,8 +1426,6 @@ class BeamNGpy:
                           the cuboid.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
-            rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the cube's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1548,21 +1433,13 @@ class BeamNGpy:
         data = dict(type='CreateCube')
         data['size'] = size
         data['pos'] = pos
-        if rot_quat:
-            data['rot'] = rot_quat
-        else:
-            create_warning('the usage of `rot` in `beamng.create_cube` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            data['rot'] = angle_to_quat(rot)
+        data['rot'] = rot_quat
         data['material'] = material
         data['name'] = name
         self.send(data)
 
     @ack('CreatedRing')
-    def create_ring(self, name, radius, thickness, pos, rot, rot_quat=None,
-                    material=None):
+    def create_ring(self, name, radius, thickness, pos, rot_quat=None, material=None):
         """
         Creates a procedurally generated ring with the given properties at the
         given position and rotation. The material can optionally be specified
@@ -1574,8 +1451,6 @@ class BeamNGpy:
             thickness (float): Thickness of the rim.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
                          position.
-            rot (tuple): Triplet of Euler angles specifying rotations around
-                         the (X, Y, Z) axes. Deprecated.
             rot_quat (tuple): Quaternion specifying the ring's rotation
             material (str): Optional material name to use as a texture for the
                             mesh.
@@ -1584,14 +1459,7 @@ class BeamNGpy:
         data['radius'] = radius
         data['thickness'] = thickness
         data['pos'] = pos
-        if rot_quat:
-            data['rot'] = rot_quat
-        else:
-            create_warning('the usage of `rot` in `beamng.create_ring` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            data['rot'] = angle_to_quat(rot)
+        data['rot'] = rot_quat
         data['material'] = material
         data['name'] = name
         self.send(data)
@@ -1779,70 +1647,6 @@ class BeamNGpy:
         if rot_quat:
             data['rot'] = rot_quat
         self.send(data)
-
-    def add_debug_line(self, points, point_colors,
-                       spheres=None, sphere_colors=None,
-                       cling=False, offset=0):
-        """
-        The function is deprecated, use 'add_debug_polyline' instead!
-        Adds a visual line to be rendered by BeamNG. This is mainly used for
-        debugging purposes, but can also be used to add visual indicators to
-        the user. A line is given as a series of points encoded as (x, y, z)
-        triplets and also a list of colors given as (r, g, b, a) quartets.
-        Additionally, it's possible to give a list of spheres to be rendered
-        alongside the line; spheres are specified similar to the line: a list
-        of (x, y, z, r) points, where r is the radius of the sphere. A list of
-        colors that the respective spheres should have is also given as a list
-        of (r, g, b, a) quartets.
-
-        Args:
-            points (list): List of points in the line given as (x, y, z)
-                           coordinate triplets.
-            point_colors (list): List of colors as (r, g, b, a) quartets, each
-                                 value expressing red, green, blue, and alpha
-                                 intensity from 0 to 1. Only the first entry is
-                                 used.
-            spheres (list): Optional list of points where spheres should be
-                            rendered, given as (x, y, z, r) tuples where x,y,z
-                            are coordinates and r the radius of the sphere.
-            sphere_colors (list): Optional list of sphere colors that contains
-                                  the desired color of spheres in the sphere
-                                  list as a (r, g, b, a) quartet for each
-                                  sphere.
-            cling (bool): Whether or not to align the given coordinates to the
-                          ground, e.g. set all z-coords to the ground height
-                          below the given x, y coords.
-            offset (float): A height offset that is used alongside the cling
-                            flag. This is value is added to computed z-coords
-                            and can be used to make the line float above the
-                            ground by, for example, adding 10cm to the z value.
-
-        Returns:
-            The ID of the added debug line that can be used to remove the line
-        """
-        create_warning('`add_debug_line` is deprecated and will be '
-                       'removed in future versions. '
-                       'Use "add_debug_polyline" and '
-                       '"add_debug_spheres" instead.',
-                       DeprecationWarning)
-
-        if spheres:
-            coordinates = [s[:3] for s in spheres]
-            radii = [s[3] for s in spheres]
-            self.add_debug_spheres(
-                coordinates, radii, sphere_colors, cling, offset)
-
-        lineID = self.add_debug_polyline(
-            points, point_colors[0], cling, offset)
-        return lineID
-
-    def remove_debug_line(self, line_id):
-        create_warning('Use of `Beamngpy.remove_debug_line` is deprecated. '
-                       'It will be removed in future versions. '
-                       'Use `add_debug_polyline` instead.',
-                       DeprecationWarning)
-
-        self.remove_debug_polyline(line_id)
 
     def add_debug_spheres(self, coordinates, radii, rgba_colors,
                           cling=False, offset=0):

@@ -1,6 +1,7 @@
-import pytest
 import socket
-from beamngpy import BeamNGpy, Vehicle, Scenario, ScenarioObject, setup_logging
+
+import pytest
+from beamngpy import BeamNGpy, Scenario, ScenarioObject, Vehicle, setup_logging
 
 
 @pytest.fixture()
@@ -16,15 +17,15 @@ def test_quats(beamng):
         scenario = Scenario('smallgrid', 'test_quat')
 
         blue_etk = Vehicle('ego_vehicle',
-                      model='etk800',
-                      color='Blue',
-                      licence="angle")
+                           model='etk800',
+                           color='Blue',
+                           licence="angle")
         scenario.add_vehicle(blue_etk, pos=(0, 0, 0), rot=(0, 0, 0))
 
         blue_etk = Vehicle('ego_vehicle2',
-                      model='etk800',
-                      color='Green',
-                      licence="quat")
+                           model='etk800',
+                           color='Green',
+                           licence="quat")
         rot_quat = (-0.00333699025, -0.00218820246, -0.689169466, 0.724589229)
         scenario.add_vehicle(blue_etk, pos=(5, 0, 0), rot_quat=rot_quat)
 
@@ -32,8 +33,8 @@ def test_quats(beamng):
                             name='sawhorse',
                             otype='BeamNGVehicle',
                             pos=(-10, -5, 0),
-                            rot=(0, 0, 0),
                             scale=(1, 1, 1),
+                            rot_quat=(0, 0, 0, 1),
                             JBeam='sawhorse',
                             datablock="default_vehicle"
                             )
@@ -43,9 +44,8 @@ def test_quats(beamng):
                             name='cones',
                             otype='BeamNGVehicle',
                             pos=(0, -5, 0),
-                            rot=None,
-                            rot_quat=(0, 0, 0, 1),
                             scale=(1, 1, 1),
+                            rot_quat=(0, 0, 0, 1),
                             JBeam='cones',
                             datablock="default_vehicle"
                             )

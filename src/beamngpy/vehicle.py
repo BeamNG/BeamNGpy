@@ -10,15 +10,13 @@
 """
 
 import socket
-
+from logging import DEBUG, getLogger
 from time import sleep
-from logging import getLogger
-from logging import DEBUG as DBG_LOG_LEVEL
 
-from .beamngcommon import send_msg, recv_msg, ack, BNGError, BNGValueError
-from .beamngcommon import PROTOCOL_VERSION, LOGGER_ID, create_warning
+from .beamngcommon import (LOGGER_ID, PROTOCOL_VERSION, BNGError,
+                           BNGValueError, ack, create_warning, recv_msg,
+                           send_msg)
 from .sensors import State
-
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -72,7 +70,7 @@ class Vehicle:
             model (str): Model of the vehicle.
         """
         self.logger = getLogger(f'{LOGGER_ID}.Vehicle')
-        self.logger.setLevel(DBG_LOG_LEVEL)
+        self.logger.setLevel(DEBUG)
 
         self.vid = vid.replace(' ', '_')
         self.model = model
@@ -307,17 +305,7 @@ class Vehicle:
             flags.update(sensor_flags)
         return flags
 
-    def update_vehicle(self):
-        """
-        Synchronises the :attr:`.Vehicle.state` field with the simulation.
-        """
-        create_warning('`Vehicle.update_vehicle` is deprecated the '
-                       '`.Vehicle.state` attribute is now a default sensor '
-                       'for every vehicle and is updated through poll_sensors',
-                       DeprecationWarning)
-        return self.state
-
-    def poll_sensors(self, requests=None):
+    def poll_sensors(self):
         """
         Updates the vehicle's sensor readings.
 
@@ -325,48 +313,30 @@ class Vehicle:
             requests (None): This function parameter is not used and will be
                              removed in future versions.
 
-        Raises:
-            DeprecationWarning: If requests parameter is used.
-            DeprecationWarning: Always, since the return type will change in
-                                the future.
-
         Returns:
             Dict with sensor data to support compatibility with
             previous versions.
-            The return argument is deprecated and will be removed
-            in future versions.
-            Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` instead.
+            Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` to
+            access the polled sensor data.
         """
-        if requests is not None:
-            create_warning('The `requests` argument in `Vehicle.poll_sensors` '
-                           'is not used and will be removed in future versions.',
-                           DeprecationWarning)
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
-        compatibility_support = None
         if engine_reqs['sensors']:
             self.bng.send(engine_reqs)
             response = self.bng.recv()
             assert response['type'] == 'SensorData'
-            compatibility_support = response['data']
             sensor_data.update(response['data'])
 
         if vehicle_reqs['sensors']:
             self.send(vehicle_reqs)
             response = self.recv()
             assert response['type'] == 'SensorData'
-            compatibility_support = response['data']
             sensor_data.update(response['data'])
         result = self.decode_sensor_response(sensor_data)
         for sensor, data in result.items():
             self.sensors[sensor].data = data
 
         self.sensor_cache = result
-
-        create_warning('The return type of `.Vehicle.poll_sensors` will be None '
-                       'in future versions',
-                       DeprecationWarning)
-        return compatibility_support
 
     def hello(self):
         data = dict(type='Hello')
@@ -963,8 +933,7 @@ class Vehicle:
                             specify the output directory, overwrites the
                             outputDir set through the json. The data can be
                             found in:
-                            <userpath>/<BeamNG version number>/<outpuDir>
-
+                            <userpath>/<BeamNG version number>/<outputDir>
         """
         data = dict(type='StartVSLLogging', outputDir=outputDir)
         self.send(data)
@@ -982,7 +951,7 @@ class Vehicle:
         self.send(data)
         self.logger.info('Stopped in game logging.')
 
-    def teleport(self, pos, rot=None, rot_quat=None, reset=True):
+    def teleport(self, pos, rot_quat=None, reset=True):
         """
         Teleports the vehicle to the given position with the given
         rotation.
@@ -990,8 +959,6 @@ class Vehicle:
         Args:
             pos (tuple): The target position as an (x,y,z) tuple containing
                          world-space coordinates.
-            rot (tuple): Optional tuple specifying rotations around the (x,y,z)
-                         axes in degrees. Deprecated.
             rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
                               rotation as quaternion
             reset (bool): Specifies if the vehicle will be reset to its initial
@@ -1002,4 +969,4 @@ class Vehicle:
             the vehicle. With the current implementation, it is not possible to
             set the rotation of the vehicle and to keep its velocity during teleport.
         """
-        return self.bng.teleport_vehicle(self.vid, pos, rot, rot_quat, reset)
+        return self.bng.teleport_vehicle(self.vid, pos, rot_quat, reset)
