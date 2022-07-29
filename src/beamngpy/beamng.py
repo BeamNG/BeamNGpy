@@ -829,7 +829,6 @@ class BeamNGpy:
         self.send(data)
         self.logger.info("Starting scenario.")
 
-    @ack('ScenarioRestarted')
     def restart_scenario(self):
         """
         Restarts a running scenario.
@@ -837,11 +836,17 @@ class BeamNGpy:
         if not self.scenario:
             raise BNGError('Need to have a scenario loaded to restart it.')
 
+        vehicles_to_reconnect = [v.vid for v in self.scenario.vehicles if v.skt]
         self.scenario.restart()
 
-        data = dict(type='RestartScenario')
-        self.send(data)
         self.logger.info("Restarting scenario.")
+        data = dict(type='RestartScenario')
+        ack('ScenarioRestarted')(lambda self: self.send(data))(self)
+
+        self.scenario._get_existing_vehicles(self)
+        for vehicle in self.scenario.vehicles:
+            if vehicle.vid in vehicles_to_reconnect and not vehicle.skt:
+                vehicle.connect(self)
 
     @ack('ScenarioStopped')
     def stop_scenario(self):

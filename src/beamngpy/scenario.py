@@ -251,6 +251,19 @@ class Scenario:
         else:
             return self.level
 
+    def _get_existing_vehicles(self, bng):
+        current_vehicles = set(bng.get_current_vehicles().values())
+        self.logger.debug(
+            f'Got {len(current_vehicles)} vehicles from scenario.')
+        self.transient_vehicles = current_vehicles.copy()
+
+        for vehicle in self.vehicles:
+            self.transient_vehicles.discard(vehicle)
+            current_vehicles.discard(vehicle)
+            current_vehicles.add(vehicle)
+
+        self.vehicles = current_vehicles
+
     def add_object(self, obj):
         """
         Adds an extra object to be placed in the prefab. Objects are expected
@@ -277,6 +290,9 @@ class Scenario:
         if vehicle in self.vehicles:
             error = f'The vehicle \'{vehicle.vid}\' is already in the scenario.'
             raise BNGError(error)
+        
+        if vehicle.skt:
+            vehicle.disconnect()
 
         self.vehicles.add(vehicle)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
@@ -461,17 +477,8 @@ class Scenario:
             cam.connect(self.bng, None)
 
         if connect_existing:
-            current_vehicles = set(bng.get_current_vehicles().values())
-            self.logger.debug(
-                f'Got {len(current_vehicles)} vehicles from scenario.')
-            self.transient_vehicles = current_vehicles.copy()
-
-            for vehicle in self.vehicles:
-                self.transient_vehicles.discard(vehicle)
-                current_vehicles.discard(vehicle)
-                current_vehicles.add(vehicle)
-
-            self.vehicles = current_vehicles
+            self._get_existing_vehicles(bng)
+            
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles:
             vehicle.connect(bng)
