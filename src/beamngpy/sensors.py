@@ -16,19 +16,17 @@ extract data from simulations.
 import base64
 import mmap
 import os
-
 from abc import ABC, abstractmethod
+from logging import DEBUG as DBG_LOG_LEVEL
+from logging import getLogger
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from logging import DEBUG as DBG_LOG_LEVEL
-from logging import getLogger
 
-from .beamngcommon import BNGValueError, LOGGER_ID
-
+from .beamngcommon import LOGGER_ID, BNGValueError
 
 NEAR = 0.01
 FAR = 1000
@@ -80,6 +78,9 @@ class Sensor(AbstractSensor):
     @data.deleter
     def data(self):
         self._data = None
+
+    def __getitem__(self, item):
+        return self.data[item]
 
     def attach(self, vehicle, name):
         """

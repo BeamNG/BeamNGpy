@@ -1,12 +1,10 @@
 import itertools
 import random
-import time
-
-from beamngpy import BeamNGpy, Scenario, sensors, Vehicle, setup_logging
-from beamngpy.beamngcommon import BNGValueError
 
 import numpy as np
 import pytest
+from beamngpy import BeamNGpy, BNGValueError, Scenario, Vehicle, sensors
+from beamngpy.beamngcommon import angle_to_quat
 
 
 @pytest.fixture()
@@ -19,7 +17,7 @@ def test_get_available_vehicles(beamng):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'spawn_test')
         vehicle = Vehicle('irrelevant', model='pickup')
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
@@ -55,7 +53,7 @@ def test_vehicle_move(beamng):
 
         scenario = Scenario('smallgrid', 'move_test')
         vehicle = Vehicle('test_car', model='etk800')
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(bng)
         bng.load_scenario(scenario)
         bng.start_scenario()
@@ -76,8 +74,10 @@ def test_vehicle_ai(beamng):
         vehicle = Vehicle('test_car', model='etk800')
         other = Vehicle('other', model='etk800')
         pos = [-717.121, 101, 118.675]
-        scenario.add_vehicle(vehicle, pos=pos, rot=(0, 0, 45))
-        scenario.add_vehicle(other, pos=(-453, 700, 75), rot=(0, 0, 45))
+        scenario.add_vehicle(
+            vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
+        scenario.add_vehicle(other, pos=(-453, 700, 75),
+                             rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(bng)
 
         bng.load_scenario(scenario)
@@ -131,28 +131,30 @@ def test_dynamic_vehicle_spawn(beamng):
         scenario = Scenario('smallgrid', 'dynamic spawn test')
         unique_vehicle_name = 'unique'
         vehicle = Vehicle(unique_vehicle_name, model='pickup')
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
         bng.start_scenario()
 
         duplicate = Vehicle(unique_vehicle_name, model="etk800")
-        assert not bng.spawn_vehicle(duplicate, (0, 10, 0), None)
+
+        with pytest.raises(BNGValueError):
+            scenario.add_vehicle(duplicate, (0, 10, 0))
 
 
 def test_vehicle_spawn(beamng):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'spawn_test')
         vehicle = Vehicle('irrelevant', model='pickup')
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
         bng.start_scenario()
 
         other = Vehicle('relevant', model='etk800')
-        scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(other, pos=(10, 10, 0))
         other.poll_sensors()
         assert other.sensors['state'].connected
         assert 'pos' in other.sensors['state'].data
@@ -168,9 +170,9 @@ def test_vehicle_bbox(beamng):
         vehicle_a = Vehicle('vehicle_a', model='etk800')
         vehicle_b = Vehicle('vehicle_b', model='etk800')
         pos = [-717.121, 101, 118.675]
-        scenario.add_vehicle(vehicle_a, pos=pos, rot=(0, 0, 45))
+        scenario.add_vehicle(vehicle_a, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
         pos = [-453, 700, 75]
-        scenario.add_vehicle(vehicle_b, pos=pos, rot=(0, 0, 45))
+        scenario.add_vehicle(vehicle_b, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
@@ -212,8 +214,8 @@ def test_lights(beamng):
         vehicle.attach_sensor('electrics', electrics)
         electrics = sensors.Electrics()
         other.attach_sensor('electrics', electrics)
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
-        scenario.add_vehicle(other, pos=(10, 10, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+        scenario.add_vehicle(other, pos=(10, 10, 0))
         scenario.make(beamng)
 
         binary = {'left_signal', 'right_signal', 'hazard_signal'}
@@ -265,19 +267,24 @@ def test_lights(beamng):
                 # bng.step(1, wait=True)
                 vehicle.set_lights(**vals)
                 bng.step(1, wait=True)
-                data = bng.poll_sensors(vehicle)['electrics']
+
+                vehicle.poll_sensors()
+                data = vehicle.sensors['electrics']
                 msg_fmt = 'Setting the combination of {} did not result in ' \
                           'corresponding light states in the case of {}.'
                 _check_lights(expected, data, msg_fmt)
 
-                data = bng.poll_sensors(other)['electrics']
+                other.poll_sensors()
+                data = other.sensors['electrics']
                 msg_fmt = 'Other vehicle has lights on when it should not. ' \
                           'Expected {} but got mismatch in the case of: {}'
                 _check_lights(all_off, data, msg_fmt)
 
                 vehicle.set_lights(**all_off)
                 bng.step(1, wait=True)
-                data = bng.poll_sensors(vehicle)['electrics']
+
+                vehicle.poll_sensors()
+                data = vehicle.sensors['electrics']
                 msg_fmt = 'Lights did not turn off correctly. Expected {} ' \
                           'but got mismatch in the case of: {}'
                 _check_lights(all_off, data, msg_fmt)
@@ -292,9 +299,9 @@ def test_traffic(beamng):
         vehicle = Vehicle('ego', model='etk800')
         other = Vehicle('traffic', model='etk800')
         pos = [-717.121, 101, 118.675]
-        scenario.add_vehicle(vehicle, pos=pos, rot=(0, 0, 45))
+        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
         pos = [-453, 700, 75]
-        scenario.add_vehicle(other, pos=pos, rot=(0, 0, 45))
+        scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(bng)
 
         bng.load_scenario(scenario)
@@ -304,7 +311,7 @@ def test_traffic(beamng):
         bng.start_traffic([other])
         bng.switch_vehicle(other)
 
-        bng.step(300, wait=True)  # Give vehicle ~5seconds to start
+        bng.step(300, wait=True)  # Give vehicle ~5 seconds to start
 
         assert_continued_movement(bng, other, pos)
 

@@ -1,9 +1,7 @@
-import json
 import time
 
 import pytest
-
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
+from beamngpy import BeamNGpy, Scenario, Vehicle
 
 
 @pytest.fixture()

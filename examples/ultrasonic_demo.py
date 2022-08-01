@@ -1,20 +1,19 @@
 """
-.. module:: west_coast_random
+.. module:: ultrasonic_demo
     :platform: Windows
     :synopsis: Using an ultrasonic parking sensor on the vehicle front bumper.
 .. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
 """
 import random
-
 from time import sleep
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
+from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Ultrasonic
 
 
 def main():
     random.seed(1703)
-    setup_logging()
+    set_up_simple_logging()
 
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
@@ -27,7 +26,7 @@ def main():
     vehicle.attach_sensor('ultrasonic', ultrasonic)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                         rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
+                         rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
 
     try:

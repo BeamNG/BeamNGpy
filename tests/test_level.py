@@ -1,6 +1,5 @@
 import pytest
-
-from beamngpy import BeamNGpy, setup_logging
+from beamngpy import BeamNGpy
 
 
 @pytest.fixture

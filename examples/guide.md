@@ -33,7 +33,7 @@ More quick usage examples can be found in our [test suite][1].
 |[Vehicle Road Bounding Box][18]|<ul><li>create a custom road</li><li>extract road information from the simulation</li><li>get a vehicle's bounding box</li></ul>|
 |[Vehicle State Plotting][19]|<ul><li>use the state sensor</li></ul>|
 |[West Coast LIDAR][20]|<ul><li>use the LIDAR sensor</li></ul>|
-|[West Coast Random][21]|<ul><li>create a simple scenario</li><li>use the simulator's AI with BeamNGpy</li></ul>|
+|[East Coast Random][21]|<ul><li>create a simple scenario</li><li>use the simulator's AI with BeamNGpy</li></ul>|
 
 
 [1]: https://github.com/BeamNG/BeamNGpy/tree/master/tests
@@ -56,5 +56,5 @@ More quick usage examples can be found in our [test suite][1].
 [18]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_road_bounding_box.ipynb
 [19]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_state_plotting.ipynb
 [20]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_lidar.py
-[21]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_random.py
+[21]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/east_coast_random.py
 [22]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb

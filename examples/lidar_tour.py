@@ -8,20 +8,12 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 """
 
-import sys
-
-from time import sleep
-
-
-import numpy as np
-
+from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
+from beamngpy.sensors import Lidar
+from beamngpy.visualiser import LidarVisualiser
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
-from beamngpy.sensors import Lidar
-from beamngpy.visualiser import LidarVisualiser
 
 SIZE = 1024
 
@@ -43,7 +35,7 @@ def open_window(width, height):
 
 
 def main():
-    setup_logging()
+    set_up_simple_logging()
 
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
@@ -56,7 +48,7 @@ def main():
     vehicle.attach_sensor('lidar', lidar)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                         rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
+                         rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
 
     try:

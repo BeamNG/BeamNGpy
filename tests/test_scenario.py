@@ -1,11 +1,9 @@
 import socket
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, Level, setup_logging
+import pytest
+from beamngpy import BeamNGpy, Level, Scenario, Vehicle
 from beamngpy.beamngcommon import BNGValueError
 from beamngpy.sensors import Electrics
-
-from time import sleep
-import pytest
 
 
 @pytest.fixture
@@ -18,7 +16,7 @@ def test_new_scenario(beamng):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'test_scenario')
         vehicle = Vehicle('test_car', model='etk800')
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
         bng.load_scenario(scenario)
         assert bng.get_scenario_name() == 'test_scenario'
@@ -61,7 +59,7 @@ def test_scenario_vehicle_name():
     scenario = Scenario('smallgrid', 'same')
     vehicle = Vehicle('same', model='etk800')
     with pytest.raises(BNGValueError):
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
 
 
 def test_get_scenarios(beamng):
@@ -154,7 +152,7 @@ def test_get_scenetree(beamng):
     with beamng as bng:
         scenario = Scenario('gridmap_v2', 'test_scenario')
         vehicle = Vehicle('egoVehicle', model='etk800')
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot=(0, 0, 0))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 100), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
         bng.load_scenario(scenario)
         bng.start_scenario()

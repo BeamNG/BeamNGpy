@@ -1632,7 +1632,7 @@ class BeamNGpy:
         self.send(data)
 
     @ack('RelativeCamSet')
-    def set_relative_camera(self, pos, rot=None, rot_quat=None):
+    def set_relative_camera(self, pos, rot_quat=None):
         """
         Switches the camera mode for the currently-entered vehicle to the
         'relative' mode in which the camera can be placed at an arbitrary point
@@ -1644,9 +1644,6 @@ class BeamNGpy:
             rot (tuple): Euler angles expressing the rotation of the camera.
             rot_quat (tuple): The camera's rotation but written as a quat.
         """
-        if rot_quat is None:
-            if rot is not None:
-                rot_quat = angle_to_quat(rot)
         data = dict(type='SetRelativeCam')
         data['pos'] = pos
         if rot_quat:

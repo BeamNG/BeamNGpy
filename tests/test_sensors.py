@@ -3,13 +3,10 @@ import time
 
 import numpy as np
 import pytest
-
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging, ProceduralCube
-from beamngpy.beamngcommon import BNGValueError, BNGError
-from beamngpy.sensors import Camera, Lidar, Damage, Electrics, GForces, State
-from beamngpy.sensors import IMU, Ultrasonic
+from beamngpy import BeamNGpy, ProceduralCube, Scenario, Vehicle, angle_to_quat
 from beamngpy.noise import RandomImageNoise, RandomLIDARNoise
-
+from beamngpy.sensors import (IMU, Camera, Damage, Electrics, GForces, Lidar,
+                              State, Ultrasonic)
 
 SHMEM_OPTIONS = [False, True]
 SHMEM_IDS = ['Socket', 'Shmem']
@@ -45,7 +42,7 @@ def test_camera(beamng, shmem):
         vehicle.attach_sensor('front_cam', front_camera)
 
         scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                             rot=(0, 0, 45))
+                             rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
@@ -54,7 +51,8 @@ def test_camera(beamng, shmem):
         bng.step(120)
         time.sleep(20)
 
-        sensors = bng.poll_sensors(vehicle)
+        vehicle.poll_sensors()
+        sensors = vehicle.sensors
 
         assert_image_different(sensors['front_cam']['colour'])
         assert_image_different(sensors['front_cam']['depth'])
@@ -84,7 +82,7 @@ def test_multicam(beamng):
         vehicle.attach_sensor('front_cam2', front_cam2)
 
         scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                             rot=(0, 0, 45))
+                             rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
@@ -159,7 +157,7 @@ def test_noise(beamng):
         vehicle.attach_sensor('noise_lidar', noise_lidar)
 
         scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                             rot=(0, 0, 45))
+                             rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
@@ -186,7 +184,7 @@ def test_lidar(beamng, shmem):
         vehicle.attach_sensor('lidar', lidar)
 
         scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                             rot=(0, 0, 45))
+                             rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
         bng.load_scenario(scenario)
@@ -210,7 +208,7 @@ def test_gforces(beamng):
         vehicle.attach_sensor('gforces', gforces)
 
         scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                             rot=(0, 0, 45))
+                             rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
         gx = []
@@ -271,8 +269,8 @@ def test_damage(beamng):
         bng.load_scenario(scenario)
         bng.start_scenario()
 
-        scenario.add_vehicle(vehicle, pos=(0, 0, 32), rot=(-90, 0, 0),
-                             cling=False)
+        scenario.add_vehicle(vehicle, pos=(0, 0, 32),
+                             rot_quat=angle_to_quat((-90, 0, 0)), cling=False)
 
         bng.step(600)
 
@@ -380,7 +378,6 @@ def test_ultrasonic(beamng):
         cube_dist = 4
         cube = ProceduralCube(name='cube',
                               pos=(0, -cube_dist, 5),
-                              rot=None,
                               rot_quat=(0, 0, 0, 1),
                               size=(1, 20, 10))
         scenario.add_procedural_mesh(cube)

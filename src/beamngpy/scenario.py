@@ -408,8 +408,7 @@ class Scenario:
         if ids is None:
             ids = [f"wp{i}" for i in range(len(positions))]
         assert(len(positions) == len(scales) == len(ids))
-        options = dict(rot=None,
-                       rot_quat=(0, 0, 0, 1),
+        options = dict(rot_quat=(0, 0, 0, 1),
                        drawDebug='0',
                        directionalWaypoint='0',
                        mode='Ignore',

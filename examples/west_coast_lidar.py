@@ -1,25 +1,20 @@
 """
-.. module:: west_coast_random
+.. module:: west_coast_lidar
     :platform: Windows
     :synopsis: Example code making a scenario in west_coast_usa and having the
                vehicle span the map while emitting Lidar.
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 """
-import mmap
 import random
-import sys
-
 from time import sleep
 
-import numpy as np
-
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
+from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Lidar
 
 
 def main():
     random.seed(1703)
-    setup_logging()
+    set_up_simple_logging()
 
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
@@ -34,7 +29,7 @@ def main():
     vehicle.attach_sensor('lidar', lidar)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                         rot=None, rot_quat=(0, 0, 0.3826834, 0.9238795))
+                         rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
 
     try:

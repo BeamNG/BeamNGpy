@@ -3,7 +3,7 @@ This example script shows how to use the ``change_setting`` function of the
 ``BeamNGpy`` class to change graphics settings on startup.
 """
 
-from beamngpy import BeamNGpy, Scenario, Vehicle
+from beamngpy import BeamNGpy
 
 
 def main():
