@@ -836,7 +836,7 @@ class BeamNGpy:
         if not self.scenario:
             raise BNGError('Need to have a scenario loaded to restart it.')
 
-        vehicles_to_reconnect = [v.vid for v in self.scenario.vehicles if v.skt]
+        vehicles_to_reconnect = [v.vid for v in self.scenario.vehicles if v.is_connected()]
         self.scenario.restart()
 
         self.logger.info("Restarting scenario.")
@@ -845,7 +845,7 @@ class BeamNGpy:
 
         self.scenario._get_existing_vehicles(self)
         for vehicle in self.scenario.vehicles:
-            if vehicle.vid in vehicles_to_reconnect and not vehicle.skt:
+            if vehicle.vid in vehicles_to_reconnect and not vehicle.is_connected():
                 vehicle.connect(self)
 
     @ack('ScenarioStopped')
@@ -1912,7 +1912,7 @@ class BeamNGpy:
         vehicle.connect(self)
 
     @ack('PlayerCameraModeSet')
-    def set_player_camera_mode(self, vid, mode, config):
+    def set_player_camera_mode(self, vid, mode, config, custom_data=None):
         """
         Sets the camera mode of the vehicle identified by the given vehicle ID.
         The mode is given as a string that identifies one of the valid modes
@@ -1936,13 +1936,15 @@ class BeamNGpy:
 
         Args:
             vid (str): Vehicle ID of the vehice to change the mode of.
-            mode (str): Camera mode to set
-            config (dict): Dictionary of further properties to set in the mode
+            mode (str): Camera mode to set.
+            config (dict): Dictionary of further properties to set in the mode.
+            custom_data (dict): Custom data used by the specific camera mode. Defaults to None.
         """
         data = dict(type='SetPlayerCameraMode')
         data['vid'] = vid
         data['mode'] = mode
         data['config'] = config
+        data['customData'] = custom_data
         self.send(data)
 
     def get_player_camera_modes(self, vid):

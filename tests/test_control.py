@@ -23,10 +23,15 @@ def test_camera_control(beamng):
         bng.load_scenario(scenario)
         bng.start_scenario()
 
-        camera_configs = bng.get_player_camera_modes(ego.vid)
+        vehicle_info = bng.get_current_vehicles_info()
+        ego_id_num = vehicle_info['ego']['id']
 
+        camera_configs = bng.get_player_camera_modes(ego.vid)
         for camera in camera_configs.keys():
-            bng.set_player_camera_mode(ego.vid, camera, {})
+            if camera != 'crash':
+                bng.set_player_camera_mode(ego.vid, camera, {})
+            else:
+                bng.set_player_camera_mode(ego.vid, camera, {}, {'veh1Id': ego_id_num})
             time.sleep(5)
             current_camera = bng.get_player_camera_modes(ego.vid)
             assert current_camera[camera]['focused']

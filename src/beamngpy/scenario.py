@@ -289,7 +289,7 @@ class Scenario:
 
         if vehicle in self.vehicles:
             error = f'The vehicle \'{vehicle.vid}\' is already in the scenario.'
-            raise BNGError(error)
+            raise BNGValueError(error)
         
         if vehicle.skt:
             vehicle.disconnect()

@@ -156,12 +156,12 @@ def test_vehicle_spawn(beamng):
         other = Vehicle('relevant', model='etk800')
         scenario.add_vehicle(other, pos=(10, 10, 0))
         other.poll_sensors()
-        assert other.sensors['state'].connected
+        assert other.is_connected()
         assert 'pos' in other.sensors['state'].data
         bng.step(120, wait=True)
         scenario.remove_vehicle(other)
         bng.step(600, wait=True)
-        assert not other.sensors['state'].connected
+        assert not other.is_connected()
 
 
 def test_vehicle_bbox(beamng):
