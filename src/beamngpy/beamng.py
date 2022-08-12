@@ -547,7 +547,7 @@ class BeamNGpy:
         assert resp['type'] == 'StartVehicleConnection'
         vid = resp['vid']
         assert vid == vehicle.vid
-        port = resp['result']
+        port = int(resp['result'])
         self.logger.debug(f"Created new vehicle connection on port {port}")
 
         return port

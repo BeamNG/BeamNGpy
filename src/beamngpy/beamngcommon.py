@@ -24,7 +24,7 @@ import msgpack
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
-PROTOCOL_VERSION = 'v1.19'
+PROTOCOL_VERSION = 'v1.20'
 LOGGER_ID = "beamngpy"
 LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
 bngpy_logger = logging.getLogger(LOGGER_ID)
@@ -122,6 +122,7 @@ def set_up_simple_logging(log_file=None,
                    log_communication=log_communication)
     if moved_log and fh is not None:
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
+
 
 BUF_SIZE = 4096
 
@@ -252,6 +253,53 @@ def send_msg(skt, data):
         skt.send(data[i:i + BUF_SIZE])
 
 
+def textify_string(d):
+    """
+    Attempts to convert binary data to utf-8. If we can do this, we do it. If not, we leave as binary data.
+
+    Args:
+        d (data): The candidate data.
+
+    Returns:
+        The conversion, if it was possible to convert. Otherwise the untouched binary data.
+    """
+    try:
+        return d.decode('utf-8')
+    except:
+        return d
+
+
+def string_cleanup(data):
+    """
+    Recursively iterates through data, and attempts to convert all binary data to utf-8.
+    If we can do this with any elements of the data, we do it. If not, we leave them as binary data.
+
+    Args:
+        data (data): The data.
+
+    Returns:
+        The (possibly) converted data.
+    """
+    type_d = type(data)
+    if type_d is list:
+        for i, val in enumerate(data):
+            type_v = type(val)
+            if type_v is bytes:
+                data[i] = textify_string(val)
+            elif type_v is list or type_v is dict:
+                string_cleanup(val)
+    elif type_d is dict:
+        for key, val in data.items():
+            type_v = type(val)
+            if type_v is bytes:
+                data[key] = textify_string(val)
+            elif type_v is list or type_v is dict:
+                string_cleanup(val)
+    elif type_d is bytes:
+        data = textify_string(data)
+    return data
+
+
 def recv_msg(skt):
     """
     Reads a messagepack-encoded message from the given socket, decodes it, and
@@ -281,7 +329,8 @@ def recv_msg(skt):
         raise BNGError(data['bngError'])
     if 'bngValueError' in data:
         raise BNGValueError(data['bngValueError'])
-    return data
+
+    return string_cleanup(data)  # Convert all non-binary strings into utf-8.
 
 
 def angle_to_quat(angle):
