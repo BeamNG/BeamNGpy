@@ -20,8 +20,7 @@ from pathlib import Path
 from time import sleep
 
 from .beamngcommon import (ENV, LOGGER_ID, PROTOCOL_VERSION, BNGError,
-                           BNGValueError, ack, angle_to_quat, create_warning,
-                           recv_msg, send_msg)
+                           BNGValueError, ack, create_warning, recv_msg, send_msg)
 from .level import Level
 from .scenario import Scenario, ScenarioObject
 from .vehicle import Vehicle
@@ -616,57 +615,232 @@ class BeamNGpy:
         self.logger.info(f'Closed shared memory with id <{name}>')
         self.send(data)
 
-    @ack('OpenedLidar')
-    def open_lidar(self, name, vehicle,
-                   useSharedMemory=False, shmem='', shmemSize=0,
-                   pos=(0, 0, 1.7), dir=(0, -1, 0),
-                   vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120,
-                   isVisualised=True, isAnnotated=False,
-                   isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
-        """
-        Opens a Lidar sensor instance in the simulator with the given
-        parameters writing its data to the given shared memory space. The Lidar
-        instance has to be assigned a unique name that is later used for
-        closing.
+    @ack('OpenedAutoCamera')
+    def open_auto_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view,
+                         near_far_planes, pos, dir, up, is_using_shared_memory, colour_shmem_handle, colour_shmem_size,
+                         annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size,
+                         is_render_colours, is_render_annotations, is_render_depth, use_instance_annotations,
+                         is_visualised, is_static, is_snapping_desired, is_force_inside_triangle):
 
-        Args:
-            name (str): The name of the LiDAR instance to open. Must be unique (relative to other LiDARS currently opened).
-            vehicle (:class:`.Vehicle`): The vehicle this Lidar is attached to.
-            shmem (str): The handle of the shared memory space used to exchange data, if required.
-            shmemSize (int): Size of the shared memory space that has been allocated for exchange.
-            pos (tuple): (X, Y, Z) the sensor position in vehicle space.
-            dir (tuple): (X, Y, Z) the sensor direction.
-            vres (int): Vertical resolution, i.e. how many lines are sampled vertically.
-            vAngle (float): The vertical LiDAR sensor angle, in degrees.
-            rps (int): The rays per second emmited by the LiDAR sensor.
-            hz (int): The refresh rate of the LiDAR sensor, in Hz.
-            hAngle (float): The horizontal degrees covered, i.e. 360 degrees covers the entire surroundings of the vehicle.
-            maxDist (float): Maximum distance of points. Any dot farther away will not show up in the sample.
-            isVisualised (bool): Whether or not to render the LiDAR sensor points in the simulator.
-            isAnnotated (bool): Whether or not to use LiDAR annotations in the visualisation.
-            isStatic (bool): Whether or not the LiDAR sensor should be static (fixed position) or attached to a vehicle.
-            isSnappingDesired (bool): Whether or not to snap the LiDAR sensor to the nearest vehicle triangle.
-            isForceInsideTriangle (bool): Whether or not to force the LiDAR sensor to be inside the nearest vehicle triangle.
-        """
-        data = dict(type='OpenLidar')
-        data['useSharedMemory'] = useSharedMemory
+        data = dict(type='OpenAutoCamera')
         data['name'] = name
-        data['shmem'] = shmem
-        data['size'] = shmemSize
         data['vid'] = vehicle.vid
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
+        data['size'] = size
+        data['fov'] = field_of_view
+        data['nearFarPlanes'] = near_far_planes
         data['pos'] = pos
         data['dir'] = dir
-        data['vRes'] = vres
-        data['vAngle'] = vAngle
-        data['rps'] = rps
-        data['hz'] = hz
-        data['hAngle'] = hAngle
-        data['maxDist'] = maxDist
-        data['isVisualised'] = isVisualised
-        data['isAnnotated'] = isAnnotated
-        data['isStatic'] = isStatic
-        data['isSnappingDesired'] = isSnappingDesired
-        data['isForceInsideTriangle'] = isForceInsideTriangle
+        data['up'] = up
+        data['useSharedMemory'] = is_using_shared_memory
+        data['colourShmemName'] = colour_shmem_handle
+        data['colourShmemSize'] = colour_shmem_size
+        data['annotationShmemName'] = annotation_shmem_handle
+        data['annotationShmemSize'] = annotation_shmem_size
+        data['depthShmemName'] = depth_shmem_handle
+        data['depthShmemSize'] = depth_shmem_size
+        data['renderColours'] = is_render_colours
+        data['renderAnnotations'] = is_render_annotations
+        data['useInstanceAnnotations'] = use_instance_annotations
+        data['renderDepth'] = is_render_depth
+        data['isVisualised'] = is_visualised
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
+        self.send(data)
+        self.logger.info(f'Opened Camera: "{name}')
+
+    @ack('ClosedAutoCamera')
+    def close_auto_camera(self, name, use_instance_annotations):
+        data = dict(type='CloseAutoCamera')
+        data['name'] = name
+        data['useInstanceAnnotations'] = use_instance_annotations
+        self.send(data)
+        self.logger.info(f'Closed Camera: "{name}"')
+
+    @ack('PolledAutoCamera')
+    def poll_auto_camera(self, name, is_using_shared_memory, is_render_instance):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollAutoCamera')
+        data['name'] = name
+        data['isUsingSharedMemory'] = is_using_shared_memory
+        data['isInstanceAnnotations'] = is_render_instance
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedSendAdHocRequestAutoCamera')
+    def send_ad_hoc_request_auto_camera(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SendAdHocRequestAutoCamera')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedIsAdHocPollRequestReadyAutoCamera')
+    def is_ad_hoc_poll_request_ready_auto_camera(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='IsAdHocPollRequestReadyAutoCamera')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedCollectAdHocPollRequestAutoCamera')
+    def collect_ad_hoc_poll_request_auto_camera(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='CollectAdHocPollRequestAutoCamera')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetCameraMaxPendingGpuRequests')
+    def get_camera_max_pending_gpu_requests(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraMaxPendingGpuRequests')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetCameraRequestedUpdateTime')
+    def get_camera_requested_update_time(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraRequestedUpdateTime')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetCameraUpdatePriority')
+    def get_camera_update_priority(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraUpdatePriority')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetCameraSensorPosition')
+    def get_camera_sensor_position(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraSensorPosition')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetCameraSensorDirection')
+    def get_camera_sensor_direction(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraSensorDirection')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedSetCameraMaxPendingGpuRequests')
+    def set_camera_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetCameraMaxPendingGpuRequests')
+        data['name'] = name
+        data['maxPendingGpuRequests'] = max_pending_gpu_requests
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetCameraRequestedUpdateTime')
+    def set_camera_requested_update_time(self, name, requested_update_time):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetCameraRequestedUpdateTime')
+        data['name'] = name
+        data['updateTime'] = requested_update_time
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetCameraUpdatePriority')
+    def set_camera_update_priority(self, name, update_priority):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetCameraUpdatePriority')
+        data['name'] = name
+        data['updatePriority'] = update_priority
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('OpenedLidar')
+    def open_lidar(self, name, vehicle, is_using_shared_memory, point_cloud_shmem_handle, point_cloud_shmem_size,
+                   colour_shmem_handle, colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
+                   vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance,
+                   is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle):
+
+        data = dict(type='OpenLidar')
+        data['useSharedMemory'] = is_using_shared_memory
+        data['name'] = name
+        data['pointCloudShmemHandle'] = point_cloud_shmem_handle
+        data['pointCloudShmemSize'] = point_cloud_shmem_size
+        data['colourShmemHandle'] = colour_shmem_handle
+        data['colourShmemSize'] = colour_shmem_size
+        data['vid'] = vehicle.vid
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
+        data['pos'] = pos
+        data['dir'] = dir
+        data['up'] = up
+        data['vRes'] = vertical_resolution
+        data['vAngle'] = vertical_angle
+        data['rps'] = rays_per_second
+        data['hz'] = frequency
+        data['hAngle'] = horizontal_angle
+        data['maxDist'] = max_distance
+        data['isVisualised'] = is_visualised
+        data['isAnnotated'] = is_annotated
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
         self.send(data)
         self.logger.info(f'Opened lidar: "{name}')
 
@@ -683,48 +857,318 @@ class BeamNGpy:
         self.send(data)
         self.logger.info(f'Closed lidar: "{name}"')
 
-    @ack('OpenedUltrasonic')
-    def open_ultrasonic(self, name, vehicle, pos=(0.0, -1.0, 0.0), dir=(0.0, 1.0, 0.0),
-                        size=(200, 200), fov=0.3, near_far_planes=(0.05, 10.0),
-                        range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3,
-                        range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=10.6,
-                        sensitivity=3.0, fixed_window_size=10.0,
-                        isVisualised=True,
-                        isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
-        """
-        Opens an ultrasonic sensor instance in the simulator with the given parameters. 
-        The ultrasonic instance has to be assigned a unique name that is later used for
-        closing.
+    @ack('PolledLidar')
+    def poll_lidar(self, name, is_using_shared_memory):
 
-        Args:
-            name (str): The name of the ultrasonic sensor instance to open. Has to be unique relative to other ultrasonic sensors currently opened.
-            vehicle (:class:`.Vehicle`): The vehicle this ultrasonic sensor is attached to.
-            pos (tuple): (X, Y, Z) coordinate triplet specifying the position of the sensor, in world space.
-            dir (tuple): (X, Y, Z) coordinate triplet specifying the direction of the ultrasonic sensor.
-            size (tuple): (X, Y) the resolution of the ultrasonic sensor.
-            fov (float): (X, Y) the ultrasonic sensor field of view parameters.
-            near_far_planes (tuple): (X, Y) the ultrasonic sensor near and far plane distances.
-            range_roundness (float): the general roudness of the ultrasonic sensor range-shape. Can be negative.
-            range_cutoff_sensitivity (float): a cutoff sensitivity parameter for the ultrasonic sensor range-shape.
-            range_shape (float): the shape of the ultrasonic sensor range-shape in [0, 1], from conical to circular.
-            range_focus (float): the focus parameter for the ultrasonic sensor range-shape.
-            range_min_cutoff (float): the minimum cut-off distance for the ultrasonic sensor range-shape. Nothing closer than this will be detected.
-            range_direct_max_cutoff (float): the maximum cut-off distance for the ultrasonic sensor range-shape. 
-                This parameter is a hard cutoff - nothing further than this will be detected, although other parameters can also control the max distance.
-            sensitivity (float): an ultrasonic sensor sensitivity parameter.
-            fixed_window_size (float): an ultrasonic sensor sensitivity parameter.
-            isVisualised (bool): Whether or not to render the ultrasonic sensor points in the simulator.
-            isStatic (bool): Whether or not the ultrasonic sensor should be static (fixed position) or attached to a vehicle.
-            isSnappingDesired (bool): Whether or not to snap the ultrasonic sensor to the nearest vehicle triangle.
-            isForceInsideTriangle (bool): Whether or not to force the ultrasonic sensor to be inside the nearest vehicle triangle.
-        """
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollLidar')
+        data['name'] = name
+        data['isUsingSharedMemory'] = is_using_shared_memory
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedSendAdHocRequestLidar')
+    def send_ad_hoc_request_lidar(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SendAdHocRequestLidar')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedIsAdHocPollRequestReadyLidar')
+    def is_ad_hoc_poll_request_ready_lidar(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='IsAdHocPollRequestReadyLidar')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedCollectAdHocPollRequestLidar')
+    def collect_ad_hoc_poll_request_lidar(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='CollectAdHocPollRequestLidar')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarSensorPosition')
+    def get_lidar_sensor_position(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarSensorPosition')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarSensorDirection')
+    def get_lidar_sensor_direction(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarSensorDirection')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarMaxPendingGpuRequests')
+    def get_lidar_max_pending_gpu_requests(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarMaxPendingGpuRequests')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarRequestedUpdateTime')
+    def get_lidar_requested_update_time(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarRequestedUpdateTime')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarUpdatePriority')
+    def get_lidar_update_priority(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarUpdatePriority')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarVerticalResolution')
+    def get_lidar_vertical_resolution(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarVerticalResolution')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarRaysPerSecond')
+    def get_lidar_rays_per_second(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarRaysPerSecond')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarFrequency')
+    def get_lidar_frequency(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarFrequency')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarMaxDistance')
+    def get_lidar_max_distance(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarMaxDistance')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarIsVisualised')
+    def get_lidar_is_visualised(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarIsVisualised')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetLidarIsAnnotated')
+    def get_lidar_is_annotated(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetLidarIsAnnotated')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedSetLidarVerticalResolution')
+    def set_lidar_vertical_resolution(self, name, vertical_resolution):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarVerticalResolution')
+        data['name'] = name
+        data['verticalResolution'] = vertical_resolution
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarRaysPerSecond')
+    def set_lidar_rays_per_second(self, name, rays_per_second):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarRaysPerSecond')
+        data['name'] = name
+        data['raysPerSecond'] = rays_per_second
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarFrequency')
+    def set_lidar_frequency(self, name, frequency):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarFrequency')
+        data['name'] = name
+        data['frequency'] = frequency
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarMaxDistance')
+    def set_lidar_max_distance(self, name, max_distance):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarMaxDistance')
+        data['name'] = name
+        data['maxDistance'] = max_distance
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarIsVisualised')
+    def set_lidar_is_visualised(self, name, is_visualised):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarIsVisualised')
+        data['name'] = name
+        data['isVisualised'] = is_visualised
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarIsAnnotated')
+    def set_lidar_is_annotated(self, name, is_annotated):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarIsAnnotated')
+        data['name'] = name
+        data['isAnnotated'] = is_annotated
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarMaxPendingGpuRequests')
+    def set_lidar_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarMaxPendingGpuRequests')
+        data['name'] = name
+        data['maxPendingGpuRequests'] = max_pending_gpu_requests
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarRequestedUpdateTime')
+    def set_lidar_requested_update_time(self, name, requested_update_time):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarRequestedUpdateTime')
+        data['name'] = name
+        data['updateTime'] = requested_update_time
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetLidarUpdatePriority')
+    def set_lidar_update_priority(self, name, update_priority):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetLidarUpdatePriority')
+        data['name'] = name
+        data['updatePriority'] = update_priority
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('OpenedUltrasonic')
+    def open_ultrasonic(
+            self, name, vehicle, requested_update_time, update_priority, pos, dir, up, size, field_of_view,
+            near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
+            range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
+            is_force_inside_triangle):
+
         data = dict(type='OpenUltrasonic')
         data['name'] = name
         data['vid'] = vehicle.vid
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
         data['pos'] = pos
         data['dir'] = dir
+        data['up'] = up
         data['size'] = size
-        data['fov'] = fov
+        data['fov'] = field_of_view
         data['near_far_planes'] = near_far_planes
         data['range_roundness'] = range_roundness
         data['range_cutoff_sensitivity'] = range_cutoff_sensitivity
@@ -734,26 +1178,337 @@ class BeamNGpy:
         data['range_direct_max_cutoff'] = range_direct_max_cutoff
         data['sensitivity'] = sensitivity
         data['fixed_window_size'] = fixed_window_size
-        data['isVisualised'] = isVisualised
-        data['isStatic'] = isStatic
-        data['isSnappingDesired'] = isSnappingDesired
-        data['isForceInsideTriangle'] = isForceInsideTriangle
+        data['isVisualised'] = is_visualised
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
 
         self.send(data)
         self.logger.info(f'Opened ultrasonic sensor: "{name}')
 
     @ack('ClosedUltrasonic')
     def close_ultrasonic(self, name):
-        """
-        Closes the ultrasonic sensor instance of the given name in the simulator.
-
-        Args:
-            name (str): The name of the ultrasonic sensor instance to close.
-        """
         data = dict(type='CloseUltrasonic')
         data['name'] = name
         self.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{name}"')
+
+    @ack('PolledUltrasonic')
+    def poll_ultrasonic(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollUltrasonic')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedSendAdHocRequestUltrasonic')
+    def send_ad_hoc_request_ultrasonic(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SendAdHocRequestUltrasonic')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedIsAdHocPollRequestReadyUltrasonic')
+    def is_ad_hoc_poll_request_ready_ultrasonic(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='IsAdHocPollRequestReadyUltrasonic')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedCollectAdHocPollRequestUltrasonic')
+    def collect_ad_hoc_poll_request_ultrasonic(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='CollectAdHocPollRequestUltrasonic')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetUltrasonicSensorPosition')
+    def get_ultrasonic_sensor_position(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetUltrasonicSensorPosition')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetUltrasonicSensorDirection')
+    def get_ultrasonic_sensor_direction(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetUltrasonicSensorDirection')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetUltrasonicMaxPendingGpuRequests')
+    def get_ultrasonic_max_pending_gpu_requests(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetUltrasonicMaxPendingGpuRequests')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetUltrasonicRequestedUpdateTime')
+    def get_ultrasonic_requested_update_time(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetUltrasonicRequestedUpdateTime')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetUltrasonicUpdatePriority')
+    def get_ultrasonic_update_priority(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetUltrasonicUpdatePriority')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetUltrasonicIsVisualised')
+    def get_ultrasonic_is_visualised(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetUltrasonicIsVisualised')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedSetUltrasonicMaxPendingGpuRequests')
+    def set_ultrasonic_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetUltrasonicMaxPendingGpuRequests')
+        data['name'] = name
+        data['maxPendingGpuRequests'] = max_pending_gpu_requests
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetUltrasonicRequestedUpdateTime')
+    def set_ultrasonic_requested_update_time(self, name, requested_update_time):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetUltrasonicRequestedUpdateTime')
+        data['name'] = name
+        data['updateTime'] = requested_update_time
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetUltrasonicUpdatePriority')
+    def set_ultrasonic_update_priority(self, name, update_priority):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetUltrasonicUpdatePriority')
+        data['name'] = name
+        data['updatePriority'] = update_priority
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetUltrasonicIsVisualised')
+    def set_ultrasonic_is_visualised(self, name, is_visualised):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetUltrasonicIsVisualised')
+        data['name'] = name
+        data['isVisualised'] = is_visualised
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('OpenedAccelerometer')
+    def open_accelerometer(
+            self, name, vid, requested_update_time, pos, dir, up, is_using_gravity, is_visualised, is_snapping_desired,
+            is_force_inside_triangle):
+
+        data = dict(type='OpenAccelerometer')
+        data['name'] = name
+        data['vid'] = vid
+        data['updateTime'] = requested_update_time
+        data['pos'] = pos
+        data['dir'] = dir
+        data['up'] = up
+        data['isUsingGravity'] = is_using_gravity
+        data['isVisualised'] = is_visualised
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
+
+        self.send(data)
+        self.logger.info(f'Opened accelerometer sensor: "{name}')
+
+    @ack('ClosedAccelerometer')
+    def close_accelerometer(self, name, vid):
+        data = dict(type='CloseAccelerometer')
+        data['name'] = name
+        data['vid'] = vid
+        self.send(data)
+        self.logger.info(f'Closed accelerometer sensor: "{name}"')
+
+    @ack('PolledAccelerometer')
+    def poll_accelerometer(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollAccelerometer')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedSendAdHocRequestAccelerometer')
+    def send_ad_hoc_request_accelerometer(self, name, vid):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SendAdHocRequestAccelerometer')
+        data['name'] = name
+        data['vid'] = vid
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedIsAdHocPollRequestReadyAccelerometer')
+    def is_ad_hoc_poll_request_ready_accelerometer(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='IsAdHocPollRequestReadyAccelerometer')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedCollectAdHocPollRequestAccelerometer')
+    def collect_ad_hoc_poll_request_accelerometer(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='CollectAdHocPollRequestAccelerometer')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetAccelerometerSensorPosition')
+    def get_accelerometer_sensor_position(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetAccelerometerSensorPosition')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetAccelerometerSensorDirection')
+    def get_accelerometer_sensor_direction(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetAccelerometerSensorDirection')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedSetAccelerometerRequestedUpdateTime')
+    def set_accelerometer_requested_update_time(self, name, vid, requested_update_time):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetAccelerometerRequestedUpdateTime')
+        data['name'] = name
+        data['vid'] = vid
+        data['updateTime'] = requested_update_time
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetAccelerometerIsUsingGravity')
+    def set_accelerometer_is_using_gravity(self, name, vid, is_using_gravity):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetAccelerometerIsUsingGravity')
+        data['name'] = name
+        data['vid'] = vid
+        data['isUsingGravity'] = is_using_gravity
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+    @ack('CompletedSetAccelerometerIsVisualised')
+    def set_accelerometer_is_visualised(self, name, vid, is_visualised):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetAccelerometerIsVisualised')
+        data['name'] = name
+        data['vid'] = vid
+        data['isVisualised'] = is_visualised
+
+        # Send the request for the property to the simulation.
+        self.send(data)
 
     def teleport_vehicle(self, vehicle_id, pos, rot_quat=None, reset=True):
         """

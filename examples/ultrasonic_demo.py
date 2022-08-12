@@ -8,7 +8,7 @@ import random
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import Ultrasonic
+from beamngpy.ultrasonic import Ultrasonic
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
 
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='RED', color='Red')
 
-    ultrasonic = Ultrasonic(isSnappingDesired=True, isForceInsideTriangle=True)
+    ultrasonic = Ultrasonic(is_snapping_desired=True, is_force_inside_triangle=True)
     vehicle.attach_sensor('ultrasonic', ultrasonic)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),

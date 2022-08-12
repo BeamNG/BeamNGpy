@@ -14,11 +14,11 @@ This module implements various sensors that can be attached to vehicles to
 extract data from simulations.
 """
 import base64
+import math
 import mmap
 import os
 from abc import ABC, abstractmethod
-from logging import DEBUG as DBG_LOG_LEVEL
-from logging import getLogger
+from logging import DEBUG, getLogger
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
@@ -27,6 +27,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from .beamngcommon import LOGGER_ID, BNGValueError
+from .lidar import Lidar
+from .ultrasonic import Ultrasonic
 
 NEAR = 0.01
 FAR = 1000
@@ -481,7 +483,7 @@ class Camera(Sensor):
         """
         super().__init__()
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
-        self.logger.setLevel(DBG_LOG_LEVEL)
+        self.logger.setLevel(DEBUG)
         self.pos = pos
         self.direction = direction
         self.fov = fov
@@ -542,19 +544,15 @@ class Camera(Sensor):
 
             if self.annotation:
                 self.annotation_handle = '{}.{}.{}.annotate'
-                self.annotation_handle = self.annotation_handle.format(pid, prefix,
-                                                                    name)
+                self.annotation_handle = self.annotation_handle.format(pid, prefix, name)
                 self.annotation_shmem = mmap.mmap(0, size, self.annotation_handle)
-                self.logger.debug('Bound shmem for annotation: '
-                                f'{self.annotation_handle}')
+                self.logger.debug('Bound shmem for annotation: 'f'{self.annotation_handle}')
 
             if self.instance:
                 self.instance_handle = '{}.{}.{}.instance'
-                self.instance_handle = self.instance_handle.format(pid, prefix,
-                                                                   name)
+                self.instance_handle = self.instance_handle.format(pid, prefix, name)
                 self.instance_shmem = mmap.mmap(0, size, self.instance_handle)
-                self.logger.debug('Bound shmem for instance: '
-                                  f'{self.instance_handle}')
+                self.logger.debug('Bound shmem for instance: 'f'{self.instance_handle}')
 
     def detach(self, vehicle, name):
         """
@@ -682,6 +680,50 @@ class Camera(Sensor):
             img_d = img_d.reshape(height, width)
         return Image.fromarray(img_d)
 
+    def depth_buffer_processing(self, depth_d):
+
+        # Sort the depth values, and cache the sorting map.
+        sort_index = np.argsort(depth_d)
+        s_data = []
+        for i in range(len(depth_d)):
+            s_data.append(depth_d[sort_index[i]])
+
+        # Compute an array of unique depth values, sensitive to some epsilon.
+        size = len(s_data)
+        unique = []
+        unique.append(s_data[0])
+        current = s_data[0]
+        for i in range(1, size):
+            if abs(s_data[i] - current) > 0.01:
+                unique.append(s_data[i])
+                current = s_data[i]
+
+        # Distribute (mark) the individual intensity values throughout the sorted unique distance array.
+        intensity_marks = []
+        intensity_marks.append(0)
+        i_recip = 1 / 255
+        for i in range(254):
+            intensity_marks.append(unique[math.floor(len(unique) * i * i_recip)])
+        intensity_marks.append(1e12)
+
+        # In the sorted depth values array, convert the depth value array into intensity values.
+        depth_intensity_sorted = np.zeros((size))
+        im_index = 0
+        for i in range(size):
+            depth_intensity_sorted[i] = im_index
+            if s_data[i] >= intensity_marks[im_index + 1]:
+                im_index = im_index + 1
+
+        # Re-map the depth values back to their original order.
+        depth_intensity = np.zeros((size))
+        for i in range(len(depth_d)):
+            if self.depth_inverse:
+                depth_intensity[sort_index[i]] = 255 - depth_intensity_sorted[i]
+            else:
+                depth_intensity[sort_index[i]] = depth_intensity_sorted[i]
+
+        return depth_intensity
+
     def decode_b64_response(self, resp):
         decoded = dict(type='Camera')
         img_w = resp['width']
@@ -700,14 +742,12 @@ class Camera(Sensor):
                                                     img_w, img_h, 4)
 
         if self.depth:
-            decoded['depth'] = self.decode_image(resp['depth32F'],
-                                                 img_w, img_h, 1,
-                                                 dtype=np.float32)
-            # TODO: More needs to be done here to scale the lightness values
-            # between 0-255. Please see decode_shmem_response(). Currently
-            # this would generate an invalid image where each pixel's value
-            # would actually be a raw distance. I am unable to complete this
-            # as using shmem=False currently does not work for me.
+            raw_depth_data = resp['depth32F']
+            img_d = base64.b64decode(raw_depth_data)
+            img_d = np.frombuffer(img_d, dtype=np.float32)
+            img_d = self.depth_buffer_processing(img_d)
+            img_d = img_d.reshape(img_h, img_w)
+            decoded['depth'] = Image.fromarray(img_d)
 
         return decoded
 
@@ -760,26 +800,12 @@ class Camera(Sensor):
                 self.depth_shmem.seek(0)
                 depth_d = self.depth_shmem.read(size)
                 depth_d = np.frombuffer(depth_d, dtype=np.float32)
-                # Use linear interpolation to map the depth values
-                # between lightness values 0-255. Any distances outside
-                # of the scale are clamped to either 0 or 255
-                # respectively.
-                if self.depth_inverse:
-                    depth_dist = [self.depth_distance[0],
-                                  self.depth_distance[1]]
-                    depth_d = np.interp(depth_d,
-                                        depth_dist,
-                                        [255, 0],
-                                        left=255,
-                                        right=0)
-                else:
-                    depth_d = np.interp(depth_d, [self.depth_distance[0],
-                                        self.depth_distance[1]], [0, 255],
-                                        left=0,
-                                        right=255)
-                depth_d = depth_d.reshape(img_h, img_w)
-                depth_d = np.uint8(depth_d)
-                decoded['depth'] = Image.fromarray(depth_d)
+
+                depth_intensity = self.depth_buffer_processing(depth_d)
+
+                depth_intensity = depth_intensity.reshape(img_h, img_w)
+                depth_intensity = np.uint8(depth_intensity)
+                decoded['depth'] = Image.fromarray(depth_intensity)
             else:
                 self.logger.error('Depth buffer failed to render. '
                                   'Check that you aren\'t running '
@@ -820,11 +846,12 @@ class Lidar(Sensor):
     max_points = LIDAR_POINTS
     shmem_size = LIDAR_POINTS * 3 * 4
 
-    def __init__(self, useSharedMemory=False, 
-                    pos=(0, 0, 1.7), dir=(0, -1, 0), 
-                    vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120, 
-                    isVisualised=True, isAnnotated=False,
-                    isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
+    def __init__(self, useSharedMemory=False,
+                 updateTime=0.05, updatePriority=0.0,
+                 pos=(0, 0, 1.7), dir=(0, -1, 0),
+                 vres=64, vAngle=26.9, rps=2200000, hz=20, hAngle=360, maxDist=120,
+                 isVisualised=True, isAnnotated=False,
+                 isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
         """
         The LiDAR sensor provides 3D point clouds representing the environment
         as detected by a pulsing laser emitted from the vehicle. The range,
@@ -832,11 +859,13 @@ class Lidar(Sensor):
         """
         super().__init__()
         self.logger = getLogger(f"{LOGGER_ID}.Lidar")
-        self.logger.setLevel(DBG_LOG_LEVEL)
+        self.logger.setLevel(DEBUG)
 
         self.useSharedMemory = useSharedMemory
         self.handle = None
         self.shmem = None
+        self.updateTime = updateTime
+        self.updatePriority = updatePriority
         self.pos = pos
         self.dir = dir
         self.vres = vres
@@ -889,23 +918,21 @@ class Lidar(Sensor):
             vehicle (:class:`.Vehicle`): The vehicle the sensor is being connected to.
         """
         if self.useSharedMemory:
-            bng.open_lidar(self.handle, vehicle, 
-                           self.useSharedMemory, self.handle, Lidar.shmem_size,
-                           pos=self.pos, dir=self.dir,
-                           vres=self.vres, vAngle=self.vAngle, rps=self.rps,
-                           hz=self.hz, hAngle=self.hAngle, maxDist=self.maxDist, 
-                           isVisualised=self.isVisualised, isAnnotated=self.isAnnotated,
-                           isStatic=self.isStatic, isSnappingDesired=self.isSnappingDesired,
-                           isForceInsideTriangle = self.isForceInsideTriangle)
+            bng.open_lidar(self.handle, vehicle, self.useSharedMemory, self.handle, Lidar.shmem_size,
+                           requested_update_time=self.updateTime, update_priority=self.updatePriority, pos=self.pos,
+                           dir=self.dir, vertical_resolution=self.vres, vertical_angle=self.vAngle,
+                           rays_per_second=self.rps, frequency=self.hz, horizontal_angle=self.hAngle,
+                           max_distance=self.maxDist, is_visualised=self.isVisualised, is_annotated=self.isAnnotated,
+                           is_static=self.isStatic, is_snapping_desired=self.isSnappingDesired,
+                           is_force_inside_triangle=self.isForceInsideTriangle)
         else:
-            bng.open_lidar(self.handle, vehicle, 
-                           self.useSharedMemory, '', 0, 
-                           pos=self.pos, dir=self.dir,
-                           vres=self.vres, vAngle=self.vAngle, rps=self.rps,
-                           hz=self.hz, hAngle=self.hAngle, maxDist=self.maxDist, 
-                           isVisualised=self.isVisualised, isAnnotated=self.isAnnotated,
-                           isStatic=self.isStatic, isSnappingDesired=self.isSnappingDesired,
-                           isForceInsideTriangle = self.isForceInsideTriangle)
+            bng.open_lidar(
+                self.handle, vehicle, self.useSharedMemory, '', 0, requested_update_time=self.updateTime,
+                update_priority=self.updatePriority, pos=self.pos, dir=self.dir, vertical_resolution=self.vres,
+                vertical_angle=self.vAngle, rays_per_second=self.rps, frequency=self.hz, horizontal_angle=self.hAngle,
+                max_distance=self.maxDist, is_visualised=self.isVisualised, is_annotated=self.isAnnotated,
+                is_static=self.isStatic, is_snapping_desired=self.isSnappingDesired,
+                is_force_inside_triangle=self.isForceInsideTriangle)
 
     def disconnect(self, bng, vehicle):
         bng.close_lidar(self.handle)
@@ -937,7 +964,6 @@ class Lidar(Sensor):
             y1, z1, ..., xn, yn, zn].
         """
         points_buf = None
-
         if self.useSharedMemory:
             size = self.shmem_size
             self.shmem.seek(0)
@@ -1225,126 +1251,3 @@ class IMU(Sensor):
         req = dict(type='IMU')
         req['name'] = self._name
         return req
-
-
-class Ultrasonic(Sensor):
-    """
-    An ultrasonic sensor (eg parking sensor).
-    """
-
-    def __init__(self,
-                 pos=(0, -3, 0), dir=(0, -1, 0),
-                 size=(200, 200), fov=(0.15, 0.15), near_far_planes=(0.05, 10.0),
-                 range_roundness=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3,
-                 range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=5.0,
-                 sensitivity=3.0, fixed_window_size=10.0,
-                 isVisualised=True,
-                 isStatic=False, isSnappingDesired=False, isForceInsideTriangle=False):
-        self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
-        self.logger.setLevel(DBG_LOG_LEVEL)
-        self.pos = pos
-        self.dir = dir
-        self.size = size
-        self.fov = fov
-        self.near_far_planes = near_far_planes
-        self.range_roundness = range_roundness
-        self.range_cutoff_sensitivity = range_cutoff_sensitivity
-        self.range_shape = range_shape
-        self.range_focus = range_focus
-        self.range_min_cutoff = range_min_cutoff
-        self.range_direct_max_cutoff = range_direct_max_cutoff
-        self.sensitivity = sensitivity
-        self.fixed_window_size = fixed_window_size
-        self.isVisualised = isVisualised
-        self.isStatic = isStatic
-        self.isSnappingDesired = isSnappingDesired
-        self.isForceInsideTriangle = isForceInsideTriangle
-        self.handle = None
-        self.vis_spec = None
-
-    def encode_engine_request(self):
-        """
-        Called to obtain the engine request for this ultrasonic sensor.
-
-        Returns:
-            The engine request containing the settings of this ultrasonic sensor as
-            a dictionary.
-        """
-        req = dict(type='Ultrasonic')
-        req['name'] = self.handle
-        req['pos'] = self.pos
-        req['dir'] = self.dir
-        req['fov'] = self.fov
-        req['resolution'] = self.size
-        req['near_far_planes'] = self.near_far_planes
-        req['range_roundness'] = self.range_roundness
-        req['range_cutoff_sensitivity'] = self.range_cutoff_sensitivity
-        req['range_shape'] = self.range_shape
-        req['range_focus'] = self.range_focus
-        req['range_min_cutoff'] = self.range_min_cutoff
-        req['range_direct_max_cutoff'] = self.range_direct_max_cutoff
-        req['sensitivity'] = self.sensitivity
-        req['fixed_window_size'] = self.fixed_window_size
-        req['isVisualised'] = self.isVisualised
-        req['isStatic'] = self.isStatic
-        req['isSnappingDesired'] = self.isSnappingDesired
-        req['isForceInsideTriangle'] = self.isForceInsideTriangle
-        return req
-        
-    def decode_response(self, resp):
-        """
-        Reads the raw point cloud the simulation wrote to the shared memory and
-        creates a numpy array of points from them. The recoded response is
-        returned as a dictionary with the numpy array in the ``points`` entry.
-
-        Returns:
-            The decoded response as a dictionary with the point cloud as a
-            numpy array in the ``points`` entry. The numpy array is a linear
-            sequence of coordinate triplets in the form of [x0, y0, z0, x1,
-            y1, z1, ..., xn, yn, zn].
-        """
-        data = resp
-        resp = dict(type='Ultrasonic')
-        resp['distance'] = data['lastDistance']
-        resp['windowMin'] = data['lastWindowMin']
-        resp['windowMax'] = data['lastWindowMax']
-        return resp
-
-    def connect(self, bng, vehicle):
-        bng.open_ultrasonic(self.handle, vehicle, pos=self.pos, dir=self.dir, 
-                            size = self.size, fov = self.fov,
-                            near_far_planes = self.near_far_planes, range_roundness = self.range_roundness, 
-                            range_cutoff_sensitivity = self.range_cutoff_sensitivity, 
-                            range_shape = self.range_shape, range_focus = self.range_focus,
-                            range_min_cutoff = self.range_min_cutoff, 
-                            range_direct_max_cutoff = self.range_direct_max_cutoff, 
-                            sensitivity = self.sensitivity, fixed_window_size = self.fixed_window_size,
-                            isVisualised = self.isVisualised,
-                            isStatic = self.isStatic, 
-                            isSnappingDesired = self.isSnappingDesired,
-                            isForceInsideTriangle = self.isForceInsideTriangle)
-						   
-    def disconnect(self, bng, vehicle):
-        bng.close_ultrasonic(self.handle)
-
-    def attach(self, vehicle, name):
-        """
-        Called when the ultrasonic sensor is attached to a vehicle.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle the sensor is being attached to.
-            name (str): The name of the sensor.
-        """
-        pid = os.getpid()
-        self.handle = '{}.{}.{}.ultrasonic'.format(pid, vehicle.vid, name)
-
-    def detach(self, vehicle, name):
-        """
-        Called when the ultrasonic sensor is detached from a vehicle.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle the sensor is being
-                                         detached from.
-            name (str): The name of the sensor.
-        """
-        pass
