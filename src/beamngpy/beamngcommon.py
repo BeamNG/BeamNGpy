@@ -24,7 +24,7 @@ import msgpack
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
-PROTOCOL_VERSION = 'v1.20'
+PROTOCOL_VERSION = 'v1.19'
 LOGGER_ID = "beamngpy"
 LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
 bngpy_logger = logging.getLogger(LOGGER_ID)

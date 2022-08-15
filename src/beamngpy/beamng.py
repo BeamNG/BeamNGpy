@@ -81,6 +81,7 @@ class BeamNGpy:
         self.port = port
         self.remote = remote
         self.home = home
+        self.home = "C:/game"
 
         if not self.remote:
             if not self.home:
@@ -262,7 +263,7 @@ class BeamNGpy:
                   'Please ensure both BeamNG.tech and BeamNGpy are ' \
                   'using the desired versions.\n' \
                   f'BeamNGpy\'s is: {PROTOCOL_VERSION}' \
-                  f'BeamNG.tech\'s is: { resp["version"] }'
+                  f'BeamNG.tech\'s is: { resp["protocolVersion"] }'
             raise BNGError(msg)
         self.logger.info('Successfully connected to BeamNG.tech.')
 
