@@ -1,11 +1,11 @@
 import random
 from time import sleep
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
-from beamngpy.accelerometer import Accelerometer
+from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
+from beamngpy.sensors import Accelerometer
 
 def main():
     random.seed(1703)
-    setup_logging()
+    set_up_simple_logging()
 
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)

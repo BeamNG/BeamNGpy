@@ -9,7 +9,7 @@ import random
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.lidar import Lidar
+from beamngpy.sensors import AutoLidar
 
 
 def main():
@@ -23,9 +23,6 @@ def main():
 
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='RED', color='Red')
 
-    lidar = Lidar(useSharedMemory=True)
-    vehicle.attach_sensor('lidar', lidar)
-
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
                          rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
@@ -38,16 +35,16 @@ def main():
     bng.start_scenario()
 
     # NOTE: Create sensor after scenario has started.
-    #lidar = Lidar('autolidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True)     # Send data via shared memory.
-    lidar = Lidar('autolidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)   # Send data through lua socket instead.
+    #lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, shmem=True)     # Send data via shared memory.
+    lidar = AutoLidar('lidar1', bng, vehicle, requested_update_time=0.01, shmem=False)   # Send data through lua socket instead.
 
     vehicle.ai_set_mode('span')
     print('Driving around, polling the LiDAR sensor every 5 seconds...')
     for i in range(100):
         sleep(5)
         readings_data = lidar.poll() # Fetch the latest readings from the sensor, over either shared memory or the lua socket.
-        print("LiDAR Point Cloud Data after ", i * 5, " seconds: ", readings_data[0])       # The LiDAR point cloud data.
-        print("LiDAR Colour Data after ", i * 5, " seconds: ", readings_data[1])            # The colour data (corresponds to each point).
+        print("LiDAR Point Cloud Data after ", i * 5, " seconds: ", readings_data['pointCloud'][0:10])       # The first 10 points from LiDAR point cloud data.
+        #print("LiDAR Colour Data after ", i * 5, " seconds: ", readings_data['colours'][0:10])             # The colour data (corresponds to each point).
 
     lidar.remove()
     bng.close()
