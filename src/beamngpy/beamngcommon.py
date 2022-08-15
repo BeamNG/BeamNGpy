@@ -124,7 +124,7 @@ def set_up_simple_logging(log_file=None,
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
 
 
-BUF_SIZE = 4096
+BUF_SIZE = 262144
 
 
 class BNGError(Exception):
@@ -247,10 +247,8 @@ def send_msg(skt, data):
     """
     comm_logger.debug(f'Sending {data}.')
     data = msgpack.packb(data, use_bin_type=True)
-    length = '{:016}'.format(len(data))
-    skt.send(bytes(length, 'ascii'))
-    for i in range(0, len(data), BUF_SIZE):
-        skt.send(data[i:i + BUF_SIZE])
+    length = '{:08}'.format(len(data))
+    skt.sendall(bytes(length, 'ascii') + data)
 
 
 def textify_string(d):
@@ -300,11 +298,12 @@ def string_cleanup(data):
     return data
 
 
+recvBufs = []
 def recv_msg(skt):
     """
     Reads a messagepack-encoded message from the given socket, decodes it, and
     returns it. Before the raw message bytes are read, this function expects
-    the amount of bytes to read being sent as a zero-padded 16-character
+    the amount of bytes to read being sent as a zero-padded 8-character
     string.
 
     Args:
@@ -313,16 +312,16 @@ def recv_msg(skt):
     Returns:
         The decoded message.
     """
-    length = skt.recv(16)
+
+    recvBufs.clear()
+    length = skt.recv(8)
     length = int(str(length, 'ascii'))
-    buf = bytearray()
     while length > 0:
-        chunk = min(BUF_SIZE, length)
-        received = skt.recv(chunk)
-        buf.extend(received)
+        received = skt.recv(min(BUF_SIZE, length))
+        recvBufs.append(received)
         length -= len(received)
     assert length == 0
-    data = msgpack.unpackb(buf, raw=False)
+    data = msgpack.unpackb(b"".join(recvBufs), raw=False)
     comm_logger.debug(f'Received {data}.')
 
     if 'bngError' in data:
@@ -330,7 +329,7 @@ def recv_msg(skt):
     if 'bngValueError' in data:
         raise BNGValueError(data['bngValueError'])
 
-    return string_cleanup(data)  # Convert all non-binary strings into utf-8.
+    return string_cleanup(data) # Convert all non-binary strings into utf-8.
 
 
 def angle_to_quat(angle):

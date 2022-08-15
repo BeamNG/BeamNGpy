@@ -432,6 +432,7 @@ class BeamNGpy:
             tries (int): The amount of attempts to connect before giving up.
         """
         self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.logger.info('Connecting to BeamNG.tech at: '
                          f'({self.host}, {self.port})')
         self.skt.settimeout(600)
