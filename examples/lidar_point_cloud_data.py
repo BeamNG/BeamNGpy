@@ -24,8 +24,8 @@ def main():
     vehicle = Vehicle('ego_vehicle', model='etk800',
                       licence='RED', color='Red')
 
-    lidar = Lidar(useSharedMemory=True)     # Run using shared memory.
-    # lidar = Lidar(useSharedMemory=False)   # Run without using shared memory instead.
+    lidar = Lidar(shmem=True)     # Run using shared memory.
+    # lidar = Lidar(shmem=False)   # Run without using shared memory instead.
 
     vehicle.attach_sensor('lidar', lidar)
 

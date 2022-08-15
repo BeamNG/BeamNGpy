@@ -44,7 +44,7 @@ def main():
                                     'Lidar data')
 
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='LIDAR')
-    lidar = Lidar(useSharedMemory=True)
+    lidar = Lidar(shmem=True)
     vehicle.attach_sensor('lidar', lidar)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
@@ -55,7 +55,7 @@ def main():
         bng.load_scenario(scenario)
 
         window = open_window(SIZE, SIZE)
-        lidar_vis = LidarVisualiser(Lidar.max_points)
+        lidar_vis = LidarVisualiser(Lidar.MAX_LIDAR_POINTS)
         lidar_vis.open(SIZE, SIZE)
 
         bng.set_steps_per_second(60)

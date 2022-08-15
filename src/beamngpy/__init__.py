@@ -9,7 +9,7 @@ import os
 
 from . import beamngcommon, sensors
 from .beamng import *
-from .beamngcommon import set_up_simple_logging, config_logging
+from .beamngcommon import angle_to_quat, config_logging, set_up_simple_logging
 from .level import *
 from .procedural import *
 from .road import *

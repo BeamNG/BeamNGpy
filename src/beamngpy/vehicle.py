@@ -89,8 +89,6 @@ class Vehicle:
         options['color3'] = options.get('colour3', options.get('color3'))
         self.options = options
 
-        self.sensor_cache = dict()
-
         self.extensions = options.get('extensions')
 
         self._veh_state_sensor_id = "state"
@@ -257,6 +255,7 @@ class Vehicle:
         """
         engine_reqs = dict()
         vehicle_reqs = dict()
+        polling_reqs = dict()
         for name, sensor in self.sensors.items():
             engine_req = sensor.encode_engine_request()
             vehicle_req = sensor.encode_vehicle_request()
@@ -266,10 +265,12 @@ class Vehicle:
                 engine_reqs[name] = engine_req
             if vehicle_req:
                 vehicle_reqs[name] = vehicle_req
+            if not engine_req and not vehicle_req:
+                polling_reqs[name] = sensor.poll
 
         engine_reqs = dict(type='SensorRequest', sensors=engine_reqs)
         vehicle_reqs = dict(type='SensorRequest', sensors=vehicle_reqs)
-        return engine_reqs, vehicle_reqs
+        return engine_reqs, vehicle_reqs, polling_reqs
 
     def decode_sensor_response(self, sensor_data):
         """
@@ -319,7 +320,7 @@ class Vehicle:
             Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` to
             access the polled sensor data.
         """
-        engine_reqs, vehicle_reqs = self.encode_sensor_requests()
+        engine_reqs, vehicle_reqs, polling_reqs = self.encode_sensor_requests()
         sensor_data = dict()
         if engine_reqs['sensors']:
             self.bng.send(engine_reqs)
@@ -333,10 +334,12 @@ class Vehicle:
             assert response['type'] == 'SensorData'
             sensor_data.update(response['data'])
         result = self.decode_sensor_response(sensor_data)
+
         for sensor, data in result.items():
             self.sensors[sensor].data = data
 
-        self.sensor_cache = result
+        for sensor, req in polling_reqs.items():
+            self.sensors[sensor].data = req()
 
     def hello(self):
         data = dict(type='Hello')

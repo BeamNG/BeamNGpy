@@ -7,7 +7,7 @@ will not update automatically at all. However, ad-hoc polling requests can be se
 
 from logging import DEBUG, getLogger
 
-from .beamngcommon import LOGGER_ID
+from beamngpy.beamngcommon import LOGGER_ID
 
 
 class Accelerometer:

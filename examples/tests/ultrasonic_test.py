@@ -1,11 +1,11 @@
 from time import sleep
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.ultrasonic import Ultrasonic
+from beamngpy.sensors import AutoUltrasonic
 
 # Executing this file will perform various tests on all available functionality relating to the ultrasonic sensor.
 # It is provided to give examples on how to use all ultrasonic sensor functions currently available in beamngpy. 
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     set_up_simple_logging()
 
     # Start up the simulator.
@@ -27,7 +27,7 @@ if __name__ = '__main__':
     print("Ultrasonic test start.")
 
     # Create a default ultrasonic sensor.
-    ultrasonic1 = Ultrasonic('ultrasonic1', bng, vehicle)
+    ultrasonic1 = AutoUltrasonic('ultrasonic1', bng, vehicle)
 
     # Test the automatic polling functionality of the ultrasonic sensor, to make sure we retrieve the readings.
     sleep(2)
@@ -47,7 +47,7 @@ if __name__ = '__main__':
     print("Ultrasonic sensor removed.")
 
     # Create an ultrasonic sensor which has a negative requested update rate, and ensure that no readings are computed from it.
-    ultrasonic2 = Ultrasonic('ultrasonic2', bng, vehicle, requested_update_time=-1.0)
+    ultrasonic2 = AutoUltrasonic('ultrasonic2', bng, vehicle, requested_update_time=-1.0)
     print("Testing an ultrasonic sensor with a negative requested update time...")
     sleep(2)
     sensor_readings = ultrasonic2.poll()
@@ -55,7 +55,7 @@ if __name__ = '__main__':
     ultrasonic2.remove()
 
     # Recreate the first ultrasonic sensor.
-    ultrasonic1 = Ultrasonic('ultrasonic1', bng, vehicle)
+    ultrasonic1 = AutoUltrasonic('ultrasonic1', bng, vehicle)
 
     # Test that the property getter function return the correct data which was set.
     sleep(1)

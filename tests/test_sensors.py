@@ -4,9 +4,9 @@ import time
 import numpy as np
 import pytest
 from beamngpy import BeamNGpy, ProceduralCube, Scenario, Vehicle, angle_to_quat
-from beamngpy.noise import RandomImageNoise, RandomLIDARNoise
-from beamngpy.sensors import (IMU, Camera, Damage, Electrics, GForces, Lidar,
-                              State, Ultrasonic)
+from beamngpy.sensors import (IMU, AutoUltrasonic, Camera, Damage, Electrics,
+                              GForces, Lidar, State)
+from beamngpy.sensors.noise import RandomImageNoise, RandomLIDARNoise
 
 SHMEM_OPTIONS = [False, True]
 SHMEM_IDS = ['Socket', 'Shmem']
@@ -384,7 +384,7 @@ def test_ultrasonic(beamng):
 
         pos = (0, 1, 2)
         rot = (0, 1, 0)
-        ultrasonic = Ultrasonic(pos, rot)
+        ultrasonic = AutoUltrasonic(pos, rot)
 
         vehicle = Vehicle('test', model='pickup')
         vehicle.attach_sensor('ultrasonic', ultrasonic)

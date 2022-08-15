@@ -11,14 +11,16 @@ This module implements a wrapper class for the sensors, so that it is possible
 to generate non-ideal data.
 """
 
-from .sensors import AbstractSensor
-from .beamngcommon import LOGGER_ID
-import numpy as np
-from PIL import Image
 from abc import abstractmethod
-from logging import getLogger, DEBUG
-from skimage.util import noise as skinoise
+from logging import DEBUG, getLogger
+
+import numpy as np
+from beamngpy.beamngcommon import LOGGER_ID
+from PIL import Image
 from skimage.util import dtype as skitype
+from skimage.util import noise as skinoise
+
+from .sensor import AbstractSensor
 
 module_logger = getLogger(f'{LOGGER_ID}.noise')
 module_logger.setLevel(DEBUG)

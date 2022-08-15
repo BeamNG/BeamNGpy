@@ -61,7 +61,7 @@ def main():
     gforces = GForces()
     electrics = Electrics()
     damage = Damage()
-    lidar = Lidar(isVisualised=False)
+    lidar = Lidar(visualised=False)
     timer = Timer()
 
     # Attach them

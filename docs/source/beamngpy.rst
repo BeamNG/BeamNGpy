@@ -28,14 +28,6 @@ beamngpy.level module
    :undoc-members:
    :show-inheritance:
 
-beamngpy.noise module
----------------------
-
-.. automodule:: beamngpy.noise
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 beamngpy.procedural module
 --------------------------
 
@@ -65,13 +57,14 @@ beamngpy.sensors module
 
 .. automodule:: beamngpy.sensors
    :members:
+   :imported-members:
    :undoc-members:
    :show-inheritance:
 
-beamngpy.test module
---------------------
+beamngpy.sensors.noise module
+-----------------------------
 
-.. automodule:: beamngpy.test
+.. automodule:: beamngpy.sensors.noise
    :members:
    :undoc-members:
    :show-inheritance:

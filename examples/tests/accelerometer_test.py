@@ -1,7 +1,7 @@
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.accelerometer import Accelerometer
+from beamngpy.sensors import Accelerometer
 
 # Executing this file will perform various tests on all available functionality relating to the accelerometer sensor.
 # It is provided to give examples on how to use all accelerometer sensor functions currently available in beamngpy.
