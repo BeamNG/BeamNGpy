@@ -170,32 +170,3 @@ class Sensor(AbstractSensor):
             function.
         """
         return dict()
-
-
-class PollingSensor(Sensor):
-    """
-    A wrapper for all sensors using the ``poll`` method of getting the sensor values from the simulation.
-    """
-    def __init__(self, sensor_gen):
-        super().__init__()
-        self.sensor = None
-        self.sensor_gen = sensor_gen
-        self.vehicle = None
-        self.name = None
-
-    def attach(self, vehicle, name):
-        self.vehicle = vehicle
-        self.name = name
-
-    def detach(self, vehicle, name):
-        self.vehicle = None
-        self.name = None
-
-    def connect(self, bng, vehicle):
-        self.sensor = self.sensor_gen(self.name, bng, vehicle)
-
-    def disconnect(self, bng, vehicle):
-        self.sensor.remove()
-
-    def poll(self):
-        return self.sensor.poll()

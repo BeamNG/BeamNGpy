@@ -1,7 +1,7 @@
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import AutoLidar
+from beamngpy.sensors import Lidar
 
 # Executing this file will perform various tests on all available functionality relating to the LiDAR sensor.
 # It is provided to give examples on how to use all LiDAR sensor functions currently available in beamngpy.
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     print("LiDAR test start.")
 
     # Create a default LiDAR sensor which uses shared memory.
-    lidar1 = AutoLidar('lidar1', bng, vehicle, shmem=True)
+    lidar1 = Lidar('lidar1', bng, vehicle, is_using_shared_memory=True)
     print("Testing a LiDAR sensor which uses shared memory...")
 
     # Test the automatic polling functionality of the LiDAR sensor, to make sure we retrieve the point cloud data via shared memory.
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     print("LiDAR sensor removed.")
 
     # Now create a default LiDAR sensor which does not use shared memory, and perform the same tests.
-    lidar2 = AutoLidar('lidar2', bng, vehicle, shmem=False)
+    lidar2 = Lidar('lidar2', bng, vehicle, is_using_shared_memory=False)
     print("Testing a LiDAR sensor which DOES NOT use shared memory...")
 
     # Test the automatic polling functionality of this LiDAR sensor, to make sure we retrieve the point cloud data via the lua socket.
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     print("LiDAR sensor removed.")
 
     # Create a LiDAR sensor which has a negative requested update rate, and ensure that no readings are computed from it.
-    lidar3 = AutoLidar('lidar3', bng, vehicle, requested_update_time=-1.0)
+    lidar3 = Lidar('lidar3', bng, vehicle, requested_update_time=-1.0)
     print("Testing a LiDAR sensor with a negative requested update time (WITH shared memory)...")
     sleep(2)
     data = lidar3.poll()
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     lidar3.remove()
 
     # And the same again WITHOUT shared memory.
-    lidar4 = AutoLidar('lidar3', bng, vehicle, requested_update_time=-1.0, shmem=False)
+    lidar4 = Lidar('lidar3', bng, vehicle, requested_update_time=-1.0, is_using_shared_memory=False)
     print("Testing a LiDAR sensor with a negative requested update time (WITHOUT shared memory)...")
     sleep(2)
     data = lidar4.poll()
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     lidar4.remove()
 
     # Recreate the first LiDAR sensor.
-    lidar1 = AutoLidar('lidar1', bng, vehicle)
+    lidar1 = Lidar('lidar1', bng, vehicle)
 
     # Test that the property getter function return the correct data which was set.
     sleep(1)

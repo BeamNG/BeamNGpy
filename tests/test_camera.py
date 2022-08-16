@@ -32,20 +32,17 @@ if __name__ == '__main__':
     print("Camera test start.")
 
     # Create a camera sensor which uses shared memory. This is placed to the left of the vehicle, facing towards the vehicle.
-    cam1 = AutoCamera('camera1', bng, vehicle, shmem=True, pos=(-5, 0, 1), direction=(1, 0, 0),
-                    fov=(70, 70), near_far=(0.1, 1000), resolution=(512, 512),
-                    colour=True, annotation=True, depth=True)
+    cam1 = AutoCamera('camera1', bng, vehicle, is_using_shared_memory=True, pos=(-5, 0, 1), dir=(1, 0, 0),
+                    field_of_view=(70, 70), near_far_planes=(0.1, 1000), render_size=(512, 512))
 
     # Create a camera sensor which does not use shared memory (data will be send back across the socket). This is placed to the right of the vehicle,
     # facing towards the vehicle.
-    cam2 = AutoCamera('camera2', bng, vehicle, shmem=False, pos=(5, 0, 1), direction=(-1, 0, 0),
-                    fov=(70, 70), near_far=(0.1, 1000), resolution=(512, 512),
-                    colour=True, annotation=True, depth=True)
+    cam2 = AutoCamera('camera2', bng, vehicle, is_using_shared_memory=False, pos=(5, 0, 1), dir=(-1, 0, 0),
+                    field_of_view=(70, 70), near_far_planes=(0.1, 1000), render_size=(512, 512))
 
     # Create a camera sensor which has an oblique angle to the world
-    cam3 = AutoCamera('camera3', bng, vehicle, shmem=False, pos=(0, 5, 1), direction=(0, -1, 0),
-                    up=(1, 0, 1), fov=(70, 70), near_far=(0.1, 1000), resolution=(512, 512),
-                    colour=True, annotation=True, depth=True)
+    cam3 = AutoCamera('camera3', bng, vehicle, is_using_shared_memory=False, pos=(0, 5, 1), dir=(0, -1, 0),
+                    up=(1, 0, 1), field_of_view=(70, 70), near_far_planes=(0.1, 1000), render_size=(512, 512))
 
 
     # Test the image data by polling the camera sensors.
@@ -130,12 +127,11 @@ if __name__ == '__main__':
     # We create a camera with a negative update time, then attempt to poll it. The images here should not be an image of the scene.
     print("Negative update time test.  The next 3 images should be blank, since the camera is set to not poll.")
     idle_cam = AutoCamera(
-        'idle cam', bng, vehicle, requested_update_time=-1.0, shmem=True, pos=(-5, 0, 1),
-        direction=(1, 0, 0),
-        fov=(70, 70),
-        near_far=(0.1, 1000),
-        resolution=(512, 512),
-        colour=True, annotation=True, depth=True)
+        'idle cam', bng, vehicle, requested_update_time=-1.0, is_using_shared_memory=True, pos=(-5, 0, 1),
+        dir=(1, 0, 0),
+        field_of_view=(70, 70),
+        near_far_planes=(0.1, 1000),
+        render_size=(512, 512))
     sleep(3)
     images = idle_cam.poll()
     plt.imshow(np.asarray(images['colour'].convert('RGB')))

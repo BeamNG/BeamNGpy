@@ -10,6 +10,7 @@
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Lidar
+from beamngpy.sensors.lidar import MAX_LIDAR_POINTS
 from beamngpy.visualiser import LidarVisualiser
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -44,7 +45,7 @@ def main():
                                     'Lidar data')
 
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='LIDAR')
-    lidar = Lidar(shmem=True)
+    lidar = Lidar(is_using_shared_memory=True)
     vehicle.attach_sensor('lidar', lidar)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
@@ -55,7 +56,7 @@ def main():
         bng.load_scenario(scenario)
 
         window = open_window(SIZE, SIZE)
-        lidar_vis = LidarVisualiser(Lidar.MAX_LIDAR_POINTS)
+        lidar_vis = LidarVisualiser(MAX_LIDAR_POINTS)
         lidar_vis.open(SIZE, SIZE)
 
         bng.set_steps_per_second(60)

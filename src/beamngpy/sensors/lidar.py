@@ -13,37 +13,18 @@ from logging import DEBUG, getLogger
 import numpy as np
 from beamngpy.beamngcommon import LOGGER_ID
 
-from .sensor import PollingSensor
-
 # The maximum number of LiDAR points which can be used.
 # TODO: Make this more efficient by instead computing the number of LiDAR points based on the sensor parameter values.
 MAX_LIDAR_POINTS = 2000000
 
 
-class Lidar(PollingSensor):
-    def __init__(self, pos=(0, 0, 1.7), direction=(0, -1, 0), up=(0, 0, 1),
-                 vertical_resolution=64, vertical_angle=26.9, rays_per_second=2200000, frequency=20, horizontal_angle=360,
-                 max_distance=120, shmem=True, visualised=True, annotation=False, static=False, snapping_desired=False,
-                 force_inside_triangle=False, requested_update_time=0.1, update_priority=0.0):
-        """
-        The LiDAR sensor provides 3D point clouds representing the environment
-        as detected by a pulsing laser emitted from the vehicle. The range,
-        position, and refresh rate of this sensor can be customised.
-        """
-        def lidar_gen(name, bng, vehicle): return AutoLidar(
-            name, bng, vehicle, pos, direction, up, vertical_resolution, vertical_angle, rays_per_second, frequency,
-            horizontal_angle, max_distance, shmem, visualised, annotation, static, snapping_desired,
-            force_inside_triangle, requested_update_time, update_priority)
-        super().__init__(lidar_gen)
-
-
-class AutoLidar:
+class Lidar:
     def __init__(
-            self, name, bng, vehicle=None,
-            pos=(0, 0, 1.7), direction=(0, -1, 0), up=(0, 0, 1),
+            self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0,
+            pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
             vertical_resolution=64, vertical_angle=26.9, rays_per_second=2200000, frequency=20, horizontal_angle=360,
-            max_distance=120, shmem=True, visualised=True, annotation=False, static=False, snapping_desired=False,
-            force_inside_triangle=False, requested_update_time=0.1, update_priority=0.0):
+            max_distance=120, is_using_shared_memory=True, is_visualised=True, is_annotated=False, is_static=False,
+            is_snapping_desired=False, is_force_inside_triangle=False):
         """
         Creates a LiDAR sensor.
 
@@ -69,7 +50,6 @@ class AutoLidar:
             is_snapping_desired (bool): A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
             is_force_inside_triangle (bool): A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
         """
-
         self.logger = getLogger(f'{LOGGER_ID}.Lidar')
         self.logger.setLevel(DEBUG)
 
@@ -78,14 +58,14 @@ class AutoLidar:
         self.name = name
 
         # Set up the shared memory for this sensor, if requested.
-        self.is_using_shared_memory = shmem
+        self.is_using_shared_memory = is_using_shared_memory
         self.point_cloud_shmem_size = MAX_LIDAR_POINTS * 3 * 4
         self.point_cloud_shmem = None
         self.point_cloud_shmem_handle = None
         self.colour_shmem_size = MAX_LIDAR_POINTS * 4
         self.colour_shmem = None
         self.colour_shmem_handle = None
-        if shmem:
+        if is_using_shared_memory:
             pid = os.getpid()
             self.point_cloud_shmem_handle = '{}.{}.{}.PointCloud'.format(pid, '', name)
             self.point_cloud_shmem = mmap.mmap(0, self.point_cloud_shmem_size, self.point_cloud_shmem_handle)
@@ -97,10 +77,10 @@ class AutoLidar:
 
         # Create and initialise this sensor in the simulation.
         bng.open_lidar(
-            name, vehicle, shmem, self.point_cloud_shmem_handle, self.point_cloud_shmem_size, self.
-            colour_shmem_handle, self.colour_shmem_size, requested_update_time, update_priority, pos, direction, up,
+            name, vehicle, is_using_shared_memory, self.point_cloud_shmem_handle, self.point_cloud_shmem_size, self.
+            colour_shmem_handle, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
             vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance,
-            visualised, annotation, static, snapping_desired, force_inside_triangle)
+            is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
 
     def _convert_binary_to_array(self, binary):
@@ -109,7 +89,6 @@ class AutoLidar:
 
         Args:
             binary (binary string): The raw readings data, as a binary string.
-
         Returns:
             (dict): A dictionary containing the point cloud and colour data.
         """
@@ -140,7 +119,6 @@ class AutoLidar:
         """
         Removes this sensor from the simulation.
         """
-
         # Remove the shared memory binding being used by this sensor, if applicable.
         if self.is_using_shared_memory:
             self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.point_cloud_shmem_handle}')
@@ -160,7 +138,6 @@ class AutoLidar:
         Returns:
             (np.array x 2): The LiDAR point cloud and colour data.
         """
-
         processed_readings = dict(type='Lidar')
 
         # Get the LiDAR point cloud and colour data, and format it before returning it.
@@ -217,7 +194,6 @@ class AutoLidar:
 
         Args:
             request_id (int): The unique Id number of the ad-hoc request. This was returned from the simulator upon sending the ad-hoc polling request.
-
         Returns:
             (dict): A dictionary containing the LiDAR point cloud and colour data.
         """

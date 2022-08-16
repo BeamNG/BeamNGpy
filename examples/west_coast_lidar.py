@@ -9,7 +9,7 @@ import random
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import AutoLidar
+from beamngpy.sensors import Lidar
 
 
 def main():
@@ -35,8 +35,8 @@ def main():
     bng.start_scenario()
 
     # NOTE: Create sensor after scenario has started.
-    #lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, shmem=True)     # Send data via shared memory.
-    lidar = AutoLidar('lidar1', bng, vehicle, requested_update_time=0.01, shmem=False)   # Send data through lua socket instead.
+    # lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True)     # Send data via shared memory.
+    lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)   # Send data through lua socket instead.
 
     vehicle.ai_set_mode('span')
     print('Driving around, polling the LiDAR sensor every 5 seconds...')

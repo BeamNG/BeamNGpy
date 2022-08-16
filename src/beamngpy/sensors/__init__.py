@@ -15,13 +15,14 @@ extract data from simulations.
 """
 
 from .accelerometer import Accelerometer
-from .camera import AutoCamera, Camera
+from .auto_camera import AutoCamera
+from .camera import Camera
 from .damage import Damage
 from .electrics import Electrics
 from .gforces import GForces
 from .imu import IMU
-from .lidar import AutoLidar, Lidar
+from .lidar import Lidar
 from .sensor import Sensor
 from .state import State
 from .timer import Timer
-from .ultrasonic import AutoUltrasonic, Ultrasonic
+from .ultrasonic import Ultrasonic
