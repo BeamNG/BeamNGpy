@@ -173,32 +173,6 @@ def test_noise(beamng):
         noise_pc = noise_lidar.data['points']
         assert(not(np.array_equal(ref_pc, noise_pc)))
 
-
-@pytest.mark.parametrize('shmem', SHMEM_OPTIONS, ids=SHMEM_IDS)
-def test_lidar(beamng, shmem):
-    with beamng as bng:
-        scenario = Scenario('west_coast_usa', 'lidar_test')
-        vehicle = Vehicle('test_car', model='etk800')
-
-        lidar = Lidar(shmem=shmem)
-        vehicle.attach_sensor('lidar', lidar)
-
-        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                             rot_quat=angle_to_quat((0, 0, 45)))
-        scenario.make(beamng)
-
-        bng.load_scenario(scenario)
-        bng.step(120)
-        time.sleep(20)
-
-        vehicle.poll_sensors()
-
-        arr = lidar.data['points']
-        ref = arr[0]
-        eq = arr[np.where(arr == ref)]
-        assert eq.size != arr.size
-
-
 def test_gforces(beamng):
     with beamng as bng:
         scenario = Scenario('west_coast_usa', 'gforce_test')
@@ -371,35 +345,6 @@ def test_imu(beamng):
                               [nax, nay, naz, ngx, ngy, ngz]):
             assert np.mean(parr) != np.mean(narr)
 
-
-def test_ultrasonic(beamng):
-    with beamng as bng:
-        scenario = Scenario('smallgrid', 'ultrasonic_test')
-        cube_dist = 4
-        cube = ProceduralCube(name='cube',
-                              pos=(0, -cube_dist, 5),
-                              rot_quat=(0, 0, 0, 1),
-                              size=(1, 20, 10))
-        scenario.add_procedural_mesh(cube)
-
-        pos = (0, 1, 2)
-        rot = (0, 1, 0)
-        ultrasonic = Ultrasonic(pos, rot)
-
-        vehicle = Vehicle('test', model='pickup')
-        vehicle.attach_sensor('ultrasonic', ultrasonic)
-
-        scenario.add_vehicle(vehicle,
-                             pos=(0, 0, 0),
-                             rot_quat=(0, 0, 0, 1))
-        scenario.make(beamng)
-
-        bng.load_scenario(scenario)
-        bng.start_scenario()
-        vehicle.poll_sensors()
-        assert 0 < vehicle.sensors['ultrasonic'].data['distance'] < cube_dist
-
-
 if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)
-    test_ultrasonic(bng)
+    test_camera(bng)
