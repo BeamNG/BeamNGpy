@@ -45,8 +45,6 @@ def main():
                                     'Lidar data')
 
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='LIDAR')
-    lidar = Lidar(is_using_shared_memory=True)
-    vehicle.attach_sensor('lidar', lidar)
 
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
                          rot_quat=(0, 0, 0.3826834, 0.9238795))
@@ -65,12 +63,14 @@ def main():
         bng.hide_hud()
         bng.start_scenario()
 
+        lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True)     # Send data via shared memory.
+        #lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)   # Send data through lua socket instead.
+
         bng.pause()
         vehicle.ai_set_mode('span')
 
         def update():
-            vehicle.poll_sensors()
-            points = lidar.data['points']
+            points = lidar.poll()['pointCloud']
             bng.step(3, wait=False)
 
             lidar_vis.update_points(points, vehicle.state)

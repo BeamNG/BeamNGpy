@@ -3,8 +3,8 @@ import time
 
 import numpy as np
 import pytest
-from beamngpy import BeamNGpy, ProceduralCube, Scenario, Vehicle, angle_to_quat
-from beamngpy.sensors import (IMU, Ultrasonic, Camera, Damage, Electrics,
+from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat
+from beamngpy.sensors import (IMU, Camera, Damage, Electrics,
                               GForces, Lidar, State)
 from beamngpy.sensors.noise import RandomImageNoise, RandomLIDARNoise
 
@@ -173,36 +173,6 @@ def test_noise(beamng):
         noise_pc = noise_lidar.data['points']
         assert(not(np.array_equal(ref_pc, noise_pc)))
 
-def test_gforces(beamng):
-    with beamng as bng:
-        scenario = Scenario('west_coast_usa', 'gforce_test')
-        vehicle = Vehicle('test_car', model='etk800')
-
-        gforces = GForces()
-        vehicle.attach_sensor('gforces', gforces)
-
-        scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                             rot_quat=angle_to_quat((0, 0, 45)))
-        scenario.make(beamng)
-
-        gx = []
-        gy = []
-        bng.load_scenario(scenario)
-        bng.start_scenario()
-        bng.step(120)
-
-        vehicle.ai_set_aggression(2)
-        vehicle.ai_set_mode('span')
-
-        for _ in range(64):
-            bng.step(30)
-            vehicle.poll_sensors()
-            gx.append(gforces.data['gx'])
-            gy.append(gforces.data['gy'])
-
-    assert np.var(gx) > 1 and np.var(gy) > 1
-
-
 def test_electrics(beamng):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'electrics_test')
@@ -347,4 +317,4 @@ def test_imu(beamng):
 
 if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)
-    test_camera(bng)
+    test_imu(bng)
