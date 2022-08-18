@@ -13,11 +13,10 @@ import json
 import os
 import warnings
 import numpy as np
-
 from functools import wraps
 from pathlib import Path
 from shutil import move
-
+from struct import pack, unpack
 import msgpack
 
 
@@ -124,7 +123,7 @@ def set_up_simple_logging(log_file=None,
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
 
 
-BUF_SIZE = 262144
+BUF_SIZE = 131072
 
 
 class BNGError(Exception):
@@ -247,8 +246,8 @@ def send_msg(skt, data):
     """
     comm_logger.debug(f'Sending {data}.')
     data = msgpack.packb(data, use_bin_type=True)
-    length = '{:08}'.format(len(data))
-    skt.sendall(bytes(length, 'ascii') + data)
+    length = pack('!I', len(data))
+    skt.sendall(length + data)
 
 
 def textify_string(d):
@@ -314,8 +313,8 @@ def recv_msg(skt):
     """
 
     recvBufs.clear()
-    length = skt.recv(8)
-    length = int(str(length, 'ascii'))
+    packed_length = skt.recv(4)
+    length = unpack('!I', packed_length)[0]
     while length > 0:
         received = skt.recv(min(BUF_SIZE, length))
         recvBufs.append(received)
