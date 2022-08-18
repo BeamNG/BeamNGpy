@@ -451,25 +451,14 @@ class Camera(Sensor):
         """
         req = dict(type='Camera')
 
-        if self.colour_shmem:
-            req['color'] = self.colour_handle
-        else:
-            req['color'] = None
-
-        if self.depth_shmem:
-            req['depth'] = self.depth_handle
-        else:
-            req['depth'] = None
-
-        if self.annotation_shmem:
-            req['annotation'] = self.annotation_handle
-        else:
-            req['annotation'] = None
-
-        if self.instance_shmem:
-            req['instance'] = self.instance_handle
-        else:
-            req['instance'] = None
+        if self.colour:
+            req['color'] = self.colour_handle if self.shmem else self.colour
+        if self.depth:
+            req['depth'] = self.depth_handle if self.shmem else self.depth
+        if self.annotation:
+            req['annotation'] = self.annotation_handle if self.shmem else self.annotation
+        if self.instance:
+            req['instance'] = self.instance_handle if self.shmem else self.instance
 
         req['pos'] = [float(f) for f in self.pos]
         req['direction'] = [float(f) for f in self.direction]
@@ -491,8 +480,8 @@ class Camera(Sensor):
 
     def decode_b64_response(self, resp):
         decoded = dict(type='Camera')
-        img_w = resp['width']
-        img_h = resp['height']
+        img_w = int(resp['width'])
+        img_h = int(resp['height'])
 
         if self.colour:
             decoded['colour'] = self.decode_image(resp['colorRGB8'],
