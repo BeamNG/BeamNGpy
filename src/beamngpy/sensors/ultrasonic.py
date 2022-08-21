@@ -6,17 +6,13 @@ will not update automatically at all. However, ad-hoc polling requests can be se
 """
 
 from logging import DEBUG, getLogger
-
 from beamngpy.beamngcommon import LOGGER_ID
 
-
 class Ultrasonic:
-    def __init__(
-            self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 1.7),
-            dir=(0, -1, 0), up=(0, 0, 1), size=(200, 200), field_of_view=(0.1, 0.1), near_far_planes=(0.1, 5.1),
-            range_roundess=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3, range_focus=0.376,
-            range_min_cutoff=0.1, range_direct_max_cutoff=5.0, sensitivity=3.0, fixed_window_size=10,
-            is_visualised=True, is_static=False, is_snapping_desired=False, is_force_inside_triangle=False):
+    def __init__(self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
+        resolution=(200, 200), field_of_view_y=5.7, near_far_planes=(0.1, 5.1), range_roundess=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3,
+        range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=5.0, sensitivity=3.0, fixed_window_size=10, is_visualised=True, is_static=False,
+        is_snapping_desired=False, is_force_inside_triangle=False):
         """
         Creates an ultrasonic sensor.
         Args:
@@ -24,19 +20,19 @@ class Ultrasonic:
             bng (BeamNGpy): The BeamNGpy instance, with which to communicate to the simulation.
             vehicle (Vehicle class): The vehicle to which this sensor should be attached, if any.
             requested_update_time (float): The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
-            update_priority (float): The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1. 
+            update_priority (float): The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1.
             pos (tuple): (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
             dir (tuple): (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
             up (tuple): (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
             size (tuple): (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
-            field_of_view (tuple): (X, Y) The sensor field of view parameters.
+            field_of_view_y (float): The sensor vertical field of view parameters.
             near_far_planes (tuple): (X, Y) The sensor near and far plane distances.
             range_roundness (float): the general roudness of the ultrasonic sensor range-shape. Can be negative.
             range_cutoff_sensitivity (float): a cutoff sensitivity parameter for the ultrasonic sensor range-shape.
             range_shape (float): the shape of the ultrasonic sensor range-shape in [0, 1], from conical to circular.
             range_focus (float): the focus parameter for the ultrasonic sensor range-shape.
             range_min_cutoff (float): the minimum cut-off distance for the ultrasonic sensor range-shape. Nothing closer than this will be detected.
-            range_direct_max_cutoff (float): the maximum cut-off distance for the ultrasonic sensor range-shape. This parameter is a hard cutoff - nothing 
+            range_direct_max_cutoff (float): the maximum cut-off distance for the ultrasonic sensor range-shape. This parameter is a hard cutoff - nothing
                 further than this will be detected, although other parameters can also control the max distance.
             sensitivity (float): an ultrasonic sensor sensitivity parameter.
             fixed_window_size (float): an ultrasonic sensor sensitivity parameter.
@@ -53,11 +49,9 @@ class Ultrasonic:
         self.name = name
 
         # Create and initialise this sensor in the simulation.
-        bng.open_ultrasonic(
-            name, vehicle, requested_update_time, update_priority, pos, dir, up, size, field_of_view, near_far_planes,
-            range_roundess, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
-            range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
-            is_force_inside_triangle)
+        bng.open_ultrasonic(name, vehicle, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y, near_far_planes,
+            range_roundess, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff, range_direct_max_cutoff, sensitivity, fixed_window_size,
+            is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')
 
     def remove(self):

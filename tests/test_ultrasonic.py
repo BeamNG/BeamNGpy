@@ -3,7 +3,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Ultrasonic
 
 # Executing this file will perform various tests on all available functionality relating to the ultrasonic sensor.
-# It is provided to give examples on how to use all ultrasonic sensor functions currently available in beamngpy. 
+# It is provided to give examples on how to use all ultrasonic sensor functions currently available in beamngpy.
 
 if __name__ == '__main__':
     set_up_simple_logging()
@@ -11,15 +11,12 @@ if __name__ == '__main__':
     # Start up the simulator.
     bng = BeamNGpy('localhost', 64256)
     bng.open(launch=True)
-
     vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')                       # Create a vehicle.
     scenario = Scenario('smallgrid', 'ultrasonic_test', description='Testing the ultrasonic sensor')    # Create a scenario.
     scenario.add_vehicle(vehicle)                                                                       # Add the vehicle to the scenario.
     scenario.make(bng)
-
     bng.set_deterministic()
-    bng.set_steps_per_second(60)        # Set simulator to 60hz temporal resolution
-
+    bng.set_steps_per_second(60)                                                                        # Set simulator to 60hz temporal resolution
     bng.load_scenario(scenario)
     bng.hide_hud()
     bng.start_scenario()

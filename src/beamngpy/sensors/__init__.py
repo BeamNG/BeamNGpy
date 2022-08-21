@@ -15,7 +15,6 @@ extract data from simulations.
 """
 
 from .accelerometer import Accelerometer
-from .auto_camera import AutoCamera
 from .camera import Camera
 from .damage import Damage
 from .electrics import Electrics

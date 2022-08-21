@@ -1,9 +1,8 @@
-from time import sleep
-
 import matplotlib.pyplot as plt
 import numpy as np
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import AutoCamera
+from beamngpy.sensors import Camera
+from time import sleep
 
 # Executing this file will perform various tests on all available functionality relating to the camera sensor.
 # It is provided to give examples on how to use all camera sensor functions currently available in beamngpy.
@@ -14,16 +13,12 @@ if __name__ == '__main__':
     # Start up the simulator.
     bng = BeamNGpy('localhost', 64256)
     bng.open(launch=True)
-
     vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Green')             # Create a vehicle.
     scenario = Scenario('smallgrid', 'camera_test', description='Testing the camera sensor')    # Create a scenario.
-    # Add the vehicle to the scenario.
-    scenario.add_vehicle(vehicle)
+    scenario.add_vehicle(vehicle)                                                               # Add the vehicle to the scenario.
     scenario.make(bng)
-
     bng.set_deterministic()
-    bng.set_steps_per_second(60)        # Set simulator to 60hz temporal resolution
-
+    bng.set_steps_per_second(60)                                                                # Set simulator to 60hz temporal resolution
     bng.load_scenario(scenario)
     bng.hide_hud()
     bng.start_scenario()
@@ -32,17 +27,17 @@ if __name__ == '__main__':
     print("Camera test start.")
 
     # Create a camera sensor which uses shared memory. This is placed to the left of the vehicle, facing towards the vehicle.
-    cam1 = AutoCamera('camera1', bng, vehicle, is_using_shared_memory=True, pos=(-5, 0, 1), dir=(1, 0, 0),
-                    field_of_view=(70, 70), near_far_planes=(0.1, 1000), render_size=(512, 512))
+    cam1 = Camera('camera1', bng, vehicle, is_using_shared_memory=True, pos=(-5, 0, 1), dir=(1, 0, 0), field_of_view_y=70,
+        near_far_planes=(0.1, 1000), resolution=(512, 512))
 
     # Create a camera sensor which does not use shared memory (data will be send back across the socket). This is placed to the right of the vehicle,
     # facing towards the vehicle.
-    cam2 = AutoCamera('camera2', bng, vehicle, is_using_shared_memory=False, pos=(5, 0, 1), dir=(-1, 0, 0),
-                    field_of_view=(70, 70), near_far_planes=(0.1, 1000), render_size=(512, 512))
+    cam2 = Camera('camera2', bng, vehicle, is_using_shared_memory=False, pos=(5, 0, 1), dir=(-1, 0, 0), field_of_view_y=70,
+        near_far_planes=(0.1, 1000), resolution=(512, 512))
 
     # Create a camera sensor which has an oblique angle to the world
-    cam3 = AutoCamera('camera3', bng, vehicle, is_using_shared_memory=False, pos=(0, 5, 1), dir=(0, -1, 0),
-                    up=(1, 0, 1), field_of_view=(70, 70), near_far_planes=(0.1, 1000), render_size=(512, 512))
+    cam3 = Camera('camera3', bng, vehicle, is_using_shared_memory=False, pos=(0, 5, 1), dir=(0, -1, 0), up=(1, 0, 1), field_of_view_y=70,
+        near_far_planes=(0.1, 1000), resolution=(512, 512))
 
 
     # Test the image data by polling the camera sensors.
@@ -95,12 +90,10 @@ if __name__ == '__main__':
     cam1.set_max_pending_requests(5)
     print("Newly-set Max Pending Requests: ", cam1.get_max_pending_requests())
 
-    # Test the ad-hoc polling functionality of the camera sensor.
-    # We send an ad-hoc request to poll the sensor, then wait for it to return.
+    # Test the ad-hoc polling functionality of the camera sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
     sleep(1)
     print("Ad-hoc poll request test.  The next 6 images come from ad-hoc requests sent to 2 camera sensors. They should contain scene data as before.")
-    # send a request on the shared memory sensor (data should come back over the socket, either way).
-    request_id_1 = cam1.send_ad_hoc_poll_request()
+    request_id_1 = cam1.send_ad_hoc_poll_request()      # send a request on the shared memory sensor (data should come back over the socket, either way).
     request_id_2 = cam2.send_ad_hoc_poll_request()      # send a request on the non shared memory sensor.
     print("Ad-hoc poll requests sent. Unique request Id numbers: ", request_id_1, request_id_2)
     sleep(3)
@@ -126,12 +119,8 @@ if __name__ == '__main__':
     # Test that a camera sensor with a negative requested update time performs as it should (it should not automatically poll for readings).
     # We create a camera with a negative update time, then attempt to poll it. The images here should not be an image of the scene.
     print("Negative update time test.  The next 3 images should be blank, since the camera is set to not poll.")
-    idle_cam = AutoCamera(
-        'idle cam', bng, vehicle, requested_update_time=-1.0, is_using_shared_memory=True, pos=(-5, 0, 1),
-        dir=(1, 0, 0),
-        field_of_view=(70, 70),
-        near_far_planes=(0.1, 1000),
-        render_size=(512, 512))
+    idle_cam = Camera('idle cam', bng, vehicle, requested_update_time=-1.0, is_using_shared_memory=True, pos=(-5, 0, 1), dir=(1, 0, 0),
+        field_of_view=(70, 70), near_far_planes=(0.1, 1000), resolution=(512, 512))
     sleep(3)
     images = idle_cam.poll()
     plt.imshow(np.asarray(images['colour'].convert('RGB')))

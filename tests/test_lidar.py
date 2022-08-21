@@ -1,5 +1,4 @@
 from time import sleep
-
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Lidar
 
@@ -12,16 +11,12 @@ if __name__ == '__main__':
     # Start up the simulator.
     bng = BeamNGpy('localhost', 64256)
     bng.open(launch=True)
-
     vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Blue')              # Create a vehicle.
     scenario = Scenario('smallgrid', 'lidar_test', description='Testing the LiDAR sensor')      # Create a scenario.
-    # Add the vehicle to the scenario.
-    scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0))                                                # Add the vehicle to the scenario.
     scenario.make(bng)
-
     bng.set_deterministic()
-    bng.set_steps_per_second(60)        # Set simulator to 60hz temporal resolution
-
+    bng.set_steps_per_second(60)                                                                # Set simulator to 60hz temporal resolution
     bng.load_scenario(scenario)
     bng.hide_hud()
     bng.start_scenario()
@@ -41,14 +36,11 @@ if __name__ == '__main__':
     # Test the ad-hoc polling functionality of the LiDAR sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
     sleep(1)
     print("Ad-hoc poll request test.")
-    # send an ad-hoc polling request to the simulator.
-    request_id = lidar1.send_ad_hoc_poll_request()
+    request_id = lidar1.send_ad_hoc_poll_request()                                                  # send an ad-hoc polling request to the simulator.
     print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
     sleep(3)
-    # Ensure that the data has been processed before collecting.
-    print("Is ad-hoc request complete? ", lidar1.is_ad_hoc_poll_request_ready(request_id)['data'])
-    # Collect the data now that it has been computed.
-    data_ad_hoc = lidar1.collect_ad_hoc_poll_request(request_id)
+    print("Is ad-hoc request complete? ", lidar1.is_ad_hoc_poll_request_ready(request_id)['data'])  # Ensure that the data has been processed before collecting.
+    data_ad_hoc = lidar1.collect_ad_hoc_poll_request(request_id)                                    # Collect the data now that it has been computed.
     print("LiDAR point cloud data (ad-hoc polling): ", data_ad_hoc['pointCloud'])
     print("LiDAR colour data (ad-hoc polling): ", data_ad_hoc['colours'])
     lidar1.remove()
@@ -67,14 +59,11 @@ if __name__ == '__main__':
     # Test the ad-hoc polling functionality of the LiDAR sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
     sleep(1)
     print("Ad-hoc poll request test.")
-    # send an ad-hoc polling request to the simulator.
-    request_id = lidar2.send_ad_hoc_poll_request()
+    request_id = lidar2.send_ad_hoc_poll_request()                                                      # send an ad-hoc polling request to the simulator.
     print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
     sleep(3)
-    # Ensure that the data has been processed before collecting.
-    print("Is ad-hoc request 1 complete? ", lidar2.is_ad_hoc_poll_request_ready(request_id)['data'])
-    # Collect the data now that it has been computed.
-    data_ad_hoc = lidar2.collect_ad_hoc_poll_request(request_id)
+    print("Is ad-hoc request 1 complete? ", lidar2.is_ad_hoc_poll_request_ready(request_id)['data'])    # Ensure that the data has been processed before collecting.
+    data_ad_hoc = lidar2.collect_ad_hoc_poll_request(request_id)                                        # Collect the data now that it has been computed.
     print("LiDAR point cloud data (ad-hoc polling): ", data_ad_hoc['pointCloud'])
     print("LiDAR colour data (ad-hoc polling): ", data_ad_hoc['colours'])
     lidar2.remove()
@@ -124,7 +113,7 @@ if __name__ == '__main__':
     print("Newly-set Max Pending Requests: ", lidar1.get_max_pending_requests())
 
     # Test changing the visibility of the sensor.
-    print("Test visibility mode.  Lidar visibility should cycle between on and off 3 times, staying at each for 1 second.")
+    print("Test visibility mode.  LiDAR visibility should cycle between on and off 3 times, staying at each for 1 second.")
     sleep(1)
     lidar1.set_is_visualised(False)
     sleep(1)
@@ -139,7 +128,7 @@ if __name__ == '__main__':
     lidar1.set_is_visualised(True)
 
     # Test switching between depth mode and annotation mode.
-    print("Test LiDAR mode.  Lidar should cycle between DEPTH MODE and ANNOTATION MODE, staying at each for 1 second.")
+    print("Test LiDAR mode.  LiDAR should cycle between DEPTH MODE and ANNOTATION MODE, staying at each for 1 second.")
     sleep(1)
     lidar1.set_is_annotated(False)
     sleep(1)

@@ -589,47 +589,18 @@ class BeamNGpy:
         self.logger.debug(f'set following engine flags: {flags}')
         self.send(flags)
 
-    @ack('OpenedShmem')
-    def open_shmem(self, name, size):
-        """
-        Tells the simulator to open a shared memory handle with the given
-        amount of bytes.
+    @ack('OpenedCamera')
+    def open_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y, near_far_planes, pos, dir, up, is_using_shared_memory,
+        colour_shmem_handle, colour_shmem_size, annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size, is_render_colours,
+        is_render_annotations, is_render_instance, is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle):
 
-        Args:
-            name (str): The name of the shared memory to open.
-            size (int): The size to map in bytes.
-        """
-        data = dict(type='OpenShmem', name=name, size=size)
-        self.logger.info(f'Opened shared memory with id <{name}>, '
-                         f'and of size <{size}>')
-        self.send(data)
-
-    @ack('ClosedShmem')
-    def close_shmem(self, name):
-        """
-        Tells the simulator to close a previously-opened shared memory handle.
-
-        Args:
-            name (str): The name of the shared memory space to close.
-        """
-        data = dict(type='CloseShmem', name=name)
-        self.logger.info(f'Closed shared memory with id <{name}>')
-        self.send(data)
-
-    @ack('OpenedAutoCamera')
-    def open_auto_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view,
-                         near_far_planes, pos, dir, up, is_using_shared_memory, colour_shmem_handle, colour_shmem_size,
-                         annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size,
-                         is_render_colours, is_render_annotations, is_render_depth, use_instance_annotations,
-                         is_visualised, is_static, is_snapping_desired, is_force_inside_triangle):
-
-        data = dict(type='OpenAutoCamera')
+        data = dict(type='OpenCamera')
         data['name'] = name
         data['vid'] = vehicle.vid
         data['updateTime'] = requested_update_time
         data['priority'] = update_priority
         data['size'] = size
-        data['fov'] = field_of_view
+        data['fovY'] = field_of_view_y
         data['nearFarPlanes'] = near_far_planes
         data['pos'] = pos
         data['dir'] = dir
@@ -643,7 +614,7 @@ class BeamNGpy:
         data['depthShmemSize'] = depth_shmem_size
         data['renderColours'] = is_render_colours
         data['renderAnnotations'] = is_render_annotations
-        data['useInstanceAnnotations'] = use_instance_annotations
+        data['renderInstance'] = is_render_instance
         data['renderDepth'] = is_render_depth
         data['isVisualised'] = is_visualised
         data['isStatic'] = is_static
@@ -652,22 +623,20 @@ class BeamNGpy:
         self.send(data)
         self.logger.info(f'Opened Camera: "{name}')
 
-    @ack('ClosedAutoCamera')
-    def close_auto_camera(self, name, use_instance_annotations):
-        data = dict(type='CloseAutoCamera')
+    @ack('ClosedCamera')
+    def close_camera(self, name):
+        data = dict(type='CloseCamera')
         data['name'] = name
-        data['useInstanceAnnotations'] = use_instance_annotations
         self.send(data)
         self.logger.info(f'Closed Camera: "{name}"')
 
-    @ack('PolledAutoCamera')
-    def poll_auto_camera(self, name, is_using_shared_memory, is_render_instance):
+    @ack('PolledCamera')
+    def poll_camera(self, name, is_using_shared_memory):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='PollAutoCamera')
+        data = dict(type='PollCamera')
         data['name'] = name
         data['isUsingSharedMemory'] = is_using_shared_memory
-        data['isInstanceAnnotations'] = is_render_instance
 
         # Send the request for updated readings to the simulation.
         self.send(data)
@@ -675,11 +644,11 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.recv()
 
-    @ack('CompletedSendAdHocRequestAutoCamera')
-    def send_ad_hoc_request_auto_camera(self, name):
+    @ack('CompletedSendAdHocRequestCamera')
+    def send_ad_hoc_request_camera(self, name):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SendAdHocRequestAutoCamera')
+        data = dict(type='SendAdHocRequestCamera')
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
@@ -688,11 +657,11 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.recv()
 
-    @ack('CompletedIsAdHocPollRequestReadyAutoCamera')
-    def is_ad_hoc_poll_request_ready_auto_camera(self, request_id):
+    @ack('CompletedIsAdHocPollRequestReadyCamera')
+    def is_ad_hoc_poll_request_ready_camera(self, request_id):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='IsAdHocPollRequestReadyAutoCamera')
+        data = dict(type='IsAdHocPollRequestReadyCamera')
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
@@ -701,14 +670,40 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.recv()
 
-    @ack('CompletedCollectAdHocPollRequestAutoCamera')
-    def collect_ad_hoc_poll_request_auto_camera(self, request_id):
+    @ack('CompletedCollectAdHocPollRequestCamera')
+    def collect_ad_hoc_poll_request_camera(self, request_id):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='CollectAdHocPollRequestAutoCamera')
+        data = dict(type='CollectAdHocPollRequestCamera')
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetFullCameraRequestSemantic')
+    def get_full_camera_request_semantic(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetFullCameraRequestSemantic')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation/joi.
+        self.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetFullCameraRequestInstance')
+    def get_full_camera_request_instance(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetFullCameraRequestInstance')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation/joi.
         self.send(data)
 
         # Receive the updated readings from the simulation.
@@ -1155,7 +1150,7 @@ class BeamNGpy:
 
     @ack('OpenedUltrasonic')
     def open_ultrasonic(
-            self, name, vehicle, requested_update_time, update_priority, pos, dir, up, size, field_of_view,
+            self, name, vehicle, requested_update_time, update_priority, pos, dir, up, size, field_of_view_y,
             near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
             range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
             is_force_inside_triangle):
@@ -1169,7 +1164,7 @@ class BeamNGpy:
         data['dir'] = dir
         data['up'] = up
         data['size'] = size
-        data['fov'] = field_of_view
+        data['fovY'] = field_of_view_y
         data['near_far_planes'] = near_far_planes
         data['range_roundness'] = range_roundness
         data['range_cutoff_sensitivity'] = range_cutoff_sensitivity
@@ -1523,7 +1518,7 @@ class BeamNGpy:
             rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
                               rotation as quaternion
             reset (bool): Specifies if the vehicle will be reset to its initial
-                          state during teleport (including its velocity). 
+                          state during teleport (including its velocity).
 
         Notes:
             The ``reset=False`` option is incompatible with setting rotation of

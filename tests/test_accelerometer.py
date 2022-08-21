@@ -1,5 +1,4 @@
 from time import sleep
-
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Accelerometer
 
@@ -12,18 +11,12 @@ if __name__ == '__main__':
     # Start up the simulator.
     bng = BeamNGpy('localhost', 64256)
     bng.open(launch=True)
-
-    # Create a vehicle.
-    vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')
-    # Create a scenario.
-    scenario = Scenario('smallgrid', 'accelerometer_test', description='Testing the accelerometer sensor')
-    # Add the vehicle to the scenario.
-    scenario.add_vehicle(vehicle)
+    vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')                           # Create a vehicle.
+    scenario = Scenario('smallgrid', 'accelerometer_test', description='Testing the accelerometer sensor')  # Create a scenario.
+    scenario.add_vehicle(vehicle)                                                                           # Add the vehicle to the scenario.
     scenario.make(bng)
-
     bng.set_deterministic()
-    bng.set_steps_per_second(60)        # Set simulator to 60hz temporal resolution
-
+    bng.set_steps_per_second(60)                                                                            # Set simulator to 60hz temporal resolution
     bng.load_scenario(scenario)
     bng.hide_hud()
     bng.start_scenario()
@@ -41,14 +34,11 @@ if __name__ == '__main__':
     # Test the ad-hoc polling functionality of the accelerometer sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
     sleep(1)
     print("Ad-hoc poll request test.")
-    # send an ad-hoc polling request to the simulator.
-    request_id = accel1.send_ad_hoc_poll_request()
+    request_id = accel1.send_ad_hoc_poll_request()                                                  # send an ad-hoc polling request to the simulator.
     print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
     sleep(3)
-    # Ensure that the data has been processed before collecting.
-    print("Is ad-hoc request complete? ", accel1.is_ad_hoc_poll_request_ready(request_id)['data'])
-    # Collect the data now that it has been computed.
-    sensor_readings_ad_hoc = accel1.collect_ad_hoc_poll_request(request_id)
+    print("Is ad-hoc request complete? ", accel1.is_ad_hoc_poll_request_ready(request_id)['data'])  # Ensure that the data has been processed before collecting.
+    sensor_readings_ad_hoc = accel1.collect_ad_hoc_poll_request(request_id)                         # Collect the data now that it has been computed.
     print("Accelerometer readings (ad-hoc polling): ", sensor_readings_ad_hoc)
     accel1.remove()
     print("Accelerometer sensor removed.")
