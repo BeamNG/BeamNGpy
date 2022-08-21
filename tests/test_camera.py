@@ -89,6 +89,22 @@ if __name__ == '__main__':
     print("Newly-set Priority: ", cam1.get_update_priority())
     cam1.set_max_pending_requests(5)
     print("Newly-set Max Pending Requests: ", cam1.get_max_pending_requests())
+    cam3.set_position((-10, 0, 1))
+    print("Newly-set Position: ", cam3.get_position())
+    cam3.set_direction((-1, 0, 0))
+    print("Newly-set Direction: ", cam3.get_direction())
+    cam3.set_up((0, 1, 0))
+    print("Newly-set Direction: ", cam3.get_up())
+
+    print("Camera 3 images (after altering position, direction, and up vectors)...")
+    sleep(1)
+    images = cam3.poll()
+    plt.imshow(np.asarray(images['colour'].convert('RGB')))
+    plt.show()
+    plt.imshow(np.asarray(images['annotation'].convert('RGB')))
+    plt.show()
+    plt.imshow(np.asarray(images['depth'].convert('RGB')))
+    plt.show()
 
     # Test the ad-hoc polling functionality of the camera sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
     sleep(1)
@@ -120,7 +136,7 @@ if __name__ == '__main__':
     # We create a camera with a negative update time, then attempt to poll it. The images here should not be an image of the scene.
     print("Negative update time test.  The next 3 images should be blank, since the camera is set to not poll.")
     idle_cam = Camera('idle cam', bng, vehicle, requested_update_time=-1.0, is_using_shared_memory=True, pos=(-5, 0, 1), dir=(1, 0, 0),
-        field_of_view=(70, 70), near_far_planes=(0.1, 1000), resolution=(512, 512))
+        field_of_view_y=70, near_far_planes=(0.1, 1000), resolution=(512, 512))
     sleep(3)
     images = idle_cam.poll()
     plt.imshow(np.asarray(images['colour'].convert('RGB')))
