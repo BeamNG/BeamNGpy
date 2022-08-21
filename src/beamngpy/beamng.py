@@ -80,7 +80,7 @@ class BeamNGpy:
         self.host = host
         self.port = port
         self.remote = remote
-        self.home = home
+        self.home = "C:/game"
 
         if not self.remote:
             if not self.home:
@@ -709,6 +709,45 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.recv()
 
+    @ack('CompletedGetCameraSensorPosition')
+    def get_camera_sensor_position(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraSensorPosition')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetCameraSensorDirection')
+    def get_camera_sensor_direction(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraSensorDirection')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
+    @ack('CompletedGetCameraSensorUp')
+    def get_camera_sensor_up(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetCameraSensorUp')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.send(data)
+
+        # Receive the property value from the simulation.
+        return self.recv()
+
     @ack('CompletedGetCameraMaxPendingGpuRequests')
     def get_camera_max_pending_gpu_requests(self, name):
 
@@ -748,31 +787,44 @@ class BeamNGpy:
         # Receive the property value from the simulation.
         return self.recv()
 
-    @ack('CompletedGetCameraSensorPosition')
-    def get_camera_sensor_position(self, name):
+    @ack('CompletedSetCameraSensorPosition')
+    def set_camera_sensor_position(self, name, pos):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraSensorPosition')
+        data = dict(type='SetCameraSensorPosition')
         data['name'] = name
+        data['posX'] = pos[0]
+        data['posY'] = pos[1]
+        data['posZ'] = pos[2]
 
         # Send the request for the property to the simulation.
         self.send(data)
 
-        # Receive the property value from the simulation.
-        return self.recv()
-
-    @ack('CompletedGetCameraSensorDirection')
-    def get_camera_sensor_direction(self, name):
+    @ack('CompletedSetCameraSensorDirection')
+    def set_camera_sensor_direction(self, name, dir):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraSensorDirection')
+        data = dict(type='SetCameraSensorDirection')
         data['name'] = name
+        data['dirX'] = dir[0]
+        data['dirY'] = dir[1]
+        data['dirZ'] = dir[2]
 
         # Send the request for the property to the simulation.
         self.send(data)
 
-        # Receive the property value from the simulation.
-        return self.recv()
+    @ack('CompletedSetCameraSensorUp')
+    def set_camera_sensor_up(self, name, up):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetCameraSensorUp')
+        data['name'] = name
+        data['upX'] = up[0]
+        data['upY'] = up[1]
+        data['upZ'] = up[2]
+
+        # Send the request for the property to the simulation.
+        self.send(data)
 
     @ack('CompletedSetCameraMaxPendingGpuRequests')
     def set_camera_max_pending_gpu_requests(self, name, max_pending_gpu_requests):

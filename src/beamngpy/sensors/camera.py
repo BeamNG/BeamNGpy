@@ -34,7 +34,7 @@ class Camera:
 
         Returns:
             A list of bounding boxes specified as dictionaries. Example: 'bbox': [min_x, min_y, max_x, max_y], 'color': [233, 11, 15], 'class': ['CAR'],
-            where min_x, min_y, max_x, max_y mark the corners of the bounding box, color contains the RGB colour of the object in the instance
+            where min_x, min_y, max_x, max_y mark the corners of the bounding box, colour contains the RGB colour of the object in the instance
             annotations, and class the object type identified through the given class mapping.
         """
 
@@ -528,6 +528,7 @@ class Camera:
         # Format the binary string data from the simulator.
         return self._binary_to_image(raw_readings)
 
+    # TODO: Should be removed when GE-2170 is complete.
     def get_full_poll_request(self):
         """
         Gets a full camera request (semantic annotation and instance annotation data included).
@@ -553,6 +554,36 @@ class Camera:
         # Format the binary string data from the simulator.
         return data
 
+    def get_position(self):
+        """
+        Gets the current world-space position of this sensor.
+
+        Returns:
+            (list): The sensor position.
+        """
+        table = self.bng.get_camera_sensor_position(self.name)['data']
+        return [table['x'], table['y'], table['z']]
+
+    def get_direction(self):
+        """
+        Gets the current forward direction vector of this sensor.
+
+        Returns:
+            (list): The sensor direction.
+        """
+        table = self.bng.get_camera_sensor_direction(self.name)['data']
+        return [table['x'], table['y'], table['z']]
+
+    def get_up(self):
+        """
+        Gets the current up direction vector of this sensor.
+
+        Returns:
+            (list): The sensor direction.
+        """
+        table = self.bng.get_camera_sensor_up(self.name)['data']
+        return [table['x'], table['y'], table['z']]
+
     def get_requested_update_time(self):
         """
         Gets the current 'requested update time' value for this sensor.
@@ -571,26 +602,6 @@ class Camera:
         """
         return self.bng.get_camera_update_priority(self.name)['data']
 
-    def get_position(self):
-        """
-        Gets the current world-space position of this sensor.
-
-        Returns:
-            (list): The sensor position.
-        """
-        table = self.bng.get_camera_sensor_position(self.name)['data']
-        return [table['x'], table['y'], table['z']]
-
-    def get_direction(self):
-        """
-        Gets the current direction vector of this sensor.
-
-        Returns:
-            (list): The sensor direction.
-        """
-        table = self.bng.get_camera_sensor_direction(self.name)['data']
-        return [table['x'], table['y'], table['z']]
-
     def get_max_pending_requests(self):
         """
         Gets the current 'max pending requests' value for this sensor. This is the maximum number of polling requests which can be issued at one time.
@@ -599,6 +610,33 @@ class Camera:
             (int): The max pending requests value.
         """
         return self.bng.get_camera_max_pending_gpu_requests(self.name)['data']
+
+    def set_position(self, pos):
+        """
+        Sets the current world-space position for this sensor.
+
+        Args:
+            pos (tuple): The new position.
+        """
+        self.bng.set_camera_sensor_position(self.name, pos)
+
+    def set_direction(self, dir):
+        """
+        Sets the current forward direction vector of this sensor.
+
+        Args:
+            pos (tuple): The new forward direction vector.
+        """
+        self.bng.set_camera_sensor_direction(self.name, dir)
+
+    def set_up(self, up):
+        """
+        Sets the current up vector of this sensor.
+
+        Args:
+            pos (tuple): The new up vector.
+        """
+        self.bng.set_camera_sensor_up(self.name, up)
 
     def set_requested_update_time(self, requested_update_time):
         """
