@@ -80,7 +80,7 @@ class BeamNGpy:
         self.host = host
         self.port = port
         self.remote = remote
-        self.home = "C:/game"
+        self.home = home
 
         if not self.remote:
             if not self.home:
