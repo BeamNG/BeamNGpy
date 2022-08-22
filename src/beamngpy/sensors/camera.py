@@ -15,7 +15,7 @@ from beamngpy.beamngcommon import LOGGER_ID, BNGValueError
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont
 
 class Camera:
 
@@ -298,7 +298,7 @@ class Camera:
             decoded = decoded.reshape(height, width)
 
         # Convert to image format.
-        return ImageOps.mirror(ImageOps.flip(Image.fromarray(decoded)))
+        return Image.fromarray(decoded)
 
     def _depth_buffer_processing(self, raw_depth_values):
         """
@@ -394,7 +394,7 @@ class Camera:
                 ctr = ctr + 1
             processed_values = self._depth_buffer_processing(depth)
             reshaped_data = processed_values.reshape(height, width)
-            processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(reshaped_data)))
+            processed_readings['depth'] = Image.fromarray(reshaped_data)
 
         return processed_readings
 
@@ -451,7 +451,7 @@ class Camera:
                     colour_d = self.colour_shmem.read(buffer_size)
                     colour_d = np.frombuffer(colour_d, dtype=np.uint8)
                     colour_d = colour_d.reshape(height, width, 4)
-                    images['colour'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(colour_d)))
+                    images['colour'] = Image.fromarray(colour_d)
                 else:
                     self.logger.error('Camera - Colour buffer failed to render. Check that you are not running on low settings.')
 
@@ -461,7 +461,7 @@ class Camera:
                     annotate_d = self.annotation_shmem.read(buffer_size)
                     annotate_d = np.frombuffer(annotate_d, dtype=np.uint8)
                     annotate_d = annotate_d.reshape(height, width, 4)
-                    images['annotation'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(annotate_d)))
+                    images['annotation'] = Image.fromarray(annotate_d)
                 else:
                     self.logger.error('Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
 
@@ -473,7 +473,7 @@ class Camera:
                     depth_values = self._depth_buffer_processing(depth_values)
                     depth_values = depth_values.reshape(height, width)
                     depth_values = np.uint8(depth_values)
-                    images['depth'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(depth_values)))
+                    images['depth'] = Image.fromarray(depth_values)
                 else:
                     self.logger.error('Camera - Depth buffer failed to render. Check that you are not running on low settings.')
 
