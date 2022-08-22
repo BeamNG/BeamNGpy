@@ -109,8 +109,8 @@ if __name__ == '__main__':
     # Test the world-space to camera pixel functionality.
     print("out of range pixel. should be [-1, -1: ", cam1.world_point_to_pixel((1e7, 1e7, 1e7)))
     print("pixel at vehicle. should be around center: ", cam1.world_point_to_pixel((0, 0, 0)))
-    print("far pixel at camera center. should be around center: ", cam1.world_point_to_pixel((-1e7, 0, 0), False))
-    print("off-center pixel. should be near bottom-right corner: ", cam1.world_point_to_pixel((0, -3, -2)))
+    print("behind pixel1: ", cam1.world_point_to_pixel((-5.1, 0, 1)))
+    print("off-center pixel. should be near bottom-right corner: ", cam1.world_point_to_pixel((0, -2.7, -2)))
     print("off-center pixel. should be near top-left corner near [0, 0]: ", cam1.world_point_to_pixel((0, 3, 4)))
 
     # Test the ad-hoc polling functionality of the camera sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.

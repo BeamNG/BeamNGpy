@@ -552,7 +552,7 @@ class Camera:
         # Format the binary string data from the simulator.
         return data
 
-    def world_point_to_pixel(self, point, limit_to_near_far_planes=True):
+    def world_point_to_pixel(self, point):
         """
         Converts a 3D point in world space to the 2D pixel coordinate at which it is represented on this camera.
         NOTE: The pixel does not have to actually be visible on the camera image itself in order to retrieve a value; it can be obscured by geometry
@@ -560,12 +560,11 @@ class Camera:
 
         Args:
             point (tuple): The given 3D point, in world space coordinates.
-            limit_to_near_far_planes (bool): A flag which indicates if the near and far plane values of this camera should be respected.
 
         Returns:
             (list): The 2D pixel value which represents the given 3D point, on this camera.
         """
-        pixel_data = self.bng.camera_world_point_to_pixel(self.name, point, limit_to_near_far_planes)['data']
+        pixel_data = self.bng.camera_world_point_to_pixel(self.name, point)['data']
         return [int(pixel_data['x']), int(pixel_data['y'])]
 
     def get_position(self):

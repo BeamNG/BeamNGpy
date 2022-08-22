@@ -690,7 +690,7 @@ class BeamNGpy:
         data = dict(type='GetFullCameraRequestSemantic')
         data['name'] = name
 
-        # Send the request for updated readings to the simulation/joi.
+        # Send the request for updated readings to the simulation.
         self.send(data)
 
         # Receive the updated readings from the simulation.
@@ -703,14 +703,14 @@ class BeamNGpy:
         data = dict(type='GetFullCameraRequestInstance')
         data['name'] = name
 
-        # Send the request for updated readings to the simulation/joi.
+        # Send the request for updated readings to the simulation.
         self.send(data)
 
         # Receive the updated readings from the simulation.
         return self.recv()
 
     @ack('CompletedCameraWorldPointToPixel')
-    def camera_world_point_to_pixel(self, name, point, limit_to_near_far_planes):
+    def camera_world_point_to_pixel(self, name, point):
 
         # Populate a dictionary with the data needed for a request from this sensor.
         data = dict(type='CameraWorldPointToPixel')
@@ -718,9 +718,8 @@ class BeamNGpy:
         data['pointX'] = point[0]
         data['pointY'] = point[1]
         data['pointZ'] = point[2]
-        data['limitNearFarPlanes'] = limit_to_near_far_planes
 
-        # Send the request for updated readings to the simulation/joi.
+        # Send the request for updated readings to the simulation.
         self.send(data)
 
         # Receive the updated readings from the simulation.
