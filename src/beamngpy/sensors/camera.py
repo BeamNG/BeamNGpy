@@ -521,7 +521,6 @@ class Camera:
         Returns:
             (dict): The readings data.
         """
-
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
         raw_readings = self.bng.collect_ad_hoc_poll_request_camera(request_id)['data']
 
@@ -537,7 +536,6 @@ class Camera:
         Returns:
             (dict): The camera data, as images
         """
-
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
         raw_readings1 = self.bng.get_full_camera_request_semantic(self.name)['data']
         raw_readings1 = self._binary_to_image(raw_readings1)
@@ -553,6 +551,22 @@ class Camera:
 
         # Format the binary string data from the simulator.
         return data
+
+    def world_point_to_pixel(self, point, limit_to_near_far_planes=True):
+        """
+        Converts a 3D point in world space to the 2D pixel coordinate at which it is represented on this camera.
+        NOTE: The pixel does not have to actually be visible on the camera image itself in order to retrieve a value; it can be obscured by geometry
+        which is closer, or it can be run without respect to the near and far plane values of the camera.
+
+        Args:
+            point (tuple): The given 3D point, in world space coordinates.
+            limit_to_near_far_planes (bool): A flag which indicates if the near and far plane values of this camera should be respected.
+
+        Returns:
+            (list): The 2D pixel value which represents the given 3D point, on this camera.
+        """
+        pixel_data = self.bng.camera_world_point_to_pixel(self.name, point, limit_to_near_far_planes)['data']
+        return [int(pixel_data['x']), int(pixel_data['y'])]
 
     def get_position(self):
         """
