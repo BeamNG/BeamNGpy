@@ -15,7 +15,7 @@ from beamngpy.beamngcommon import LOGGER_ID, BNGValueError
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 class Camera:
 
@@ -227,6 +227,7 @@ class Camera:
         self.name = name
         self.resolution = resolution
         self.near_far_planes = near_far_planes
+        self.is_static = is_static
         self.is_depth_inverted = is_depth_inverted
         self.is_render_colours = is_render_colours
         self.is_render_annotations = is_render_annotations
@@ -298,7 +299,11 @@ class Camera:
             decoded = decoded.reshape(height, width)
 
         # Convert to image format.
-        return Image.fromarray(decoded)
+        image = Image.fromarray(decoded)
+        if self.is_static == True:
+            return image
+        else:
+            return ImageOps.mirror(ImageOps.flip(image))
 
     def _depth_buffer_processing(self, raw_depth_values):
         """
@@ -384,7 +389,7 @@ class Camera:
             instance = []
             for i in range(len(binary['instance'])):
                 instance.append(np.uint8(binary['instance'][i]))
-            processed_readings['instance'] = self._convert_to_image(annotation, width, height, 4, np.uint8)
+            processed_readings['instance'] = self._convert_to_image(instance, width, height, 4, np.uint8)
 
         if self.is_render_depth:
             depth = np.zeros(int(len(binary['depth']) / 4))
@@ -394,7 +399,11 @@ class Camera:
                 ctr = ctr + 1
             processed_values = self._depth_buffer_processing(depth)
             reshaped_data = processed_values.reshape(height, width)
-            processed_readings['depth'] = Image.fromarray(reshaped_data)
+            image = Image.fromarray(reshaped_data)
+            if self.is_static == True:
+                processed_readings['depth'] = image
+            else:
+                processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(image))
 
         return processed_readings
 
@@ -448,20 +457,26 @@ class Camera:
             if self.is_render_colours:
                 if 'colour' in raw_readings.keys():
                     self.colour_shmem.seek(0)
-                    colour_d = self.colour_shmem.read(buffer_size)
-                    colour_d = np.frombuffer(colour_d, dtype=np.uint8)
-                    colour_d = colour_d.reshape(height, width, 4)
-                    images['colour'] = Image.fromarray(colour_d)
+                    colour_data = self.colour_shmem.read(buffer_size)
+                    colour_data = np.frombuffer(colour_data, dtype=np.uint8)
+                    colour_data = colour_data.reshape(height, width, 4)
+                    if self.is_static:
+                        images['colour'] = Image.fromarray(colour_data)
+                    else:
+                        images['colour'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(colour_data)))
                 else:
                     self.logger.error('Camera - Colour buffer failed to render. Check that you are not running on low settings.')
 
             if self.is_render_annotations:
                 if 'annotation' in raw_readings.keys():
                     self.annotation_shmem.seek(0)
-                    annotate_d = self.annotation_shmem.read(buffer_size)
-                    annotate_d = np.frombuffer(annotate_d, dtype=np.uint8)
-                    annotate_d = annotate_d.reshape(height, width, 4)
-                    images['annotation'] = Image.fromarray(annotate_d)
+                    annotation_data = self.annotation_shmem.read(buffer_size)
+                    annotation_data = np.frombuffer(annotation_data, dtype=np.uint8)
+                    annotation_data = annotation_data.reshape(height, width, 4)
+                    if self.is_static:
+                        images['annotation'] = Image.fromarray(annotation_data)
+                    else:
+                        images['annotation'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(annotation_data)))
                 else:
                     self.logger.error('Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
 
@@ -473,7 +488,10 @@ class Camera:
                     depth_values = self._depth_buffer_processing(depth_values)
                     depth_values = depth_values.reshape(height, width)
                     depth_values = np.uint8(depth_values)
-                    images['depth'] = Image.fromarray(depth_values)
+                    if self.is_static:
+                        images['depth'] = Image.fromarray(depth_values)
+                    else:
+                        images['depth'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(depth_values)))
                 else:
                     self.logger.error('Camera - Depth buffer failed to render. Check that you are not running on low settings.')
 
@@ -537,17 +555,14 @@ class Camera:
             (dict): The camera data, as images
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
-        raw_readings1 = self.bng.get_full_camera_request_semantic(self.name)['data']
-        raw_readings1 = self._binary_to_image(raw_readings1)
-
-        raw_readings2 = self.bng.get_full_camera_request_instance(self.name)['data']
-        raw_readings2 = self._binary_to_image(raw_readings2)
+        raw_readings = self.bng.get_full_camera_request(self.name)['data']
+        raw_readings = self._binary_to_image(raw_readings)
 
         data = dict(type='data')
-        data['colour'] = raw_readings1['colour']
-        data['annotation'] = raw_readings1['annotation']
-        data['instance'] = raw_readings2['instance']
-        data['depth'] = raw_readings1['depth']
+        data['colour'] = raw_readings['colour']
+        data['annotation'] = raw_readings['annotation']
+        data['instance'] = raw_readings['instance']
+        data['depth'] = raw_readings['depth']
 
         # Format the binary string data from the simulator.
         return data

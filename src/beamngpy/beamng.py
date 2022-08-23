@@ -683,24 +683,11 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.recv()
 
-    @ack('CompletedGetFullCameraRequestSemantic')
-    def get_full_camera_request_semantic(self, name):
+    @ack('CompletedGetFullCameraRequest')
+    def get_full_camera_request(self, name):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetFullCameraRequestSemantic')
-        data['name'] = name
-
-        # Send the request for updated readings to the simulation.
-        self.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.recv()
-
-    @ack('CompletedGetFullCameraRequestInstance')
-    def get_full_camera_request_instance(self, name):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetFullCameraRequestInstance')
+        data = dict(type='GetFullCameraRequest')
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
