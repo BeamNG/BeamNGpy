@@ -10,20 +10,23 @@
 .. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
 
-import logging
 import os
-import platform
+import logging
+import msgpack
+from struct import pack, unpack
 import signal
 import socket
+import platform
 import subprocess
 from pathlib import Path
 from time import sleep
 
-from .beamngcommon import (ENV, LOGGER_ID, PROTOCOL_VERSION, BNGError,
-                           BNGValueError, ack, create_warning, recv_msg, send_msg)
+from .beamngcommon import (ENV, LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError, ack, create_warning, BUF_SIZE, string_cleanup)
 from .level import Level
 from .scenario import Scenario, ScenarioObject
 from .vehicle import Vehicle
+
+comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
 
 BINARIES = [
     'Bin64/BeamNG.tech.x64.exe',
@@ -33,6 +36,8 @@ BINARIES_LINUX = [
     'BinLinux/BeamNG.tech.x64',
     'BinLinux/BeamNG.drive.x64'
 ]
+
+recvBufs = []
 
 module_logger = logging.getLogger(f"{LOGGER_ID}.beamng")
 module_logger.setLevel(logging.DEBUG)
@@ -80,7 +85,7 @@ class BeamNGpy:
         self.host = host
         self.port = port
         self.remote = remote
-        self.home = home
+        self.home = "C:/game"
 
         if not self.remote:
             if not self.home:
@@ -433,9 +438,9 @@ class BeamNGpy:
         """
         self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.skt.settimeout(None)
         self.logger.info('Connecting to BeamNG.tech at: '
                          f'({self.host}, {self.port})')
-        self.skt.settimeout(600)
         while tries > 0:
             try:
                 self.skt.connect((self.host, self.port))
@@ -452,23 +457,85 @@ class BeamNGpy:
 
         self.logger.info('BeamNGpy successfully connected to BeamNG.')
 
-    def send(self, data):
+    def reconnect(self):
         """
-        Helper method for sending data over this instance's socket.
+        Tries connecting to the running simulator over the host and port
+        configuration set in this class. Upon failure, connections are
+        re-attempted a limited amount of times.
 
         Args:
-            data (dict): The data to send.
+            tries (int): The amount of attempts to connect before giving up.
         """
-        return send_msg(self.skt, data)
+        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.skt.settimeout(None)
+        sleepTime = 0
+        while True:
+            try:
+                self.skt.connect((self.host, self.port))
+                break
+            except (ConnectionRefusedError, ConnectionAbortedError) as err:
+                sleep(sleepTime)
+                sleepTime = 0.5
+
+    def send(self, data):
+        """
+        Encodes the given data via messagepack and sends the bytes over this instance's socket.
+        Before the raw message bytes are sent, the amount of bytes the
+        message is long is sent as a zero-padded 16-character string.
+
+        Args:
+            data (dict): The data to encode and send
+        """
+        comm_logger.debug(f'Sending {data}.')
+        data = msgpack.packb(data, use_bin_type=True)
+        length = pack('!I', len(data))
+        data = length + data
+        try:
+            return self.skt.sendall(data)
+        except socket.error:
+            self.reconnect()
+            return self.skt.sendall(data)
 
     def recv(self):
         """
-        Helper method for receiving data over this instance's socket.
+        Reads a messagepack-encoded message from this instance's socket, decodes it, and
+        returns it. Before the raw message bytes are read, this function expects
+        the amount of bytes to read being sent as a zero-padded 8-character
+        string.
+
+        Args:
+            skt (:class:`socket`): The socket to read from
 
         Returns:
-            The data received.
+            The decoded message.
         """
-        return recv_msg(self.skt)
+
+        recvBufs.clear()
+        try:
+            packed_length = self.skt.recv(4)
+        except socket.error:
+            self.reconnect()
+            packed_length = self.skt.recv(4)
+        length = unpack('!I', packed_length)[0]
+        while length > 0:
+            try:
+                received = self.skt.recv(min(BUF_SIZE, length))
+            except socket.error:
+                self.reconnect()
+                received = self.skt.recv(min(BUF_SIZE, length))
+            recvBufs.append(received)
+            length -= len(received)
+        assert length == 0
+        data = msgpack.unpackb(b"".join(recvBufs), raw=False)
+        comm_logger.debug(f'Received {data}.')
+
+        if 'bngError' in data:
+            raise BNGError(data['bngError'])
+        if 'bngValueError' in data:
+            raise BNGValueError(data['bngValueError'])
+
+        return string_cleanup(data) # Convert all non-binary strings into utf-8.
 
     def open(self, extensions=None, *args, launch=True, **opts):
         """

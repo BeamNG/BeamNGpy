@@ -8,15 +8,16 @@
 .. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
 
 """
-
-import socket
 from logging import DEBUG, getLogger
+import msgpack
+import socket
+from struct import pack, unpack
 from time import sleep
 
-from .beamngcommon import (LOGGER_ID, PROTOCOL_VERSION, BNGError,
-                           BNGValueError, ack, create_warning, recv_msg,
-                           send_msg)
+from .beamngcommon import (LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError, ack, create_warning, BUF_SIZE, string_cleanup)
 from .sensors import State
+
+comm_logger = getLogger(f'{LOGGER_ID}.communication')
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -25,6 +26,7 @@ SHIFT_MODES = {
     'realistic_automatic': 3,
 }
 
+recvBufs = []
 
 class Vehicle:
     """
@@ -140,20 +142,62 @@ class Vehicle:
 
     def send(self, data):
         """
-        Sends the given data as a message to the corresponding vehicle's
-        socket.
+        Encodes the given data via messagepack and sends the bytes over this instance's socket.
+        Before the raw message bytes are sent, the amount of bytes the
+        message is long is sent as a zero-padded 16-character string.
+
+        Args:
+            data (dict): The data to encode and send
         """
-        return send_msg(self.skt, data)
+        comm_logger.debug(f'Sending {data}.')
+        data = msgpack.packb(data, use_bin_type=True)
+        length = pack('!I', len(data))
+        data = length + data
+        try:
+            return self.skt.sendall(data)
+        except socket.error:
+            self.reconnect()
+            return self.skt.sendall(data)
 
     def recv(self):
         """
-        Reads a message from the corresponding vehicle's socket and returns it
-        as a dictionary.
+        Reads a messagepack-encoded message from this instance's socket, decodes it, and
+        returns it. Before the raw message bytes are read, this function expects
+        the amount of bytes to read being sent as a zero-padded 8-character
+        string.
+
+        Args:
+            skt (:class:`socket`): The socket to read from
 
         Returns:
-            The message received as a dictionary.
+            The decoded message.
         """
-        return recv_msg(self.skt)
+
+        recvBufs.clear()
+        try:
+            packed_length = self.skt.recv(4)
+        except socket.error:
+            self.reconnect()
+            packed_length = self.skt.recv(4)
+        length = unpack('!I', packed_length)[0]
+        while length > 0:
+            try:
+                received = self.skt.recv(min(BUF_SIZE, length))
+            except socket.error:
+                self.reconnect()
+                received = self.skt.recv(min(BUF_SIZE, length))
+            recvBufs.append(received)
+            length -= len(received)
+        assert length == 0
+        data = msgpack.unpackb(b"".join(recvBufs), raw=False)
+        comm_logger.debug(f'Received {data}.')
+
+        if 'bngError' in data:
+            raise BNGError(data['bngError'])
+        if 'bngValueError' in data:
+            raise BNGValueError(data['bngValueError'])
+
+        return string_cleanup(data) # Convert all non-binary strings into utf-8.
 
     def _start_connection(self):
         self.port = self.bng.start_vehicle_connection(self)
@@ -959,7 +1003,7 @@ class Vehicle:
             rot_quat (tuple): Optional tuple (x, y, z, w) specifying vehicle
                               rotation as quaternion
             reset (bool): Specifies if the vehicle will be reset to its initial
-                          state during teleport (including its velocity). 
+                          state during teleport (including its velocity).
 
         Notes:
             The ``reset=False`` option is incompatible with setting rotation of

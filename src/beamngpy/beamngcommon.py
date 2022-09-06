@@ -18,7 +18,7 @@ from pathlib import Path
 from shutil import move
 from struct import pack, unpack
 import msgpack
-
+import socket
 
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
@@ -233,23 +233,6 @@ def ensure_config(cfg_file):
 
 CFG = get_default()
 
-
-def send_msg(skt, data):
-    """
-    Encodes the given data via messagepack and sends the bytes over the given
-    socket. Before the raw message bytes are sent, the amount of bytes the
-    message is long is sent as a zero-padded 16-character string.
-
-    Args:
-        skt (:class:`socket`): The socket to write to
-        data (dict): The data to encode and send
-    """
-    comm_logger.debug(f'Sending {data}.')
-    data = msgpack.packb(data, use_bin_type=True)
-    length = pack('!I', len(data))
-    skt.sendall(length + data)
-
-
 def textify_string(d):
     """
     Attempts to convert binary data to utf-8. If we can do this, we do it. If not, we leave as binary data.
@@ -295,41 +278,6 @@ def string_cleanup(data):
     elif type_d is bytes:
         data = textify_string(data)
     return data
-
-
-recvBufs = []
-def recv_msg(skt):
-    """
-    Reads a messagepack-encoded message from the given socket, decodes it, and
-    returns it. Before the raw message bytes are read, this function expects
-    the amount of bytes to read being sent as a zero-padded 8-character
-    string.
-
-    Args:
-        skt (:class:`socket`): The socket to read from
-
-    Returns:
-        The decoded message.
-    """
-
-    recvBufs.clear()
-    packed_length = skt.recv(4)
-    length = unpack('!I', packed_length)[0]
-    while length > 0:
-        received = skt.recv(min(BUF_SIZE, length))
-        recvBufs.append(received)
-        length -= len(received)
-    assert length == 0
-    data = msgpack.unpackb(b"".join(recvBufs), raw=False)
-    comm_logger.debug(f'Received {data}.')
-
-    if 'bngError' in data:
-        raise BNGError(data['bngError'])
-    if 'bngValueError' in data:
-        raise BNGValueError(data['bngValueError'])
-
-    return string_cleanup(data) # Convert all non-binary strings into utf-8.
-
 
 def angle_to_quat(angle):
     """
