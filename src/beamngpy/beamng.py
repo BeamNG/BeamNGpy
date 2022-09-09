@@ -61,8 +61,6 @@ class BeamNGpy:
         self.scenario = None
         self.connection = None
 
-        self.home = "C:/game"
-
         if not self.remote:
             if not self.home:
                 self.home = ENV['BNG_HOME']
