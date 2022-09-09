@@ -16,9 +16,6 @@ import numpy as np
 from functools import wraps
 from pathlib import Path
 from shutil import move
-from struct import pack, unpack
-import msgpack
-import socket
 
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
@@ -30,7 +27,6 @@ bngpy_logger = logging.getLogger(LOGGER_ID)
 module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
 comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
 bngpy_handlers = list()
-
 
 def create_warning(msg, category=None):
     """Helper function for BeamNGpy modules to create warnings.
@@ -122,10 +118,6 @@ def set_up_simple_logging(log_file=None,
     if moved_log and fh is not None:
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
 
-
-BUF_SIZE = 131072
-
-
 class BNGError(Exception):
     """
     Generic BeamNG error
@@ -152,7 +144,7 @@ def ack(ack_type):
         @wraps(fun)
         def ack_wrapped(*args, **kwargs):
             ret = fun(*args, **kwargs)
-            resp = args[0].recv()
+            resp = args[0].connection.recv()
             if resp['type'] != ack_type:
                 raise BNGError('Wrong ACK: {} != {}'.format(ack_type,
                                                             resp['type']))
@@ -232,52 +224,6 @@ def ensure_config(cfg_file):
 
 
 CFG = get_default()
-
-def textify_string(d):
-    """
-    Attempts to convert binary data to utf-8. If we can do this, we do it. If not, we leave as binary data.
-
-    Args:
-        d (data): The candidate data.
-
-    Returns:
-        The conversion, if it was possible to convert. Otherwise the untouched binary data.
-    """
-    try:
-        return d.decode('utf-8')
-    except:
-        return d
-
-
-def string_cleanup(data):
-    """
-    Recursively iterates through data, and attempts to convert all binary data to utf-8.
-    If we can do this with any elements of the data, we do it. If not, we leave them as binary data.
-
-    Args:
-        data (data): The data.
-
-    Returns:
-        The (possibly) converted data.
-    """
-    type_d = type(data)
-    if type_d is list:
-        for i, val in enumerate(data):
-            type_v = type(val)
-            if type_v is bytes:
-                data[i] = textify_string(val)
-            elif type_v is list or type_v is dict:
-                string_cleanup(val)
-    elif type_d is dict:
-        for key, val in data.items():
-            type_v = type(val)
-            if type_v is bytes:
-                data[key] = textify_string(val)
-            elif type_v is list or type_v is dict:
-                string_cleanup(val)
-    elif type_d is bytes:
-        data = textify_string(data)
-    return data
 
 def angle_to_quat(angle):
     """

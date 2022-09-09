@@ -1,23 +1,9 @@
-"""
-.. module:: vehicle
-    :platform: Windows
-    :synopsis: Contains vehicle-related classes/functions  for BeamNGpy.
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
-.. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
-
-"""
 from logging import DEBUG, getLogger
-import msgpack
-import socket
-from struct import pack, unpack
 from time import sleep
 
-from .beamngcommon import (LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError, ack, create_warning, BUF_SIZE, string_cleanup)
+from .beamngcommon import LOGGER_ID, BNGError, BNGValueError, ack, create_warning
+from .connection import Connection
 from .sensors import State
-
-comm_logger = getLogger(f'{LOGGER_ID}.communication')
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -25,8 +11,6 @@ SHIFT_MODES = {
     'arcade': 2,
     'realistic_automatic': 3,
 }
-
-recvBufs = []
 
 class Vehicle:
     """
@@ -80,7 +64,7 @@ class Vehicle:
         self.port = port
 
         self.bng = None
-        self.skt = None
+        self.connection = None
 
         self.sensors = dict()
 
@@ -109,25 +93,21 @@ class Vehicle:
         return 'V:{}'.format(self.vid)
 
     def is_connected(self):
-        return self.skt is not None
+        return self.connection is not None and self.connection.skt is not None
 
     @property
     def state(self):
         """
-        This property contains the vehicle's current state in the running
-        scenario. It is None if no scenario is running or the state has not
+        This property contains the vehicle's current state in the running scenario. It is None if no scenario is running or the state has not
         been retrieved yet. Otherwise, it contains the following key entries:
 
          * ``pos``: The vehicle's position as an (x,y,z) triplet
          * ``dir``: The vehicle's direction vector as an (x,y,z) triplet
          * ``up``: The vehicle's up vector as an (x,y,z) triplet
-         * ``vel``: The vehicle's velocity along each axis in metres per
-                    second as an (x,y,z) triplet
+         * ``vel``: The vehicle's velocity along each axis in metres per second as an (x,y,z) triplet
 
-        Note that the `state` variable represents a *snapshot* of the last
-        state. It has to be updated through :meth:`.Vehicle.update_vehicle`,
-        which is made to retrieve the current state. Alternatively, for
-        convenience, a call to :meth:`.Vehicle.poll_sensors` also updates the
+        Note that the `state` variable represents a *snapshot* of the last state. It has to be updated through :meth:`.Vehicle.update_vehicle`,
+        which is made to retrieve the current state. Alternatively, for convenience, a call to :meth:`.Vehicle.poll_sensors` also updates the
         vehicle state along with retrieving sensor data.
         """
         return self.sensors[self._veh_state_sensor_id].data
@@ -140,108 +120,13 @@ class Vehicle:
     def state(self):
         del self.sensors[self._veh_state_sensor_id].data
 
-    def send(self, data):
-        """
-        Encodes the given data via messagepack and sends the bytes over this instance's socket.
-        Before the raw message bytes are sent, the amount of bytes the
-        message is long is sent as a zero-padded 16-character string.
-
-        Args:
-            data (dict): The data to encode and send
-        """
-        comm_logger.debug(f'Sending {data}.')
-        data = msgpack.packb(data, use_bin_type=True)
-        length = pack('!I', len(data))
-        data = length + data
-        try:
-            return self.skt.sendall(data)
-        except socket.error:
-            self.reconnect()
-            return self.skt.sendall(data)
-
-    def recv(self):
-        """
-        Reads a messagepack-encoded message from this instance's socket, decodes it, and
-        returns it. Before the raw message bytes are read, this function expects
-        the amount of bytes to read being sent as a zero-padded 8-character
-        string.
-
-        Args:
-            skt (:class:`socket`): The socket to read from
-
-        Returns:
-            The decoded message.
-        """
-
-        recvBufs.clear()
-        try:
-            packed_length = self.skt.recv(4)
-        except socket.error:
-            self.reconnect()
-            packed_length = self.skt.recv(4)
-        length = unpack('!I', packed_length)[0]
-        while length > 0:
-            try:
-                received = self.skt.recv(min(BUF_SIZE, length))
-            except socket.error:
-                self.reconnect()
-                received = self.skt.recv(min(BUF_SIZE, length))
-            recvBufs.append(received)
-            length -= len(received)
-        assert length == 0
-        data = msgpack.unpackb(b"".join(recvBufs), raw=False)
-        comm_logger.debug(f'Received {data}.')
-
-        if 'bngError' in data:
-            raise BNGError(data['bngError'])
-        if 'bngValueError' in data:
-            raise BNGValueError(data['bngValueError'])
-
-        return string_cleanup(data) # Convert all non-binary strings into utf-8.
-
-    def _start_connection(self):
-        self.port = self.bng.start_vehicle_connection(self)
-        self.logger.info(f'Vehicle {self.vid} connected to simulation.')
-
-    def _connect_existing(self, tries=25):
-        """
-        Establishes socket communication with the corresponding vehicle in the
-        simulation and calls the connect-hooks on the vehicle's sensors.
-
-        Args:
-            tries (int): The maximum amount of connection attempts made before
-                         giving up.
-        """
-        flags = self.get_engine_flags()
-        self.bng.set_engine_flags(flags)
-
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.settimeout(600)
-        while tries > 0:
-            try:
-                self.logger.info('Attempting to connect '
-                                 f'to vehicle \'{self.vid}\'')
-                self.skt.connect((self.bng.host, self.port))
-                break
-            except ConnectionRefusedError as err:
-                msg = 'Error connecting to BeamNG.tech vehicle '\
-                      f'{self.vid}. {tries} tries left.'
-                self.logger.error(msg)
-                self.logger.exception(err)
-                sleep(5)
-                tries -= 1
-        self.hello()
-        self.logger.info(f'Successfully connected to vehicle {self.vid}.')
-
-        for _, sensor in self.sensors.items():
-            sensor.connect(self.bng, self)
-
     def connect(self, bng):
-        self.bng = bng
-        if self.port is None:
-            self._start_connection()
-
-        self._connect_existing()
+        """
+        Opens socket communication with the corresponding vehicle.
+        """
+        if self.connection is None:
+            self.connection = Connection(bng, bng.host, self.port)
+        self.connection.connect_to_vehicle(self)
 
     def disconnect(self):
         """
@@ -251,12 +136,11 @@ class Vehicle:
             if name != self._veh_state_sensor_id:
                 sensor.disconnect(self.bng, self)
 
-        if self.skt is not None:
-            self.skt.close()
+        if self.connection is not None:
+            self.connection.disconnect()
+            self.connection = None
 
         self.bng = None
-        self.port = None
-        self.skt = None
 
     def attach_sensor(self, name, sensor):
         """
@@ -266,19 +150,16 @@ class Vehicle:
 
         Args:
             name (str): The name of the sensor.
-            sensor (:class:`beamngpy.Sensor`): The sensor to attach to the
-                                               vehicle.
+            sensor (:class:`beamngpy.Sensor`): The sensor to attach to the vehicle.
         """
         if name in self.sensors.keys():
-            raise BNGValueError('One vehicle cannot have multiple sensors'
-                                f'with the same name: "{name}"')
+            raise BNGValueError('One vehicle cannot have multiple sensors with the same name: "{name}"')
         self.sensors[name] = sensor
         sensor.attach(self, name)
 
     def detach_sensor(self, name):
         """
-        Detaches a sensor from the vehicle's map of known sensors and calls the
-        detach-hook of said sensor.
+        Detaches a sensor from the vehicle's map of known sensors and calls the detach-hook of said sensor.
 
         Args:
             name (str): The name of the sensor to disconnect.
@@ -378,23 +259,6 @@ class Vehicle:
 
         for sensor, data in result.items():
             self.sensors[sensor].data = data
-
-    def hello(self):
-        data = dict(type='Hello')
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'Hello'
-        if resp['protocolVersion'] != PROTOCOL_VERSION:
-            msg = \
-                'Mismatching BeamNGpy protocol versions. ' \
-                'Please ensure both BeamNG.tech and BeamNGpy are ' \
-                'using the desired versions.\n' \
-                'BeamNGpy\'s is: {}' \
-                'BeamNG.tech\'s is: {}'.format(PROTOCOL_VERSION,
-                                               resp['version'])
-            raise BNGError(msg)
-        self.logger.debug('Connected to simulation using '
-                          f'protocol version {PROTOCOL_VERSION}.')
 
     @ack('ShiftModeSet')
     def set_shift_mode(self, mode):

@@ -290,8 +290,8 @@ class Scenario:
         if vehicle in self.vehicles:
             error = f'The vehicle \'{vehicle.vid}\' is already in the scenario.'
             raise BNGValueError(error)
-        
-        if vehicle.skt:
+
+        if vehicle.connection:
             vehicle.disconnect()
 
         self.vehicles.add(vehicle)
@@ -477,7 +477,7 @@ class Scenario:
 
         if connect_existing:
             self._get_existing_vehicles(bng)
-            
+
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles:
             vehicle.connect(bng)

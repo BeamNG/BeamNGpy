@@ -1,56 +1,28 @@
-"""
-.. module:: beamng
-    :platform: Windows
-    :synopsis: Contains the main :py:class:`.BeamNGPy` class used to interface
-               with BeamNG.drive.
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
-.. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
-.. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
-"""
-
-import os
 import logging
-import msgpack
-from struct import pack, unpack
-import signal
-import socket
+import os
 import platform
+import signal
 import subprocess
 from pathlib import Path
 from time import sleep
-
-from .beamngcommon import (ENV, LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError, ack, create_warning, BUF_SIZE, string_cleanup)
+from .beamngcommon import ENV, LOGGER_ID, BNGError, BNGValueError, ack, create_warning
+from .connection import Connection
 from .level import Level
 from .scenario import Scenario, ScenarioObject
 from .vehicle import Vehicle
 
-comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
-
-BINARIES = [
-    'Bin64/BeamNG.tech.x64.exe',
-    'Bin64/BeamNG.drive.x64.exe',
-]
-BINARIES_LINUX = [
-    'BinLinux/BeamNG.tech.x64',
-    'BinLinux/BeamNG.drive.x64'
-]
-
-recvBufs = []
+BINARIES = ['Bin64/BeamNG.tech.x64.exe', 'Bin64/BeamNG.drive.x64.exe']
+BINARIES_LINUX = ['BinLinux/BeamNG.tech.x64', 'BinLinux/BeamNG.drive.x64']
 
 module_logger = logging.getLogger(f"{LOGGER_ID}.beamng")
 module_logger.setLevel(logging.DEBUG)
-
 
 def log_exception(extype, value, trace):
     """
     Hook to log uncaught exceptions to the logging framework. Register this as
     the excepthook with `sys.excepthook = log_exception`.
     """
-    module_logger.exception("Uncaught exception: ",
-                            exc_info=(extype, value, trace))
-
+    module_logger.exception("Uncaught exception: ", exc_info=(extype, value, trace))
 
 class BeamNGpy:
     """
@@ -85,6 +57,10 @@ class BeamNGpy:
         self.host = host
         self.port = port
         self.remote = remote
+        self.process = None
+        self.scenario = None
+        self.connection = None
+
         self.home = "C:/game"
 
         if not self.remote:
@@ -104,10 +80,56 @@ class BeamNGpy:
             else:
                 self.user = self.determine_userpath()
 
+    def kill_beamng(self):
+        """
+        Kills the running BeamNG.* process.
+        """
+        self.logger.info('Terminating BeamNG.tech process.')
+        if self.connection:
+            try:
+                self.quit_beamng()
+            except ConnectionResetError:
+                self.connection = None
+        if self.remote:
+            self.logger.warn('cannot kill remote BeamNG.research process, aborting subroutine')
+            return
+        if not self.process:
+            return
+        if os.name == "nt":
+            with open(os.devnull, 'w') as devnull:
+                subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)], stdout=devnull, stderr=devnull)
+        else:
+            try:
+                os.kill(self.process.pid, signal.SIGTERM)
+            except:
+                pass
         self.process = None
-        self.skt = None
 
-        self.scenario = None
+    def open(self, extensions=None, *args, launch=True, **opts):
+        """
+        Starts a BeamNG.* process, opens a server socket, and waits for the spawned BeamNG.* process to connect.
+        This method blocks until the process started and is ready.
+
+        Args:
+            launch (bool): Whether to launch a new process or connect to a running one on the configured host/port. Defaults to True.
+        """
+        self.logger.info('Opening BeamNGpy instance.')
+        self.connection = Connection(self, self.host, self.port)
+        if launch:
+            self.start_beamng(extensions, *args, **opts)
+            sleep(10)
+        self.connection.connect_to_beamng()
+        return self
+
+    def close(self):
+        """
+        Kills the BeamNG.* process.
+        """
+        self.logger.info('Closing BeamNGpy instance.')
+        if self.scenario:
+            self.scenario.close()
+            self.scenario = None
+        self.kill_beamng()
 
     def determine_userpath(self):
         """
@@ -167,19 +189,12 @@ class BeamNGpy:
         extensions.insert(0, 'tech/techCore')
         lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
         lua = lua.format(*extensions)
-        call = [
-            self.binary,
-            '-console',
-            '-rport',
-            str(self.port),
-            '-nosteam',
-        ]
+        call = [self.binary, '-console', '-rport', str(self.port), '-nosteam']
 
         for arg in args:
             call.append(arg)
 
-        call_opts = {'physicsfps': '4000',
-                     'lua': lua}
+        call_opts = {'physicsfps': '4000', 'lua': lua}
         if 'lua' in usr_opts.keys():
             call_opts['lua'] = usr_opts['lua']
 
@@ -218,90 +233,6 @@ class BeamNGpy:
         self.process = subprocess.Popen(call)
         self.logger.info("Started BeamNG.")
 
-    def kill_beamng(self):
-        """
-        Kills the running BeamNG.* process.
-        """
-        self.logger.info('Terminating BeamNG.tech process.')
-        if self.skt:
-            try:
-                self.quit_beamng()
-            except ConnectionResetError:
-                self.skt = None
-
-        if self.remote:
-            self.logger.warn(
-                'cannot kill remote BeamNG.research process, aborting subroutine')
-            return
-
-        if not self.process:
-            return
-
-        if os.name == "nt":
-            with open(os.devnull, 'w') as devnull:
-                subprocess.call([
-                    'taskkill', '/F', '/T', '/PID',
-                    str(self.process.pid)], stdout=devnull,
-                    stderr=devnull
-                )
-        else:
-            try:
-                os.kill(self.process.pid, signal.SIGTERM)
-            except:
-                pass
-
-        self.process = None
-
-    def hello(self):
-        """
-        First function called after connections. Exchanges the protocol version
-        with the connected simulator and raises an error upon mismatch.
-        """
-        data = dict(type='Hello')
-        data['protocolVersion'] = PROTOCOL_VERSION
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'Hello'
-        if resp['protocolVersion'] != PROTOCOL_VERSION:
-            msg = 'Mismatching BeamNGpy protocol versions. ' \
-                  'Please ensure both BeamNG.tech and BeamNGpy are ' \
-                  'using the desired versions.\n' \
-                  f'BeamNGpy\'s is: {PROTOCOL_VERSION}' \
-                  f'BeamNG.tech\'s is: { resp["protocolVersion"] }'
-            raise BNGError(msg)
-        self.logger.info('Successfully connected to BeamNG.tech.')
-
-    def message(self, req, **kwargs):
-        """
-        Generic message function which is parameterized with the type of
-        message to send and all parameters that are to be embedded in the
-        request. Responses are expected to have the same type as the request.
-        If this is not the case, an error is raised.
-
-        Args:
-            req (str): The request type.
-
-        Raises:
-            BNGValueError: If the response type does not match the request type
-
-        Returns:
-            The response received from the simulator as a dictionary.
-        """
-        self.logger.debug(f'Sending message of type "{req}" to '
-                          'BeamNG.tech\'s game engine in blocking mode.')
-        kwargs['type'] = req
-        self.send(kwargs)
-        resp = self.recv()
-        if resp['type'] != req:
-            msg = 'Got Message type "{}" but expected "{}".'
-            msg = msg.format(resp['type'], req)
-            raise BNGValueError(msg)
-        self.logger.debug(f"Got response for message of type {req}.")
-
-        if 'result' in resp:
-            return resp['result']
-        return None
-
     def get_levels(self):
         """
         Queries the available levels in the simulator and returns them as a
@@ -311,7 +242,7 @@ class BeamNGpy:
             A dictionary of available level names to a corresponding instance
             of the :class:`.Level` class.
         """
-        levels = self.message('GetLevels')
+        levels = self.connection.message('GetLevels')
         levels = [Level.from_dict(l) for l in levels]
         levels = {l.name: l for l in levels}
         return levels
@@ -336,7 +267,7 @@ class BeamNGpy:
         if levels is None:
             levels = self.get_levels()
 
-        scenarios = self.message('GetScenarios')
+        scenarios = self.connection.message('GetScenarios')
         scenarios = [Scenario.from_dict(s) for s in scenarios]
         scenarios = {s.path: s for s in scenarios if s.level in levels.keys()}
         for _, scenario in scenarios.items():
@@ -362,7 +293,7 @@ class BeamNGpy:
         else:
             level_name = level
 
-        scenarios = self.message('GetScenarios')
+        scenarios = self.connection.message('GetScenarios')
         scenarios = [Scenario.from_dict(s) for s in scenarios]
         scenarios = {s.path: s for s in scenarios if s.level == level_name}
 
@@ -401,7 +332,7 @@ class BeamNGpy:
             place in, the scenario's parent level field will be filled in
             accordingly.
         """
-        scenario = self.message('GetCurrentScenario')
+        scenario = self.connection.message('GetCurrentScenario')
         scenario = Scenario.from_dict(scenario)
 
         if levels is not None:
@@ -419,7 +350,7 @@ class BeamNGpy:
             class for each active vehicle. These vehicles are not connected to
             by this function.
         """
-        vehicles = self.message('GetCurrentVehicles')
+        vehicles = self.connection.message('GetCurrentVehicles')
         return vehicles
 
     def get_current_vehicles(self):
@@ -427,197 +358,19 @@ class BeamNGpy:
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
 
-    def connect(self, tries=25):
-        """
-        Tries connecting to the running simulator over the host and port
-        configuration set in this class. Upon failure, connections are
-        re-attempted a limited amount of times.
-
-        Args:
-            tries (int): The amount of attempts to connect before giving up.
-        """
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.skt.settimeout(None)
-        self.logger.info('Connecting to BeamNG.tech at: '
-                         f'({self.host}, {self.port})')
-        while tries > 0:
-            try:
-                self.skt.connect((self.host, self.port))
-                break
-            except (ConnectionRefusedError, ConnectionAbortedError) as err:
-                msg = 'Error connecting to BeamNG.tech. {} tries left.'
-                msg = msg.format(tries)
-                self.logger.error(msg)
-                self.logger.exception(err)
-                sleep(5)
-                tries -= 1
-
-        self.hello()
-
-        self.logger.info('BeamNGpy successfully connected to BeamNG.')
-
-    def reconnect(self):
-        """
-        Tries connecting to the running simulator over the host and port
-        configuration set in this class. Upon failure, connections are
-        re-attempted a limited amount of times.
-
-        Args:
-            tries (int): The amount of attempts to connect before giving up.
-        """
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.skt.settimeout(None)
-        sleepTime = 0
-        while True:
-            try:
-                self.skt.connect((self.host, self.port))
-                break
-            except (ConnectionRefusedError, ConnectionAbortedError) as err:
-                sleep(sleepTime)
-                sleepTime = 0.5
-
-    def send(self, data):
-        """
-        Encodes the given data via messagepack and sends the bytes over this instance's socket.
-        Before the raw message bytes are sent, the amount of bytes the
-        message is long is sent as a zero-padded 16-character string.
-
-        Args:
-            data (dict): The data to encode and send
-        """
-        comm_logger.debug(f'Sending {data}.')
-        data = msgpack.packb(data, use_bin_type=True)
-        length = pack('!I', len(data))
-        data = length + data
-        try:
-            return self.skt.sendall(data)
-        except socket.error:
-            self.reconnect()
-            return self.skt.sendall(data)
-
-    def recv(self):
-        """
-        Reads a messagepack-encoded message from this instance's socket, decodes it, and
-        returns it. Before the raw message bytes are read, this function expects
-        the amount of bytes to read being sent as a zero-padded 8-character
-        string.
-
-        Args:
-            skt (:class:`socket`): The socket to read from
-
-        Returns:
-            The decoded message.
-        """
-
-        recvBufs.clear()
-        try:
-            packed_length = self.skt.recv(4)
-        except socket.error:
-            self.reconnect()
-            packed_length = self.skt.recv(4)
-        length = unpack('!I', packed_length)[0]
-        while length > 0:
-            try:
-                received = self.skt.recv(min(BUF_SIZE, length))
-            except socket.error:
-                self.reconnect()
-                received = self.skt.recv(min(BUF_SIZE, length))
-            recvBufs.append(received)
-            length -= len(received)
-        assert length == 0
-        data = msgpack.unpackb(b"".join(recvBufs), raw=False)
-        comm_logger.debug(f'Received {data}.')
-
-        if 'bngError' in data:
-            raise BNGError(data['bngError'])
-        if 'bngValueError' in data:
-            raise BNGValueError(data['bngValueError'])
-
-        return string_cleanup(data) # Convert all non-binary strings into utf-8.
-
-    def open(self, extensions=None, *args, launch=True, **opts):
-        """
-        Starts a BeamNG.* process, opens a server socket, and waits for the
-        spawned BeamNG.* process to connect. This method blocks until the
-        process started and is ready.
-
-        Args:
-            launch (bool): Whether to launch a new process or connect to a
-                           running one on the configured host/port. Defaults to
-                           True.
-        """
-        self.logger.info('Opening BeamNGpy instance.')
-        if launch:
-            self.start_beamng(extensions, *args, **opts)
-            sleep(10)
-
-        self.connect()
-        return self
-
-    def close(self):
-        """
-        Kills the BeamNG.* process.
-        """
-        self.logger.info('Closing BeamNGpy instance.')
-        if self.scenario:
-            self.scenario.close()
-            self.scenario = None
-
-        self.kill_beamng()
-
-    def disconnect(self):
-        """
-        Closes socket communication with the corresponding BeamNG instance.
-        """
-        if self.skt is not None:
-            self.skt.close()
-
-        self.port = None
-        self.host = None
-        self.skt = None
-
     def hide_hud(self):
         """
         Hides the HUD in the simulator.
         """
         data = dict(type='HideHUD')
-        self.send(data)
+        self.connection.send(data)
 
     def show_hud(self):
         """
         Shows the HUD in the simulator.
         """
         data = dict(type='ShowHUD')
-        self.send(data)
-
-    def start_vehicle_connection(self, vehicle):
-        """
-        Prompts the simulator to initiate a new connection for the given
-        vehicle, opening a server socket BeamNGpy can connect to. The port
-        of this new server socket is returned.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle instance to be connected.
-
-        Returns:
-            The port connections to the given vehicle are available on.
-        """
-        connection_msg = {'type': 'StartVehicleConnection'}
-        connection_msg['vid'] = vehicle.vid
-        if vehicle.extensions is not None:
-            connection_msg['exts'] = vehicle.extensions
-
-        self.send(connection_msg)
-        resp = self.recv()
-        assert resp['type'] == 'StartVehicleConnection'
-        vid = resp['vid']
-        assert vid == vehicle.vid
-        port = int(resp['result'])
-        self.logger.debug(f"Created new vehicle connection on port {port}")
-
-        return port
+        self.connection.send(data)
 
     def load_scenario(self, scenario):
         """
@@ -629,12 +382,12 @@ class BeamNGpy:
         """
         # clean up the vehicle connections if the `scenario` object is reused multiple times
         for vehicle in scenario.vehicles:
-            if vehicle.skt:
+            if vehicle.connection:
                 vehicle.disconnect()
 
         data = {'type': 'LoadScenario', 'path': scenario.path}
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'MapLoaded'
         self.logger.info("Loaded map.")
         flags = scenario.get_engine_flags()
@@ -654,7 +407,7 @@ class BeamNGpy:
         """
         flags = dict(type='EngineFlags', flags=flags)
         self.logger.debug(f'set following engine flags: {flags}')
-        self.send(flags)
+        self.connection.send(flags)
 
     @ack('OpenedCamera')
     def open_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y, near_far_planes, pos, dir, up, is_using_shared_memory,
@@ -687,14 +440,14 @@ class BeamNGpy:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Opened Camera: "{name}')
 
     @ack('ClosedCamera')
     def close_camera(self, name):
         data = dict(type='CloseCamera')
         data['name'] = name
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Closed Camera: "{name}"')
 
     @ack('PolledCamera')
@@ -706,10 +459,10 @@ class BeamNGpy:
         data['isUsingSharedMemory'] = is_using_shared_memory
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSendAdHocRequestCamera')
     def send_ad_hoc_request_camera(self, name):
@@ -719,10 +472,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedIsAdHocPollRequestReadyCamera')
     def is_ad_hoc_poll_request_ready_camera(self, request_id):
@@ -732,10 +485,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedCollectAdHocPollRequestCamera')
     def collect_ad_hoc_poll_request_camera(self, request_id):
@@ -745,10 +498,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetFullCameraRequest')
     def get_full_camera_request(self, name):
@@ -758,10 +511,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedCameraWorldPointToPixel')
     def camera_world_point_to_pixel(self, name, point):
@@ -774,10 +527,10 @@ class BeamNGpy:
         data['pointZ'] = point[2]
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetCameraSensorPosition')
     def get_camera_sensor_position(self, name):
@@ -787,10 +540,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetCameraSensorDirection')
     def get_camera_sensor_direction(self, name):
@@ -800,10 +553,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetCameraSensorUp')
     def get_camera_sensor_up(self, name):
@@ -813,10 +566,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetCameraMaxPendingGpuRequests')
     def get_camera_max_pending_gpu_requests(self, name):
@@ -826,10 +579,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetCameraRequestedUpdateTime')
     def get_camera_requested_update_time(self, name):
@@ -839,10 +592,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetCameraUpdatePriority')
     def get_camera_update_priority(self, name):
@@ -852,10 +605,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSetCameraSensorPosition')
     def set_camera_sensor_position(self, name, pos):
@@ -868,7 +621,7 @@ class BeamNGpy:
         data['posZ'] = pos[2]
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetCameraSensorDirection')
     def set_camera_sensor_direction(self, name, dir):
@@ -881,7 +634,7 @@ class BeamNGpy:
         data['dirZ'] = dir[2]
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetCameraSensorUp')
     def set_camera_sensor_up(self, name, up):
@@ -894,7 +647,7 @@ class BeamNGpy:
         data['upZ'] = up[2]
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetCameraMaxPendingGpuRequests')
     def set_camera_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
@@ -905,7 +658,7 @@ class BeamNGpy:
         data['maxPendingGpuRequests'] = max_pending_gpu_requests
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetCameraRequestedUpdateTime')
     def set_camera_requested_update_time(self, name, requested_update_time):
@@ -916,7 +669,7 @@ class BeamNGpy:
         data['updateTime'] = requested_update_time
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetCameraUpdatePriority')
     def set_camera_update_priority(self, name, update_priority):
@@ -927,7 +680,7 @@ class BeamNGpy:
         data['updatePriority'] = update_priority
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('OpenedLidar')
     def open_lidar(self, name, vehicle, is_using_shared_memory, point_cloud_shmem_handle, point_cloud_shmem_size,
@@ -959,7 +712,7 @@ class BeamNGpy:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Opened lidar: "{name}')
 
     @ack('ClosedLidar')
@@ -972,7 +725,7 @@ class BeamNGpy:
         """
         data = dict(type='CloseLidar')
         data['name'] = name
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Closed lidar: "{name}"')
 
     @ack('PolledLidar')
@@ -984,10 +737,10 @@ class BeamNGpy:
         data['isUsingSharedMemory'] = is_using_shared_memory
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSendAdHocRequestLidar')
     def send_ad_hoc_request_lidar(self, name):
@@ -997,10 +750,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedIsAdHocPollRequestReadyLidar')
     def is_ad_hoc_poll_request_ready_lidar(self, request_id):
@@ -1010,10 +763,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedCollectAdHocPollRequestLidar')
     def collect_ad_hoc_poll_request_lidar(self, request_id):
@@ -1023,10 +776,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarSensorPosition')
     def get_lidar_sensor_position(self, name):
@@ -1036,10 +789,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarSensorDirection')
     def get_lidar_sensor_direction(self, name):
@@ -1049,10 +802,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarMaxPendingGpuRequests')
     def get_lidar_max_pending_gpu_requests(self, name):
@@ -1062,10 +815,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarRequestedUpdateTime')
     def get_lidar_requested_update_time(self, name):
@@ -1075,10 +828,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarUpdatePriority')
     def get_lidar_update_priority(self, name):
@@ -1088,10 +841,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarVerticalResolution')
     def get_lidar_vertical_resolution(self, name):
@@ -1101,10 +854,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarRaysPerSecond')
     def get_lidar_rays_per_second(self, name):
@@ -1114,10 +867,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarFrequency')
     def get_lidar_frequency(self, name):
@@ -1127,10 +880,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarMaxDistance')
     def get_lidar_max_distance(self, name):
@@ -1140,10 +893,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarIsVisualised')
     def get_lidar_is_visualised(self, name):
@@ -1153,10 +906,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetLidarIsAnnotated')
     def get_lidar_is_annotated(self, name):
@@ -1166,10 +919,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSetLidarVerticalResolution')
     def set_lidar_vertical_resolution(self, name, vertical_resolution):
@@ -1180,7 +933,7 @@ class BeamNGpy:
         data['verticalResolution'] = vertical_resolution
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarRaysPerSecond')
     def set_lidar_rays_per_second(self, name, rays_per_second):
@@ -1191,7 +944,7 @@ class BeamNGpy:
         data['raysPerSecond'] = rays_per_second
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarFrequency')
     def set_lidar_frequency(self, name, frequency):
@@ -1202,7 +955,7 @@ class BeamNGpy:
         data['frequency'] = frequency
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarMaxDistance')
     def set_lidar_max_distance(self, name, max_distance):
@@ -1213,7 +966,7 @@ class BeamNGpy:
         data['maxDistance'] = max_distance
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarIsVisualised')
     def set_lidar_is_visualised(self, name, is_visualised):
@@ -1224,7 +977,7 @@ class BeamNGpy:
         data['isVisualised'] = is_visualised
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarIsAnnotated')
     def set_lidar_is_annotated(self, name, is_annotated):
@@ -1235,7 +988,7 @@ class BeamNGpy:
         data['isAnnotated'] = is_annotated
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarMaxPendingGpuRequests')
     def set_lidar_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
@@ -1246,7 +999,7 @@ class BeamNGpy:
         data['maxPendingGpuRequests'] = max_pending_gpu_requests
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarRequestedUpdateTime')
     def set_lidar_requested_update_time(self, name, requested_update_time):
@@ -1257,7 +1010,7 @@ class BeamNGpy:
         data['updateTime'] = requested_update_time
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetLidarUpdatePriority')
     def set_lidar_update_priority(self, name, update_priority):
@@ -1268,7 +1021,7 @@ class BeamNGpy:
         data['updatePriority'] = update_priority
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('OpenedUltrasonic')
     def open_ultrasonic(
@@ -1301,14 +1054,14 @@ class BeamNGpy:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Opened ultrasonic sensor: "{name}')
 
     @ack('ClosedUltrasonic')
     def close_ultrasonic(self, name):
         data = dict(type='CloseUltrasonic')
         data['name'] = name
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{name}"')
 
     @ack('PolledUltrasonic')
@@ -1319,10 +1072,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSendAdHocRequestUltrasonic')
     def send_ad_hoc_request_ultrasonic(self, name):
@@ -1332,10 +1085,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedIsAdHocPollRequestReadyUltrasonic')
     def is_ad_hoc_poll_request_ready_ultrasonic(self, request_id):
@@ -1345,10 +1098,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedCollectAdHocPollRequestUltrasonic')
     def collect_ad_hoc_poll_request_ultrasonic(self, request_id):
@@ -1358,10 +1111,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetUltrasonicSensorPosition')
     def get_ultrasonic_sensor_position(self, name):
@@ -1371,10 +1124,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetUltrasonicSensorDirection')
     def get_ultrasonic_sensor_direction(self, name):
@@ -1384,10 +1137,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetUltrasonicMaxPendingGpuRequests')
     def get_ultrasonic_max_pending_gpu_requests(self, name):
@@ -1397,10 +1150,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetUltrasonicRequestedUpdateTime')
     def get_ultrasonic_requested_update_time(self, name):
@@ -1410,10 +1163,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetUltrasonicUpdatePriority')
     def get_ultrasonic_update_priority(self, name):
@@ -1423,10 +1176,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetUltrasonicIsVisualised')
     def get_ultrasonic_is_visualised(self, name):
@@ -1436,10 +1189,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSetUltrasonicMaxPendingGpuRequests')
     def set_ultrasonic_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
@@ -1450,7 +1203,7 @@ class BeamNGpy:
         data['maxPendingGpuRequests'] = max_pending_gpu_requests
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetUltrasonicRequestedUpdateTime')
     def set_ultrasonic_requested_update_time(self, name, requested_update_time):
@@ -1461,7 +1214,7 @@ class BeamNGpy:
         data['updateTime'] = requested_update_time
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetUltrasonicUpdatePriority')
     def set_ultrasonic_update_priority(self, name, update_priority):
@@ -1472,7 +1225,7 @@ class BeamNGpy:
         data['updatePriority'] = update_priority
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetUltrasonicIsVisualised')
     def set_ultrasonic_is_visualised(self, name, is_visualised):
@@ -1483,7 +1236,7 @@ class BeamNGpy:
         data['isVisualised'] = is_visualised
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('OpenedAccelerometer')
     def open_accelerometer(
@@ -1502,7 +1255,7 @@ class BeamNGpy:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Opened accelerometer sensor: "{name}')
 
     @ack('ClosedAccelerometer')
@@ -1510,7 +1263,7 @@ class BeamNGpy:
         data = dict(type='CloseAccelerometer')
         data['name'] = name
         data['vid'] = vid
-        self.send(data)
+        self.connection.send(data)
         self.logger.info(f'Closed accelerometer sensor: "{name}"')
 
     @ack('PolledAccelerometer')
@@ -1521,10 +1274,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSendAdHocRequestAccelerometer')
     def send_ad_hoc_request_accelerometer(self, name, vid):
@@ -1535,10 +1288,10 @@ class BeamNGpy:
         data['vid'] = vid
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedIsAdHocPollRequestReadyAccelerometer')
     def is_ad_hoc_poll_request_ready_accelerometer(self, request_id):
@@ -1548,10 +1301,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedCollectAdHocPollRequestAccelerometer')
     def collect_ad_hoc_poll_request_accelerometer(self, request_id):
@@ -1561,10 +1314,10 @@ class BeamNGpy:
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the updated readings from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetAccelerometerSensorPosition')
     def get_accelerometer_sensor_position(self, name):
@@ -1574,10 +1327,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedGetAccelerometerSensorDirection')
     def get_accelerometer_sensor_direction(self, name):
@@ -1587,10 +1340,10 @@ class BeamNGpy:
         data['name'] = name
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
         # Receive the property value from the simulation.
-        return self.recv()
+        return self.connection.recv()
 
     @ack('CompletedSetAccelerometerRequestedUpdateTime')
     def set_accelerometer_requested_update_time(self, name, vid, requested_update_time):
@@ -1602,7 +1355,7 @@ class BeamNGpy:
         data['updateTime'] = requested_update_time
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetAccelerometerIsUsingGravity')
     def set_accelerometer_is_using_gravity(self, name, vid, is_using_gravity):
@@ -1614,7 +1367,7 @@ class BeamNGpy:
         data['isUsingGravity'] = is_using_gravity
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CompletedSetAccelerometerIsVisualised')
     def set_accelerometer_is_visualised(self, name, vid, is_visualised):
@@ -1626,7 +1379,7 @@ class BeamNGpy:
         data['isVisualised'] = is_visualised
 
         # Send the request for the property to the simulation.
-        self.send(data)
+        self.connection.send(data)
 
     def teleport_vehicle(self, vehicle_id, pos, rot_quat=None, reset=True):
         """
@@ -1659,8 +1412,8 @@ class BeamNGpy:
                            'the usage of `rot_quat` in `beamng.teleport_vehicle`; '
                            'rotation will not be applied to the vehicle',
                            RuntimeWarning)
-        self.send(data)
-        response = self.recv()
+        self.connection.send(data)
+        response = self.connection.recv()
         assert response['type'] == 'Teleported'
         return response['success']
 
@@ -1683,7 +1436,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        self.send(data)
+        self.connection.send(data)
 
     @ack('ScenarioStarted')
     def start_scenario(self, restrict_actions=False):
@@ -1699,7 +1452,7 @@ class BeamNGpy:
         """
         data = dict(type="StartScenario")
         data['restrict_actions'] = restrict_actions
-        self.send(data)
+        self.connection.send(data)
         self.logger.info("Starting scenario.")
 
     def restart_scenario(self):
@@ -1714,7 +1467,7 @@ class BeamNGpy:
 
         self.logger.info("Restarting scenario.")
         data = dict(type='RestartScenario')
-        ack('ScenarioRestarted')(lambda self: self.send(data))(self)
+        ack('ScenarioRestarted')(lambda self: self.connection.send(data))(self)
 
         self.scenario._get_existing_vehicles(self)
         for vehicle in self.scenario.vehicles:
@@ -1733,7 +1486,7 @@ class BeamNGpy:
         self.scenario = None
 
         data = dict(type='StopScenario')
-        self.send(data)
+        self.connection.send(data)
         self.logger.info("Stopping scenario.")
 
     @ack('SetPhysicsDeterministic')
@@ -1745,7 +1498,7 @@ class BeamNGpy:
         :meth:`~.BeamnGpy.set_steps_per_second`.
         """
         data = dict(type='SetPhysicsDeterministic')
-        self.send(data)
+        self.connection.send(data)
 
     @ack('SetPhysicsNonDeterministic')
     def set_nondeterministic(self):
@@ -1754,7 +1507,7 @@ class BeamNGpy:
         setting is retained.
         """
         data = dict(type='SetPhysicsNonDeterministic')
-        self.send(data)
+        self.connection.send(data)
 
     @ack('SetFPSLimit')
     def set_steps_per_second(self, sps):
@@ -1769,7 +1522,7 @@ class BeamNGpy:
             sps (int): The steps per second to set.
         """
         data = dict(type='FPSLimit', fps=sps)
-        self.send(data)
+        self.connection.send(data)
 
     @ack('RemovedFPSLimit')
     def remove_step_limit(self):
@@ -1778,7 +1531,7 @@ class BeamNGpy:
         undefined time slices.
         """
         data = dict(type='RemoveFPSLimit')
-        self.send(data)
+        self.connection.send(data)
 
     def step(self, count, wait=True):
         """
@@ -1800,9 +1553,9 @@ class BeamNGpy:
         """
         data = dict(type='Step', count=count)
         data['ack'] = wait
-        self.send(data)
+        self.connection.send(data)
         if wait:
-            resp = self.recv()
+            resp = self.connection.recv()
             if resp['type'] != 'Stepped':
                 raise BNGError('Wrong ACK: {} != {}'.format('Stepped',
                                                             resp['type']))
@@ -1815,7 +1568,7 @@ class BeamNGpy:
         paused.
         """
         data = dict(type='Pause')
-        self.send(data)
+        self.connection.send(data)
         self.logger.info('Pausing the simulation.')
 
     @ack('Resumed')
@@ -1825,7 +1578,7 @@ class BeamNGpy:
         is resumed.
         """
         data = dict(type='Resume')
-        self.send(data)
+        self.connection.send(data)
         self.logger.info('Resuming the simulation.')
 
     def render_cameras(self):
@@ -1846,8 +1599,8 @@ class BeamNGpy:
             raise BNGError('Need to be in a started scenario to render its '
                            'cameras.')
         engine_reqs = self.scenario.encode_requests()
-        self.send(engine_reqs)
-        response = self.recv()
+        self.connection.send(engine_reqs)
+        response = self.connection.recv()
         assert response['type'] == 'SensorData'
         camera_data = response['data']
         result = self.scenario.decode_frames(camera_data)
@@ -1868,8 +1621,8 @@ class BeamNGpy:
                            'DecalRoad data.')
 
         data = dict(type='GetDecalRoadData')
-        self.send(data)
-        response = self.recv()
+        self.connection.send(data)
+        response = self.connection.recv()
         assert response['type'] == 'DecalRoadData'
         return response['data']
 
@@ -1892,8 +1645,8 @@ class BeamNGpy:
         """
         data = dict(type='GetDecalRoadEdges')
         data['road'] = road
-        self.send(data)
-        response = self.recv()
+        self.connection.send(data)
+        response = self.connection.recv()
         assert response['type'] == 'DecalRoadEdges'
         return response['edges']
 
@@ -1913,8 +1666,8 @@ class BeamNGpy:
             The game state as a dictionary as described above.
         """
         data = dict(type='GameStateRequest')
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'GameState'
         return resp
 
@@ -1930,7 +1683,7 @@ class BeamNGpy:
         """
         data = dict(type='TimeOfDayChange')
         data['tod'] = tod
-        self.send(data)
+        self.connection.send(data)
 
     @ack('WeatherPresetChanged')
     def set_weather_preset(self, preset, time=1):
@@ -1950,7 +1703,7 @@ class BeamNGpy:
         data = dict(type='SetWeatherPreset')
         data['preset'] = preset
         data['time'] = time
-        self.send(data)
+        self.connection.send(data)
 
     def await_vehicle_spawn(self, vid):
         """
@@ -1962,8 +1715,8 @@ class BeamNGpy:
         """
         req = dict(type='WaitForSpawn')
         req['name'] = vid
-        self.send(req)
-        resp = self.recv()
+        self.connection.send(req)
+        resp = self.connection.recv()
         assert resp['type'] == 'VehicleSpawned'
         assert resp['name'] == vid
 
@@ -1979,8 +1732,8 @@ class BeamNGpy:
         data['vehicles'] = list()
         for vehicle in self.scenario.vehicles:
             data['vehicles'].append(vehicle.vid)
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'ScenarioUpdate'
         for name, vehicle_state in resp['vehicles'].items():
             vehicle = self.scenario.get_vehicle(name)
@@ -1997,7 +1750,7 @@ class BeamNGpy:
         """
         data = dict(type='DisplayGuiMessage')
         data['message'] = msg
-        self.send(data)
+        self.connection.send(data)
 
     @ack('VehicleSwitched')
     def switch_vehicle(self, vehicle):
@@ -2011,7 +1764,7 @@ class BeamNGpy:
         """
         data = dict(type='SwitchVehicle')
         data['vid'] = vehicle.vid
-        self.send(data)
+        self.connection.send(data)
 
     @ack('FreeCameraSet')
     def set_free_camera(self, pos, direction):
@@ -2028,7 +1781,7 @@ class BeamNGpy:
         data = dict(type='SetFreeCamera')
         data['pos'] = pos
         data['dir'] = direction
-        self.send(data)
+        self.connection.send(data)
 
     @ack('ParticlesSet')
     def set_particles_enabled(self, enabled):
@@ -2040,7 +1793,7 @@ class BeamNGpy:
         """
         data = dict(type='ParticlesEnabled')
         data['enabled'] = enabled
-        self.send(data)
+        self.connection.send(data)
 
     @ack('PartsAnnotated')
     def annotate_parts(self, vehicle):
@@ -2052,7 +1805,7 @@ class BeamNGpy:
         """
         data = dict(type='AnnotateParts')
         data['vid'] = vehicle.vid
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AnnotationsReverted')
     def revert_annotations(self, vehicle):
@@ -2065,21 +1818,21 @@ class BeamNGpy:
         """
         data = dict(type='RevertAnnotations')
         data['vid'] = vehicle.vid
-        self.send(data)
+        self.connection.send(data)
 
     def get_part_annotations(self, vehicle):
         data = dict(type='GetPartAnnotations')
         data['vid'] = vehicle.vid
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'PartAnnotations'
         return resp['colors']
 
     def get_part_annotation(self, part):
         data = dict(type='GetPartAnnotation')
         data['part'] = part
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'PartAnnotation'
         if 'color' in resp:
             return resp['color']
@@ -2093,8 +1846,8 @@ class BeamNGpy:
             The name of the loaded scenario as a string.
         """
         data = dict(type='GetScenarioName')
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'ScenarioName'
         return resp['name']
 
@@ -2110,7 +1863,7 @@ class BeamNGpy:
             type-specific information. This information can be obtained on a
             per-object basis using :meth:`~BeamNGpy.get_scene_object_data`.
         """
-        return self.message('GetSceneTree')
+        return self.connection.message('GetSceneTree')
 
     def get_scene_object_data(self, obj_id):
         """
@@ -2121,7 +1874,7 @@ class BeamNGpy:
             A dictionary of key/values the simulator offers for the object of
             the given ID.
         """
-        return self.message('GetObject', id=obj_id)
+        return self.connection.message('GetObject', id=obj_id)
 
     def spawn_vehicle(self, vehicle, pos, rot_quat=(0, 0, 0, 1), cling=True):
         """
@@ -2150,8 +1903,8 @@ class BeamNGpy:
         data['pos'] = pos
         data['rot'] = rot_quat
         data.update(vehicle.options)
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'VehicleSpawned'
         if resp['success']:
             vehicle.connect(self)
@@ -2169,8 +1922,8 @@ class BeamNGpy:
         vehicle.disconnect()
         data = dict(type='DespawnVehicle')
         data['vid'] = vehicle.vid
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'VehicleDespawned'
 
     def find_objects_class(self, clazz):
@@ -2189,8 +1942,8 @@ class BeamNGpy:
         """
         data = dict(type='FindObjectsClass')
         data['class'] = clazz
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         ret = list()
         for obj in resp['objects']:
             sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
@@ -2228,7 +1981,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['name'] = name
         data['material'] = material
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CreatedBump')
     def create_bump(self, name, width, length, height, upper_length,
@@ -2263,7 +2016,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['name'] = name
         data['material'] = material
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CreatedCone')
     def create_cone(self, name, radius, height, pos, rot_quat=None, material=None):
@@ -2289,7 +2042,7 @@ class BeamNGpy:
         data['name'] = name
         data['pos'] = pos
         data['rot'] = rot_quat
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CreatedCube')
     def create_cube(self, name, size, pos, rot_quat=None, material=None):
@@ -2314,7 +2067,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['material'] = material
         data['name'] = name
-        self.send(data)
+        self.connection.send(data)
 
     @ack('CreatedRing')
     def create_ring(self, name, radius, thickness, pos, rot_quat=None, material=None):
@@ -2340,7 +2093,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['material'] = material
         data['name'] = name
-        self.send(data)
+        self.connection.send(data)
 
     def get_vehicle_bbox(self, vehicle):
         """
@@ -2381,8 +2134,8 @@ class BeamNGpy:
         """
         data = dict(type='GetBBoxCorners')
         data['vid'] = vehicle.vid
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'BBoxCorners'
         points = resp['points']
         bbox = {
@@ -2408,7 +2161,7 @@ class BeamNGpy:
         """
         data = dict(type='SetGravity')
         data['gravity'] = gravity
-        self.send(data)
+        self.connection.send(data)
 
     def get_available_vehicles(self):
         """
@@ -2422,13 +2175,13 @@ class BeamNGpy:
         Raises:
             BNGError: If the game is not running to accept a request.
         """
-        if not self.skt:
+        if not self.connection.skt:
             raise BNGError('The game needs to be started to retrieve '
                            'vehicles.')
 
         data = dict(type='GetAvailableVehicles')
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'AvailableVehicles'
         return resp
 
@@ -2446,7 +2199,7 @@ class BeamNGpy:
         participants = [p.vid for p in participants]
         data = dict(type='StartTraffic')
         data['participants'] = participants
-        self.send(data)
+        self.connection.send(data)
 
     @ack('TrafficStopped')
     def stop_traffic(self, stop=False):
@@ -2461,7 +2214,7 @@ class BeamNGpy:
         """
         data = dict(type='StopTraffic')
         data['stop'] = stop
-        self.send(data)
+        self.connection.send(data)
 
     @ack('SettingsChanged')
     def change_setting(self, key, value):
@@ -2478,7 +2231,7 @@ class BeamNGpy:
         data = dict(type='ChangeSetting')
         data['key'] = key
         data['value'] = value
-        self.send(data)
+        self.connection.send(data)
 
     @ack('GraphicsSettingApplied')
     def apply_graphics_setting(self):
@@ -2490,7 +2243,7 @@ class BeamNGpy:
         take effect after the next launch.
         """
         data = dict(type='ApplyGraphicsSetting')
-        self.send(data)
+        self.connection.send(data)
 
     @ack('ExecutedLuaChunkGE')
     def queue_lua_command(self, chunk):
@@ -2502,7 +2255,7 @@ class BeamNGpy:
         """
         data = dict(type='QueueLuaCommandGE')
         data['chunk'] = chunk
-        self.send(data)
+        self.connection.send(data)
 
     @ack('RelativeCamSet')
     def set_relative_camera(self, pos, rot_quat=None):
@@ -2521,7 +2274,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        self.send(data)
+        self.connection.send(data)
 
     def add_debug_spheres(self, coordinates, radii, rgba_colors,
                           cling=False, offset=0):
@@ -2532,8 +2285,8 @@ class BeamNGpy:
         data['colors'] = rgba_colors
         data['cling'] = cling
         data['offset'] = offset
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'DebugSphereAdded'
         return resp['sphereIDs']
 
@@ -2542,7 +2295,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'spheres'
         data['objIDs'] = sphere_ids
-        self.send(data)
+        self.connection.send(data)
 
     def add_debug_polyline(self, coordinates, rgba_color,
                            cling=False, offset=0):
@@ -2551,8 +2304,8 @@ class BeamNGpy:
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'DebugPolylineAdded'
         return resp['lineID']
 
@@ -2561,15 +2314,15 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'polylines'
         data['objIDs'] = [line_id]
-        self.send(data)
+        self.connection.send(data)
 
     def add_debug_cylinder(self, circle_positions, radius, rgba_color):
         data = dict(type='AddDebugCylinder')
         data['circlePositions'] = circle_positions
         data['radius'] = radius
         data['color'] = rgba_color
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'DebugCylinderAdded'
         return resp['cylinderID']
 
@@ -2578,7 +2331,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'cylinders'
         data['objIDs'] = [cylinder_id]
-        self.send(data)
+        self.connection.send(data)
 
     def add_debug_triangle(self, vertices, rgba_color, cling=False, offset=0):
         data = dict(type='AddDebugTriangle')
@@ -2586,8 +2339,8 @@ class BeamNGpy:
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'DebugTriangleAdded'
         return resp['triangleID']
 
@@ -2596,7 +2349,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'triangles'
         data['objIDs'] = [triangle_id]
-        self.send(data)
+        self.connection.send(data)
 
     def add_debug_rectangle(self, vertices, rgba_color, cling=False, offset=0):
         data = dict(type='AddDebugRectangle')
@@ -2604,8 +2357,8 @@ class BeamNGpy:
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'DebugRectangleAdded'
         return resp['rectangleID']
 
@@ -2614,7 +2367,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'rectangles'
         data['objIDs'] = [rectangle_id]
-        self.send(data)
+        self.connection.send(data)
 
     def add_debug_text(self, origin, content, rgba_color,
                        cling=False, offset=0):
@@ -2624,8 +2377,8 @@ class BeamNGpy:
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'DebugTextAdded'
         return resp['textID']
 
@@ -2634,15 +2387,15 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'text'
         data['objIDs'] = [text_id]
-        self.send(data)
+        self.connection.send(data)
 
     def add_debug_square_prism(self, end_points, end_point_dims, rgba_color):
         data = dict(type='AddDebugSquarePrism')
         data['endPoints'] = end_points
         data['dims'] = end_point_dims
         data['color'] = rgba_color
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'DebugSquarePrismAdded'
         return resp['prismID']
 
@@ -2651,7 +2404,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'squarePrisms'
         data['objIDs'] = [prism_id]
-        self.send(data)
+        self.connection.send(data)
 
     def get_annotations(self):
         """
@@ -2662,8 +2415,8 @@ class BeamNGpy:
             values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'Annotations'
         return resp['annotations']
 
@@ -2699,8 +2452,7 @@ class BeamNGpy:
             prefab (str): Contents of the scenario's prefab file
             info (dict): Contents of the scenario's info.json
         """
-        resp = self.message('CreateScenario',
-                            level=level, name=name, prefab=prefab, info=info)
+        resp = self.connection.message('CreateScenario', level=level, name=name, prefab=prefab, info=info)
         return resp
 
     def delete_scenario(self, path):
@@ -2712,12 +2464,12 @@ class BeamNGpy:
             path (str): The path to the scenario relative to the
             user directory.
         """
-        self.message('DeleteScenario', path=path)
+        self.connection.message('DeleteScenario', path=path)
 
     @ack('Quit')
     def quit_beamng(self):
         data = dict(type='Quit')
-        self.send(data)
+        self.connection.send(data)
 
     def get_part_config(self, vehicle):
         """
@@ -2734,8 +2486,8 @@ class BeamNGpy:
         """
         data = dict(type='GetPartConfig')
         data['vid'] = vehicle.vid
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'PartConfig'
         resp = resp['config']
         if 'parts' not in resp or not resp['parts']:
@@ -2757,8 +2509,8 @@ class BeamNGpy:
         """
         data = dict(type='GetPartOptions')
         data['vid'] = vehicle.vid
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'PartOptions'
         return resp['options']
 
@@ -2779,7 +2531,7 @@ class BeamNGpy:
         data = dict(type='SetPartConfig')
         data['vid'] = vehicle.vid
         data['config'] = cfg
-        self.send(data)
+        self.connection.send(data)
         self.await_vehicle_spawn(vehicle.vid)
         vehicle.close()
         vehicle.connect(self)
@@ -2818,7 +2570,7 @@ class BeamNGpy:
         data['mode'] = mode
         data['config'] = config
         data['customData'] = custom_data
-        self.send(data)
+        self.connection.send(data)
 
     def get_player_camera_modes(self, vid):
         """
@@ -2834,8 +2586,8 @@ class BeamNGpy:
         """
         data = dict(type='GetPlayerCameraMode')
         data['vid'] = vid
-        self.send(data)
-        resp = self.recv()
+        self.connection.send(data)
+        resp = self.connection.recv()
         assert resp['type'] == 'PlayerCameraMode'
         return resp['cameraData']
 
@@ -2850,7 +2602,7 @@ class BeamNGpy:
         """
         data = dict(type='LoadTrackBuilderTrack')
         data['path'] = path
-        self.send(data)
+        self.connection.send(data)
 
     def __enter__(self):
         self.open()
