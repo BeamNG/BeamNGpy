@@ -245,14 +245,14 @@ class Vehicle:
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
         if engine_reqs['sensors']:
-            self.bng.send(engine_reqs)
-            response = self.bng.recv()
+            self.bng.connection.send(engine_reqs)
+            response = self.bng.connection.recv()
             assert response['type'] == 'SensorData'
             sensor_data.update(response['data'])
 
         if vehicle_reqs['sensors']:
-            self.send(vehicle_reqs)
-            response = self.recv()
+            self.connection.send(vehicle_reqs)
+            response = self.connection.recv()
             assert response['type'] == 'SensorData'
             sensor_data.update(response['data'])
         result = self.decode_sensor_response(sensor_data)
@@ -293,7 +293,7 @@ class Vehicle:
         mode = SHIFT_MODES[mode]
         data = dict(type='SetShiftMode')
         data['mode'] = mode
-        self.send(data)
+        self.connection.send(data)
 
     @ack('Controlled')
     def control(self, **options):
@@ -312,7 +312,7 @@ class Vehicle:
             **kwargs (dict): The input values to set.
         """
         data = dict(type='Control', **options)
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiModeSet')
     def ai_set_mode(self, mode):
@@ -339,7 +339,7 @@ class Vehicle:
         """
         data = dict(type='SetAiMode')
         data['mode'] = mode
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiSpeedSet')
     def ai_set_speed(self, speed, mode='limit'):
@@ -358,7 +358,7 @@ class Vehicle:
         data = dict(type='SetAiSpeed')
         data['speed'] = speed
         data['mode'] = mode
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiTargetSet')
     def ai_set_target(self, target, mode='chase'):
@@ -375,7 +375,7 @@ class Vehicle:
         self.ai_set_mode(mode)
         data = dict(type='SetAiTarget')
         data['target'] = target
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiWaypointSet')
     def ai_set_waypoint(self, waypoint):
@@ -389,7 +389,7 @@ class Vehicle:
         self.ai_set_mode('manual')
         data = dict(type='SetAiWaypoint')
         data['target'] = waypoint
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiDriveInLaneSet')
     def ai_drive_in_lane(self, lane):
@@ -406,7 +406,7 @@ class Vehicle:
         else:
             lane = 'off'
         data['lane'] = lane
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiLineSet')
     def ai_set_line(self, line, cling=True):
@@ -423,7 +423,7 @@ class Vehicle:
         data = dict(type='SetAiLine')
         data['line'] = line
         data['cling'] = cling
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiScriptSet')
     def ai_set_script(self, script, start_dir=None, up_dir=None, cling=True,
@@ -475,13 +475,13 @@ class Vehicle:
         data = dict(type='SetAiScript')
         data['script'] = script
         data['cling'] = cling
-        self.send(data)
+        self.connection.send(data)
 
     @ack('AiAggressionSet')
     def ai_set_aggression(self, aggr):
         data = dict(type='SetAiAggression')
         data['aggression'] = aggr
-        self.send(data)
+        self.connection.send(data)
 
     @ack('ExecutedLuaChunkVE')
     def queue_lua_command(self, chunk):
@@ -493,7 +493,7 @@ class Vehicle:
         """
         data = dict(type='QueueLuaCommandVE')
         data['chunk'] = chunk
-        self.send(data)
+        self.connection.send(data)
 
     def get_part_options(self):
         """
@@ -547,7 +547,7 @@ class Vehicle:
         data['g'] = rgba[1]
         data['b'] = rgba[2]
         data['a'] = rgba[3]
-        self.send(data)
+        self.connection.send(data)
 
     @ack('VelocitySet')
     def set_velocity(self, velocity, dt=1.0):
@@ -567,7 +567,7 @@ class Vehicle:
         data = dict(type='SetVelocity')
         data['velocity'] = velocity
         data['dt'] = dt
-        self.send(data)
+        self.connection.send(data)
 
     set_colour = set_color
 
@@ -628,7 +628,7 @@ class Vehicle:
         data['name'] = name
         data['pos'] = pos
         data['debug'] = debug
-        self.send(data)
+        self.connection.send(data)
 
     @ack('IMUNodeAdded')
     def add_imu_node(self, name, node, debug=False):
@@ -648,7 +648,7 @@ class Vehicle:
         data['name'] = name
         data['node'] = node
         data['debug'] = debug
-        self.send(data)
+        self.connection.send(data)
 
     @ack('IMURemoved')
     def remove_imu(self, name):
@@ -663,7 +663,7 @@ class Vehicle:
         """
         data = dict(type='RemoveIMU')
         data['name'] = name
-        self.send(data)
+        self.connection.send(data)
 
     @ack('LightsSet')
     def set_lights(self, **kwargs):
@@ -764,7 +764,7 @@ class Vehicle:
             lights['lightBar'] = lightbar
 
         lights['type'] = 'SetLights'
-        self.send(lights)
+        self.connection.send(lights)
 
     def annotate_parts(self):
         """
@@ -806,7 +806,7 @@ class Vehicle:
             fileName
         """
         data = dict(type='ApplyVSLSettingsFromJSON', fileName=fileName)
-        self.send(data)
+        self.connection.send(data)
 
     @ack('WroteVSLSettingsToJSON')
     def write_in_game_logging_options_to_json(self, fileName='template.json'):
@@ -824,7 +824,7 @@ class Vehicle:
                            the name of the json
         """
         data = dict(type='WriteVSLSettingsToJSON', fileName=fileName)
-        self.send(data)
+        self.connection.send(data)
 
     @ack('StartedVSLLogging')
     def start_in_game_logging(self, outputDir):
@@ -841,7 +841,7 @@ class Vehicle:
                             <userpath>/<BeamNG version number>/<outputDir>
         """
         data = dict(type='StartVSLLogging', outputDir=outputDir)
-        self.send(data)
+        self.connection.send(data)
         log_msg = ('Started in game logging.'
                    'The output for the vehicle stats logging can be found in '
                    f'{self.bng.user}/<BeamNG version number>/{outputDir}.')
@@ -853,7 +853,7 @@ class Vehicle:
         Stops in game logging.
         """
         data = dict(type='StopVSLLogging')
-        self.send(data)
+        self.connection.send(data)
         self.logger.info('Stopped in game logging.')
 
     def teleport(self, pos, rot_quat=None, reset=True):
