@@ -857,7 +857,7 @@ class SceneObject:
 
 
 class StaticObject(ScenarioObject):
-    def __init__(self, name, pos, rot, scale, shape, rot_quat=None):
+    def __init__(self, name, pos, scale, shape, rot_quat=None):
         super(StaticObject, self).__init__(name, None, 'TSStatic',
-                                           pos, rot, scale, rot_quat=rot_quat,
+                                           pos, scale, rot_quat=rot_quat,
                                            shapeName=shape)
