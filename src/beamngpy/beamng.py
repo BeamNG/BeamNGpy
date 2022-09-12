@@ -56,6 +56,7 @@ class BeamNGpy:
         self.logger.setLevel(logging.DEBUG)
         self.host = host
         self.port = port
+        self.home = home
         self.remote = remote
         self.process = None
         self.scenario = None
