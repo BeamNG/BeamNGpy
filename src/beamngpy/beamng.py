@@ -414,8 +414,9 @@ class BeamNGpy:
         is_render_annotations, is_render_instance, is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle):
 
         data = dict(type='OpenCamera')
+        if vehicle is not None:
+            data['vid'] = vehicle.vid
         data['name'] = name
-        data['vid'] = vehicle.vid
         data['updateTime'] = requested_update_time
         data['priority'] = update_priority
         data['size'] = size
@@ -688,13 +689,14 @@ class BeamNGpy:
                    is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle):
 
         data = dict(type='OpenLidar')
+        if vehicle is not None:
+            data['vid'] = vehicle.vid
         data['useSharedMemory'] = is_using_shared_memory
         data['name'] = name
         data['pointCloudShmemHandle'] = point_cloud_shmem_handle
         data['pointCloudShmemSize'] = point_cloud_shmem_size
         data['colourShmemHandle'] = colour_shmem_handle
         data['colourShmemSize'] = colour_shmem_size
-        data['vid'] = vehicle.vid
         data['updateTime'] = requested_update_time
         data['priority'] = update_priority
         data['pos'] = pos
@@ -1031,7 +1033,8 @@ class BeamNGpy:
 
         data = dict(type='OpenUltrasonic')
         data['name'] = name
-        data['vid'] = vehicle.vid
+        if vehicle is not None:
+            data['vid'] = vehicle.vid
         data['updateTime'] = requested_update_time
         data['priority'] = update_priority
         data['pos'] = pos
@@ -1238,10 +1241,7 @@ class BeamNGpy:
         self.connection.send(data)
 
     @ack('OpenedAccelerometer')
-    def open_accelerometer(
-            self, name, vid, requested_update_time, pos, dir, up, is_using_gravity, is_visualised, is_snapping_desired,
-            is_force_inside_triangle):
-
+    def open_accelerometer(self, name, vid, requested_update_time, pos, dir, up, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle):
         data = dict(type='OpenAccelerometer')
         data['name'] = name
         data['vid'] = vid
@@ -1253,7 +1253,6 @@ class BeamNGpy:
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-
         self.connection.send(data)
         self.logger.info(f'Opened accelerometer sensor: "{name}')
 
