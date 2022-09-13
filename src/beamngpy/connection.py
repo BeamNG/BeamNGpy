@@ -1,7 +1,10 @@
 import logging
-import msgpack
 import socket
+import time
 from struct import pack, unpack
+
+import msgpack
+
 from .beamngcommon import LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError
 
 BUF_SIZE = 131072
@@ -118,7 +121,7 @@ class Connection:
                 msg = f'Error connecting to BeamNG.tech vehicle {vehicle.vid}. {tries} tries left.'
                 self.logger.error(msg)
                 self.logger.exception(err)
-                sleep(5)
+                time.sleep(5)
                 tries -= 1
 
         # Send a first message across the socket to ensure we have matching protocol values.
@@ -152,7 +155,7 @@ class Connection:
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
                 self.logger.error(f'Error connecting to BeamNG.tech. {tries} tries left.')
                 self.logger.exception(err)
-                sleep(5)
+                time.sleep(5)
                 tries -= 1
         self.hello()
         self.logger.info('BeamNGpy successfully connected to BeamNG.')
@@ -181,7 +184,7 @@ class Connection:
                 self.skt.connect((self.host, self.port))
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
-                sleep(sleepTime)
+                time.sleep(sleepTime)
                 sleepTime = 0.5
 
     def send(self, data):
