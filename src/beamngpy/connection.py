@@ -2,6 +2,7 @@ import logging
 import msgpack
 import socket
 from struct import pack, unpack
+from time import sleep
 from .beamngcommon import LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError
 
 BUF_SIZE = 131072

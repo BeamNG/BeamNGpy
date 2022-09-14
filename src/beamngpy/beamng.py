@@ -414,6 +414,7 @@ class BeamNGpy:
         is_render_annotations, is_render_instance, is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle):
 
         data = dict(type='OpenCamera')
+        data['vid'] = 0
         if vehicle is not None:
             data['vid'] = vehicle.vid
         data['name'] = name
@@ -689,6 +690,7 @@ class BeamNGpy:
                    is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle):
 
         data = dict(type='OpenLidar')
+        data['vid'] = 0
         if vehicle is not None:
             data['vid'] = vehicle.vid
         data['useSharedMemory'] = is_using_shared_memory
@@ -1033,6 +1035,7 @@ class BeamNGpy:
 
         data = dict(type='OpenUltrasonic')
         data['name'] = name
+        data['vid'] = 0
         if vehicle is not None:
             data['vid'] = vehicle.vid
         data['updateTime'] = requested_update_time
