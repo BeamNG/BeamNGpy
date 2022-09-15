@@ -332,6 +332,8 @@ class BeamNGpy:
             accordingly.
         """
         scenario = self.connection.message('GetCurrentScenario')
+        if not scenario:
+            raise BNGError('The current scenario could not be retrieved.')
         scenario = Scenario.from_dict(scenario)
 
         if levels is not None:
