@@ -62,8 +62,6 @@ class Vehicle:
         self.model = model
 
         self.port = port
-
-        self.bng = None
         self.connection = None
 
         self.sensors = dict()
@@ -94,6 +92,10 @@ class Vehicle:
 
     def is_connected(self):
         return self.connection is not None and self.connection.skt is not None
+
+    @property
+    def bng(self):
+        return self.connection.bng if self.connection else None
 
     @property
     def state(self):
@@ -139,8 +141,6 @@ class Vehicle:
         if self.connection is not None:
             self.connection.disconnect()
             self.connection = None
-
-        self.bng = None
 
     def attach_sensor(self, name, sensor):
         """
