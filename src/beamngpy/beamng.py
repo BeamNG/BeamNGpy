@@ -114,6 +114,12 @@ class BeamNGpy:
         """
         self.logger.info('Opening BeamNGpy instance.')
         self.connection = Connection(self, self.host, self.port)
+
+        # try to connect to existing instance
+        connected = self.connection.connect_to_beamng(tries=1, propagate_errors=False)
+        if connected:
+            return self
+
         if launch:
             self.start_beamng(extensions, *args, **opts)
             sleep(10)

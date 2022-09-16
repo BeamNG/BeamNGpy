@@ -60,6 +60,14 @@ class Connection:
             data = Connection._textify_string(data)
         return data
 
+    def _initialize_socket(self):
+        """
+        Set up the socket with the appropriate parameters for TCP_NODELAY.
+        """
+        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.skt.settimeout(None)
+
     def __init__(self, bng, host, port=None):
         """
         Instantiates an instance of the Connection class, creating an unconnected socket ready to be connected when required.
@@ -86,11 +94,7 @@ class Connection:
             vehicle (:class:`.Vehicle`): The vehicle instance to be connected.
             tries (int): The number of connection attempts.
         """
-
-        # Set up the socket with the appropriate parameters for TCP_NODELAY.
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.skt.settimeout(None)
+        self._initialize_socket()
 
         # If we do not have a port (ie because it is the first time we wish to send to the given vehicle), then fetch a new port from the simulator.
         if self.port is None:
@@ -130,33 +134,40 @@ class Connection:
         for _, sensor in vehicle.sensors.items():
             sensor.connect(self.bng, self)
 
-    def connect_to_beamng(self, tries=25):
+    def connect_to_beamng(self, tries=25, propagate_errors=True):
         """
         Sets the socket of this connection instance and attempts to connect to the simulator over the host and port configuration set in this class.
         Upon failure, connections are re-attempted a limited amount of times.
 
         Args:
             tries (int): The number of connection attempts.
-        """
+            log_errors (bool): True if the connection errors should be propagated to the caller. Defaults to True.
 
-        # Set up the socket with the appropriate parameters for TCP_NODELAY.
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.skt.settimeout(None)
+        Returns:
+            True if the connection was successful, False otherwise.
+        """
+        self._initialize_socket()
 
         # Attempt to connect to the simulator through this socket.
         self.logger.info('Connecting to BeamNG.tech at: 'f'({self.host}, {self.port})')
+        connected = False
         while tries > 0:
             try:
                 self.skt.connect((self.host, self.port))
+                connected = True
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
-                self.logger.error(f'Error connecting to BeamNG.tech. {tries} tries left.')
-                self.logger.exception(err)
-                sleep(5)
+                if propagate_errors:
+                    self.logger.error(f'Error connecting to BeamNG.tech. {tries} tries left.')
+                    self.logger.exception(err)
                 tries -= 1
-        self.hello()
-        self.logger.info('BeamNGpy successfully connected to BeamNG.')
+                if tries > 0:
+                    sleep(5)
+
+        if connected:
+            self.hello()
+            self.logger.info('BeamNGpy successfully connected to BeamNG.')
+        return connected
 
     def disconnect(self):
         """
@@ -173,9 +184,7 @@ class Connection:
         Attempts to re-connect using this Connection instance, with the cached port and host.
         This will be called if a connection has been lost, in order to re-establish the connection.
         """
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.skt.settimeout(None)
+        self._initialize_socket()
         sleepTime = 0
         while True:
             try:
@@ -211,8 +220,7 @@ class Connection:
         Returns:
             The recieved message, which has been decoded.
         """
-
-        # First, attempt to recieve and decode the message length.
+        # First, attempt to receive and decode the message length.
         try:
             packed_length = self.skt.recv(4)
         except socket.error:
@@ -270,7 +278,6 @@ class Connection:
         """
         First function called after connections. Exchanges the protocol version with the connected simulator and raises an error upon mismatch.
         """
-
         data = dict(type='Hello')
         data['protocolVersion'] = PROTOCOL_VERSION
         self.send(data)
