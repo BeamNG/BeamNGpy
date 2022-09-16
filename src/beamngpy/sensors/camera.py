@@ -9,13 +9,15 @@ import math
 import mmap
 import os
 import struct
-import numpy as np
 from logging import DEBUG, getLogger
-from beamngpy.beamngcommon import LOGGER_ID, BNGValueError
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
+
+import numpy as np
+from beamngpy.beamngcommon import LOGGER_ID, BNGValueError
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+
 
 class Camera:
 
@@ -555,7 +557,10 @@ class Camera:
             (dict): The camera data, as images
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
-        raw_readings = self.bng.get_full_camera_request(self.name)['data']
+        raw_readings = self.bng.get_full_camera_request(self.name)
+        if 'data' not in raw_readings:
+            raise BNGValueError(f'Camera sensor {self.name} not found.')
+        raw_readings = raw_readings['data']
         raw_readings = self._binary_to_image(raw_readings)
 
         data = dict(type='data')

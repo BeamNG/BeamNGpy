@@ -60,14 +60,6 @@ class Connection:
             data = Connection._textify_string(data)
         return data
 
-    def _initialize_socket(self):
-        """
-        Set up the socket with the appropriate parameters for TCP_NODELAY.
-        """
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.skt.settimeout(None)
-
     def __init__(self, bng, host, port=None):
         """
         Instantiates an instance of the Connection class, creating an unconnected socket ready to be connected when required.
@@ -134,14 +126,14 @@ class Connection:
         for _, sensor in vehicle.sensors.items():
             sensor.connect(self.bng, self)
 
-    def connect_to_beamng(self, tries=25, propagate_errors=True):
+    def connect_to_beamng(self, tries=25, log_tries=True):
         """
         Sets the socket of this connection instance and attempts to connect to the simulator over the host and port configuration set in this class.
         Upon failure, connections are re-attempted a limited amount of times.
 
         Args:
             tries (int): The number of connection attempts.
-            log_errors (bool): True if the connection errors should be propagated to the caller. Defaults to True.
+            log_tries (bool): True if the connection logs should be propagated to the caller. Defaults to True.
 
         Returns:
             True if the connection was successful, False otherwise.
@@ -149,7 +141,8 @@ class Connection:
         self._initialize_socket()
 
         # Attempt to connect to the simulator through this socket.
-        self.logger.info('Connecting to BeamNG.tech at: 'f'({self.host}, {self.port})')
+        if log_tries:
+            self.logger.info('Connecting to BeamNG.tech at: 'f'({self.host}, {self.port})')
         connected = False
         while tries > 0:
             try:
@@ -157,7 +150,7 @@ class Connection:
                 connected = True
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
-                if propagate_errors:
+                if log_tries:
                     self.logger.error(f'Error connecting to BeamNG.tech. {tries} tries left.')
                     self.logger.exception(err)
                 tries -= 1
@@ -166,7 +159,8 @@ class Connection:
 
         if connected:
             self.hello()
-            self.logger.info('BeamNGpy successfully connected to BeamNG.')
+            if log_tries:
+                self.logger.info('BeamNGpy successfully connected to BeamNG.')
         return connected
 
     def disconnect(self):
@@ -221,25 +215,12 @@ class Connection:
             The recieved message, which has been decoded.
         """
         # First, attempt to receive and decode the message length.
-        try:
-            packed_length = self.skt.recv(4)
-        except socket.error:
-            self.reconnect()
-            packed_length = self.skt.recv(4)
+        packed_length = self._recv_exactly(4)
         length = unpack('!I', packed_length)[0]
 
         # Now knowing the message length, attempt to recieve and decode the message body, populating a buffer as we go.
-        recv_buffer = []
-        while length > 0:
-            try:
-                received = self.skt.recv(min(BUF_SIZE, length))
-            except socket.error:
-                self.reconnect()
-                received = self.skt.recv(min(BUF_SIZE, length))
-            recv_buffer.append(received)
-            length -= len(received)
-        assert length == 0
-        data = msgpack.unpackb(b"".join(recv_buffer), raw=False)
+        recv_buffer = self._recv_exactly(length)
+        data = msgpack.unpackb(recv_buffer, raw=False)
         self.comm_logger.debug(f'Received {data}.')
         if 'bngError' in data:
             raise BNGError(data['bngError'])
@@ -289,3 +270,32 @@ class Connection:
                   f'BeamNG.tech\'s is: { resp["protocolVersion"] }'
             raise BNGError(msg)
         self.logger.info('Successfully connected to BeamNG.tech.')
+
+    def _initialize_socket(self):
+        """
+        Set up the socket with the appropriate parameters for TCP_NODELAY.
+        """
+        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.skt.settimeout(None)
+
+    def _recv_exactly(self, length):
+        """
+        Receives exactly ``length`` bytes from the socket. If a socket error happens, the function
+        tries to re-establish the connection.
+
+        Returns:
+            An array of length ``length`` with the received data.
+        """
+        recv_buffer = []
+        while length > 0:
+            try:
+                received = self.skt.recv(min(BUF_SIZE, length))
+            except socket.error:
+                self.reconnect()
+                received = self.skt.recv(min(BUF_SIZE, length))
+            recv_buffer.extend(received)
+            length -= len(received)
+        assert length == 0
+
+        return bytes(recv_buffer)

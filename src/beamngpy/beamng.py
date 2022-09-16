@@ -112,15 +112,16 @@ class BeamNGpy:
         Args:
             launch (bool): Whether to launch a new process or connect to a running one on the configured host/port. Defaults to True.
         """
-        self.logger.info('Opening BeamNGpy instance.')
         self.connection = Connection(self, self.host, self.port)
 
         # try to connect to existing instance
-        connected = self.connection.connect_to_beamng(tries=1, propagate_errors=False)
+        connected = self.connection.connect_to_beamng(tries=1, log_tries=False)
         if connected:
+            self.logger.info('BeamNGpy successfully connected to existing BeamNG instance.')
             return self
 
         if launch:
+            self.logger.info('Opening BeamNGpy instance.')
             self.start_beamng(extensions, *args, **opts)
             sleep(10)
         self.connection.connect_to_beamng()
