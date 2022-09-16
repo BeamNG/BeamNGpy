@@ -18,8 +18,7 @@ from abc import ABC, abstractmethod
 
 class AbstractSensor(ABC):
     """
-    Abstract Sensor class declaring properties common to the ordinary and noise
-    sensors.
+    Abstract Sensor class declaring properties common to the sensors.
     """
 
     @property

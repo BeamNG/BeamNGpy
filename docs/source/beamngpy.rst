@@ -61,14 +61,6 @@ beamngpy.sensors module
    :undoc-members:
    :show-inheritance:
 
-beamngpy.sensors.noise module
------------------------------
-
-.. automodule:: beamngpy.sensors.noise
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 beamngpy.vehicle module
 -----------------------
 
