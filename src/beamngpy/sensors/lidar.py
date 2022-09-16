@@ -33,7 +33,7 @@ class Lidar:
             bng (BeamNGpy): The BeamNGpy instance, with which to communicate to the simulation.
             vehicle (Vehicle class): The vehicle to which this sensor should be attached, if any.
             requested_update_time (float): The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
-            update_priority (float): The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1. 
+            update_priority (float): The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1.
             pos (tuple): (X, Y, Z) coordinate triplet specifying the position of the sensor, in world space.
             dir (tuple): (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
             up (tuple): (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
@@ -148,13 +148,13 @@ class Lidar:
             self.point_cloud_shmem.seek(0)
             point_cloud_data = self.point_cloud_shmem.read(self.point_cloud_shmem_size)
             point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
-            processed_readings['pointCloud'] = data_sizes['points']
+            processed_readings['pointCloud'] = point_cloud_data
             self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
 
             self.colour_shmem.seek(0)
             colour_data = self.colour_shmem.read(self.colour_shmem_size)
             colour_data = np.frombuffer(colour_data, dtype=np.uint8)
-            processed_readings['colours'] = data_sizes['colours']
+            processed_readings['colours'] = colour_data
             self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
         else:
             binary = self.bng.poll_lidar(self.name, self.is_using_shared_memory)['data']
