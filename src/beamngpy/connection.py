@@ -124,7 +124,7 @@ class Connection:
 
         # Connect the vehicle sensors.
         for _, sensor in vehicle.sensors.items():
-            sensor.connect(self.bng, self)
+            sensor.connect(self.bng, vehicle)
 
     def connect_to_beamng(self, tries=25, log_tries=True):
         """
