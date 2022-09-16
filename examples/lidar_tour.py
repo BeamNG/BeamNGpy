@@ -70,6 +70,7 @@ def main():
         vehicle.ai_set_mode('span')
 
         def update():
+            vehicle.poll_sensors()
             points = lidar.poll()['pointCloud']
             bng.step(3, wait=False)
 
