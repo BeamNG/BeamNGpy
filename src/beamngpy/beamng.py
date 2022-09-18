@@ -195,7 +195,9 @@ class BeamNGpy:
         extensions.insert(0, 'tech/techCore')
         lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
         lua = lua.format(*extensions)
-        call = [self.binary, '-console', '-rport', str(self.port), '-nosteam']
+        call = [self.binary, '-rport', str(self.port), '-nosteam']
+        if platform.system() != 'Linux': # console is not supported for Linux hosts yet
+            call.append('-console')
 
         for arg in args:
             call.append(arg)
@@ -236,7 +238,11 @@ class BeamNGpy:
         termination.
         """
         call = self.prepare_call(extensions, *args, **opts)
-        self.process = subprocess.Popen(call)
+
+        if platform.system() == 'Linux': # keep the same behaviour as on Windows - do not print game logs to the Python stdout
+            self.process = subprocess.Popen(call, stdout=subprocess.DEVNULL)
+        else:
+            self.process = subprocess.Popen(call)
         self.logger.info("Started BeamNG.")
 
     def get_levels(self):
