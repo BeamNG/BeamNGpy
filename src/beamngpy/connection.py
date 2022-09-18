@@ -222,13 +222,15 @@ class Connection:
         recv_buffer = self._recv_exactly(length)
         data = msgpack.unpackb(recv_buffer, raw=False)
         self.comm_logger.debug(f'Received {data}.')
+
+        # Converts all non-binary strings in the data into utf-8 format.
+        data = self._string_cleanup(data)
         if 'bngError' in data:
             raise BNGError(data['bngError'])
         if 'bngValueError' in data:
             raise BNGValueError(data['bngValueError'])
 
-        # Converts all non-binary strings in the data into utf-8 format.
-        return self._string_cleanup(data)
+        return data
 
     def message(self, req, **kwargs):
         """
