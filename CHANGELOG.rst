@@ -4,6 +4,28 @@ Changelog
 
 Version 1.24
 ============
+- Major changes to the protocol communicating between BeamNG.tech and BeamNGpy
+
+  - Be aware that versions of BeamNG.tech older than 0.26 are not compatible with BeamNGpy 1.24
+    and older versions of BeamNGpy will not work with BeamNG.tech 0.26.
+- Major updates to BeamNGpy sensor suite and its API
+
+  - The public API of the ``Camera``, ``Lidar`` and ``Ultrasonic`` sensors changed heavily, please see
+    the ``examples`` folder to see their usage.
+- Accelerometer sensor now available
+- Add support for loading TrackBuilder tracks
+- Add support for loading Flowgraph scenarios
+- Fix: multiple vehicles now do not share color in instance annotations
+- Add ``Vehicle.teleport`` helper function which allows to teleport a vehicle directly through its instance
+- Removed deprecated BeamNGpy functionality
+
+  - ``setup_logging`` (superseded by ``set_up_simple_logging`` and ``config_logging``
+  - ``rot`` argument used for setting rotation of objects and vehicles in Euler angles, use ``rot_quat`` which expects quaternions
+    (you can use the helper function ``angle_to_quat`` to convert Euler angles to quaternions)
+  - ``update_vehicle`` function is removed
+  - the ``requests`` argument in ``Vehicle.poll_sensors`` is removed
+  - ``poll_sensors`` now does not return a value
+  - the ``deploy`` argument of ``BeamNGpy.open`` is removed
 
 Version 1.23.1
 ==============
