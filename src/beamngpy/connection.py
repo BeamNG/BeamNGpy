@@ -220,7 +220,7 @@ class Connection:
 
         # Now knowing the message length, attempt to recieve and decode the message body, populating a buffer as we go.
         recv_buffer = self._recv_exactly(length)
-        data = msgpack.unpackb(recv_buffer, raw=False)
+        data = msgpack.unpackb(recv_buffer, raw=False, strict_map_key=False)
         self.comm_logger.debug(f'Received {data}.')
 
         # Converts all non-binary strings in the data into utf-8 format.

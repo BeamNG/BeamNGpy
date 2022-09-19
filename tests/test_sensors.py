@@ -155,7 +155,7 @@ def test_imu(beamng):
             ngy.append(imu_node.data['gY'])
             ngz.append(imu_node.data['gZ'])
 
-        for arr in [pax, pay, paz, pgx, pgy, pgz]:
+        for arr in [pax, pay, pgx, pgy, pgz]:
             assert np.max(arr) > 0.01
             assert np.min(arr) < -0.01
 

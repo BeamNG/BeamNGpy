@@ -74,10 +74,8 @@ def test_vehicle_ai(beamng):
         vehicle = Vehicle('test_car', model='etk800')
         other = Vehicle('other', model='etk800')
         pos = [-717.121, 101, 118.675]
-        scenario.add_vehicle(
-            vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
-        scenario.add_vehicle(other, pos=(-453, 700, 75),
-                             rot_quat=angle_to_quat((0, 0, 45)))
+        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
+        scenario.add_vehicle(other, pos=(-453, 700, 75), rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(bng)
 
         bng.load_scenario(scenario)
@@ -88,24 +86,28 @@ def test_vehicle_ai(beamng):
         bng.switch_vehicle(vehicle)
 
         vehicle.ai_set_mode('span')
+        bng.step(500)
         assert_continued_movement(bng, vehicle, pos)
 
         bng.restart_scenario()
         bng.pause()
 
-        vehicle.ai_set_waypoint('Bridge4_B')
+        vehicle.ai_set_waypoint('Bridge26_2')
+        bng.step(500)
         assert_continued_movement(bng, vehicle, pos)
 
         bng.restart_scenario()
         bng.pause()
 
         vehicle.ai_set_target('other', mode='chase')
+        bng.step(500)
         assert_continued_movement(bng, vehicle, pos)
 
         bng.restart_scenario()
         bng.pause()
 
         vehicle.ai_set_target('other', mode='flee')
+        bng.step(500)
         assert_continued_movement(bng, vehicle, pos)
 
         bng.restart_scenario()
@@ -299,9 +301,9 @@ def test_traffic(beamng):
         vehicle = Vehicle('ego', model='etk800')
         other = Vehicle('traffic', model='etk800')
         pos = [-717.121, 101, 118.675]
-        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
+        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
         pos = [-453, 700, 75]
-        scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
+        scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
         scenario.make(bng)
 
         bng.load_scenario(scenario)

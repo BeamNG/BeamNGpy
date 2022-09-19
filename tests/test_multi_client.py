@@ -27,12 +27,12 @@ def test_multi_vehicle(beamng):
 
         b_client = BeamNGpy('localhost', 64256)
         #  Do not deploy mod zip or launch new process
-        b_client.open(deploy=False, launch=False)
+        b_client.open(launch=False)
         vehicles = b_client.get_current_vehicles()
         assert 'second' in vehicles
         vehicle = vehicles['second']
         vehicle.connect(b_client)
-        assert vehicle.skt is not None
+        assert vehicle.is_connected()
 
         a_veh = second
         b_veh = vehicle

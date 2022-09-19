@@ -22,7 +22,6 @@ def test_new_scenario(beamng):
         assert bng.get_scenario_name() == 'test_scenario'
         try:
             bng.start_scenario()
-            assert True
         except socket.timeout:
             assert False
 
@@ -126,7 +125,7 @@ def test_get_current_vehicles(beamng):
         player.attach_sensor('electrics', sensor)
         player.connect(bng)
 
-        assert player.skt is not None
+        assert player.is_connected()
 
         bng.start_scenario()
 
