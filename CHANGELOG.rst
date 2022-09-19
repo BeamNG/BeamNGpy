@@ -2,6 +2,9 @@
 Changelog
 =========
 
+Version 1.24
+============
+
 Version 1.23.1
 ==============
 - Add Feature Overview notebook
