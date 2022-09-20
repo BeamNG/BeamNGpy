@@ -17,6 +17,7 @@ Version 1.24
 - Add support for loading Flowgraph scenarios
 - Fix: multiple vehicles now do not share color in instance annotations
 - Add ``Vehicle.teleport`` helper function which allows to teleport a vehicle directly through its instance
+- ``BeamNGpy.open`` now tries to (re)connect to already running local instance
 - Removed deprecated BeamNGpy functionality
 
   - ``setup_logging`` (superseded by ``set_up_simple_logging`` and ``config_logging``
