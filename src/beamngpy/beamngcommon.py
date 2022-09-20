@@ -62,7 +62,7 @@ def config_logging(handlers,
     bngpy_handlers = handlers
 
     bngpy_logger.setLevel(level)
-    comm_logger.setLevel(level)
+    comm_logger.setLevel(logging.DEBUG)
     comm_logger.disabled = not log_communication
 
     if redirect_warnings:
