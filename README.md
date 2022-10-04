@@ -116,6 +116,16 @@ install BeamNGpy from the `conda-forge` channel by:
 
     conda install beamngpy -c conda-forge
 
+To upgrade, use
+
+    pip install --upgrade beamngpy
+
+if you installed BeamNGpy using `pip` or
+
+    conda update beamngpy -c conda-forge --no-pin
+
+if you installed it using `conda`.
+
 <a name="usage"></a>
 
 ## Usage
