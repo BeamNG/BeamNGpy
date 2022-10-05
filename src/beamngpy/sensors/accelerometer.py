@@ -7,7 +7,9 @@ will not update automatically at all. However, ad-hoc polling requests can be se
 
 from logging import DEBUG, getLogger
 
-from beamngpy.beamngcommon import LOGGER_ID
+from beamngpy.beamngcommon import LOGGER_ID, ack
+
+from .utils import _send_sensor_request, _set_sensor
 
 
 class Accelerometer:
@@ -41,17 +43,21 @@ class Accelerometer:
         self.vid = vehicle.vid
 
         # Create and initialise this sensor in the simulation.
-        bng.open_accelerometer(name, self.vid, requested_update_time, pos, dir, up, is_using_gravity,
-                               is_visualised, is_snapping_desired, is_force_inside_triangle)
+        self._open_accelerometer(name, self.vid, requested_update_time, pos, dir, up, is_using_gravity,
+                                 is_visualised, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Accelerometer - sensor created: 'f'{self.name}')
+
+    def _send_sensor_request(self, type, **kwargs):
+        return _send_sensor_request(self.bng.connection, type, **kwargs)
+
+    def _set_sensor(self, type, **kwargs):
+        return _set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self):
         """
         Removes this sensor from the simulation.
         """
-
-        # Remove this sensor from the simulation.
-        self.bng.close_accelerometer(self.name, self.vid)
+        self._close_accelerometer(self.name)
         self.logger.debug('Accelerometer - sensor removed: 'f'{self.name}')
 
     def poll(self):
@@ -62,9 +68,8 @@ class Accelerometer:
         Returns:
             (dict): A dictionary containing the acceleration in each dimension of the local coordinate system of the accelerometer sensor.
         """
-
         # Send and receive a request for readings data from this sensor.
-        acceleration_data = self.bng.poll_accelerometer(self.name)['data']
+        acceleration_data = self._send_sensor_request('PollAccelerometer', name=self.name)['data']
         self.logger.debug('Accelerometer - sensor readings received from simulation: 'f'{self.name}')
 
         return acceleration_data
@@ -78,9 +83,8 @@ class Accelerometer:
         Returns:
             (int): A unique Id number for the ad-hoc request.
         """
-
         self.logger.debug('Accelerometer  - ad-hoc polling request sent: 'f'{self.name}')
-        return self.bng.send_ad_hoc_request_accelerometer(self.name, self.vid)['data']
+        return self._send_sensor_request('SendAdHocRequestAccelerometer', name=self.name, vid=self.vid)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -92,9 +96,8 @@ class Accelerometer:
         Returns:
             (bool): A flag which indicates if the ad-hoc polling request is complete.
         """
-
         self.logger.debug('Accelerometer  - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self.bng.is_ad_hoc_poll_request_ready_accelerometer(request_id)
+        return self._send_sensor_request('IsAdHocPollRequestReadyAccelerometer', requestId=request_id)
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -106,8 +109,7 @@ class Accelerometer:
         Returns:
             (dict): The readings data.
         """
-
-        readings = self.bng.collect_ad_hoc_poll_request_accelerometer(request_id)['data']
+        readings = self._send_sensor_request('CollectAdHocPollRequestAccelerometer', requestId=request_id)['data']
         self.logger.debug('Accelerometer  - ad-hoc polling request returned and processed: 'f'{self.name}')
 
         return readings
@@ -119,7 +121,7 @@ class Accelerometer:
         Returns:
             (list): The sensor position.
         """
-        table = self.bng.get_accelerometer_sensor_position(self.name)['data']
+        table = self._send_sensor_request('GetAccelerometerSensorPosition', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_direction(self):
@@ -129,9 +131,10 @@ class Accelerometer:
         Returns:
             (list): The sensor direction.
         """
-        table = self.bng.get_accelerometer_sensor_direction(self.name)['data']
+        table = self._send_sensor_request('GetAccelerometerSensorDirection', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
+    @ack('CompletedSetAccelerometerRequestedUpdateTime')
     def set_requested_update_time(self, requested_update_time):
         """
         Sets the current 'requested update time' value for this sensor.
@@ -139,9 +142,10 @@ class Accelerometer:
         Args:
             requested_update_time (float): The new requested update time.
         """
+        return self._set_sensor('SetAccelerometerRequestedUpdateTime', name=self.name, vid=self.vid,
+                                updateTime=requested_update_time)
 
-        self.bng.set_accelerometer_requested_update_time(self.name, self.vid, requested_update_time)
-
+    @ack('CompletedSetAccelerometerIsUsingGravity')
     def set_is_using_gravity(self, is_using_gravity):
         """
         Sets whether this accelerometer sensor is to include gravity in the computation or not.
@@ -149,9 +153,10 @@ class Accelerometer:
         Args:
             is_visualised(bool): A flag which indicates if this accelerometer sensor is to use gravity in the computation or not.
         """
+        return self._set_sensor('SetAccelerometerIsUsingGravity', name=self.name, vid=self.vid,
+                                isUsingGravity=is_using_gravity)
 
-        self.bng.set_accelerometer_is_using_gravity(self.name, self.vid, is_using_gravity)
-
+    @ack('CompletedSetAccelerometerIsVisualised')
     def set_is_visualised(self, is_visualised):
         """
         Sets whether this accelerometer sensor is to be visualised or not.
@@ -159,5 +164,33 @@ class Accelerometer:
         Args:
             is_visualised(bool): A flag which indicates if this accelerometer sensor is to be visualised or not.
         """
+        return self._set_sensor('SetAccelerometerIsVisualised', name=self.name, vid=self.vid,
+                                isVisualised=is_visualised)
 
-        self.bng.set_accelerometer_is_visualised(self.name, self.vid, is_visualised)
+    @ack('OpenedAccelerometer')
+    def _open_accelerometer(
+            self, name, vid, requested_update_time, pos, dir, up, is_using_gravity, is_visualised, is_snapping_desired,
+            is_force_inside_triangle):
+        data = dict(type='OpenAccelerometer')
+        data['name'] = name
+        data['vid'] = vid
+        data['updateTime'] = requested_update_time
+        data['pos'] = pos
+        data['dir'] = dir
+        data['up'] = up
+        data['isUsingGravity'] = is_using_gravity
+        data['isVisualised'] = is_visualised
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
+        resp = self.bng.connection.send(data)
+        self.logger.info(f'Opened accelerometer sensor: "{name}')
+        return resp
+
+    @ack('ClosedAccelerometer')
+    def _close_accelerometer(self):
+        data = dict(type='CloseAccelerometer')
+        data['name'] = self.name
+        data['vid'] = self.vid
+        resp = self.bng.connection.send(data)
+        self.logger.info(f'Closed accelerometer sensor: "{self.name}"')
+        return resp

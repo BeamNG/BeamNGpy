@@ -698,37 +698,6 @@ class Scenario:
 
         self.bng.update_scenario()
 
-    def render_cameras(self):
-        """
-        Renders images for each of the cameras place in this scenario.
-
-        Returns:
-            A dictionary mapping camera names to color, annotation, or depth
-            images, depending on how each camera is set up.
-
-        Raises:
-            BNGError: If the scenario is currently not loaded.
-            DeprecationWarning: Always, return type will be None in future
-                                versions, we recommend to access sensor data
-                                through the Camera object instead of relying
-                                on the return value of this function.
-
-        """
-        if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance for rendering cameras.')
-
-        sensor_data = self.bng.render_cameras()
-        for cam_name, cam_data in sensor_data.items():
-            cam_data.pop('type')
-            self.cameras[cam_name].data = cam_data
-
-        create_warning('The return type of `.Scenario.render_cameras` '
-                       'will be None in future versions',
-                       DeprecationWarning)
-
-        return sensor_data
-
 
 class ScenarioObject:
     """

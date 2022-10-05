@@ -11,7 +11,9 @@ import struct
 from logging import DEBUG, getLogger
 
 import numpy as np
-from beamngpy.beamngcommon import LOGGER_ID
+from beamngpy.beamngcommon import LOGGER_ID, ack
+
+from .utils import _send_sensor_request, _set_sensor
 
 # The maximum number of LiDAR points which can be used.
 # TODO: Make this more efficient by instead computing the number of LiDAR points based on the sensor parameter values.
@@ -76,12 +78,18 @@ class Lidar:
             self.logger.debug(f'Lidar - Bound shared memory for colour data: {self.colour_shmem_handle}')
 
         # Create and initialise this sensor in the simulation.
-        bng.open_lidar(
+        self._open_lidar(
             name, vehicle, is_using_shared_memory, self.point_cloud_shmem_handle, self.point_cloud_shmem_size, self.
             colour_shmem_handle, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
             vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance,
             is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
+
+    def _send_sensor_request(self, type, **kwargs):
+        return _send_sensor_request(self.bng.connection, type, **kwargs)
+
+    def _set_sensor(self, type, **kwargs):
+        return _set_sensor(self.bng.connection, type, **kwargs)
 
     def _convert_binary_to_array(self, binary):
         """
@@ -127,7 +135,7 @@ class Lidar:
             self.colour_shmem.close()
 
         # Remove this sensor from the simulation.
-        self.bng.close_lidar(self.name)
+        self._close_lidar()
         self.logger.debug('Lidar - sensor removed: 'f'{self.name}')
 
     def poll(self):
@@ -144,7 +152,8 @@ class Lidar:
         point_cloud_data = None
         colour_data = None
         if self.is_using_shared_memory:
-            data_sizes = self.bng.poll_lidar(self.name, self.is_using_shared_memory)['data']
+            data_sizes = self._send_sensor_request('PollLidar', name=self.name,
+                                                   isUsingSharedMemory=self.is_using_shared_memory)['data']
             self.point_cloud_shmem.seek(0)
             point_cloud_data = self.point_cloud_shmem.read(self.point_cloud_shmem_size)
             point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
@@ -157,7 +166,8 @@ class Lidar:
             processed_readings['colours'] = colour_data
             self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
         else:
-            binary = self.bng.poll_lidar(self.name, self.is_using_shared_memory)['data']
+            binary = self._send_sensor_request('PollLidar', name=self.name,
+                                               isUsingSharedMemory=self.is_using_shared_memory)['data']
             self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
             processed_readings = self._convert_binary_to_array(binary)
 
@@ -173,7 +183,7 @@ class Lidar:
             (int): A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Lidar - ad-hoc polling request sent: 'f'{self.name}')
-        return self.bng.send_ad_hoc_request_lidar(self.name)['data']
+        return self._send_sensor_request('SendAdHocRequestLidar', name=self.name)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -186,7 +196,7 @@ class Lidar:
             (bool): A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Lidar - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self.bng.is_ad_hoc_poll_request_ready_lidar(request_id)
+        return self._send_sensor_request('IsAdHocPollRequestReadyLidar', requestId=request_id)
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -198,7 +208,7 @@ class Lidar:
             (dict): A dictionary containing the LiDAR point cloud and colour data.
         """
         # Get the binary string data from the simulator.
-        binary = self.bng.collect_ad_hoc_poll_request_lidar(request_id)['data']
+        binary = self._send_sensor_request('CollectAdHocPollRequestLidar', requestId=request_id)['data']
 
         self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
         return self._convert_binary_to_array(binary)
@@ -210,7 +220,7 @@ class Lidar:
         Returns:
             (float): The requested update time.
         """
-        return self.bng.get_lidar_requested_update_time(self.name)['data']
+        return self._send_sensor_request('GetLidarRequestedUpdateTime', name=self.name)['data']
 
     def get_update_priority(self):
         """
@@ -219,7 +229,7 @@ class Lidar:
         Returns:
             (float): The update priority value.
         """
-        return self.bng.get_lidar_update_priority(self.name)['data']
+        return self._send_sensor_request('GetLidarUpdatePriority', name=self.name)['data']
 
     def get_position(self):
         """
@@ -228,7 +238,7 @@ class Lidar:
         Returns:
             (list): The sensor position.
         """
-        table = self.bng.get_lidar_sensor_position(self.name)['data']
+        table = self._send_sensor_request('GetLidarSensorPosition', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_direction(self):
@@ -238,7 +248,7 @@ class Lidar:
         Returns:
             (list): The sensor direction.
         """
-        table = self.bng.get_lidar_sensor_direction(self.name)['data']
+        table = self._send_sensor_request('GetLidarSensorDirection', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_max_pending_requests(self):
@@ -248,7 +258,7 @@ class Lidar:
         Returns:
             (int): The max pending requests value.
         """
-        return self.bng.get_lidar_max_pending_gpu_requests(self.name)['data']
+        return self._send_sensor_request('GetLidarMaxPendingGpuRequests', name=self.name)['data']
 
     def get_is_visualised(self):
         """
@@ -257,7 +267,7 @@ class Lidar:
         Returns:
             (bool): A flag which indicates if this LiDAR sensor is visualised or not.
         """
-        return self.bng.get_lidar_is_visualised(self.name)['data']
+        return self._send_sensor_request('GetLidarIsVisualised', name=self.name)['data']
 
     def get_is_annotated(self):
         """
@@ -266,8 +276,9 @@ class Lidar:
         Returns:
             (bool): A flag which indicates if this LiDAR sensor is annotated or not.
         """
-        return self.bng.get_lidar_is_annotated(self.name)['data']
+        return self._send_sensor_request('GetLidarIsAnnotated', name=self.name)['data']
 
+    @ack('CompletedSetLidarRequestedUpdateTime')
     def set_requested_update_time(self, requested_update_time):
         """
         Sets the current 'requested update time' value for this sensor.
@@ -275,8 +286,9 @@ class Lidar:
         Args:
             update_priority (float): The new requested update time.
         """
-        self.bng.set_lidar_requested_update_time(self.name, requested_update_time)
+        return self._set_sensor('SetLidarRequestedUpdateTime', name=self.name, updateTime=requested_update_time)
 
+    @ack('CompletedSetLidarUpdatePriority')
     def set_update_priority(self, update_priority):
         """
         Sets the current 'update priority' value for this sensor, in range [0, 1], with priority going 0 --> 1, , highest to lowest.
@@ -284,8 +296,9 @@ class Lidar:
         Args:
             update_priority (float): The new update priority value.
         """
-        self.bng.set_lidar_update_priority(self.name, update_priority)
+        return self._set_sensor('SetLidarUpdatePriority', name=self.name, updatePriority=update_priority)
 
+    @ack('CompletedSetLidarMaxPendingGpuRequests')
     def set_max_pending_requests(self, max_pending_requests):
         """
         Sets the current 'max pending requests' value for this sensor. This is the maximum number of polling requests which can be issued at one time.
@@ -293,8 +306,10 @@ class Lidar:
         Args:
             update_priority (int): The new max pending requests value.
         """
-        self.bng.set_lidar_max_pending_gpu_requests(self.name, max_pending_requests)
+        return self._set_sensor('SetLidarMaxPendingGpuRequests', name=self.name,
+                                maxPendingGpuRequests=max_pending_requests)
 
+    @ack('CompletedSetLidarIsVisualised')
     def set_is_visualised(self, is_visualised):
         """
         Sets whether this LiDAR sensor is to be visualised or not.
@@ -302,8 +317,9 @@ class Lidar:
         Args:
             is_visualised(bool): A flag which indicates if this LiDAR sensor is to be visualised or not.
         """
-        self.bng.set_lidar_is_visualised(self.name, is_visualised)
+        return self._set_sensor('SetLidarIsVisualised', name=self.name, isVisualised=is_visualised)
 
+    @ack('CompletedSetLidarIsAnnotated')
     def set_is_annotated(self, is_annotated):
         """
         Sets whether this LiDAR sensor is to be annotated or not. This means it will return annotation data instead of distances.
@@ -311,4 +327,53 @@ class Lidar:
         Args:
             is_visualised(bool): A flag which indicates if this LiDAR sensor is to be annotated or not.
         """
-        self.bng.set_lidar_is_annotated(self.name, is_annotated)
+        return self._set_sensor('SetLidarIsAnnotated', name=self.name, isAnnotated=is_annotated)
+
+    @ack('OpenedLidar')
+    def _open_lidar(self, name, vehicle, is_using_shared_memory, point_cloud_shmem_handle, point_cloud_shmem_size,
+                    colour_shmem_handle, colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
+                    vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance,
+                    is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle):
+        data = dict(type='OpenLidar')
+        data['vid'] = 0
+        if vehicle is not None:
+            data['vid'] = vehicle.vid
+        data['useSharedMemory'] = is_using_shared_memory
+        data['name'] = name
+        data['pointCloudShmemHandle'] = point_cloud_shmem_handle
+        data['pointCloudShmemSize'] = point_cloud_shmem_size
+        data['colourShmemHandle'] = colour_shmem_handle
+        data['colourShmemSize'] = colour_shmem_size
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
+        data['pos'] = pos
+        data['dir'] = dir
+        data['up'] = up
+        data['vRes'] = vertical_resolution
+        data['vAngle'] = vertical_angle
+        data['rps'] = rays_per_second
+        data['hz'] = frequency
+        data['hAngle'] = horizontal_angle
+        data['maxDist'] = max_distance
+        data['isVisualised'] = is_visualised
+        data['isAnnotated'] = is_annotated
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
+        resp = self.bng.connection.send(data)
+        self.logger.info(f'Opened lidar: "{name}')
+        return resp
+
+    @ack('ClosedLidar')
+    def _close_lidar(self):
+        """
+        Closes the Lidar instance of the given name in the simulator.
+
+        Args:
+            name (str): The name of the Lidar instance to close.
+        """
+        data = dict(type='CloseLidar')
+        data['name'] = self.name
+        resp = self.bng.connection.send(data)
+        self.logger.info(f'Closed lidar: "{self.name}"')
+        return resp
