@@ -1,11 +1,14 @@
 import logging
-import msgpack
 import socket
 from struct import pack, unpack
 from time import sleep
+
+import msgpack
+
 from .beamngcommon import LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError
 
 BUF_SIZE = 131072
+
 
 class Connection:
     """
@@ -72,10 +75,13 @@ class Connection:
         self.bng = bng
         self.host = host
         self.port = port
-        self.skt = None                                                         # The socket related to this connection instance. This is set upon connecting.
+        # The socket related to this connection instance. This is set upon connecting.
+        self.skt = None
         self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
         self.logger.setLevel(logging.DEBUG)
         self.comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
+        self.req_id = 0
+        self.received_messages = {}
 
     def connect_to_vehicle(self, vehicle, tries=25):
         """
@@ -94,13 +100,11 @@ class Connection:
             connection_msg['vid'] = vehicle.vid
             if vehicle.extensions is not None:
                 connection_msg['exts'] = vehicle.extensions
-            self.bng.connection.send(connection_msg)
-            resp = self.bng.connection.recv()
-            assert resp['type'] == 'StartVehicleConnection'
+            resp = self.bng.connection.send(connection_msg).recv('StartVehicleConnection')
             vid = resp['vid']
             assert vid == vehicle.vid
             self.port = int(resp['result'])
-            self.logger.debug(f"Created new vehicle connection on port {self.port}")
+            self.logger.debug(f'Created new vehicle connection on port {self.port}')
             self.logger.info(f'Vehicle {vid} connected to simulation.')
 
         # Now attempt to connect to the given vehicle.
@@ -188,6 +192,11 @@ class Connection:
                 sleep(sleepTime)
                 sleepTime = 0.5
 
+    def _assign_request_id(self):
+        req_id = self.req_id
+        self.req_id += 1
+        return req_id
+
     def send(self, data):
         """
         Encodes the given data using Messagepack and sends the resulting bytes over the socket of this Connection instance.
@@ -196,17 +205,20 @@ class Connection:
         Args:
             data (dict): The data to encode and send
         """
+        req_id = self._assign_request_id()
+        data['_id'] = req_id
         self.comm_logger.debug(f'Sending {data}.')
         data = msgpack.packb(data, use_bin_type=True)
-        length = pack('!I', len(data))                                  # Prefix the message length to the front of the message data.
+        length = pack('!I', len(data))  # Prefix the message length to the front of the message data.
         data = length + data
         try:
-            return self.skt.sendall(data)                               # First, attempt to send over the current socket stored in this Connection instance.
+            self.skt.sendall(data)  # First, attempt to send over the current socket stored in this Connection instance.
         except socket.error:
-            self.reconnect()                                            # If the send has failed, we attempt to re-connect then we send again.
-            return self.skt.sendall(data)
+            self.reconnect()  # If the send has failed, we attempt to re-connect then we send again.
+            self.skt.sendall(data)
+        return Response(self, req_id)
 
-    def recv(self):
+    def _recv_next_message(self):
         """
         Reads a Messagepack-encoded message from the socket of this Connection instance, decodes it, then returns it.
         NOTE: messages are prefixed by the message length value.
@@ -226,11 +238,23 @@ class Connection:
         # Converts all non-binary strings in the data into utf-8 format.
         data = self._string_cleanup(data)
         if 'bngError' in data:
-            raise BNGError(data['bngError'])
+            return BNGError(data['bngError'])
         if 'bngValueError' in data:
-            raise BNGValueError(data['bngValueError'])
+            return BNGValueError(data['bngValueError'])
 
         return data
+
+    def recv(self, req_id):
+        if req_id in self.received_messages:
+            return self.received_messages.pop(req_id, None)
+        while True:
+            message = self._recv_next_message()
+            _id = int(message['_id'])
+            del message['_id']
+
+            if _id == req_id:
+                return message
+            self.received_messages[_id] = message
 
     def message(self, req, **kwargs):
         """
@@ -245,13 +269,8 @@ class Connection:
         """
         self.logger.debug(f'Sending message of type {req} to BeamNG.tech\'s game engine in blocking mode.')
         kwargs['type'] = req
-        self.send(kwargs)
-        resp = self.recv()
-        if resp['type'] != req:
-            msg = 'Got Message type "{}" but expected "{}".'
-            msg = msg.format(resp['type'], req)
-            raise BNGValueError(msg)
-        self.logger.debug(f"Got response for message of type {req}.")
+        resp = self.send(kwargs).recv(req)
+        self.logger.debug(f'Got response for message of type {req}.')
 
         if 'result' in resp:
             return resp['result']
@@ -263,9 +282,7 @@ class Connection:
         """
         data = dict(type='Hello')
         data['protocolVersion'] = PROTOCOL_VERSION
-        self.send(data)
-        resp = self.recv()
-        assert resp['type'] == 'Hello'
+        resp = self.send(data).recv('Hello')
         if resp['protocolVersion'] != PROTOCOL_VERSION:
             msg = 'Mismatching BeamNGpy protocol versions. Please ensure both BeamNG.tech and BeamNGpy are using the desired versions.\n' \
                   f'BeamNGpy\'s is: {PROTOCOL_VERSION}' \
@@ -301,3 +318,22 @@ class Connection:
         assert length == 0
 
         return bytes(recv_buffer)
+
+
+class Response:
+    def __init__(self, connection: Connection, req_id: int):
+        self.connection = connection
+        self.req_id = req_id
+
+    def ack(self, ack_type: str):
+        message = self.recv()
+        if message['type'] != ack_type:
+            raise BNGError(f'Wrong ACK: {ack_type} != {message["type"]}')
+
+    def recv(self, type: str = None) -> dict:
+        message = self.connection.recv(self.req_id)
+        if isinstance(message, Exception):
+            raise message
+        if type and message['type'] != type:
+            raise BNGValueError(f'Got Message type "{message["type"]}" but expected "{type}".')
+        return message

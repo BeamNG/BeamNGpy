@@ -5,7 +5,8 @@ import signal
 import subprocess
 from pathlib import Path
 from time import sleep
-from .beamngcommon import ENV, LOGGER_ID, BNGError, BNGValueError, ack, create_warning
+
+from .beamngcommon import (ENV, LOGGER_ID, BNGError, BNGValueError, ack, create_warning)
 from .connection import Connection
 from .level import Level
 from .scenario import Scenario, ScenarioObject
@@ -17,12 +18,14 @@ BINARIES_LINUX = ['BinLinux/BeamNG.tech.x64', 'BinLinux/BeamNG.drive.x64']
 module_logger = logging.getLogger(f"{LOGGER_ID}.beamng")
 module_logger.setLevel(logging.DEBUG)
 
+
 def log_exception(extype, value, trace):
     """
     Hook to log uncaught exceptions to the logging framework. Register this as
     the excepthook with `sys.excepthook = log_exception`.
     """
     module_logger.exception("Uncaught exception: ", exc_info=(extype, value, trace))
+
 
 class BeamNGpy:
     """
@@ -196,7 +199,7 @@ class BeamNGpy:
         lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
         lua = lua.format(*extensions)
         call = [self.binary, '-rport', str(self.port), '-nosteam']
-        if platform.system() != 'Linux': # console is not supported for Linux hosts yet
+        if platform.system() != 'Linux':  # console is not supported for Linux hosts yet
             call.append('-console')
 
         for arg in args:
@@ -239,11 +242,11 @@ class BeamNGpy:
         """
         call = self.prepare_call(extensions, *args, **opts)
 
-        if platform.system() == 'Linux': # keep the same behaviour as on Windows - do not print game logs to the Python stdout
+        if platform.system() == 'Linux':  # keep the same behaviour as on Windows - do not print game logs to the Python stdout
             self.process = subprocess.Popen(call, stdout=subprocess.DEVNULL)
         else:
             self.process = subprocess.Popen(call)
-        self.logger.info("Started BeamNG.")
+        self.logger.info('Started BeamNG.')
 
     def get_levels(self):
         """
@@ -400,10 +403,8 @@ class BeamNGpy:
                 vehicle.disconnect()
 
         data = {'type': 'LoadScenario', 'path': scenario.path}
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'MapLoaded'
-        self.logger.info("Loaded map.")
+        self.connection.send(data).ack('MapLoaded')
+        self.logger.info('Loaded map.')
         flags = scenario.get_engine_flags()
         self.set_engine_flags(flags)
         self.scenario = scenario
@@ -421,12 +422,15 @@ class BeamNGpy:
         """
         flags = dict(type='EngineFlags', flags=flags)
         self.logger.debug(f'set following engine flags: {flags}')
-        self.connection.send(flags)
+        return self.connection.send(flags)
 
     @ack('OpenedCamera')
-    def open_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y, near_far_planes, pos, dir, up, is_using_shared_memory,
-        colour_shmem_handle, colour_shmem_size, annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size, is_render_colours,
-        is_render_annotations, is_render_instance, is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle):
+    def open_camera(
+        self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y, near_far_planes, pos,
+        dir, up, is_using_shared_memory, colour_shmem_handle, colour_shmem_size, annotation_shmem_handle,
+        annotation_shmem_size, depth_shmem_handle, depth_shmem_size, is_render_colours, is_render_annotations,
+        is_render_instance, is_render_depth, is_visualised, is_static, is_snapping_desired,
+            is_force_inside_triangle):
 
         data = dict(type='OpenCamera')
         data['vid'] = 0
@@ -456,254 +460,100 @@ class BeamNGpy:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Opened Camera: "{name}')
+        return resp
 
     @ack('ClosedCamera')
     def close_camera(self, name):
         data = dict(type='CloseCamera')
         data['name'] = name
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Closed Camera: "{name}"')
+        return resp
 
-    @ack('PolledCamera')
+    def _send_sensor_request(self, type, **kwargs):
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type=type, **kwargs)
+        # Send the request for updated readings to the simulation.
+        resp = self.connection.send(data)
+        # Receive the updated readings from the simulation.
+        return resp.recv()
+
+    def _set_sensor(self, type, **kwargs):
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type=type, **kwargs)
+        # Send the request for updated readings to the simulation.
+        return self.connection.send(data)
+
     def poll_camera(self, name, is_using_shared_memory):
+        return self._send_sensor_request('PollCamera', name=name, isUsingSharedMemory=is_using_shared_memory)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='PollCamera')
-        data['name'] = name
-        data['isUsingSharedMemory'] = is_using_shared_memory
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedSendAdHocRequestCamera')
     def send_ad_hoc_request_camera(self, name):
+        return self._send_sensor_request('SendAdHocRequestCamera', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SendAdHocRequestCamera')
-        data['name'] = name
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedIsAdHocPollRequestReadyCamera')
     def is_ad_hoc_poll_request_ready_camera(self, request_id):
+        return self._send_sensor_request('IsAdHocPollRequestReadyCamera', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='IsAdHocPollRequestReadyCamera')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedCollectAdHocPollRequestCamera')
     def collect_ad_hoc_poll_request_camera(self, request_id):
+        return self._send_sensor_request('CollectAdHocPollRequestCamera', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='CollectAdHocPollRequestCamera')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetFullCameraRequest')
     def get_full_camera_request(self, name):
+        return self._send_sensor_request('GetFullCameraRequest', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetFullCameraRequest')
-        data['name'] = name
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedCameraWorldPointToPixel')
     def camera_world_point_to_pixel(self, name, point):
+        return self._send_sensor_request(
+            'CameraWorldPointToPixel', name=name, pointX=point[0],
+            pointY=point[1],
+            pointZ=point[2])
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='CameraWorldPointToPixel')
-        data['name'] = name
-        data['pointX'] = point[0]
-        data['pointY'] = point[1]
-        data['pointZ'] = point[2]
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetCameraSensorPosition')
     def get_camera_sensor_position(self, name):
+        return self._send_sensor_request('GetCameraSensorPosition', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraSensorPosition')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetCameraSensorDirection')
     def get_camera_sensor_direction(self, name):
+        return self._send_sensor_request('GetCameraSensorDirection', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraSensorDirection')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetCameraSensorUp')
     def get_camera_sensor_up(self, name):
+        return self._send_sensor_request('GetCameraSensorUp', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraSensorUp')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetCameraMaxPendingGpuRequests')
     def get_camera_max_pending_gpu_requests(self, name):
+        return self._send_sensor_request('GetCameraMaxPendingGpuRequests', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraMaxPendingGpuRequests')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetCameraRequestedUpdateTime')
     def get_camera_requested_update_time(self, name):
+        return self._send_sensor_request('GetCameraRequestedUpdateTime', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraRequestedUpdateTime')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetCameraUpdatePriority')
     def get_camera_update_priority(self, name):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetCameraUpdatePriority')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
+        return self._send_sensor_request('GetCameraUpdatePriority', name=name)
 
     @ack('CompletedSetCameraSensorPosition')
     def set_camera_sensor_position(self, name, pos):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetCameraSensorPosition')
-        data['name'] = name
-        data['posX'] = pos[0]
-        data['posY'] = pos[1]
-        data['posZ'] = pos[2]
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        self._set_sensor('SetCameraSensorPosition', name=name, posX=pos[0], posY=pos[1], posZ=pos[2])
 
     @ack('CompletedSetCameraSensorDirection')
     def set_camera_sensor_direction(self, name, dir):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetCameraSensorDirection')
-        data['name'] = name
-        data['dirX'] = dir[0]
-        data['dirY'] = dir[1]
-        data['dirZ'] = dir[2]
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        self._set_sensor('SetCameraSensorDirection', name=name, dirX=dir[0], dirY=dir[1], dirZ=dir[2])
 
     @ack('CompletedSetCameraSensorUp')
     def set_camera_sensor_up(self, name, up):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetCameraSensorUp')
-        data['name'] = name
-        data['upX'] = up[0]
-        data['upY'] = up[1]
-        data['upZ'] = up[2]
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        self._set_sensor('SetCameraSensorUp', name=name, upX=up[0], upY=up[1], upZ=up[2])
 
     @ack('CompletedSetCameraMaxPendingGpuRequests')
     def set_camera_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetCameraMaxPendingGpuRequests')
-        data['name'] = name
-        data['maxPendingGpuRequests'] = max_pending_gpu_requests
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        self._set_sensor('SetCameraMaxPendingGpuRequests', name=name, maxPendingGpuRequests=max_pending_gpu_requests)
 
     @ack('CompletedSetCameraRequestedUpdateTime')
     def set_camera_requested_update_time(self, name, requested_update_time):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetCameraRequestedUpdateTime')
-        data['name'] = name
-        data['updateTime'] = requested_update_time
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        self._set_sensor('SetCameraRequestedUpdateTime', name=name, updateTime=requested_update_time)
 
     @ack('CompletedSetCameraUpdatePriority')
     def set_camera_update_priority(self, name, update_priority):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetCameraUpdatePriority')
-        data['name'] = name
-        data['updatePriority'] = update_priority
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        self._set_sensor('SetCameraUpdatePriority', name=name, updatePriority=update_priority)
 
     @ack('OpenedLidar')
     def open_lidar(self, name, vehicle, is_using_shared_memory, point_cloud_shmem_handle, point_cloud_shmem_size,
                    colour_shmem_handle, colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
                    vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance,
                    is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle):
-
         data = dict(type='OpenLidar')
         data['vid'] = 0
         if vehicle is not None:
@@ -730,8 +580,9 @@ class BeamNGpy:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Opened lidar: "{name}')
+        return resp
 
     @ack('ClosedLidar')
     def close_lidar(self, name):
@@ -743,303 +594,91 @@ class BeamNGpy:
         """
         data = dict(type='CloseLidar')
         data['name'] = name
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Closed lidar: "{name}"')
+        return resp
 
-    @ack('PolledLidar')
     def poll_lidar(self, name, is_using_shared_memory):
+        return self._send_sensor_request('PollLidar', name=name, isUsingSharedMemory=is_using_shared_memory)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='PollLidar')
-        data['name'] = name
-        data['isUsingSharedMemory'] = is_using_shared_memory
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedSendAdHocRequestLidar')
     def send_ad_hoc_request_lidar(self, name):
+        return self._send_sensor_request('SendAdHocRequestLidar', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SendAdHocRequestLidar')
-        data['name'] = name
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedIsAdHocPollRequestReadyLidar')
     def is_ad_hoc_poll_request_ready_lidar(self, request_id):
+        return self._send_sensor_request('IsAdHocPollRequestReadyLidar', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='IsAdHocPollRequestReadyLidar')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedCollectAdHocPollRequestLidar')
     def collect_ad_hoc_poll_request_lidar(self, request_id):
+        return self._send_sensor_request('CollectAdHocPollRequestLidar', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='CollectAdHocPollRequestLidar')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarSensorPosition')
     def get_lidar_sensor_position(self, name):
+        return self._send_sensor_request('GetLidarSensorPosition', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarSensorPosition')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarSensorDirection')
     def get_lidar_sensor_direction(self, name):
+        return self._send_sensor_request('GetLidarSensorDirection', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarSensorDirection')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarMaxPendingGpuRequests')
     def get_lidar_max_pending_gpu_requests(self, name):
+        return self._send_sensor_request('GetLidarMaxPendingGpuRequests', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarMaxPendingGpuRequests')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarRequestedUpdateTime')
     def get_lidar_requested_update_time(self, name):
+        return self._send_sensor_request('GetLidarRequestedUpdateTime', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarRequestedUpdateTime')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarUpdatePriority')
     def get_lidar_update_priority(self, name):
+        return self._send_sensor_request('GetLidarUpdatePriority', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarUpdatePriority')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarVerticalResolution')
     def get_lidar_vertical_resolution(self, name):
+        return self._send_sensor_request('GetLidarVerticalResolution', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarVerticalResolution')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarRaysPerSecond')
     def get_lidar_rays_per_second(self, name):
+        return self._send_sensor_request('GetLidarRaysPerSecond', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarRaysPerSecond')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarFrequency')
     def get_lidar_frequency(self, name):
+        return self._send_sensor_request('GetLidarFrequency', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarFrequency')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarMaxDistance')
     def get_lidar_max_distance(self, name):
+        return self._send_sensor_request('GetLidarMaxDistance', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarMaxDistance')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarIsVisualised')
     def get_lidar_is_visualised(self, name):
+        return self._send_sensor_request('GetLidarIsVisualised', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarIsVisualised')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetLidarIsAnnotated')
     def get_lidar_is_annotated(self, name):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetLidarIsAnnotated')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
+        return self._send_sensor_request('GetLidarIsAnnotated', name=name)
 
     @ack('CompletedSetLidarVerticalResolution')
     def set_lidar_vertical_resolution(self, name, vertical_resolution):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarVerticalResolution')
-        data['name'] = name
-        data['verticalResolution'] = vertical_resolution
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarVerticalResolution', name=name, verticalResolution=vertical_resolution)
 
     @ack('CompletedSetLidarRaysPerSecond')
     def set_lidar_rays_per_second(self, name, rays_per_second):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarRaysPerSecond')
-        data['name'] = name
-        data['raysPerSecond'] = rays_per_second
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarRaysPerSecond', name=name, raysPerSecond=rays_per_second)
 
     @ack('CompletedSetLidarFrequency')
     def set_lidar_frequency(self, name, frequency):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarFrequency')
-        data['name'] = name
-        data['frequency'] = frequency
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarFrequency', name=name, frequency=frequency)
 
     @ack('CompletedSetLidarMaxDistance')
     def set_lidar_max_distance(self, name, max_distance):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarMaxDistance')
-        data['name'] = name
-        data['maxDistance'] = max_distance
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarMaxDistance', name=name, maxDistance=max_distance)
 
     @ack('CompletedSetLidarIsVisualised')
     def set_lidar_is_visualised(self, name, is_visualised):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarIsVisualised')
-        data['name'] = name
-        data['isVisualised'] = is_visualised
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarIsVisualised', name=name, isVisualised=is_visualised)
 
     @ack('CompletedSetLidarIsAnnotated')
     def set_lidar_is_annotated(self, name, is_annotated):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarIsAnnotated')
-        data['name'] = name
-        data['isAnnotated'] = is_annotated
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarIsAnnotated', name=name, isAnnotated=is_annotated)
 
     @ack('CompletedSetLidarMaxPendingGpuRequests')
     def set_lidar_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarMaxPendingGpuRequests')
-        data['name'] = name
-        data['maxPendingGpuRequests'] = max_pending_gpu_requests
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarMaxPendingGpuRequests', name=name,
+                                maxPendingGpuRequests=max_pending_gpu_requests)
 
     @ack('CompletedSetLidarRequestedUpdateTime')
     def set_lidar_requested_update_time(self, name, requested_update_time):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarRequestedUpdateTime')
-        data['name'] = name
-        data['updateTime'] = requested_update_time
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarRequestedUpdateTime', name=name, updateTime=requested_update_time)
 
     @ack('CompletedSetLidarUpdatePriority')
     def set_lidar_update_priority(self, name, update_priority):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetLidarUpdatePriority')
-        data['name'] = name
-        data['updatePriority'] = update_priority
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetLidarUpdatePriority', name=name, updatePriority=update_priority)
 
     @ack('OpenedUltrasonic')
     def open_ultrasonic(
@@ -1047,7 +686,6 @@ class BeamNGpy:
             near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
             range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
             is_force_inside_triangle):
-
         data = dict(type='OpenUltrasonic')
         data['name'] = name
         data['vid'] = 0
@@ -1074,192 +712,69 @@ class BeamNGpy:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Opened ultrasonic sensor: "{name}')
+        return resp
 
     @ack('ClosedUltrasonic')
     def close_ultrasonic(self, name):
         data = dict(type='CloseUltrasonic')
         data['name'] = name
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{name}"')
+        return resp
 
-    @ack('PolledUltrasonic')
     def poll_ultrasonic(self, name):
+        return self._send_sensor_request('PollUltrasonic', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='PollUltrasonic')
-        data['name'] = name
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedSendAdHocRequestUltrasonic')
     def send_ad_hoc_request_ultrasonic(self, name):
+        return self._send_sensor_request('SendAdHocRequestUltrasonic', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SendAdHocRequestUltrasonic')
-        data['name'] = name
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedIsAdHocPollRequestReadyUltrasonic')
     def is_ad_hoc_poll_request_ready_ultrasonic(self, request_id):
+        return self._send_sensor_request('IsAdHocPollRequestReadyUltrasonic', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='IsAdHocPollRequestReadyUltrasonic')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedCollectAdHocPollRequestUltrasonic')
     def collect_ad_hoc_poll_request_ultrasonic(self, request_id):
+        return self._send_sensor_request('CollectAdHocPollRequestUltrasonic', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='CollectAdHocPollRequestUltrasonic')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetUltrasonicSensorPosition')
     def get_ultrasonic_sensor_position(self, name):
+        return self._send_sensor_request('GetUltrasonicSensorPosition', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetUltrasonicSensorPosition')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetUltrasonicSensorDirection')
     def get_ultrasonic_sensor_direction(self, name):
+        return self._send_sensor_request('GetUltrasonicSensorDirection', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetUltrasonicSensorDirection')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetUltrasonicMaxPendingGpuRequests')
     def get_ultrasonic_max_pending_gpu_requests(self, name):
+        return self._send_sensor_request('GetUltrasonicMaxPendingGpuRequests', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetUltrasonicMaxPendingGpuRequests')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetUltrasonicRequestedUpdateTime')
     def get_ultrasonic_requested_update_time(self, name):
+        return self._send_sensor_request('GetUltrasonicRequestedUpdateTime', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetUltrasonicRequestedUpdateTime')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetUltrasonicUpdatePriority')
     def get_ultrasonic_update_priority(self, name):
+        return self._send_sensor_request('GetUltrasonicUpdatePriority', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetUltrasonicUpdatePriority')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetUltrasonicIsVisualised')
     def get_ultrasonic_is_visualised(self, name):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetUltrasonicIsVisualised')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
+        return self._send_sensor_request('GetUltrasonicIsVisualised', name=name)
 
     @ack('CompletedSetUltrasonicMaxPendingGpuRequests')
     def set_ultrasonic_max_pending_gpu_requests(self, name, max_pending_gpu_requests):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetUltrasonicMaxPendingGpuRequests')
-        data['name'] = name
-        data['maxPendingGpuRequests'] = max_pending_gpu_requests
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetUltrasonicMaxPendingGpuRequests', name=name,
+                                maxPendingGpuRequests=max_pending_gpu_requests)
 
     @ack('CompletedSetUltrasonicRequestedUpdateTime')
     def set_ultrasonic_requested_update_time(self, name, requested_update_time):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetUltrasonicRequestedUpdateTime')
-        data['name'] = name
-        data['updateTime'] = requested_update_time
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetUltrasonicRequestedUpdateTime', name=name, updateTime=requested_update_time)
 
     @ack('CompletedSetUltrasonicUpdatePriority')
     def set_ultrasonic_update_priority(self, name, update_priority):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetUltrasonicUpdatePriority')
-        data['name'] = name
-        data['updatePriority'] = update_priority
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetUltrasonicUpdatePriority', name=name, updatePriority=update_priority)
 
     @ack('CompletedSetUltrasonicIsVisualised')
     def set_ultrasonic_is_visualised(self, name, is_visualised):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetUltrasonicIsVisualised')
-        data['name'] = name
-        data['isVisualised'] = is_visualised
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetUltrasonicIsVisualised', name=name, isVisualised=is_visualised)
 
     @ack('OpenedAccelerometer')
-    def open_accelerometer(self, name, vid, requested_update_time, pos, dir, up, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle):
+    def open_accelerometer(
+            self, name, vid, requested_update_time, pos, dir, up, is_using_gravity, is_visualised, is_snapping_desired,
+            is_force_inside_triangle):
         data = dict(type='OpenAccelerometer')
         data['name'] = name
         data['vid'] = vid
@@ -1271,131 +786,49 @@ class BeamNGpy:
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Opened accelerometer sensor: "{name}')
+        return resp
 
     @ack('ClosedAccelerometer')
     def close_accelerometer(self, name, vid):
         data = dict(type='CloseAccelerometer')
         data['name'] = name
         data['vid'] = vid
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Closed accelerometer sensor: "{name}"')
+        return resp
 
-    @ack('PolledAccelerometer')
     def poll_accelerometer(self, name):
+        return self._send_sensor_request('PollAccelerometer', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='PollAccelerometer')
-        data['name'] = name
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedSendAdHocRequestAccelerometer')
     def send_ad_hoc_request_accelerometer(self, name, vid):
+        return self._send_sensor_request('SendAdHocRequestAccelerometer', name=name, vid=vid)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SendAdHocRequestAccelerometer')
-        data['name'] = name
-        data['vid'] = vid
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedIsAdHocPollRequestReadyAccelerometer')
     def is_ad_hoc_poll_request_ready_accelerometer(self, request_id):
+        return self._send_sensor_request('IsAdHocPollRequestReadyAccelerometer', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='IsAdHocPollRequestReadyAccelerometer')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedCollectAdHocPollRequestAccelerometer')
     def collect_ad_hoc_poll_request_accelerometer(self, request_id):
+        return self._send_sensor_request('CollectAdHocPollRequestAccelerometer', requestId=request_id)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='CollectAdHocPollRequestAccelerometer')
-        data['requestId'] = request_id
-
-        # Send the request for updated readings to the simulation.
-        self.connection.send(data)
-
-        # Receive the updated readings from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetAccelerometerSensorPosition')
     def get_accelerometer_sensor_position(self, name):
+        return self._send_sensor_request('GetAccelerometerSensorPosition', name=name)
 
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetAccelerometerSensorPosition')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
-
-    @ack('CompletedGetAccelerometerSensorDirection')
     def get_accelerometer_sensor_direction(self, name):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetAccelerometerSensorDirection')
-        data['name'] = name
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
-
-        # Receive the property value from the simulation.
-        return self.connection.recv()
+        return self._send_sensor_request('GetAccelerometerSensorDirection', name=name)
 
     @ack('CompletedSetAccelerometerRequestedUpdateTime')
     def set_accelerometer_requested_update_time(self, name, vid, requested_update_time):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetAccelerometerRequestedUpdateTime')
-        data['name'] = name
-        data['vid'] = vid
-        data['updateTime'] = requested_update_time
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetAccelerometerRequestedUpdateTime', name=name, vid=vid,
+                                updateTime=requested_update_time)
 
     @ack('CompletedSetAccelerometerIsUsingGravity')
     def set_accelerometer_is_using_gravity(self, name, vid, is_using_gravity):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetAccelerometerIsUsingGravity')
-        data['name'] = name
-        data['vid'] = vid
-        data['isUsingGravity'] = is_using_gravity
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetAccelerometerIsUsingGravity', name=name, vid=vid, isUsingGravity=is_using_gravity)
 
     @ack('CompletedSetAccelerometerIsVisualised')
     def set_accelerometer_is_visualised(self, name, vid, is_visualised):
-
-        # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetAccelerometerIsVisualised')
-        data['name'] = name
-        data['vid'] = vid
-        data['isVisualised'] = is_visualised
-
-        # Send the request for the property to the simulation.
-        self.connection.send(data)
+        return self._set_sensor('SetAccelerometerIsVisualised', name=name, vid=vid, isVisualised=is_visualised)
 
     def teleport_vehicle(self, vehicle_id, pos, rot_quat=None, reset=True):
         """
@@ -1428,10 +861,8 @@ class BeamNGpy:
                            'the usage of `rot_quat` in `beamng.teleport_vehicle`; '
                            'rotation will not be applied to the vehicle',
                            RuntimeWarning)
-        self.connection.send(data)
-        response = self.connection.recv()
-        assert response['type'] == 'Teleported'
-        return response['success']
+        resp = self.connection.send(data).recv('Teleported')
+        return resp['success']
 
     @ack('ScenarioObjectTeleported')
     def teleport_scenario_object(self, scenario_object, pos, rot_quat=None):
@@ -1452,7 +883,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('ScenarioStarted')
     def start_scenario(self, restrict_actions=False):
@@ -1468,8 +899,9 @@ class BeamNGpy:
         """
         data = dict(type="StartScenario")
         data['restrict_actions'] = restrict_actions
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info("Starting scenario.")
+        return resp
 
     def restart_scenario(self):
         """
@@ -1481,9 +913,9 @@ class BeamNGpy:
         vehicles_to_reconnect = [v.vid for v in self.scenario.vehicles if v.is_connected()]
         self.scenario.restart()
 
-        self.logger.info("Restarting scenario.")
+        self.logger.info('Restarting scenario.')
         data = dict(type='RestartScenario')
-        ack('ScenarioRestarted')(lambda self: self.connection.send(data))(self)
+        self.connection.send(data).ack('ScenarioRestarted')
 
         self.scenario._get_existing_vehicles(self)
         for vehicle in self.scenario.vehicles:
@@ -1502,8 +934,9 @@ class BeamNGpy:
         self.scenario = None
 
         data = dict(type='StopScenario')
-        self.connection.send(data)
-        self.logger.info("Stopping scenario.")
+        resp = self.connection.send(data)
+        self.logger.info('Stopping scenario.')
+        return resp
 
     @ack('SetPhysicsDeterministic')
     def set_deterministic(self):
@@ -1514,7 +947,7 @@ class BeamNGpy:
         :meth:`~.BeamnGpy.set_steps_per_second`.
         """
         data = dict(type='SetPhysicsDeterministic')
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('SetPhysicsNonDeterministic')
     def set_nondeterministic(self):
@@ -1523,7 +956,7 @@ class BeamNGpy:
         setting is retained.
         """
         data = dict(type='SetPhysicsNonDeterministic')
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('SetFPSLimit')
     def set_steps_per_second(self, sps):
@@ -1538,7 +971,7 @@ class BeamNGpy:
             sps (int): The steps per second to set.
         """
         data = dict(type='FPSLimit', fps=sps)
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('RemovedFPSLimit')
     def remove_step_limit(self):
@@ -1547,7 +980,7 @@ class BeamNGpy:
         undefined time slices.
         """
         data = dict(type='RemoveFPSLimit')
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def step(self, count, wait=True):
         """
@@ -1569,13 +1002,10 @@ class BeamNGpy:
         """
         data = dict(type='Step', count=count)
         data['ack'] = wait
-        self.connection.send(data)
+        resp = self.connection.send(data)
         if wait:
-            resp = self.connection.recv()
-            if resp['type'] != 'Stepped':
-                raise BNGError('Wrong ACK: {} != {}'.format('Stepped',
-                                                            resp['type']))
-        self.logger.info(f"Advancing the simulation by {count} steps.")
+            resp.ack('Stepped')
+        self.logger.info(f'Advancing the simulation by {count} steps.')
 
     @ack('Paused')
     def pause(self):
@@ -1584,8 +1014,9 @@ class BeamNGpy:
         paused.
         """
         data = dict(type='Pause')
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info('Pausing the simulation.')
+        return resp
 
     @ack('Resumed')
     def resume(self):
@@ -1594,33 +1025,9 @@ class BeamNGpy:
         is resumed.
         """
         data = dict(type='Resume')
-        self.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info('Resuming the simulation.')
-
-    def render_cameras(self):
-        """
-        Renders all cameras associated with the loaded scenario. These cameras
-        work exactly like the ones attached to vehicles as sensors, except
-        scenario cameras do not follow the vehicle they are attached to and can
-        be used to get a view from the perspective of something like a
-        surveillance camera, for example.
-
-        A scenario needs to be loaded for this method to work.
-
-        Returns:
-            The rendered data for all cameras in the loaded scenario as a
-            dict mapping camera name to render results.
-        """
-        if not self.scenario:
-            raise BNGError('Need to be in a started scenario to render its '
-                           'cameras.')
-        engine_reqs = self.scenario.encode_requests()
-        self.connection.send(engine_reqs)
-        response = self.connection.recv()
-        assert response['type'] == 'SensorData'
-        camera_data = response['data']
-        result = self.scenario.decode_frames(camera_data)
-        return result
+        return resp
 
     def get_roads(self):
         """
@@ -1637,10 +1044,8 @@ class BeamNGpy:
                            'DecalRoad data.')
 
         data = dict(type='GetDecalRoadData')
-        self.connection.send(data)
-        response = self.connection.recv()
-        assert response['type'] == 'DecalRoadData'
-        return response['data']
+        resp = self.connection.send(data).recv('DecalRoadData')
+        return resp['data']
 
     def get_road_edges(self, road):
         """
@@ -1661,10 +1066,8 @@ class BeamNGpy:
         """
         data = dict(type='GetDecalRoadEdges')
         data['road'] = road
-        self.connection.send(data)
-        response = self.connection.recv()
-        assert response['type'] == 'DecalRoadEdges'
-        return response['edges']
+        resp = self.connection.send(data).recv('DecalRoadEdges')
+        return resp['edges']
 
     def get_gamestate(self):
         """
@@ -1682,9 +1085,7 @@ class BeamNGpy:
             The game state as a dictionary as described above.
         """
         data = dict(type='GameStateRequest')
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'GameState'
+        resp = self.connection.send(data).recv('GameState')
         return resp
 
     @ack('TimeOfDayChanged')
@@ -1699,7 +1100,7 @@ class BeamNGpy:
         """
         data = dict(type='TimeOfDayChange')
         data['tod'] = tod
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('WeatherPresetChanged')
     def set_weather_preset(self, preset, time=1):
@@ -1719,7 +1120,7 @@ class BeamNGpy:
         data = dict(type='SetWeatherPreset')
         data['preset'] = preset
         data['time'] = time
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def await_vehicle_spawn(self, vid):
         """
@@ -1729,11 +1130,9 @@ class BeamNGpy:
         Args:
             vid (str): The name of the  vehicle to wait for.
         """
-        req = dict(type='WaitForSpawn')
-        req['name'] = vid
-        self.connection.send(req)
-        resp = self.connection.recv()
-        assert resp['type'] == 'VehicleSpawned'
+        data = dict(type='WaitForSpawn')
+        data['name'] = vid
+        resp = self.connection.send(data).recv('VehicleSpawned')
         assert resp['name'] == vid
 
     def update_scenario(self):
@@ -1748,9 +1147,7 @@ class BeamNGpy:
         data['vehicles'] = list()
         for vehicle in self.scenario.vehicles:
             data['vehicles'].append(vehicle.vid)
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'ScenarioUpdate'
+        resp = self.connection.send(data).recv('ScenarioUpdate')
         for name, vehicle_state in resp['vehicles'].items():
             vehicle = self.scenario.get_vehicle(name)
             if vehicle:
@@ -1766,7 +1163,7 @@ class BeamNGpy:
         """
         data = dict(type='DisplayGuiMessage')
         data['message'] = msg
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('VehicleSwitched')
     def switch_vehicle(self, vehicle):
@@ -1780,7 +1177,7 @@ class BeamNGpy:
         """
         data = dict(type='SwitchVehicle')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('FreeCameraSet')
     def set_free_camera(self, pos, direction):
@@ -1797,7 +1194,7 @@ class BeamNGpy:
         data = dict(type='SetFreeCamera')
         data['pos'] = pos
         data['dir'] = direction
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('ParticlesSet')
     def set_particles_enabled(self, enabled):
@@ -1809,7 +1206,7 @@ class BeamNGpy:
         """
         data = dict(type='ParticlesEnabled')
         data['enabled'] = enabled
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('PartsAnnotated')
     def annotate_parts(self, vehicle):
@@ -1821,7 +1218,7 @@ class BeamNGpy:
         """
         data = dict(type='AnnotateParts')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('AnnotationsReverted')
     def revert_annotations(self, vehicle):
@@ -1834,22 +1231,18 @@ class BeamNGpy:
         """
         data = dict(type='RevertAnnotations')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def get_part_annotations(self, vehicle):
         data = dict(type='GetPartAnnotations')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'PartAnnotations'
+        resp = self.connection.send(data).recv('PartAnnotations')
         return resp['colors']
 
     def get_part_annotation(self, part):
         data = dict(type='GetPartAnnotation')
         data['part'] = part
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'PartAnnotation'
+        resp = self.connection.send(data).recv('PartAnnotation')
         if 'color' in resp:
             return resp['color']
         return None
@@ -1862,9 +1255,7 @@ class BeamNGpy:
             The name of the loaded scenario as a string.
         """
         data = dict(type='GetScenarioName')
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'ScenarioName'
+        resp = self.connection.send(data).recv('ScenarioName')
         return resp['name']
 
     def get_scenetree(self):
@@ -1919,15 +1310,14 @@ class BeamNGpy:
         data['pos'] = pos
         data['rot'] = rot_quat
         data.update(vehicle.options)
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'VehicleSpawned'
+        resp = self.connection.send(data).recv('VehicleSpawned')
         if resp['success']:
             vehicle.connect(self)
             return True
         else:
             return False
 
+    @ack('VehicleDespawned')
     def despawn_vehicle(self, vehicle):
         """
         Despawns the given :class:`.Vehicle` from the simulation.
@@ -1938,9 +1328,7 @@ class BeamNGpy:
         vehicle.disconnect()
         data = dict(type='DespawnVehicle')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'VehicleDespawned'
+        return self.connection.send(data)
 
     def find_objects_class(self, clazz):
         """
@@ -1958,8 +1346,7 @@ class BeamNGpy:
         """
         data = dict(type='FindObjectsClass')
         data['class'] = clazz
-        self.connection.send(data)
-        resp = self.connection.recv()
+        resp = self.connection.send(data).recv()
         ret = list()
         for obj in resp['objects']:
             sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
@@ -1968,7 +1355,6 @@ class BeamNGpy:
                                   rot_quat=tuple(obj['rotation']),
                                   **obj['options'])
             ret.append(sobj)
-
         return ret
 
     @ack('CreatedCylinder')
@@ -1997,7 +1383,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['name'] = name
         data['material'] = material
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('CreatedBump')
     def create_bump(self, name, width, length, height, upper_length,
@@ -2032,7 +1418,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['name'] = name
         data['material'] = material
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('CreatedCone')
     def create_cone(self, name, radius, height, pos, rot_quat=None, material=None):
@@ -2058,7 +1444,7 @@ class BeamNGpy:
         data['name'] = name
         data['pos'] = pos
         data['rot'] = rot_quat
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('CreatedCube')
     def create_cube(self, name, size, pos, rot_quat=None, material=None):
@@ -2083,7 +1469,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['material'] = material
         data['name'] = name
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('CreatedRing')
     def create_ring(self, name, radius, thickness, pos, rot_quat=None, material=None):
@@ -2109,7 +1495,7 @@ class BeamNGpy:
         data['rot'] = rot_quat
         data['material'] = material
         data['name'] = name
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def get_vehicle_bbox(self, vehicle):
         """
@@ -2150,9 +1536,7 @@ class BeamNGpy:
         """
         data = dict(type='GetBBoxCorners')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'BBoxCorners'
+        resp = self.connection.send(data).recv('BBoxCorners')
         points = resp['points']
         bbox = {
             'front_bottom_left': points[3],
@@ -2177,7 +1561,7 @@ class BeamNGpy:
         """
         data = dict(type='SetGravity')
         data['gravity'] = gravity
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def get_available_vehicles(self):
         """
@@ -2196,10 +1580,7 @@ class BeamNGpy:
                            'vehicles.')
 
         data = dict(type='GetAvailableVehicles')
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'AvailableVehicles'
-        return resp
+        return self.connection.send(data).recv('AvailableVehicles')
 
     @ack('TrafficStarted')
     def start_traffic(self, participants):
@@ -2215,7 +1596,7 @@ class BeamNGpy:
         participants = [p.vid for p in participants]
         data = dict(type='StartTraffic')
         data['participants'] = participants
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('TrafficStopped')
     def stop_traffic(self, stop=False):
@@ -2230,7 +1611,7 @@ class BeamNGpy:
         """
         data = dict(type='StopTraffic')
         data['stop'] = stop
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('SettingsChanged')
     def change_setting(self, key, value):
@@ -2247,7 +1628,7 @@ class BeamNGpy:
         data = dict(type='ChangeSetting')
         data['key'] = key
         data['value'] = value
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('GraphicsSettingApplied')
     def apply_graphics_setting(self):
@@ -2259,7 +1640,7 @@ class BeamNGpy:
         take effect after the next launch.
         """
         data = dict(type='ApplyGraphicsSetting')
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('ExecutedLuaChunkGE')
     def queue_lua_command(self, chunk):
@@ -2271,7 +1652,7 @@ class BeamNGpy:
         """
         data = dict(type='QueueLuaCommandGE')
         data['chunk'] = chunk
-        self.connection.send(data)
+        return self.connection.send(data)
 
     @ack('RelativeCamSet')
     def set_relative_camera(self, pos, rot_quat=None):
@@ -2290,7 +1671,7 @@ class BeamNGpy:
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def add_debug_spheres(self, coordinates, radii, rgba_colors,
                           cling=False, offset=0):
@@ -2301,9 +1682,7 @@ class BeamNGpy:
         data['colors'] = rgba_colors
         data['cling'] = cling
         data['offset'] = offset
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'DebugSphereAdded'
+        resp = self.connection.send(data).recv('DebugSphereAdded')
         return resp['sphereIDs']
 
     @ack('DebugObjectsRemoved')
@@ -2311,7 +1690,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'spheres'
         data['objIDs'] = sphere_ids
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def add_debug_polyline(self, coordinates, rgba_color,
                            cling=False, offset=0):
@@ -2320,9 +1699,7 @@ class BeamNGpy:
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'DebugPolylineAdded'
+        resp = self.connection.send(data).recv('DebugPolylineAdded')
         return resp['lineID']
 
     @ack('DebugObjectsRemoved')
@@ -2330,16 +1707,14 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'polylines'
         data['objIDs'] = [line_id]
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def add_debug_cylinder(self, circle_positions, radius, rgba_color):
         data = dict(type='AddDebugCylinder')
         data['circlePositions'] = circle_positions
         data['radius'] = radius
         data['color'] = rgba_color
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'DebugCylinderAdded'
+        resp = self.connection.send(data).recv('DebugCylinderAdded')
         return resp['cylinderID']
 
     @ack('DebugObjectsRemoved')
@@ -2347,7 +1722,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'cylinders'
         data['objIDs'] = [cylinder_id]
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def add_debug_triangle(self, vertices, rgba_color, cling=False, offset=0):
         data = dict(type='AddDebugTriangle')
@@ -2355,9 +1730,7 @@ class BeamNGpy:
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'DebugTriangleAdded'
+        resp = self.connection.send(data).recv('DebugTriangleAdded')
         return resp['triangleID']
 
     @ack('DebugObjectsRemoved')
@@ -2365,7 +1738,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'triangles'
         data['objIDs'] = [triangle_id]
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def add_debug_rectangle(self, vertices, rgba_color, cling=False, offset=0):
         data = dict(type='AddDebugRectangle')
@@ -2373,9 +1746,7 @@ class BeamNGpy:
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'DebugRectangleAdded'
+        resp = self.connection.send(data).recv('DebugRectangleAdded')
         return resp['rectangleID']
 
     @ack('DebugObjectsRemoved')
@@ -2383,7 +1754,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'rectangles'
         data['objIDs'] = [rectangle_id]
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def add_debug_text(self, origin, content, rgba_color,
                        cling=False, offset=0):
@@ -2394,8 +1765,7 @@ class BeamNGpy:
         data['cling'] = cling
         data['offset'] = offset
         self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'DebugTextAdded'
+        resp = self.connection.send(data).recv('DebugTextAdded')
         return resp['textID']
 
     @ack('DebugObjectsRemoved')
@@ -2403,16 +1773,14 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'text'
         data['objIDs'] = [text_id]
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def add_debug_square_prism(self, end_points, end_point_dims, rgba_color):
         data = dict(type='AddDebugSquarePrism')
         data['endPoints'] = end_points
         data['dims'] = end_point_dims
         data['color'] = rgba_color
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'DebugSquarePrismAdded'
+        resp = self.connection.send(data).recv('DebugSquarePrismAdded')
         return resp['prismID']
 
     @ack('DebugObjectsRemoved')
@@ -2420,7 +1788,7 @@ class BeamNGpy:
         data = dict(type='RemoveDebugObjects')
         data['objType'] = 'squarePrisms'
         data['objIDs'] = [prism_id]
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def get_annotations(self):
         """
@@ -2431,9 +1799,7 @@ class BeamNGpy:
             values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'Annotations'
+        resp = self.connection.send(data).recv('Annotations')
         return resp['annotations']
 
     def get_annotation_classes(self, annotations):
@@ -2468,8 +1834,7 @@ class BeamNGpy:
             prefab (str): Contents of the scenario's prefab file
             info (dict): Contents of the scenario's info.json
         """
-        resp = self.connection.message('CreateScenario', level=level, name=name, prefab=prefab, info=info)
-        return resp
+        return self.connection.message('CreateScenario', level=level, name=name, prefab=prefab, info=info)
 
     def delete_scenario(self, path):
         """
@@ -2485,7 +1850,7 @@ class BeamNGpy:
     @ack('Quit')
     def quit_beamng(self):
         data = dict(type='Quit')
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def get_part_config(self, vehicle):
         """
@@ -2502,9 +1867,7 @@ class BeamNGpy:
         """
         data = dict(type='GetPartConfig')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'PartConfig'
+        resp = self.connection.send(data).recv('PartConfig')
         resp = resp['config']
         if 'parts' not in resp or not resp['parts']:
             resp['parts'] = dict()
@@ -2525,9 +1888,7 @@ class BeamNGpy:
         """
         data = dict(type='GetPartOptions')
         data['vid'] = vehicle.vid
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'PartOptions'
+        resp = self.connection.send(data).recv('PartOptions')
         return resp['options']
 
     def set_part_config(self, vehicle, cfg):
@@ -2586,7 +1947,7 @@ class BeamNGpy:
         data['mode'] = mode
         data['config'] = config
         data['customData'] = custom_data
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def get_player_camera_modes(self, vid):
         """
@@ -2602,9 +1963,7 @@ class BeamNGpy:
         """
         data = dict(type='GetPlayerCameraMode')
         data['vid'] = vid
-        self.connection.send(data)
-        resp = self.connection.recv()
-        assert resp['type'] == 'PlayerCameraMode'
+        resp = self.connection.send(data).recv('PlayerCameraMode')
         return resp['cameraData']
 
     @ack('TrackBuilderTrackLoaded')
@@ -2618,7 +1977,7 @@ class BeamNGpy:
         """
         data = dict(type='LoadTrackBuilderTrack')
         data['path'] = path
-        self.connection.send(data)
+        return self.connection.send(data)
 
     def __enter__(self):
         self.open()

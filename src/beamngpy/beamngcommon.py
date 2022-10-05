@@ -21,7 +21,7 @@ ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
 
 PROTOCOL_VERSION = 'v1.19'
-LOGGER_ID = "beamngpy"
+LOGGER_ID = 'beamngpy'
 LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
 bngpy_logger = logging.getLogger(LOGGER_ID)
 module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
@@ -143,13 +143,9 @@ def ack(ack_type):
     def ack_wrapper(fun):
         @wraps(fun)
         def ack_wrapped(*args, **kwargs):
-            ret = fun(*args, **kwargs)
-            resp = args[0].connection.recv()
-            if resp['type'] != ack_type:
-                raise BNGError('Wrong ACK: {} != {}'.format(ack_type,
-                                                            resp['type']))
-            return ret
-
+            resp = fun(*args, **kwargs)
+            assert resp, 'The wrapped function has to return a `Response` object!'
+            resp.ack(ack_type)
         return ack_wrapped
     return ack_wrapper
 
