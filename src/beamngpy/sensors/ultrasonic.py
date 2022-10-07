@@ -6,14 +6,22 @@ will not update automatically at all. However, ad-hoc polling requests can be se
 """
 
 from logging import DEBUG, getLogger
+
 from beamngpy.beamngcommon import LOGGER_ID, ack
+
 from .utils import _send_sensor_request, _set_sensor
 
+
 class Ultrasonic:
-    def __init__(self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
-        resolution=(200, 200), field_of_view_y=5.7, near_far_planes=(0.1, 5.1), range_roundess=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3,
-        range_focus=0.376, range_min_cutoff=0.1, range_direct_max_cutoff=5.0, sensitivity=3.0, fixed_window_size=10, is_visualised=True, is_static=False,
-        is_snapping_desired=False, is_force_inside_triangle=False):
+    def __init__(
+            self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 1.7),
+            dir=(0, -1, 0),
+            up=(0, 0, 1),
+            resolution=(200, 200),
+            field_of_view_y=5.7, near_far_planes=(0.1, 5.1),
+            range_roundess=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3, range_focus=0.376,
+            range_min_cutoff=0.1, range_direct_max_cutoff=5.0, sensitivity=3.0, fixed_window_size=10,
+            is_visualised=True, is_static=False, is_snapping_desired=False, is_force_inside_triangle=False):
         """
         Creates an ultrasonic sensor.
         Args:
@@ -50,13 +58,15 @@ class Ultrasonic:
         self.name = name
 
         # Create and initialise this sensor in the simulation.
-        self._open_ultrasonic(name, vehicle, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y, near_far_planes,
-            range_roundess, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff, range_direct_max_cutoff, sensitivity, fixed_window_size,
-            is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
-        self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')\
+        self._open_ultrasonic(
+            name, vehicle, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
+            near_far_planes, range_roundess, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
+            range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
+            is_force_inside_triangle)
+        self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')
 
-    def _send_sensor_request(self, type, **kwargs):
-        return _send_sensor_request(self.bng.connection, type, **kwargs)
+    def _send_sensor_request(self, type, ack=None, **kwargs):
+        return _send_sensor_request(self.bng.connection, type, ack, **kwargs)
 
     def _set_sensor(self, type, **kwargs):
         return _set_sensor(self.bng.connection, type, **kwargs)
@@ -77,7 +87,8 @@ class Ultrasonic:
             (dict): A dictionary containing the distance measurement and the window (min and mix values) in which it was computed.
         """
         # Send and receive a request for readings data from this sensor.
-        distance_measurement = self._send_sensor_request('PollUltrasonic', name=self.name)['data']
+        distance_measurement = self._send_sensor_request(
+            'PollUltrasonic', ack='PolledUltrasonic', name=self.name)['data']
         self.logger.debug('Ultrasonic - sensor readings received from simulation: 'f'{self.name}')
 
         return distance_measurement
@@ -91,7 +102,8 @@ class Ultrasonic:
             (int): A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Ultrasonic - ad-hoc polling request sent: 'f'{self.name}')
-        return self._send_sensor_request('SendAdHocRequestUltrasonic', name=self.name)['data']
+        return self._send_sensor_request(
+            'SendAdHocRequestUltrasonic', ack='CompletedSendAdHocRequestUltrasonic', name=self.name)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -102,7 +114,8 @@ class Ultrasonic:
             (bool): A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Ultrasonic - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyUltrasonic', requestId=request_id)
+        return self._send_sensor_request('IsAdHocPollRequestReadyUltrasonic',
+                                         ack='CompletedIsAdHocPollRequestReadyUltrasonic', requestId=request_id)
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -112,7 +125,8 @@ class Ultrasonic:
         Returns:
             (dict): The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestUltrasonic', requestId=request_id)['data']
+        readings = self._send_sensor_request('CollectAdHocPollRequestUltrasonic',
+                                             ack='CompletedCollectAdHocPollRequestUltrasonic', requestId=request_id)['data']
         self.logger.debug('Ultrasonic - ad-hoc polling request returned and processed: 'f'{self.name}')
 
         return readings
@@ -123,7 +137,8 @@ class Ultrasonic:
         Returns:
             (float): The requested update time.
         """
-        return self._send_sensor_request('GetUltrasonicRequestedUpdateTime', name=self.name)['data']
+        return self._send_sensor_request('GetUltrasonicRequestedUpdateTime',
+                                         ack='CompletedGetUltrasonicRequestedUpdateTime', name=self.name)['data']
 
     def get_update_priority(self):
         """
@@ -131,7 +146,8 @@ class Ultrasonic:
         Returns:
             (float): The update priority value.
         """
-        return self._send_sensor_request('GetUltrasonicUpdatePriority', name=self.name)['data']
+        return self._send_sensor_request(
+            'GetUltrasonicUpdatePriority', ack='CompletedGetUltrasonicUpdatePriority', name=self.name)['data']
 
     def get_position(self):
         """
@@ -139,7 +155,8 @@ class Ultrasonic:
         Returns:
             (list): The sensor position.
         """
-        table = self._send_sensor_request('GetUltrasonicSensorPosition', name=self.name)['data']
+        table = self._send_sensor_request('GetUltrasonicSensorPosition',
+                                          ack='CompletedGetUltrasonicSensorPosition', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_direction(self):
@@ -148,7 +165,8 @@ class Ultrasonic:
         Returns:
             (list): The sensor direction.
         """
-        table = self._send_sensor_request('GetUltrasonicSensorDirection', name=self.name)['data']
+        table = self._send_sensor_request('GetUltrasonicSensorDirection',
+                                          ack='CompletedGetUltrasonicSensorDirection', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_max_pending_requests(self):
@@ -157,7 +175,8 @@ class Ultrasonic:
         Returns:
             (int): The max pending requests value.
         """
-        return self._send_sensor_request('GetUltrasonicMaxPendingGpuRequests', name=self.name)['data']
+        return self._send_sensor_request('GetUltrasonicMaxPendingGpuRequests',
+                                         ack='CompletedGetUltrasonicMaxPendingGpuRequests', name=self.name)['data']
 
     def get_is_visualised(self):
         """
@@ -165,7 +184,8 @@ class Ultrasonic:
         Returns:
             (bool): A flag which indicates if this ultrasonic sensor is visualised or not.
         """
-        return self._send_sensor_request('GetUltrasonicIsVisualised', name=self.name)['data']
+        return self._send_sensor_request(
+            'GetUltrasonicIsVisualised', ack='CompletedGetUltrasonicIsVisualised', name=self.name)['data']
 
     @ack('CompletedSetUltrasonicRequestedUpdateTime')
     def set_requested_update_time(self, requested_update_time):
@@ -192,7 +212,8 @@ class Ultrasonic:
         Args:
             max_pending_requests (int): The new max pending requests value.
         """
-        return self._set_sensor('SetUltrasonicMaxPendingGpuRequests', name=self.name, maxPendingGpuRequests=max_pending_requests)
+        return self._set_sensor('SetUltrasonicMaxPendingGpuRequests', name=self.name,
+                                maxPendingGpuRequests=max_pending_requests)
 
     @ack('CompletedSetUltrasonicIsVisualised')
     def set_is_visualised(self, is_visualised):
@@ -236,13 +257,13 @@ class Ultrasonic:
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
         resp = self.bng.connection.send(data)
-        self.logger.info(f'Opened ultrasonic sensor: "{name}')
+        self.logger.info(f'Opened ultrasonic sensor: "{name}"')
         return resp
 
     @ack('ClosedUltrasonic')
     def _close_ultrasonic(self):
         data = dict(type='CloseUltrasonic')
         data['name'] = self.name
-        resp = self.connection.send(data)
+        resp = self.bng.connection.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{self.name}"')
         return resp

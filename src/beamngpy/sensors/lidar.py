@@ -85,8 +85,8 @@ class Lidar:
             is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
 
-    def _send_sensor_request(self, type, **kwargs):
-        return _send_sensor_request(self.bng.connection, type, **kwargs)
+    def _send_sensor_request(self, type, ack=None, **kwargs):
+        return _send_sensor_request(self.bng.connection, type, ack, **kwargs)
 
     def _set_sensor(self, type, **kwargs):
         return _set_sensor(self.bng.connection, type, **kwargs)
@@ -152,7 +152,7 @@ class Lidar:
         point_cloud_data = None
         colour_data = None
         if self.is_using_shared_memory:
-            data_sizes = self._send_sensor_request('PollLidar', name=self.name,
+            data_sizes = self._send_sensor_request('PollLidar', ack='PolledLidar', name=self.name,
                                                    isUsingSharedMemory=self.is_using_shared_memory)['data']
             self.point_cloud_shmem.seek(0)
             point_cloud_data = self.point_cloud_shmem.read(self.point_cloud_shmem_size)
@@ -166,7 +166,7 @@ class Lidar:
             processed_readings['colours'] = colour_data
             self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
         else:
-            binary = self._send_sensor_request('PollLidar', name=self.name,
+            binary = self._send_sensor_request('PollLidar', ack='PolledLidar', name=self.name,
                                                isUsingSharedMemory=self.is_using_shared_memory)['data']
             self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
             processed_readings = self._convert_binary_to_array(binary)
@@ -183,7 +183,7 @@ class Lidar:
             (int): A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Lidar - ad-hoc polling request sent: 'f'{self.name}')
-        return self._send_sensor_request('SendAdHocRequestLidar', name=self.name)['data']
+        return self._send_sensor_request('SendAdHocRequestLidar', ack='CompletedSendAdHocRequestLidar', name=self.name)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -196,7 +196,7 @@ class Lidar:
             (bool): A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Lidar - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyLidar', requestId=request_id)
+        return self._send_sensor_request('IsAdHocPollRequestReadyLidar', ack='CompletedIsAdHocPollRequestReadyLidar', requestId=request_id)
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -208,7 +208,7 @@ class Lidar:
             (dict): A dictionary containing the LiDAR point cloud and colour data.
         """
         # Get the binary string data from the simulator.
-        binary = self._send_sensor_request('CollectAdHocPollRequestLidar', requestId=request_id)['data']
+        binary = self._send_sensor_request('CollectAdHocPollRequestLidar', ack='CompletedCollectAdHocPollRequestLidar', requestId=request_id)['data']
 
         self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
         return self._convert_binary_to_array(binary)
@@ -220,7 +220,7 @@ class Lidar:
         Returns:
             (float): The requested update time.
         """
-        return self._send_sensor_request('GetLidarRequestedUpdateTime', name=self.name)['data']
+        return self._send_sensor_request('GetLidarRequestedUpdateTime', ack='CompletedGetLidarRequestedUpdateTime', name=self.name)['data']
 
     def get_update_priority(self):
         """
@@ -229,7 +229,7 @@ class Lidar:
         Returns:
             (float): The update priority value.
         """
-        return self._send_sensor_request('GetLidarUpdatePriority', name=self.name)['data']
+        return self._send_sensor_request('GetLidarUpdatePriority', ack='CompletedGetLidarUpdatePriority', name=self.name)['data']
 
     def get_position(self):
         """
@@ -238,7 +238,7 @@ class Lidar:
         Returns:
             (list): The sensor position.
         """
-        table = self._send_sensor_request('GetLidarSensorPosition', name=self.name)['data']
+        table = self._send_sensor_request('GetLidarSensorPosition', ack='CompletedGetLidarSensorPosition', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_direction(self):
@@ -248,7 +248,7 @@ class Lidar:
         Returns:
             (list): The sensor direction.
         """
-        table = self._send_sensor_request('GetLidarSensorDirection', name=self.name)['data']
+        table = self._send_sensor_request('GetLidarSensorDirection', ack='CompletedGetLidarSensorDirection', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_max_pending_requests(self):
@@ -258,7 +258,7 @@ class Lidar:
         Returns:
             (int): The max pending requests value.
         """
-        return self._send_sensor_request('GetLidarMaxPendingGpuRequests', name=self.name)['data']
+        return self._send_sensor_request('GetLidarMaxPendingGpuRequests', ack='CompletedGetLidarMaxPendingGpuRequests', name=self.name)['data']
 
     def get_is_visualised(self):
         """
@@ -267,7 +267,7 @@ class Lidar:
         Returns:
             (bool): A flag which indicates if this LiDAR sensor is visualised or not.
         """
-        return self._send_sensor_request('GetLidarIsVisualised', name=self.name)['data']
+        return self._send_sensor_request('GetLidarIsVisualised', ack='CompletedGetLidarIsVisualised', name=self.name)['data']
 
     def get_is_annotated(self):
         """
@@ -276,7 +276,7 @@ class Lidar:
         Returns:
             (bool): A flag which indicates if this LiDAR sensor is annotated or not.
         """
-        return self._send_sensor_request('GetLidarIsAnnotated', name=self.name)['data']
+        return self._send_sensor_request('GetLidarIsAnnotated', ack='CompletedGetLidarIsAnnotated', name=self.name)['data']
 
     @ack('CompletedSetLidarRequestedUpdateTime')
     def set_requested_update_time(self, requested_update_time):
@@ -361,7 +361,7 @@ class Lidar:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
         resp = self.bng.connection.send(data)
-        self.logger.info(f'Opened lidar: "{name}')
+        self.logger.info(f'Opened lidar: "{name}"')
         return resp
 
     @ack('ClosedLidar')

@@ -47,8 +47,8 @@ class Accelerometer:
                                  is_visualised, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Accelerometer - sensor created: 'f'{self.name}')
 
-    def _send_sensor_request(self, type, **kwargs):
-        return _send_sensor_request(self.bng.connection, type, **kwargs)
+    def _send_sensor_request(self, type, ack=None, **kwargs):
+        return _send_sensor_request(self.bng.connection, type, ack, **kwargs)
 
     def _set_sensor(self, type, **kwargs):
         return _set_sensor(self.bng.connection, type, **kwargs)
@@ -69,7 +69,8 @@ class Accelerometer:
             (dict): A dictionary containing the acceleration in each dimension of the local coordinate system of the accelerometer sensor.
         """
         # Send and receive a request for readings data from this sensor.
-        acceleration_data = self._send_sensor_request('PollAccelerometer', name=self.name)['data']
+        acceleration_data = self._send_sensor_request(
+            'PollAccelerometer', ack='PolledAccelerometer', name=self.name)['data']
         self.logger.debug('Accelerometer - sensor readings received from simulation: 'f'{self.name}')
 
         return acceleration_data
@@ -84,7 +85,8 @@ class Accelerometer:
             (int): A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Accelerometer  - ad-hoc polling request sent: 'f'{self.name}')
-        return self._send_sensor_request('SendAdHocRequestAccelerometer', name=self.name, vid=self.vid)['data']
+        return self._send_sensor_request('SendAdHocRequestAccelerometer', ack='CompletedSendAdHocRequestAccelerometer',
+                                         name=self.name, vid=self.vid)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -97,7 +99,8 @@ class Accelerometer:
             (bool): A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Accelerometer  - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyAccelerometer', requestId=request_id)
+        return self._send_sensor_request('IsAdHocPollRequestReadyAccelerometer',
+                                         ack='CompletedIsAdHocPollRequestReadyAccelerometer', requestId=request_id)
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -109,7 +112,9 @@ class Accelerometer:
         Returns:
             (dict): The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestAccelerometer', requestId=request_id)['data']
+        readings = self._send_sensor_request(
+            'CollectAdHocPollRequestAccelerometer', ack='CompletedCollectAdHocPollRequestAccelerometer',
+            requestId=request_id)['data']
         self.logger.debug('Accelerometer  - ad-hoc polling request returned and processed: 'f'{self.name}')
 
         return readings
@@ -121,7 +126,8 @@ class Accelerometer:
         Returns:
             (list): The sensor position.
         """
-        table = self._send_sensor_request('GetAccelerometerSensorPosition', name=self.name)['data']
+        table = self._send_sensor_request('GetAccelerometerSensorPosition',
+                                          ack='CompletedGetAccelerometerSensorPosition', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_direction(self):
@@ -131,7 +137,8 @@ class Accelerometer:
         Returns:
             (list): The sensor direction.
         """
-        table = self._send_sensor_request('GetAccelerometerSensorDirection', name=self.name)['data']
+        table = self._send_sensor_request('GetAccelerometerSensorDirection',
+                                          ack='CompletedGetAccelerometerSensorDirection', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     @ack('CompletedSetAccelerometerRequestedUpdateTime')
@@ -183,7 +190,7 @@ class Accelerometer:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
         resp = self.bng.connection.send(data)
-        self.logger.info(f'Opened accelerometer sensor: "{name}')
+        self.logger.info(f'Opened accelerometer sensor: "{name}"')
         return resp
 
     @ack('ClosedAccelerometer')

@@ -3,6 +3,7 @@ import socket
 from struct import pack, unpack
 from time import sleep
 
+import gevent._socket3 as gsocket
 import msgpack
 
 from .beamngcommon import LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError
@@ -249,6 +250,9 @@ class Connection:
             return self.received_messages.pop(req_id, None)
         while True:
             message = self._recv_next_message()
+            if not '_id' in message:
+                raise BNGError(
+                    'Invalid message received! The version of BeamNG.tech running is incompatible with this version of BeamNGpy.')
             _id = int(message['_id'])
             del message['_id']
 
@@ -294,7 +298,7 @@ class Connection:
         """
         Set up the socket with the appropriate parameters for TCP_NODELAY.
         """
-        self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.skt = gsocket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.skt.settimeout(None)
 
