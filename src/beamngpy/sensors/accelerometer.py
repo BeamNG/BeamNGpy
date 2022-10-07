@@ -12,20 +12,23 @@ from beamngpy.beamngcommon import LOGGER_ID
 
 class Accelerometer:
     def __init__(
-            self, name, bng, vehicle, requested_update_time=0.1,
-            pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
-            is_using_gravity=False, is_visualised=True, is_snapping_desired=False, is_force_inside_triangle=False):
+            self, name, bng, vehicle, gfx_update_time=0.1, physics_update_time=0.015, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), window_width=None,
+            frequency_cutoff=None, is_using_gravity=False, is_visualised=True, is_snapping_desired=False, is_force_inside_triangle=False):
         """
         Creates an accelerometer sensor.
+        The user can recieve both a dictionary of raw, unprocessed accelerometer readings and a smoothed reading (based on a window width or a cutoff frequency).
 
         Args:
             name (str): A unique name for this accelerometer sensor.
             bng (BeamNGpy): The BeamNGpy instance, with which to communicate to the simulation.
             vehicle (Vehicle class): The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the accelerometer.
-            requested_update_time (float): The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
+            gfx_update_time (float): The gfx-step time which should pass between sensor reading updates to the user, in seconds.
+            physics_update_time (float): The physics-step time which should pass between actual sampling the sensor, in seconds.
             pos (tuple): (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
             dir (tuple): (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
             up (tuple): (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
+            window_width (float): The width of the window used in smoothing the accelerometer data, if required.
+            frequency_cutoff (float): The filtering cutoff frequency to be used (instead of a window width). of required.
             is_using_gravity (bool): A flag which indicates whether this sensor should consider acceleration due to gravity in its computations, or not.
             is_visualised (bool): Whether or not to render the ultrasonic sensor points in the simulator.
             is_snapping_desired (bool): A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
@@ -41,8 +44,8 @@ class Accelerometer:
         self.vid = vehicle.vid
 
         # Create and initialise this sensor in the simulation.
-        bng.open_accelerometer(name, self.vid, requested_update_time, pos, dir, up, is_using_gravity,
-                               is_visualised, is_snapping_desired, is_force_inside_triangle)
+        bng.open_accelerometer(name, self.vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
+            is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Accelerometer - sensor created: 'f'{self.name}')
 
     def remove(self):

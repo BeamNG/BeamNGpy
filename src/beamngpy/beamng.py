@@ -1259,14 +1259,18 @@ class BeamNGpy:
         self.connection.send(data)
 
     @ack('OpenedAccelerometer')
-    def open_accelerometer(self, name, vid, requested_update_time, pos, dir, up, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle):
+    def open_accelerometer(self, name, vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
+        is_snapping_desired, is_force_inside_triangle):
         data = dict(type='OpenAccelerometer')
         data['name'] = name
         data['vid'] = vid
-        data['updateTime'] = requested_update_time
+        data['GFXUpdateTime'] = gfx_update_time
+        data['physicsUpdateTime'] = physics_update_time
         data['pos'] = pos
         data['dir'] = dir
         data['up'] = up
+        data['windowWidth'] = window_width
+        data['frequencyCutoff'] = frequency_cutoff
         data['isUsingGravity'] = is_using_gravity
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
@@ -1362,13 +1366,13 @@ class BeamNGpy:
         return self.connection.recv()
 
     @ack('CompletedSetAccelerometerRequestedUpdateTime')
-    def set_accelerometer_requested_update_time(self, name, vid, requested_update_time):
+    def set_accelerometer_requested_update_time(self, name, vid, requested_GFX_update_time):
 
         # Populate a dictionary with the data needed for a request from this sensor.
         data = dict(type='SetAccelerometerRequestedUpdateTime')
         data['name'] = name
         data['vid'] = vid
-        data['updateTime'] = requested_update_time
+        data['GFXUpdateTime'] = requested_GFX_update_time
 
         # Send the request for the property to the simulation.
         self.connection.send(data)

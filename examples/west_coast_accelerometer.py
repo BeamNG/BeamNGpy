@@ -25,8 +25,8 @@ def main():
     bng.start_scenario()
 
     # NOTE: Create sensor after scenario has started.
-    accel = Accelerometer('accel1', bng, vehicle, requested_update_time=0.01)
-    #accel = Accelerometer('accel1', bng, vehicle, requested_update_time=0.01, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1)) # if we want to specify a local frame
+    accel = Accelerometer('accel1', bng, vehicle, gfx_update_time=0.01)
+    #accel = Accelerometer('accel1', bng, vehicle, gfx_update_time=0.01, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1)) # if we want to specify a local frame
 
     vehicle.ai_set_mode('span')
     print('Driving around, polling the accelerometer sensor at regular intervals...')

@@ -44,8 +44,8 @@ if __name__ == '__main__':
     print("Accelerometer sensor removed.")
 
     # Create an accelerometer sensor which has a negative requested update rate, and ensure that no readings are computed from it.
-    accel2 = Accelerometer('accelerometer2', bng, vehicle, requested_update_time=-1.0)
-    print("Testing an acceleromter sensor with a negative requested update time...")
+    accel2 = Accelerometer('accelerometer2', bng, vehicle, gfx_update_time=-1.0)
+    print("Testing an accelerometer sensor with a negative requested update time...")
     sleep(2)
     sensor_readings = accel2.poll()
     print("Accelerometer readings (should be zeros): ", sensor_readings)
