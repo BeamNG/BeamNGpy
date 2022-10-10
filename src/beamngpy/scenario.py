@@ -7,320 +7,24 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 .. moduleauthor:: Sedonas <https://github.com/Sedonas>
+.. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
 
 import copy
+from logging import DEBUG, getLogger
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
-from logging import getLogger
-from logging import DEBUG as DGB_LOG_LEVEL
 
 from .beamng import Level
-
-from .beamngcommon import BNGValueError, BNGError, angle_to_quat
-from .beamngcommon import quat_as_rotation_mat_str
-from .beamngcommon import LOGGER_ID, create_warning
-
+from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError,
+                           create_warning, quat_as_rotation_mat_str)
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
 
 
 module_logger = getLogger(f'{LOGGER_ID}.scenario')
-module_logger.setLevel(DGB_LOG_LEVEL)
-
-
-class Road:
-    """
-    This class represents a DecalRoad in the environment. It contains
-    information about the road's material, direction-ness of lanes,
-    and geometry of the edges that make up the road.
-
-
-    """
-
-    def __init__(self, material, rid=None, interpolate=True, **options):
-        """
-        Creates a new road instance using the given material name. The material
-        name needs to match a material that is part of the level in the
-        simulator this road will be placed in.
-
-        Args:
-            material (str): Name of the material this road uses. This affects
-                            how the road looks visually and needs to match a
-                            material that's part of the level this road is
-                            placed in.
-            rid (str): Optional string setting this road's name. If specified,
-                       needs to be unique with respect to other roads in the
-                       level/scenario.
-            interpolate (bool): Whether to apply Catmull-Rom spline
-                                interpolation to smooth transition between the
-                                road's nodes.
-        """
-        self.material = material
-
-        self.rid = rid
-
-        self.drivability = options.get('drivability', 1)
-        self.one_way = options.get('one_way', False)
-        self.flip_direction = options.get('flip_direction', False)
-        self.over_objects = options.get('over_objects', True)
-        self.looped = options.get('looped', False)
-        self.smoothness = options.get('smoothness', 0.5)
-        self.break_angle = options.get('break_angle', 3)
-        self.texture_length = options.get('texture_length', 5)
-        self.render_priority = options.get('render_priority', 10)
-
-        self.one_way = '1' if self.one_way else '0'
-        self.flip_direction = '1' if self.flip_direction else '0'
-        self.over_objects = '1' if self.over_objects else '0'
-        self.looped = '1' if self.looped else '0'
-
-        if interpolate:
-            self.improved_spline = '1'
-        else:
-            self.improved_spline = '0'
-            self.break_angle = 359.9
-
-        self.nodes = list()
-
-
-class ScenarioObject:
-    """
-    This class is used to represent objects in the simulator's environment. It
-    contains basic information like the object type, position, rotation, and
-    scale.
-    """
-
-    @staticmethod
-    def from_game_dict(d):
-        oid = None
-        name = None
-        otype = None
-        pos = None
-        rot_quat = None
-        scale = None
-        if 'id' in d:
-            oid = d['id']
-            del d['id']
-
-        if 'name' in d:
-            name = d['name']
-            del d['name']
-
-        if 'class' in d:
-            otype = d['class']
-            del d['class']
-
-        if 'pos' in d:
-            pos = d['position']
-            del d['position']
-
-        if 'rot' in d:
-            rot_quat = d['rotation']
-            del d['rotation']
-
-        if 'scale' in d:
-            scale = d['scale']
-            del d['scale']
-
-        return ScenarioObject(oid, name, otype, pos, rot_quat, scale, **d)
-
-    def __init__(self, oid, name, otype, pos, rot, scale,
-                 rot_quat=None, **options):
-        """Creates a scenario object with the given parameters.
-
-        Args:
-            oid (string): name of the asset
-            name (string): asset id
-            otype (string): type of the object according to the BeamNG classification
-            pos (tupel): x, y, and z coordinates
-            rot (tupel): Euler angles defining the initial orientation.
-                         Deprecated.
-            scale (tupel): defining the scale along the x,y, and z axis.
-            rot_quat (tupel, optional): Quatertnion describing the initial orientation. Defaults to None.
-        """
-        self.id = oid
-        self.name = name
-        self.type = otype
-        self.pos = pos
-        if rot:
-            create_warning('the usage of `rot` in class `ScenarioObject` is '
-                           'deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            rot_quat = angle_to_quat(rot)
-        self.rot = rot_quat
-        self.scale = scale
-        self.opts = options
-        self.children = []
-
-    def __eq__(self, other):
-        if isinstance(other, type(self)):
-            return self.id == other.id
-
-        return False
-
-    def __hash__(self):
-        return hash(self.id)
-
-    def __str__(self):
-        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
-        s = s.format(self.type, self.id, self.name, *self.pos)
-        return s
-
-    def __repr__(self):
-        return str(self)
-
-
-class SceneObject:
-    def __init__(self, options):
-        self.id = options.get('id', None)
-        if 'id' in options:
-            del options['id']
-
-        self.name = options.get('name', None)
-        if 'name' in options:
-            del options['name']
-
-        self.type = options.get('class', None)
-        if 'type' in options:
-            del options['type']
-
-        self.pos = options.get('position', [0, 0, 0])
-        if 'position' in options:
-            del options['position']
-
-        self.rot = options.get('rotation', [0, 0, 0, 0])
-        if 'rotation' in options:
-            del options['rotation']
-
-        self.scale = options.get('scale', [0, 0, 0])
-        if 'scale' in options:
-            del options['scale']
-
-        self.options = options
-        self.children = []
-
-    def __eq__(self, other):
-        if isinstance(other, type(self)):
-            return self.id == other.id
-
-        return False
-
-    def __hash__(self):
-        return hash(self.id)
-
-    def __str__(self):
-        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
-        s = s.format(self.type, self.id, self.name, *self.pos)
-        return s
-
-    def __repr__(self):
-        return str(self)
-
-
-class DecalRoad(SceneObject):
-    def __init__(self, options):
-        super(DecalRoad, self).__init__(options)
-        self.lines = options.get('lines', [])
-
-        self.annotation = options.get('annotation', None)
-        self.detail = options.get('Detail', None)
-        self.material = options.get('Material', None)
-        self.break_angle = options.get('breakAngle', None)
-        self.drivability = options.get('drivability', None)
-        self.flip_direction = options.get('flipDirection', False)
-        self.improved_spline = options.get('improvedSpline', False)
-        self.lanes_left = options.get('lanesLeft', None)
-        self.lanes_right = options.get('lanesRight', None)
-        self.one_way = options.get('oneWay', False)
-        self.over_objects = options.get('overObjects', False)
-
-
-class StaticObject(ScenarioObject):
-    def __init__(self, name, pos, rot, scale, shape, rot_quat=None):
-        super(StaticObject, self).__init__(name, None, 'TSStatic',
-                                           pos, rot, scale, rot_quat=rot_quat,
-                                           shapeName=shape)
-
-
-class ProceduralMesh(ScenarioObject):
-    def __init__(self, pos, rot, name, material, rot_quat=None):
-        super(ProceduralMesh, self).__init__(name, name, 'ProceduralMesh',
-                                             pos, rot, (1, 1, 1),
-                                             rot_quat=rot_quat)
-        self.material = material
-
-    def place(self, bng):
-        raise NotImplementedError()
-
-
-class ProceduralCylinder(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name,
-                 rot_quat=None, material=None):
-        super(ProceduralCylinder, self).__init__(pos, rot, name, material,
-                                                 rot_quat=rot_quat)
-        self.radius = radius
-        self.height = height
-
-    def place(self, bng):
-        bng.create_cylinder(self.name, self.radius, self.height, self.pos,
-                            None, material=self.material, rot_quat=self.rot)
-
-
-class ProceduralBump(ProceduralMesh):
-    def __init__(self, pos, rot, width, length, height, upper_length,
-                 upper_width, name, rot_quat=None, material=None):
-        super(ProceduralBump, self).__init__(pos, rot, name, material,
-                                             rot_quat=rot_quat)
-        self.width = width
-        self.length = length
-        self.height = height
-        self.upper_length = upper_length
-        self.upper_width = upper_width
-
-    def place(self, bng):
-        bng.create_bump(self.name, self.width, self.length, self.height,
-                        self.upper_length, self.upper_width, self.pos,
-                        None, material=self.material, rot_quat=self.rot)
-
-
-class ProceduralCone(ProceduralMesh):
-    def __init__(self, pos, rot, radius, height, name,
-                 rot_quat=None, material=None):
-        super(ProceduralCone, self).__init__(pos, rot, name, material,
-                                             rot_quat=rot_quat)
-        self.radius = radius
-        self.height = height
-
-    def place(self, bng):
-        bng.create_cone(self.name, self.radius, self.height, self.pos,
-                        None, material=self.material, rot_quat=self.rot)
-
-
-class ProceduralCube(ProceduralMesh):
-    def __init__(self, pos, rot, size, name, rot_quat=None, material=None):
-        super(ProceduralCube, self).__init__(pos, rot, name, material,
-                                             rot_quat=rot_quat)
-        self.size = size
-
-    def place(self, bng):
-        bng.create_cube(self.name, self.size, self.pos, None,
-                        material=self.material, rot_quat=self.rot)
-
-
-class ProceduralRing(ProceduralMesh):
-    def __init__(self, pos, rot, radius, thickness, name,
-                 rot_quat=None, material=None):
-        super(ProceduralRing, self).__init__(pos, rot, name, material,
-                                             rot_quat=rot_quat)
-        self.radius = radius
-        self.thickness = thickness
-
-    def place(self, bng):
-        bng.create_ring(self.name, self.radius, self.thickness, self.pos,
-                        None, material=self.material, rot_quat=self.rot)
+module_logger.setLevel(DEBUG)
 
 
 class Scenario:
@@ -332,7 +36,7 @@ class Scenario:
 
     game_classes = {
         'MissionGroup': lambda d: SceneObject(d),
-        'DecalRoad': lambda d: DecalRoad(d),
+        'DecalRoad': lambda d: __import__("beamngpy").DecalRoad(d),
     }
 
     @staticmethod
@@ -381,6 +85,7 @@ class Scenario:
         self._focus_vehicle = None
 
         self.roads = list()
+        self.mesh_roads = list()
         self.waypoints = list()
         self.checkpoints = list()
         self.proc_meshes = list()
@@ -393,7 +98,7 @@ class Scenario:
         self.bng = None
 
         self.logger = getLogger(f'{LOGGER_ID}.Scenario')
-        self.logger.setLevel(DGB_LOG_LEVEL)
+        self.logger.setLevel(DEBUG)
 
     def _get_objects_list(self):
         """
@@ -441,10 +146,11 @@ class Scenario:
         for vehicle in self.vehicles:
             vehicles_dict[vehicle.vid] = {'playerUsable': True}
 
-        if self._focus_vehicle is None:
-            self._focus_vehicle = next(iter(self.vehicles)).vid
+        if self.vehicles:
+            if self._focus_vehicle is None:
+                self._focus_vehicle = next(iter(self.vehicles)).vid
 
-        vehicles_dict[self._focus_vehicle]['startFocus'] = True
+            vehicles_dict[self._focus_vehicle]['startFocus'] = True
 
         info['vehicles'] = vehicles_dict
         info['prefabs'] = ['levels/{}/scenarios/{}.prefab'.format(self.level,
@@ -498,6 +204,30 @@ class Scenario:
                           'scenario-specific roads.')
         return ret
 
+    def _get_mesh_roads_list(self):
+        """
+        Gets the mesh roads defined in this scenario encoded as a dict and put into
+        one list ready to be placed in the simulator.
+
+        Returns:
+            All mesh roads encoded as a dict in one list.
+        """
+        ret = list()
+        for idx, road in enumerate(self.mesh_roads):
+            road_dict = dict(**road.__dict__)
+
+            if road.rid is None:
+                road_id = 'beamngpy_mesh_road_{}_{:03}'.format(self.name, idx)
+            else:
+                road_id = road.rid
+            road_dict['road_id'] = road_id
+            road_dict['render_priority'] = idx
+
+            ret.append(road_dict)
+        self.logger.debug(f'The scenario {self.name} has {len(ret)} '
+                          'scenario-specific mesh roads.')
+        return ret
+
     def _get_prefab(self):
         """
         Generates prefab code to describe this scenario to the simulation
@@ -510,15 +240,29 @@ class Scenario:
 
         vehicles = self._get_vehicles_list()
         roads = self._get_roads_list()
+        mesh_roads = self._get_mesh_roads_list()
         objs = self._get_objects_list()
 
-        return template.render(vehicles=vehicles, roads=roads, objects=objs)
+        return template.render(vehicles=vehicles, roads=roads, mesh_roads=mesh_roads, objects=objs)
 
     def _get_level_name(self):
         if isinstance(self.level, Level):
             return self.level.name
         else:
             return self.level
+
+    def _get_existing_vehicles(self, bng):
+        current_vehicles = set(bng.get_current_vehicles().values())
+        self.logger.debug(
+            f'Got {len(current_vehicles)} vehicles from scenario.')
+        self.transient_vehicles = current_vehicles.copy()
+
+        for vehicle in self.vehicles:
+            self.transient_vehicles.discard(vehicle)
+            current_vehicles.discard(vehicle)
+            current_vehicles.add(vehicle)
+
+        self.vehicles = current_vehicles
 
     def add_object(self, obj):
         """
@@ -528,37 +272,35 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle, pos=(0, 0, 0),
-                    rot=None, rot_quat=(0, 0, 0, 1), cling=True):
+    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
-        orientation. This method has to be called before a scenario is started.
+        orientation.
 
         Args:
             pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
-            rot (tuple): (x,y,z) tuple expressing the rotation of the vehicle
-                         in Euler angles around each axis. Deprecated.
             rot_quat (tuple, optional): (x, y, z, w) tuple specifying
                                         the rotation as quaternion
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
-                ' Scenario={}, Vehicle={}'.format(self.name, vehicle.vid)
+                    f' Scenario={self.name}, Vehicle={vehicle.vid}'
             raise BNGValueError(error)
 
-        if rot:
-            create_warning('the usage of `rot` in `Scenario.add_vehicle` '
-                           'is deprecated, the argument will be removed '
-                           'in future versions',
-                           DeprecationWarning)
-            rot_quat = angle_to_quat(rot)
+        if vehicle in self.vehicles:
+            error = f'The vehicle \'{vehicle.vid}\' is already in the scenario.'
+            raise BNGValueError(error)
+
+        if vehicle.connection:
+            vehicle.disconnect()
+
         self.vehicles.add(vehicle)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
         self.logger.debug(f'Added vehicle with id \'{vehicle.vid}\'.')
 
         if self.bng:
-            self.bng.spawn_vehicle(vehicle, pos, None, rot_quat=rot_quat,
-                                   cling=cling)  # todo
+            self.bng.spawn_vehicle(
+                vehicle, pos, rot_quat=rot_quat, cling=cling)
             self.transient_vehicles.add(vehicle)
             vehicle.connect(self.bng)
         else:
@@ -576,7 +318,7 @@ class Scenario:
         if vehicle in self.vehicles:
             if self.bng:
                 self.bng.despawn_vehicle(vehicle)
-                self.transient_vehicles.remove(vehicle)
+                self.transient_vehicles.discard(vehicle)
             else:
                 self.logger.debug('No beamngpy instance available, cannot '
                                   f'despawn vehicle with id \'{vehicle.vid}\'')
@@ -619,6 +361,14 @@ class Scenario:
         """
         self.roads.append(road)
 
+    def add_mesh_road(self, road):
+        """Adds a mesh road to this scenario.
+
+        Args:
+            road (:class:`beamngpy.MeshRoad`): mesh road to be added to the scenario.
+        """
+        self.mesh_roads.append(road)
+
     def add_camera(self, camera, name):
         """
         Adds a :class:`beamngpy.sensors.Camera` to this scenario which can be
@@ -658,8 +408,7 @@ class Scenario:
         if ids is None:
             ids = [f"wp{i}" for i in range(len(positions))]
         assert(len(positions) == len(scales) == len(ids))
-        options = dict(rot=None,
-                       rot_quat=(0, 0, 0, 1),
+        options = dict(rot_quat=(0, 0, 0, 1),
                        drawDebug='0',
                        directionalWaypoint='0',
                        mode='Ignore',
@@ -704,10 +453,17 @@ class Scenario:
         """
         self._fill_scene()
 
-    def connect(self, bng):
+    def connect(self, bng, connect_existing=True):
         """
         Connects this scenario to the simulator, hooking up any cameras to
         their counterpart in the simulator.
+
+        Args:
+            bng (:class:`.BeamNGpy`): The BeamNGpy instance to generate the
+                                      scenario for.
+            connect_existing (bool): Whether vehicles spawned already
+                                     in the scenario should be connected to
+                                     this (:class:``.Scenario``) instance.
         """
         self.bng = bng
 
@@ -718,6 +474,9 @@ class Scenario:
         self.logger.debug(f'Connecting to {len(self.cameras)} cameras.')
         for _, cam in self.cameras.items():
             cam.connect(self.bng, None)
+
+        if connect_existing:
+            self._get_existing_vehicles(bng)
 
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles:
@@ -776,9 +535,12 @@ class Scenario:
             bng (:class:`.BeamNGpy`): The BeamNGpy instance to generate the
                                       scenario for.
 
-        Returns:
-            The path to the information file of this scenario in the simulator.
+        Raises:
+            BNGError: If the scenario already has set its info .json file included.
         """
+        if self.path is not None:
+            raise BNGError('This scenario already has an info file.')
+
         level_name = self._get_level_name()
 
         prefab = self._get_prefab()
@@ -853,7 +615,7 @@ class Scenario:
             vehicle = self.transient_vehicles.pop()
             if vehicle in self.vehicles:
                 self.bng.despawn_vehicle(vehicle)
-                del self.vehicles[vehicle]
+                self.vehicles.discard(vehicle)
         self.logger.info(f'Restarted scenario: "{self.name}"')
 
     def close(self):
@@ -966,3 +728,136 @@ class Scenario:
                        DeprecationWarning)
 
         return sensor_data
+
+
+class ScenarioObject:
+    """
+    This class is used to represent objects in the simulator's environment. It
+    contains basic information like the object type, position, rotation, and
+    scale.
+    """
+
+    @staticmethod
+    def from_game_dict(d):
+        oid = None
+        name = None
+        otype = None
+        pos = None
+        rot_quat = None
+        scale = None
+        if 'id' in d:
+            oid = d['id']
+            del d['id']
+
+        if 'name' in d:
+            name = d['name']
+            del d['name']
+
+        if 'class' in d:
+            otype = d['class']
+            del d['class']
+
+        if 'pos' in d:
+            pos = d['position']
+            del d['position']
+
+        if 'rot' in d:
+            rot_quat = d['rotation']
+            del d['rotation']
+
+        if 'scale' in d:
+            scale = d['scale']
+            del d['scale']
+
+        return ScenarioObject(oid, name, otype, pos, scale, rot_quat, **d)
+
+    def __init__(self, oid, name, otype, pos, scale, rot_quat=None, **options):
+        """Creates a scenario object with the given parameters.
+
+        Args:
+            oid (string): name of the asset
+            name (string): asset id
+            otype (string): type of the object according to the BeamNG classification
+            pos (tuple): x, y, and z coordinates
+            scale (tuple): defining the scale along the x,y, and z axis.
+            rot_quat (tuple, optional): Quatertnion describing the initial orientation. Defaults to None.
+        """
+        self.id = oid
+        self.name = name
+        self.type = otype
+        self.pos = pos
+        self.rot = rot_quat
+        self.scale = scale
+        self.opts = options
+        self.children = []
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.id == other.id
+
+        return False
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __str__(self):
+        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
+        s = s.format(self.type, self.id, self.name, *self.pos)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+
+class SceneObject:
+    def __init__(self, options):
+        self.id = options.get('id', None)
+        if 'id' in options:
+            del options['id']
+
+        self.name = options.get('name', None)
+        if 'name' in options:
+            del options['name']
+
+        self.type = options.get('class', None)
+        if 'type' in options:
+            del options['type']
+
+        self.pos = options.get('position', [0, 0, 0])
+        if 'position' in options:
+            del options['position']
+
+        self.rot = options.get('rotation', [0, 0, 0, 0])
+        if 'rotation' in options:
+            del options['rotation']
+
+        self.scale = options.get('scale', [0, 0, 0])
+        if 'scale' in options:
+            del options['scale']
+
+        self.options = options
+        self.children = []
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.id == other.id
+
+        return False
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __str__(self):
+        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
+        s = s.format(self.type, self.id, self.name, *self.pos)
+        return s
+
+    def __repr__(self):
+        return str(self)
+
+
+class StaticObject(ScenarioObject):
+    def __init__(self, name, pos, scale, shape, rot_quat=None):
+        super(StaticObject, self).__init__(name, None, 'TSStatic',
+                                           pos, scale, rot_quat=rot_quat,
+                                           shapeName=shape)

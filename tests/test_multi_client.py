@@ -1,7 +1,5 @@
-from beamngpy import BeamNGpy, Scenario, Vehicle, setup_logging
-
 import pytest
-
+from beamngpy import BeamNGpy, Scenario, Vehicle
 from beamngpy.beamngcommon import BNGValueError
 
 
@@ -29,12 +27,12 @@ def test_multi_vehicle(beamng):
 
         b_client = BeamNGpy('localhost', 64256)
         #  Do not deploy mod zip or launch new process
-        b_client.open(deploy=False, launch=False)
+        b_client.open(launch=False)
         vehicles = b_client.get_current_vehicles()
         assert 'second' in vehicles
         vehicle = vehicles['second']
         vehicle.connect(b_client)
-        assert vehicle.skt is not None
+        assert vehicle.is_connected()
 
         a_veh = second
         b_veh = vehicle
@@ -65,11 +63,11 @@ def test_multi_scenario(beamng):
     with beamng as a_client:
         scenario = Scenario('gridmap_v2', 'multi_scenario')
         vehicle = Vehicle('vehicle', model='etk800')
-        scenario.add_vehicle(vehicle)
+        scenario.add_vehicle(vehicle, pos=(0, 0, 100))
         scenario.make(a_client)
 
         b_client = BeamNGpy('localhost', 64256)
-        b_client.open(deploy=False, launch=False)
+        b_client.open(launch=False)
 
         with pytest.raises(BNGValueError):
             running = b_client.get_current_scenario()

@@ -1,6 +1,6 @@
 local M = {}
 
-local rcom = require('utils/researchCommunication')
+local rcom = require('tech/techCommunication')
 
 local _log = log
 local function log(level, msg)

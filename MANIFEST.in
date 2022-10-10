@@ -1,3 +1,2 @@
 recursive-include src/beamngpy/templates *
-recursive-include src/beamngpy/lua *
 include src/beamngpy/version.txt

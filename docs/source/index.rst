@@ -6,12 +6,14 @@
 Welcome to BeamNGpy's documentation!
 ====================================
 
+.. mdinclude:: ../../README.md
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    readme.rst
-   modules.rst
+   beamngpy.rst
    bngros.rst
    changelog.rst
 

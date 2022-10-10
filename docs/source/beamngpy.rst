@@ -1,5 +1,5 @@
-beamngpy package
-================
+BeamNGpy Reference
+==================
 
 Submodules
 ----------
@@ -28,18 +28,18 @@ beamngpy.level module
    :undoc-members:
    :show-inheritance:
 
-beamngpy.main module
---------------------
+beamngpy.procedural module
+--------------------------
 
-.. automodule:: beamngpy.main
+.. automodule:: beamngpy.procedural
    :members:
    :undoc-members:
    :show-inheritance:
 
-beamngpy.noise module
----------------------
+beamngpy.road module
+--------------------
 
-.. automodule:: beamngpy.noise
+.. automodule:: beamngpy.road
    :members:
    :undoc-members:
    :show-inheritance:
@@ -57,14 +57,7 @@ beamngpy.sensors module
 
 .. automodule:: beamngpy.sensors
    :members:
-   :undoc-members:
-   :show-inheritance:
-
-beamngpy.test module
---------------------
-
-.. automodule:: beamngpy.test
-   :members:
+   :imported-members:
    :undoc-members:
    :show-inheritance:
 
