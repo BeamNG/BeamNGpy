@@ -58,8 +58,6 @@ if __name__ == '__main__':
     sleep(1)
     print("Property getter test.  The displayed values should be the values which were set during the creation of the accelerometer sensor.")
     print("Sensor Name: ", accel1.name)
-    print("Position: ", accel1.get_position())
-    print("Direction: ", accel1.get_direction())
 
     # Test changing the visibility of the sensor.
     print("Test visibility mode.  Accelerometer visibility should cycle between on and off 3 times, staying at each for 1 second.")
