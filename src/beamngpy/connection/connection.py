@@ -1,14 +1,11 @@
 import logging
 import socket
-from struct import pack, unpack
 from time import sleep
 
-import gevent._socket3 as gsocket
 import msgpack
 
-from .beamngcommon import LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError
-
-BUF_SIZE = 131072
+from ..beamngcommon import LOGGER_ID, PROTOCOL_VERSION, BNGError, BNGValueError
+from . import socket_manager as SocketManager
 
 
 class Connection:
@@ -21,10 +18,8 @@ class Connection:
     def _textify_string(data):
         """
         Attempts to convert binary data to utf-8. If we can do this, we do it. If not, we leave as binary data.
-
         Args:
             data (data): The candidate data.
-
         Returns:
             The conversion, if it was possible to convert. Otherwise the untouched binary data.
         """
@@ -38,10 +33,8 @@ class Connection:
         """
         Recursively iterates through data, and attempts to convert all binary data to utf-8.
         If we can do this with any elements of the data, we do it. If not, we leave them as binary data.
-
         Args:
             data (data): The data.
-
         Returns:
             The (possibly) converted data.
         """
@@ -79,7 +72,6 @@ class Connection:
         # The socket related to this connection instance. This is set upon connecting.
         self.skt = None
         self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
-        self.logger.setLevel(logging.DEBUG)
         self.comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
         self.req_id = 0
         self.received_messages = {}
@@ -93,8 +85,6 @@ class Connection:
             vehicle (:class:`.Vehicle`): The vehicle instance to be connected.
             tries (int): The number of connection attempts.
         """
-        self._initialize_socket()
-
         # If we do not have a port (ie because it is the first time we wish to send to the given vehicle), then fetch a new port from the simulator.
         if self.port is None:
             connection_msg = {'type': 'StartVehicleConnection'}
@@ -114,7 +104,7 @@ class Connection:
         while tries > 0:
             try:
                 self.logger.info(f'Attempting to connect to vehicle {vehicle.vid}')
-                self.skt.connect((self.host, self.port))
+                self.skt = SocketManager.add_connection(self.host, self.port)
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
                 msg = f'Error connecting to BeamNG.tech vehicle {vehicle.vid}. {tries} tries left.'
@@ -143,15 +133,13 @@ class Connection:
         Returns:
             True if the connection was successful, False otherwise.
         """
-        self._initialize_socket()
-
         # Attempt to connect to the simulator through this socket.
         if log_tries:
             self.logger.info('Connecting to BeamNG.tech at: 'f'({self.host}, {self.port})')
         connected = False
         while tries > 0:
             try:
-                self.skt.connect((self.host, self.port))
+                self.skt = SocketManager.add_connection(self.host, self.port)
                 connected = True
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
@@ -173,7 +161,7 @@ class Connection:
         Closes socket communication for this Connection instance.
         """
         if self.skt is not None:
-            self.skt.close()
+            SocketManager.remove_connection(self.skt)
         self.port = None
         self.host = None
         self.skt = None
@@ -183,20 +171,29 @@ class Connection:
         Attempts to re-connect using this Connection instance, with the cached port and host.
         This will be called if a connection has been lost, in order to re-establish the connection.
         """
-        self._initialize_socket()
-        sleepTime = 0
+        SocketManager.remove_connection(self.skt)
+        sleep_time = 0
         while True:
             try:
-                self.skt.connect((self.host, self.port))
+                self.skt = SocketManager.add_connection(self.host, self.port)
                 break
-            except (ConnectionRefusedError, ConnectionAbortedError) as err:
-                sleep(sleepTime)
-                sleepTime = 0.5
+            except (ConnectionRefusedError, ConnectionAbortedError, OSError) as err:
+                self.logger.error(f'Error reconnecting to BeamNG.tech.')
+                self.logger.exception(err)
+                sleep(sleep_time)
+                sleep_time = 0.5
 
     def _assign_request_id(self):
         req_id = self.req_id
         self.req_id += 1
         return req_id
+
+    def _pack_data(self, data):
+        req_id = self._assign_request_id()
+        data['_id'] = req_id
+        self.comm_logger.debug(f'Sending {data}.')
+        data = msgpack.packb(data, use_bin_type=True)
+        return req_id, data
 
     def send(self, data):
         """
@@ -206,34 +203,41 @@ class Connection:
         Args:
             data (dict): The data to encode and send
         """
-        req_id = self._assign_request_id()
-        data['_id'] = req_id
-        self.comm_logger.debug(f'Sending {data}.')
-        data = msgpack.packb(data, use_bin_type=True)
-        length = pack('!I', len(data))  # Prefix the message length to the front of the message data.
-        data = length + data
+        req_id, data = self._pack_data(data)
         try:
-            self.skt.sendall(data)  # First, attempt to send over the current socket stored in this Connection instance.
+            # First, attempt to send over the current socket stored in this Connection instance.
+            self.skt.send(data)
         except socket.error:
             self.reconnect()  # If the send has failed, we attempt to re-connect then we send again.
-            self.skt.sendall(data)
+            self.skt.send(data)
         return Response(self, req_id)
 
-    def _recv_next_message(self):
+    async def send_async(self, data):
         """
-        Reads a Messagepack-encoded message from the socket of this Connection instance, decodes it, then returns it.
+        Encodes the given data using Messagepack and sends the resulting bytes over the socket of this Connection instance.
         NOTE: messages are prefixed by the message length value.
 
-        Returns:
-            The recieved message, which has been decoded.
+        Args:
+            data (dict): The data to encode and send
         """
-        # First, attempt to receive and decode the message length.
-        packed_length = self._recv_exactly(4)
-        length = unpack('!I', packed_length)[0]
+        req_id, data = self._pack_data(data)
+        try:
+            # First, attempt to send over the current socket stored in this Connection instance.
+            await self.skt.send_async(data)
+        except socket.error:
+            self.reconnect()  # If the send has failed, we attempt to re-connect then we send again.
+            await self.skt.send_async(data)
+        return Response(self, req_id)
 
-        # Now knowing the message length, attempt to recieve and decode the message body, populating a buffer as we go.
-        recv_buffer = self._recv_exactly(length)
-        data = msgpack.unpackb(recv_buffer, raw=False, strict_map_key=False)
+    async def send_recv_async(self, data, type=None, ack=None):
+        response = await self.send_async(data)
+        result = await response.recv_async(type)
+        if ack:
+            await response.ack_async(ack)
+        return result
+
+    def _unpack_data(self, data):
+        data = msgpack.unpackb(data, raw=False, strict_map_key=False)
         self.comm_logger.debug(f'Received {data}.')
 
         # Converts all non-binary strings in the data into utf-8 format.
@@ -249,7 +253,24 @@ class Connection:
         if req_id in self.received_messages:
             return self.received_messages.pop(req_id, None)
         while True:
-            message = self._recv_next_message()
+            message = self.skt.recv()
+            message = self._unpack_data(message)
+            if not '_id' in message:
+                raise BNGError(
+                    'Invalid message received! The version of BeamNG.tech running is incompatible with this version of BeamNGpy.')
+            _id = int(message['_id'])
+            del message['_id']
+
+            if _id == req_id:
+                return message
+            self.received_messages[_id] = message
+
+    async def recv_async(self, req_id):
+        if req_id in self.received_messages:
+            return self.received_messages.pop(req_id)
+        while True:
+            message = await self.skt.recv_async()
+            message = self._unpack_data(message)
             if not '_id' in message:
                 raise BNGError(
                     'Invalid message received! The version of BeamNG.tech running is incompatible with this version of BeamNGpy.')
@@ -294,35 +315,6 @@ class Connection:
             raise BNGError(msg)
         self.logger.info('Successfully connected to BeamNG.tech.')
 
-    def _initialize_socket(self):
-        """
-        Set up the socket with the appropriate parameters for TCP_NODELAY.
-        """
-        self.skt = gsocket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.skt.settimeout(None)
-
-    def _recv_exactly(self, length):
-        """
-        Receives exactly ``length`` bytes from the socket. If a socket error happens, the function
-        tries to re-establish the connection.
-
-        Returns:
-            An array of length ``length`` with the received data.
-        """
-        recv_buffer = []
-        while length > 0:
-            try:
-                received = self.skt.recv(min(BUF_SIZE, length))
-            except socket.error:
-                self.reconnect()
-                received = self.skt.recv(min(BUF_SIZE, length))
-            recv_buffer.extend(received)
-            length -= len(received)
-        assert length == 0
-
-        return bytes(recv_buffer)
-
 
 class Response:
     def __init__(self, connection: Connection, req_id: int):
@@ -341,3 +333,16 @@ class Response:
         if type and message['type'] != type:
             raise BNGValueError(f'Got Message type "{message["type"]}" but expected "{type}".')
         return message
+
+    async def recv_async(self, type: str = None) -> dict:
+        message = await self.connection.recv_async(self.req_id)
+        if isinstance(message, Exception):
+            raise message
+        if type and message['type'] != type:
+            raise BNGValueError(f'Got Message type "{message["type"]}" but expected "{type}".')
+        return message
+
+    async def ack_async(self, ack_type: str):
+        message = await self.recv_async()
+        if message['type'] != ack_type:
+            raise BNGError(f'Wrong ACK: {ack_type} != {message["type"]}')
