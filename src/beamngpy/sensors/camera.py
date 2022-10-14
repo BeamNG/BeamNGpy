@@ -18,6 +18,8 @@ import numpy as np
 from beamngpy.beamngcommon import LOGGER_ID, BNGValueError, ack
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
+from beamngpy.types import ConnData
+
 from .utils import _send_sensor_request, _set_sensor
 
 
@@ -193,10 +195,15 @@ class Camera:
         ret = minidom.parseString(ret)
         return ret.toprettyxml(indent='  ')
 
-    def __init__(self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 3), dir=(0, -1, 0), up=(0, 0, 1),
-        resolution=(512, 512), field_of_view_y=70, near_far_planes=(0.05, 100.0), is_using_shared_memory=True, is_render_colours=True,
-        is_render_annotations=True, is_render_instance=False, is_render_depth=True, is_depth_inverted=False, is_visualised=True, is_static=False,
-        is_snapping_desired=False, is_force_inside_triangle=False):
+    def __init__(
+            self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 3),
+            dir=(0, -1, 0),
+            up=(0, 0, 1),
+            resolution=(512, 512),
+            field_of_view_y=70, near_far_planes=(0.05, 100.0),
+            is_using_shared_memory=True, is_render_colours=True, is_render_annotations=True, is_render_instance=False,
+            is_render_depth=True, is_depth_inverted=False, is_visualised=True, is_static=False,
+            is_snapping_desired=False, is_force_inside_triangle=False):
         """
         Creates a camera sensor.
 
@@ -274,12 +281,14 @@ class Camera:
                 self.logger.debug('Camera - Bound shared memory for depth: 'f'{self.depth_handle}')
 
         # Create and initialise the camera in the simulation.
-        self._open_camera(name, vehicle, requested_update_time, update_priority, self.resolution, field_of_view_y, near_far_planes, pos, dir, up,
-            is_using_shared_memory, self.colour_handle, buffer_size, self.annotation_handle, buffer_size, self.depth_handle, buffer_size, is_render_colours,
-            is_render_annotations, is_render_instance, is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
+        self._open_camera(
+            name, vehicle, requested_update_time, update_priority, self.resolution, field_of_view_y, near_far_planes,
+            pos, dir, up, is_using_shared_memory, self.colour_handle, buffer_size, self.annotation_handle, buffer_size,
+            self.depth_handle, buffer_size, is_render_colours, is_render_annotations, is_render_instance,
+            is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
-    def _send_sensor_request(self, type, ack = None, **kwargs):
+    def _send_sensor_request(self, type, ack=None, **kwargs):
         return _send_sensor_request(self.bng.connection, type, ack, **kwargs)
 
     def _set_sensor(self, type, **kwargs):
@@ -300,16 +309,16 @@ class Camera:
             (PIL image object): The processed image.
         """
         # Convert to a numpy array.
-        decoded=np.frombuffer(bytes(raw_data), dtype = data_type)
+        decoded = np.frombuffer(bytes(raw_data), dtype=data_type)
 
         # Re-shape the array, based on the number of channels present in the data.
         if channels > 1:
-            decoded=decoded.reshape(height, width, channels)
+            decoded = decoded.reshape(height, width, channels)
         else:
-            decoded=decoded.reshape(height, width)
+            decoded = decoded.reshape(height, width)
 
         # Convert to image format.
-        image=Image.fromarray(decoded)
+        image = Image.fromarray(decoded)
         if self.is_static == True:
             return image
         else:
@@ -328,44 +337,44 @@ class Camera:
         """
 
         # Sort the depth values, and cache the sorting map.
-        sort_index=np.argsort(raw_depth_values)
-        s_data=[]
+        sort_index = np.argsort(raw_depth_values)
+        s_data = []
         for i in range(len(raw_depth_values)):
             s_data.append(raw_depth_values[sort_index[i]])
 
         # Compute an array of unique depth values, sensitive to some epsilon.
-        size=len(s_data)
-        unique=[]
+        size = len(s_data)
+        unique = []
         unique.append(s_data[0])
-        current=s_data[0]
+        current = s_data[0]
         for i in range(1, size):
             if abs(s_data[i] - current) > 0.01:
                 unique.append(s_data[i])
-                current=s_data[i]
+                current = s_data[i]
 
         # Distribute (mark) the individual intensity values throughout the sorted unique distance array.
-        intensity_marks=[]
+        intensity_marks = []
         intensity_marks.append(0)
-        i_reciprocal=1.0 / 255.0
+        i_reciprocal = 1.0 / 255.0
         for i in range(254):
             intensity_marks.append(unique[math.floor(len(unique) * i * i_reciprocal)])
         intensity_marks.append(1e12)
 
         # In the sorted depth values array, convert the depth value array into intensity values.
-        depth_intensity_sorted=np.zeros((size))
-        im_index=0
+        depth_intensity_sorted = np.zeros((size))
+        im_index = 0
         for i in range(size):
-            depth_intensity_sorted[i]=im_index
+            depth_intensity_sorted[i] = im_index
             if s_data[i] >= intensity_marks[im_index + 1]:
-                im_index=im_index + 1
+                im_index = im_index + 1
 
         # Re-map the depth values back to their original order.
-        depth_intensity=np.zeros((size))
+        depth_intensity = np.zeros((size))
         for i in range(len(raw_depth_values)):
             if self.is_depth_inverted:
-                depth_intensity[sort_index[i]]=255 - depth_intensity_sorted[i]
+                depth_intensity[sort_index[i]] = 255 - depth_intensity_sorted[i]
             else:
-                depth_intensity[sort_index[i]]=depth_intensity_sorted[i]
+                depth_intensity[sort_index[i]] = depth_intensity_sorted[i]
 
         return depth_intensity
 
@@ -378,42 +387,42 @@ class Camera:
         Returns:
             (dict): A dictionary containing the processed images.
         """
-        width=self.resolution[0]
-        height=self.resolution[1]
+        width = self.resolution[0]
+        height = self.resolution[1]
 
-        processed_readings=dict(type = 'Camera')
+        processed_readings: ConnData = dict(type='Camera')
 
         if self.is_render_colours:
-            colour=[]
+            colour = []
             for i in range(len(binary['colour'])):
                 colour.append(np.uint8(binary['colour'][i]))
-            processed_readings['colour']=self._convert_to_image(colour, width, height, 4, np.uint8)
+            processed_readings['colour'] = self._convert_to_image(colour, width, height, 4, np.uint8)
 
         if self.is_render_annotations:
-            annotation=[]
+            annotation = []
             for i in range(len(binary['annotation'])):
                 annotation.append(np.uint8(binary['annotation'][i]))
-            processed_readings['annotation']=self._convert_to_image(annotation, width, height, 4, np.uint8)
+            processed_readings['annotation'] = self._convert_to_image(annotation, width, height, 4, np.uint8)
 
         if self.is_render_instance:
-            instance=[]
+            instance = []
             for i in range(len(binary['instance'])):
                 instance.append(np.uint8(binary['instance'][i]))
-            processed_readings['instance']=self._convert_to_image(instance, width, height, 4, np.uint8)
+            processed_readings['instance'] = self._convert_to_image(instance, width, height, 4, np.uint8)
 
         if self.is_render_depth:
-            depth=np.zeros(int(len(binary['depth']) / 4))
-            ctr=0
+            depth = np.zeros(int(len(binary['depth']) / 4))
+            ctr = 0
             for i in range(0, int(len(binary['depth'])), 4):
-                depth[ctr]=struct.unpack('f', binary['depth'][i:i + 4])[0]
-                ctr=ctr + 1
-            processed_values=self._depth_buffer_processing(depth)
-            reshaped_data=processed_values.reshape(height, width)
-            image=Image.fromarray(reshaped_data)
+                depth[ctr] = struct.unpack('f', binary['depth'][i:i + 4])[0]
+                ctr = ctr + 1
+            processed_values = self._depth_buffer_processing(depth)
+            reshaped_data = processed_values.reshape(height, width)
+            image = Image.fromarray(reshaped_data)
             if self.is_static == True:
-                processed_readings['depth']=image
+                processed_readings['depth'] = image
             else:
-                processed_readings['depth']=ImageOps.mirror(ImageOps.flip(image))
+                processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(image))
 
         return processed_readings
 
@@ -423,23 +432,23 @@ class Camera:
         """
         # Remove any shared memory binding which this sensor is using.
         if self.is_using_shared_memory:
-            if self.is_render_colours:
+            if self.colour_shmem:
                 self.logger.debug('Camera - Unbinding shared memory for colour: 'f'{self.colour_handle}')
                 self.colour_shmem.close()
 
-            if self.is_render_annotations:
+            if self.annotation_shmem:
                 self.logger.debug(
                     'Camera - Unbinding shared memory for semantic annotations: '
                     f'{self.annotation_handle}')
                 self.annotation_shmem.close()
 
-            if self.is_render_instance:
+            if self.instance_shmem:
                 self.logger.debug(
                     'Camera - Unbinding shared memory for instance annotations: '
                     f'{self.instance_handle}')
                 self.instance_shmem.close()
 
-            if self.is_render_depth:
+            if self.depth_shmem:
                 self.logger.debug('Camera - Unbinding shared memory for depth: 'f'{self.depth_handle}')
                 self.depth_shmem.close()
 
@@ -456,68 +465,66 @@ class Camera:
             (dict): The processed images.
         """
         # Send and receive a request for readings data from this sensor.
-        raw_readings=self._send_sensor_request(
-            'PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory) ['data']
+        raw_readings = self._send_sensor_request(
+            'PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
 
         self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
 
         # Decode the raw sensor readings into image data. This is handled differently, depending on whether shared memory is used or not.
-        width=self.resolution[0]
-        height=self.resolution[1]
-        buffer_size=width * height * 4
-        images=dict(type = 'Camera')
+        width = self.resolution[0]
+        height = self.resolution[1]
+        buffer_size = width * height * 4
+        images: ConnData = dict(type='Camera')
         if self.is_using_shared_memory:
-
             # CASE 1: We are using shared memory.
-            if self.is_render_colours:
+            if self.colour_shmem:
                 if 'colour' in raw_readings.keys():
                     self.colour_shmem.seek(0)
-                    colour_data=self.colour_shmem.read(buffer_size)
-                    colour_data=np.frombuffer(colour_data, dtype = np.uint8)
-                    colour_data=colour_data.reshape(height, width, 4)
+                    colour_data = self.colour_shmem.read(buffer_size)
+                    colour_data = np.frombuffer(colour_data, dtype=np.uint8)
+                    colour_data = colour_data.reshape(height, width, 4)
                     if self.is_static:
-                        images['colour']=Image.fromarray(colour_data)
+                        images['colour'] = Image.fromarray(colour_data)
                     else:
-                        images['colour']=ImageOps.mirror(ImageOps.flip(Image.fromarray(colour_data)))
+                        images['colour'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(colour_data)))
                 else:
                     self.logger.error(
                         'Camera - Colour buffer failed to render. Check that you are not running on low settings.')
 
-            if self.is_render_annotations:
+            if self.annotation_shmem:
                 if 'annotation' in raw_readings.keys():
                     self.annotation_shmem.seek(0)
-                    annotation_data=self.annotation_shmem.read(buffer_size)
-                    annotation_data=np.frombuffer(annotation_data, dtype = np.uint8)
-                    annotation_data=annotation_data.reshape(height, width, 4)
+                    annotation_data = self.annotation_shmem.read(buffer_size)
+                    annotation_data = np.frombuffer(annotation_data, dtype=np.uint8)
+                    annotation_data = annotation_data.reshape(height, width, 4)
                     if self.is_static:
-                        images['annotation']=Image.fromarray(annotation_data)
+                        images['annotation'] = Image.fromarray(annotation_data)
                     else:
-                        images['annotation']=ImageOps.mirror(ImageOps.flip(Image.fromarray(annotation_data)))
+                        images['annotation'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(annotation_data)))
                 else:
                     self.logger.error(
                         'Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
 
-            if self.is_render_depth:
+            if self.depth_shmem:
                 if 'depth' in raw_readings.keys():
                     self.depth_shmem.seek(0)
-                    depth_values=self.depth_shmem.read(buffer_size)
-                    depth_values=np.frombuffer(bytes(depth_values), dtype = np.float32)
-                    depth_values=self._depth_buffer_processing(depth_values)
-                    depth_values=depth_values.reshape(height, width)
-                    depth_values=np.uint8(depth_values)
+                    depth_values = self.depth_shmem.read(buffer_size)
+                    depth_values = np.frombuffer(bytes(depth_values), dtype=np.float32)
+                    depth_values = self._depth_buffer_processing(depth_values)
+                    depth_values = depth_values.reshape(height, width)
+                    depth_values = np.uint8(depth_values)
                     if self.is_static:
-                        images['depth']=Image.fromarray(depth_values)
+                        images['depth'] = Image.fromarray(depth_values)
                     else:
-                        images['depth']=ImageOps.mirror(ImageOps.flip(Image.fromarray(depth_values)))
+                        images['depth'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(depth_values)))
                 else:
                     self.logger.error(
                         'Camera - Depth buffer failed to render. Check that you are not running on low settings.')
 
             self.logger.debug('Camera - sensor readings read from shared memory and processed: 'f'{self.name}')
         else:
-
             # CASE 2: We are not using shared memory. The data is coming back across the socket.
-            images=self._binary_to_image(raw_readings)
+            images = self._binary_to_image(raw_readings)
 
             self.logger.debug('Camera - raw sensor readings converted from base64 to image format: 'f'{self.name}')
         return images
@@ -533,7 +540,7 @@ class Camera:
         """
         self.logger.debug('Camera - ad-hoc polling request sent: 'f'{self.name}')
         return self._send_sensor_request(
-            'SendAdHocRequestCamera', ack='CompletedSendAdHocRequestCamera', name=self.name) ['data']
+            'SendAdHocRequestCamera', ack='CompletedSendAdHocRequestCamera', name=self.name)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -560,7 +567,8 @@ class Camera:
             (dict): The readings data.
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
-        raw_readings= self._send_sensor_request('CollectAdHocPollRequestCamera', ack = 'CompletedCollectAdHocPollRequestCamera', requestId = request_id)['data']
+        raw_readings = self._send_sensor_request(
+            'CollectAdHocPollRequestCamera', ack='CompletedCollectAdHocPollRequestCamera', requestId=request_id)['data']
 
         # Format the binary string data from the simulator.
         return self._binary_to_image(raw_readings)
@@ -575,17 +583,18 @@ class Camera:
             (dict): The camera data, as images
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
-        raw_readings= self._send_sensor_request('GetFullCameraRequest', ack = 'CompletedGetFullCameraRequest', name = self.name)
+        raw_readings = self._send_sensor_request(
+            'GetFullCameraRequest', ack='CompletedGetFullCameraRequest', name=self.name)
         if 'data' not in raw_readings:
             raise BNGValueError(f'Camera sensor {self.name} not found.')
-        raw_readings=raw_readings['data']
-        raw_readings=self._binary_to_image(raw_readings)
+        raw_readings = raw_readings['data']
+        raw_readings = self._binary_to_image(raw_readings)
 
-        data=dict(type = 'data')
-        data['colour']=raw_readings['colour']
-        data['annotation']=raw_readings['annotation']
-        data['instance']=raw_readings['instance']
-        data['depth']=raw_readings['depth']
+        data = dict(type='data')
+        data['colour'] = raw_readings['colour']
+        data['annotation'] = raw_readings['annotation']
+        data['instance'] = raw_readings['instance']
+        data['depth'] = raw_readings['depth']
 
         # Format the binary string data from the simulator.
         return data
@@ -602,8 +611,10 @@ class Camera:
         Returns:
             (list): The 2D pixel value which represents the given 3D point, on this camera.
         """
-        pixel_data=self._send_sensor_request('CameraWorldPointToPixel', ack = 'CompletedCameraWorldPointToPixel',
-            name =self.name, pointX=point[0], pointY=point[1], pointZ=point[2])['data']
+        pixel_data = self._send_sensor_request(
+            'CameraWorldPointToPixel', ack='CompletedCameraWorldPointToPixel', name=self.name, pointX=point[0],
+            pointY=point[1],
+            pointZ=point[2])['data']
         return [int(pixel_data['x']), int(pixel_data['y'])]
 
     def get_position(self):
@@ -613,7 +624,8 @@ class Camera:
         Returns:
             (list): The sensor position.
         """
-        table = self._send_sensor_request('GetCameraSensorPosition', ack ='CompletedGetCameraSensorPosition', name=self.name)['data']
+        table = self._send_sensor_request('GetCameraSensorPosition',
+                                          ack='CompletedGetCameraSensorPosition', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_direction(self):
@@ -623,7 +635,8 @@ class Camera:
         Returns:
             (list): The sensor direction.
         """
-        table = self._send_sensor_request('GetCameraSensorDirection', ack ='CompletedGetCameraSensorDirection', name=self.name)['data']
+        table = self._send_sensor_request('GetCameraSensorDirection',
+                                          ack='CompletedGetCameraSensorDirection', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_up(self):
@@ -633,7 +646,7 @@ class Camera:
         Returns:
             (list): The sensor direction.
         """
-        table = self._send_sensor_request('GetCameraSensorUp', ack ='CompletedGetCameraSensorUp', name=self.name)['data']
+        table = self._send_sensor_request('GetCameraSensorUp', ack='CompletedGetCameraSensorUp', name=self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_requested_update_time(self):
@@ -643,7 +656,8 @@ class Camera:
         Returns:
             (float): The requested update time.
         """
-        return self._send_sensor_request('GetCameraRequestedUpdateTime', ack ='CompletedGetCameraRequestedUpdateTime', name=self.name)['data']
+        return self._send_sensor_request(
+            'GetCameraRequestedUpdateTime', ack='CompletedGetCameraRequestedUpdateTime', name=self.name)['data']
 
     def get_update_priority(self):
         """
@@ -652,7 +666,8 @@ class Camera:
         Returns:
             (float): The update priority value.
         """
-        return self._send_sensor_request('GetCameraUpdatePriority', ack ='CompletedGetCameraUpdatePriority', name=self.name)['data']
+        return self._send_sensor_request(
+            'GetCameraUpdatePriority', ack='CompletedGetCameraUpdatePriority', name=self.name)['data']
 
     def get_max_pending_requests(self):
         """
@@ -661,7 +676,8 @@ class Camera:
         Returns:
             (int): The max pending requests value.
         """
-        return self._send_sensor_request('GetCameraMaxPendingGpuRequests', ack ='CompletedGetCameraMaxPendingGpuRequests', name=self.name)['data']
+        return self._send_sensor_request('GetCameraMaxPendingGpuRequests',
+                                         ack='CompletedGetCameraMaxPendingGpuRequests', name=self.name)['data']
 
     @ ack('CompletedSetCameraSensorPosition')
     def set_position(self, pos):
@@ -671,7 +687,7 @@ class Camera:
         Args:
             pos (tuple): The new position.
         """
-        return self._set_sensor('SetCameraSensorPosition', name =self.name, posX=pos[0], posY=pos[1], posZ=pos[2])
+        return self._set_sensor('SetCameraSensorPosition', name=self.name, posX=pos[0], posY=pos[1], posZ=pos[2])
 
     @ ack('CompletedSetCameraSensorDirection')
     def set_direction(self, dir):
@@ -681,7 +697,7 @@ class Camera:
         Args:
             pos (tuple): The new forward direction vector.
         """
-        return self._set_sensor('SetCameraSensorDirection', name =self.name, dirX=dir[0], dirY=dir[1], dirZ=dir[2])
+        return self._set_sensor('SetCameraSensorDirection', name=self.name, dirX=dir[0], dirY=dir[1], dirZ=dir[2])
 
     @ ack('CompletedSetCameraSensorUp')
     def set_up(self, up):
@@ -691,8 +707,7 @@ class Camera:
         Args:
             pos (tuple): The new up vector.
         """
-        return self._set_sensor('SetCameraSensorUp', name =self.name, upX=up[0], upY=up[1], upZ=up[2])
-
+        return self._set_sensor('SetCameraSensorUp', name=self.name, upX=up[0], upY=up[1], upZ=up[2])
 
     @ ack('CompletedSetCameraRequestedUpdateTime')
     def set_requested_update_time(self, requested_update_time):
@@ -702,7 +717,7 @@ class Camera:
         Args:
             requested_update_time (float): The new requested update time.
         """
-        return self._set_sensor('SetCameraRequestedUpdateTime', name =self.name, updateTime=requested_update_time)
+        return self._set_sensor('SetCameraRequestedUpdateTime', name=self.name, updateTime=requested_update_time)
 
     @ ack('CompletedSetCameraUpdatePriority')
     def set_update_priority(self, update_priority):
@@ -712,7 +727,7 @@ class Camera:
         Args:
             update_priority (float): The new update priority value.
         """
-        return self._set_sensor('SetCameraUpdatePriority', name =self.name, updatePriority=update_priority)
+        return self._set_sensor('SetCameraUpdatePriority', name=self.name, updatePriority=update_priority)
 
     @ ack('CompletedSetCameraMaxPendingGpuRequests')
     def set_max_pending_requests(self, max_pending_requests):
@@ -722,50 +737,51 @@ class Camera:
         Args:
             max_pending_requests (int): The new max pending requests value.
         """
-        return self._set_sensor('SetCameraMaxPendingGpuRequests', name =self.name, maxPendingGpuRequests=max_pending_requests)
+        return self._set_sensor('SetCameraMaxPendingGpuRequests', name=self.name,
+                                maxPendingGpuRequests=max_pending_requests)
 
     @ ack('OpenedCamera')
-    def _open_camera(
-        self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y, near_far_planes, pos,
-        dir, up, is_using_shared_memory, colour_shmem_handle, colour_shmem_size, annotation_shmem_handle,
-        annotation_shmem_size, depth_shmem_handle, depth_shmem_size, is_render_colours, is_render_annotations,
-        is_render_instance, is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle):
-        data = dict(type ='OpenCamera')
-        data['vid']= 0
+    def _open_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y,
+                     near_far_planes, pos, dir, up, is_using_shared_memory, colour_shmem_handle, colour_shmem_size,
+                     annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size,
+                     is_render_colours, is_render_annotations, is_render_instance, is_render_depth, is_visualised,
+                     is_static, is_snapping_desired, is_force_inside_triangle):
+        data: ConnData = dict(type='OpenCamera')
+        data['vid'] = 0
         if vehicle is not None:
-            data['vid']= vehicle.vid
-        data['name']= name
-        data['updateTime']= requested_update_time
-        data['priority']= update_priority
-        data['size']= size
-        data['fovY']= field_of_view_y
-        data['nearFarPlanes']= near_far_planes
-        data['pos']= pos
-        data['dir']= dir
-        data['up']= up
-        data['useSharedMemory']= is_using_shared_memory
-        data['colourShmemName']= colour_shmem_handle
-        data['colourShmemSize']= colour_shmem_size
-        data['annotationShmemName']= annotation_shmem_handle
-        data['annotationShmemSize']= annotation_shmem_size
-        data['depthShmemName']= depth_shmem_handle
-        data['depthShmemSize']= depth_shmem_size
-        data['renderColours']= is_render_colours
-        data['renderAnnotations']= is_render_annotations
-        data['renderInstance']= is_render_instance
-        data['renderDepth']= is_render_depth
-        data['isVisualised']= is_visualised
-        data['isStatic']= is_static
-        data['isSnappingDesired']= is_snapping_desired
-        data['isForceInsideTriangle']= is_force_inside_triangle
+            data['vid'] = vehicle.vid
+        data['name'] = name
+        data['updateTime'] = requested_update_time
+        data['priority'] = update_priority
+        data['size'] = size
+        data['fovY'] = field_of_view_y
+        data['nearFarPlanes'] = near_far_planes
+        data['pos'] = pos
+        data['dir'] = dir
+        data['up'] = up
+        data['useSharedMemory'] = is_using_shared_memory
+        data['colourShmemName'] = colour_shmem_handle
+        data['colourShmemSize'] = colour_shmem_size
+        data['annotationShmemName'] = annotation_shmem_handle
+        data['annotationShmemSize'] = annotation_shmem_size
+        data['depthShmemName'] = depth_shmem_handle
+        data['depthShmemSize'] = depth_shmem_size
+        data['renderColours'] = is_render_colours
+        data['renderAnnotations'] = is_render_annotations
+        data['renderInstance'] = is_render_instance
+        data['renderDepth'] = is_render_depth
+        data['isVisualised'] = is_visualised
+        data['isStatic'] = is_static
+        data['isSnappingDesired'] = is_snapping_desired
+        data['isForceInsideTriangle'] = is_force_inside_triangle
         resp = self.bng.connection.send(data)
         self.logger.info(f'Opened Camera: "{name}"')
         return resp
 
     @ ack('ClosedCamera')
     def _close_camera(self):
-        data = dict(type ='CloseCamera')
-        data['name']= self.name
+        data = dict(type='CloseCamera')
+        data['name'] = self.name
         resp = self.bng.connection.send(data)
         self.logger.info(f'Closed Camera: "{self.name}"')
         return resp

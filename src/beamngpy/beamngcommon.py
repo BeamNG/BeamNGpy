@@ -8,14 +8,17 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
-import logging
+from .types import Float3, Quat
 import json
+import logging
 import os
+from typing import List, Optional
 import warnings
-import numpy as np
 from functools import wraps
 from pathlib import Path
 from shutil import move
+
+import numpy as np
 
 ENV = dict()
 ENV['BNG_HOME'] = os.getenv('BNG_HOME')
@@ -28,6 +31,7 @@ module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
 comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
 bngpy_handlers = list()
 
+
 def create_warning(msg, category=None):
     """Helper function for BeamNGpy modules to create warnings.
 
@@ -38,7 +42,7 @@ def create_warning(msg, category=None):
     warnings.warn(msg, category=category, stacklevel=2)
 
 
-def config_logging(handlers,
+def config_logging(handlers: List[logging.Handler],
                    replace=True,
                    level=logging.DEBUG,
                    redirect_warnings=True,
@@ -77,8 +81,8 @@ def config_logging(handlers,
             module_logger.info(f'Logging to file: {h.baseFilename}.')
 
 
-def set_up_simple_logging(log_file=None,
-                          redirect_warnings=None,
+def set_up_simple_logging(log_file: Optional[str] = None,
+                          redirect_warnings=True,
                           level=logging.INFO,
                           log_communication=False):
     """
@@ -101,7 +105,7 @@ def set_up_simple_logging(log_file=None,
     sh.setLevel(level)
     formatter = logging.Formatter(LOG_FORMAT)
     sh.setFormatter(formatter)
-    handlers = [sh]
+    handlers: List[logging.Handler] = [sh]
     moved_log = False
     fh = None
     if log_file:
@@ -117,6 +121,7 @@ def set_up_simple_logging(log_file=None,
                    log_communication=log_communication)
     if moved_log and fh is not None:
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
+
 
 class BNGError(Exception):
     """
@@ -221,7 +226,8 @@ def ensure_config(cfg_file):
 
 CFG = get_default()
 
-def angle_to_quat(angle):
+
+def angle_to_quat(angle: Float3) -> Quat:
     """
     Converts an euler angle to a quaternion.
 
@@ -249,7 +255,7 @@ def angle_to_quat(angle):
     return (x, y, z, w)
 
 
-def compute_rotation_matrix(quat):
+def compute_rotation_matrix(quat: Quat):
     """
     Calculates the rotation matrix for the given quaternion
     to be used in a scenario prefab.
@@ -274,7 +280,7 @@ def compute_rotation_matrix(quat):
     return rot_mat
 
 
-def quat_as_rotation_mat_str(quat):
+def quat_as_rotation_mat_str(quat: Quat) -> str:
     """
     For a given quaternion, the function computes the corresponding rotation
     matrix and converts it into a string.

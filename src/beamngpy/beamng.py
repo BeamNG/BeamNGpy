@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import platform
@@ -5,12 +7,18 @@ import signal
 import subprocess
 from pathlib import Path
 from time import sleep
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from .beamngcommon import (ENV, LOGGER_ID, BNGError, BNGValueError, ack, create_warning)
+from .beamngcommon import (ENV, LOGGER_ID, BNGError, BNGValueError, ack,
+                           create_warning)
 from .connection import Connection
-from .level import Level
-from .scenario import Scenario, ScenarioObject
+from .scenario import ScenarioObject
 from .vehicle import Vehicle
+
+if TYPE_CHECKING:
+    from .level import Level
+    from .scenario import Scenario
+    from .types import ConnData, Float3, Quat
 
 BINARIES = ['Bin64/BeamNG.tech.x64.exe', 'Bin64/BeamNG.drive.x64.exe']
 BINARIES_LINUX = ['BinLinux/BeamNG.tech.x64', 'BinLinux/BeamNG.drive.x64']
@@ -34,7 +42,8 @@ class BeamNGpy:
     controlling the state of the simulator.
     """
 
-    def __init__(self, host, port, home=None, user=None, remote=False):
+    def __init__(
+            self, host: str, port: int, home: Optional[str] = None, user: Optional[str] = None, remote: bool = False):
         """
         Instantiates a BeamNGpy instance connecting to the simulator on the
         given host and port. The home directory of the simulator can be passed
@@ -62,8 +71,8 @@ class BeamNGpy:
         self.home = home
         self.remote = remote
         self.process = None
-        self.scenario = None
-        self.connection = None
+        self.scenario: Optional[Scenario] = None
+        self.connection: Optional[Connection] = None
 
         if not self.remote:
             if not self.home:
@@ -115,7 +124,7 @@ class BeamNGpy:
         Args:
             launch (bool): Whether to launch a new process or connect to a running one on the configured host/port. Defaults to True.
         """
-        self.connection = Connection(self, self.host, self.port)
+        self.connection = Connection(self.host, self.port)
 
         # try to connect to existing instance
         connected = self.connection.connect_to_beamng(tries=1, log_tries=False)
@@ -139,6 +148,16 @@ class BeamNGpy:
             self.scenario.close()
             self.scenario = None
         self.kill_beamng()
+
+    def send(self, data: ConnData):
+        if not self.connection:
+            raise BNGError('Not connected to the simulator!')
+        return self.connection.send(data)
+
+    def message(self, req: str, **kwargs):
+        if not self.connection:
+            raise BNGError('Not connected to the simulator!')
+        return self.connection.message(req, **kwargs)
 
     def determine_userpath(self):
         """
@@ -257,7 +276,7 @@ class BeamNGpy:
             A dictionary of available level names to a corresponding instance
             of the :class:`.Level` class.
         """
-        levels = self.connection.message('GetLevels')
+        levels = self.message('GetLevels')
         levels = [Level.from_dict(l) for l in levels]
         levels = {l.name: l for l in levels}
         return levels
@@ -282,10 +301,11 @@ class BeamNGpy:
         if levels is None:
             levels = self.get_levels()
 
-        scenarios = self.connection.message('GetScenarios')
+        scenarios = self.message('GetScenarios')
         scenarios = [Scenario.from_dict(s) for s in scenarios]
         scenarios = {s.path: s for s in scenarios if s.level in levels.keys()}
         for _, scenario in scenarios.items():
+            assert isinstance(scenario.level, str)
             scenario.level = levels[scenario.level]
 
         return scenarios
@@ -308,7 +328,7 @@ class BeamNGpy:
         else:
             level_name = level
 
-        scenarios = self.connection.message('GetScenarios')
+        scenarios = self.message('GetScenarios')
         scenarios = [Scenario.from_dict(s) for s in scenarios]
         scenarios = {s.path: s for s in scenarios if s.level == level_name}
 
@@ -329,6 +349,7 @@ class BeamNGpy:
         scenarios = self.get_scenarios(levels=levels)
 
         for scenario in scenarios.values():
+            assert isinstance(scenario.level, Level)
             level_scenarios = scenario.level.scenarios
             level_scenarios[scenario.path] = scenario
 
@@ -347,7 +368,7 @@ class BeamNGpy:
             place in, the scenario's parent level field will be filled in
             accordingly.
         """
-        scenario = self.connection.message('GetCurrentScenario')
+        scenario = self.message('GetCurrentScenario')
         if not scenario:
             raise BNGError('The current scenario could not be retrieved.')
         scenario = Scenario.from_dict(scenario)
@@ -358,7 +379,7 @@ class BeamNGpy:
 
         return scenario
 
-    def get_current_vehicles_info(self):
+    def get_current_vehicles_info(self) -> Dict[str, Dict]:
         """
         Queries the currently active vehicles in the simulator.
 
@@ -367,8 +388,7 @@ class BeamNGpy:
             class for each active vehicle. These vehicles are not connected to
             by this function.
         """
-        vehicles = self.connection.message('GetCurrentVehicles')
-        return vehicles
+        return self.message('GetCurrentVehicles')
 
     def get_current_vehicles(self):
         vehicles = self.get_current_vehicles_info()
@@ -380,16 +400,16 @@ class BeamNGpy:
         Hides the HUD in the simulator.
         """
         data = dict(type='HideHUD')
-        self.connection.send(data)
+        return self.send(data)
 
     def show_hud(self):
         """
         Shows the HUD in the simulator.
         """
         data = dict(type='ShowHUD')
-        self.connection.send(data)
+        return self.send(data)
 
-    def load_scenario(self, scenario):
+    def load_scenario(self, scenario: Scenario):
         """
         Loads the given scenario in the simulation and returns once loading
         is finished.
@@ -403,10 +423,8 @@ class BeamNGpy:
                 vehicle.disconnect()
 
         data = {'type': 'LoadScenario', 'path': scenario.path}
-        self.connection.send(data).ack('MapLoaded')
+        self.send(data).ack('MapLoaded')
         self.logger.info('Loaded map.')
-        flags = scenario.get_engine_flags()
-        self.set_engine_flags(flags)
         self.scenario = scenario
         self.scenario.connect(self)
 
@@ -422,9 +440,9 @@ class BeamNGpy:
         """
         flags = dict(type='EngineFlags', flags=flags)
         self.logger.debug(f'set following engine flags: {flags}')
-        return self.connection.send(flags)
+        return self.send(flags)
 
-    def teleport_vehicle(self, vehicle_id, pos, rot_quat=None, reset=True):
+    def teleport_vehicle(self, vehicle_id: str, pos: Float3, rot_quat: Optional[Quat] = None, reset=True):
         """
         Teleports the given vehicle to the given position with the given
         rotation.
@@ -444,7 +462,7 @@ class BeamNGpy:
             set the rotation of the vehicle and to keep its velocity during teleport.
         """
         self.logger.info(f'Teleporting vehicle <{vehicle_id}>.')
-        data = dict(type='Teleport')
+        data: ConnData = dict(type='Teleport')
         data['vehicle'] = vehicle_id
         data['pos'] = pos
         data['reset'] = reset
@@ -455,11 +473,11 @@ class BeamNGpy:
                            'the usage of `rot_quat` in `beamng.teleport_vehicle`; '
                            'rotation will not be applied to the vehicle',
                            RuntimeWarning)
-        resp = self.connection.send(data).recv('Teleported')
+        resp = self.send(data).recv('Teleported')
         return resp['success']
 
     @ack('ScenarioObjectTeleported')
-    def teleport_scenario_object(self, scenario_object, pos, rot_quat=None):
+    def teleport_scenario_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Optional[Quat] = None):
         """
         Teleports the given scenario object to the given position with the
         given rotation.
@@ -472,12 +490,12 @@ class BeamNGpy:
             rot_quat (tuple): Optional tuple specifying object rotation as a
                               quaternion
         """
-        data = dict(type='TeleportScenarioObject')
+        data: ConnData = dict(type='TeleportScenarioObject')
         data['id'] = scenario_object.id
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('ScenarioStarted')
     def start_scenario(self, restrict_actions=False):
@@ -491,10 +509,10 @@ class BeamNGpy:
                                      such as limited menu options and controls.
                                      Defaults to False.
         """
-        data = dict(type="StartScenario")
+        data: ConnData = dict(type='StartScenario')
         data['restrict_actions'] = restrict_actions
-        resp = self.connection.send(data)
-        self.logger.info("Starting scenario.")
+        resp = self.send(data)
+        self.logger.info('Starting scenario.')
         return resp
 
     def restart_scenario(self):
@@ -509,9 +527,9 @@ class BeamNGpy:
 
         self.logger.info('Restarting scenario.')
         data = dict(type='RestartScenario')
-        self.connection.send(data).ack('ScenarioRestarted')
+        self.send(data).ack('ScenarioRestarted')
 
-        self.scenario._get_existing_vehicles(self)
+        self.scenario._load_existing_vehicles()
         for vehicle in self.scenario.vehicles:
             if vehicle.vid in vehicles_to_reconnect and not vehicle.is_connected():
                 vehicle.connect(self)
@@ -528,7 +546,7 @@ class BeamNGpy:
         self.scenario = None
 
         data = dict(type='StopScenario')
-        resp = self.connection.send(data)
+        resp = self.send(data)
         self.logger.info('Stopping scenario.')
         return resp
 
@@ -541,7 +559,7 @@ class BeamNGpy:
         :meth:`~.BeamnGpy.set_steps_per_second`.
         """
         data = dict(type='SetPhysicsDeterministic')
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('SetPhysicsNonDeterministic')
     def set_nondeterministic(self):
@@ -550,7 +568,7 @@ class BeamNGpy:
         setting is retained.
         """
         data = dict(type='SetPhysicsNonDeterministic')
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('SetFPSLimit')
     def set_steps_per_second(self, sps):
@@ -565,7 +583,7 @@ class BeamNGpy:
             sps (int): The steps per second to set.
         """
         data = dict(type='FPSLimit', fps=sps)
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('RemovedFPSLimit')
     def remove_step_limit(self):
@@ -574,7 +592,7 @@ class BeamNGpy:
         undefined time slices.
         """
         data = dict(type='RemoveFPSLimit')
-        return self.connection.send(data)
+        return self.send(data)
 
     def step(self, count, wait=True):
         """
@@ -594,9 +612,9 @@ class BeamNGpy:
             BNGError: If the wait flag is set but the simulator doesn't respond
                       appropriately.
         """
-        data = dict(type='Step', count=count)
+        data: ConnData = dict(type='Step', count=count)
         data['ack'] = wait
-        resp = self.connection.send(data)
+        resp = self.send(data)
         if wait:
             resp.ack('Stepped')
         self.logger.info(f'Advancing the simulation by {count} steps.')
@@ -608,7 +626,7 @@ class BeamNGpy:
         paused.
         """
         data = dict(type='Pause')
-        resp = self.connection.send(data)
+        resp = self.send(data)
         self.logger.info('Pausing the simulation.')
         return resp
 
@@ -619,7 +637,7 @@ class BeamNGpy:
         is resumed.
         """
         data = dict(type='Resume')
-        resp = self.connection.send(data)
+        resp = self.send(data)
         self.logger.info('Resuming the simulation.')
         return resp
 
@@ -638,7 +656,7 @@ class BeamNGpy:
                            'DecalRoad data.')
 
         data = dict(type='GetDecalRoadData')
-        resp = self.connection.send(data).recv('DecalRoadData')
+        resp = self.send(data).recv('DecalRoadData')
         return resp['data']
 
     def get_road_edges(self, road):
@@ -660,7 +678,7 @@ class BeamNGpy:
         """
         data = dict(type='GetDecalRoadEdges')
         data['road'] = road
-        resp = self.connection.send(data).recv('DecalRoadEdges')
+        resp = self.send(data).recv('DecalRoadEdges')
         return resp['edges']
 
     def get_gamestate(self):
@@ -679,7 +697,7 @@ class BeamNGpy:
             The game state as a dictionary as described above.
         """
         data = dict(type='GameStateRequest')
-        resp = self.connection.send(data).recv('GameState')
+        resp = self.send(data).recv('GameState')
         return resp
 
     @ack('TimeOfDayChanged')
@@ -694,7 +712,7 @@ class BeamNGpy:
         """
         data = dict(type='TimeOfDayChange')
         data['tod'] = tod
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('WeatherPresetChanged')
     def set_weather_preset(self, preset, time=1):
@@ -711,10 +729,10 @@ class BeamNGpy:
             time (float): Time in seconds the transition from the current
                           settings to the preset's should take.
         """
-        data = dict(type='SetWeatherPreset')
+        data: ConnData = dict(type='SetWeatherPreset')
         data['preset'] = preset
         data['time'] = time
-        return self.connection.send(data)
+        return self.send(data)
 
     def await_vehicle_spawn(self, vid):
         """
@@ -726,7 +744,7 @@ class BeamNGpy:
         """
         data = dict(type='WaitForSpawn')
         data['name'] = vid
-        resp = self.connection.send(data).recv('VehicleSpawned')
+        resp = self.send(data).recv('VehicleSpawned')
         assert resp['name'] == vid
 
     def update_scenario(self):
@@ -737,13 +755,15 @@ class BeamNGpy:
         if not self.scenario:
             raise BNGError('Need to have a senario loaded to update it.')
 
-        data = dict(type='UpdateScenario')
+        data: ConnData = dict(type='UpdateScenario')
         data['vehicles'] = list()
         for vehicle in self.scenario.vehicles:
             data['vehicles'].append(vehicle.vid)
-        resp = self.connection.send(data).recv('ScenarioUpdate')
+        resp = self.send(data).recv('ScenarioUpdate')
+
+        scenario_vehicles = {vehicle.vid: vehicle for vehicle in self.scenario.vehicles}
         for name, vehicle_state in resp['vehicles'].items():
-            vehicle = self.scenario.get_vehicle(name)
+            vehicle = scenario_vehicles.get(name, None)
             if vehicle:
                 vehicle.state = vehicle_state
 
@@ -757,7 +777,7 @@ class BeamNGpy:
         """
         data = dict(type='DisplayGuiMessage')
         data['message'] = msg
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('VehicleSwitched')
     def switch_vehicle(self, vehicle):
@@ -771,7 +791,7 @@ class BeamNGpy:
         """
         data = dict(type='SwitchVehicle')
         data['vid'] = vehicle.vid
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('FreeCameraSet')
     def set_free_camera(self, pos, direction):
@@ -788,7 +808,7 @@ class BeamNGpy:
         data = dict(type='SetFreeCamera')
         data['pos'] = pos
         data['dir'] = direction
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('ParticlesSet')
     def set_particles_enabled(self, enabled):
@@ -800,43 +820,18 @@ class BeamNGpy:
         """
         data = dict(type='ParticlesEnabled')
         data['enabled'] = enabled
-        return self.connection.send(data)
-
-    @ack('PartsAnnotated')
-    def annotate_parts(self, vehicle):
-        """
-        Triggers per-part annotation for the given :class:`.Vehicle`.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle to annotate.
-        """
-        data = dict(type='AnnotateParts')
-        data['vid'] = vehicle.vid
-        return self.connection.send(data)
-
-    @ack('AnnotationsReverted')
-    def revert_annotations(self, vehicle):
-        """
-        Reverts the given vehicle's annotations back to the object-based mode,
-        removing the per-part annotations.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle to annotate.
-        """
-        data = dict(type='RevertAnnotations')
-        data['vid'] = vehicle.vid
-        return self.connection.send(data)
+        return self.send(data)
 
     def get_part_annotations(self, vehicle):
         data = dict(type='GetPartAnnotations')
         data['vid'] = vehicle.vid
-        resp = self.connection.send(data).recv('PartAnnotations')
+        resp = self.send(data).recv('PartAnnotations')
         return resp['colors']
 
     def get_part_annotation(self, part):
         data = dict(type='GetPartAnnotation')
         data['part'] = part
-        resp = self.connection.send(data).recv('PartAnnotation')
+        resp = self.send(data).recv('PartAnnotation')
         if 'color' in resp:
             return resp['color']
         return None
@@ -849,7 +844,7 @@ class BeamNGpy:
             The name of the loaded scenario as a string.
         """
         data = dict(type='GetScenarioName')
-        resp = self.connection.send(data).recv('ScenarioName')
+        resp = self.send(data).recv('ScenarioName')
         return resp['name']
 
     def get_scenetree(self):
@@ -864,9 +859,9 @@ class BeamNGpy:
             type-specific information. This information can be obtained on a
             per-object basis using :meth:`~BeamNGpy.get_scene_object_data`.
         """
-        return self.connection.message('GetSceneTree')
+        return self.message('GetSceneTree')
 
-    def get_scene_object_data(self, obj_id):
+    def get_scene_object_data(self, obj_id: str):
         """
         Retrieves all available key/value pairs the simulation offers for the
         given object as a dictionary.
@@ -875,9 +870,9 @@ class BeamNGpy:
             A dictionary of key/values the simulator offers for the object of
             the given ID.
         """
-        return self.connection.message('GetObject', id=obj_id)
+        return self.message('GetObject', id=obj_id)
 
-    def spawn_vehicle(self, vehicle, pos, rot_quat=(0, 0, 0, 1), cling=True):
+    def spawn_vehicle(self, vehicle: Vehicle, pos: Float3, rot_quat: Quat = (0, 0, 0, 1), cling=True):
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
@@ -898,21 +893,19 @@ class BeamNGpy:
             bool indicating whether the spawn was successful or not
 
         """
-        data = dict(type='SpawnVehicle', cling=cling)
+        data: ConnData = dict(type='SpawnVehicle', cling=cling)
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
         data['pos'] = pos
         data['rot'] = rot_quat
         data.update(vehicle.options)
-        resp = self.connection.send(data).recv('VehicleSpawned')
+        resp = self.send(data).recv('VehicleSpawned')
         if resp['success']:
             vehicle.connect(self)
-            return True
-        else:
-            return False
+        return resp['success']
 
     @ack('VehicleDespawned')
-    def despawn_vehicle(self, vehicle):
+    def despawn_vehicle(self, vehicle: Vehicle):
         """
         Despawns the given :class:`.Vehicle` from the simulation.
 
@@ -922,9 +915,9 @@ class BeamNGpy:
         vehicle.disconnect()
         data = dict(type='DespawnVehicle')
         data['vid'] = vehicle.vid
-        return self.connection.send(data)
+        return self.send(data)
 
-    def find_objects_class(self, clazz):
+    def find_objects_class(self, clazz: str):
         """
         Scans the current environment in the simulator for objects of a
         certain class and returns them as a list of :class:`.ScenarioObject`.
@@ -940,8 +933,8 @@ class BeamNGpy:
         """
         data = dict(type='FindObjectsClass')
         data['class'] = clazz
-        resp = self.connection.send(data).recv()
-        ret = list()
+        resp = self.send(data).recv()
+        ret: List[ScenarioObject] = list()
         for obj in resp['objects']:
             sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
                                   tuple(obj['position']),
@@ -950,199 +943,6 @@ class BeamNGpy:
                                   **obj['options'])
             ret.append(sobj)
         return ret
-
-    @ack('CreatedCylinder')
-    def create_cylinder(self, name, radius, height, pos, rot_quat=None, material=None):
-        """
-        Creates a procedurally generated cylinder mesh with the given
-        radius and height at the given position and rotation. The material
-        can optionally be specified and a name can be assigned for later
-        identification.
-
-        Args:
-            name (str): Name for the mesh. Should be unique.
-            radius (float): The radius of the cylinder's base circle.
-            height (float): The between top and bottom circles of the
-                            cylinder.
-            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
-                         position.
-            rot_quat (tuple): Quaternion specifying the cylinder's rotation
-            material (str): Optional material name to use as a texture for the
-                            mesh.
-        """
-        data = dict(type='CreateCylinder')
-        data['radius'] = radius
-        data['height'] = height
-        data['pos'] = pos
-        data['rot'] = rot_quat
-        data['name'] = name
-        data['material'] = material
-        return self.connection.send(data)
-
-    @ack('CreatedBump')
-    def create_bump(self, name, width, length, height, upper_length,
-                    upper_width, pos, rot_quat=None, material=None):
-        """
-        Creates a procedurally generated bump with the given properties at the
-        given position and rotation. The material can optionally be specified
-        and a name can be assigned for later identification.
-
-        Args:
-            name (str): Name for the mesh. Should be unique.
-            width (float): The width of the bump, i.e. its size between left
-                           and right edges.
-            length (float): The length of the bump, i.e. the distances from
-                            up and downward slopes.
-            height (float): The height of the tip.
-            upper_length (float): The length of the tip.
-            upper_width (float): The width of the tip.
-            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
-                         position.
-            rot_quat (tuple): Quaternion specifying the bump's rotation
-            material (str): Optional material name to use as a texture for the
-                            mesh.
-        """
-        data = dict(type='CreateBump')
-        data['width'] = width
-        data['length'] = length
-        data['height'] = height
-        data['upperLength'] = upper_length
-        data['upperWidth'] = upper_width
-        data['pos'] = pos
-        data['rot'] = rot_quat
-        data['name'] = name
-        data['material'] = material
-        return self.connection.send(data)
-
-    @ack('CreatedCone')
-    def create_cone(self, name, radius, height, pos, rot_quat=None, material=None):
-        """
-        Creates a procedurally generated cone with the given properties at the
-        given position and rotation. The material can optionally be specified
-        and a name can be assigned for later identification.
-
-        Args:
-            name (str): Name for the mesh. Should be unique.
-            radius (float): Radius of the base circle.
-            height (float): Distance of the tip to the base circle.
-            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
-                         position.
-            rot_quat (tuple): Quaternion specifying the cone's rotation
-            material (str): Optional material name to use as a texture for the
-                            mesh.
-        """
-        data = dict(type='CreateCone')
-        data['radius'] = radius
-        data['height'] = height
-        data['material'] = material
-        data['name'] = name
-        data['pos'] = pos
-        data['rot'] = rot_quat
-        return self.connection.send(data)
-
-    @ack('CreatedCube')
-    def create_cube(self, name, size, pos, rot_quat=None, material=None):
-        """
-        Creates a procedurally generated cube with the given properties at the
-        given position and rotation. The material can optionally be specified
-        and a name can be assigned for later identification.
-
-        Args:
-            name (str): Name for the mesh. Should be unique.
-            size (tuple): A triplet specifying the (length, width, height) of
-                          the cuboid.
-            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
-                         position.
-            rot_quat (tuple): Quaternion specifying the cube's rotation
-            material (str): Optional material name to use as a texture for the
-                            mesh.
-        """
-        data = dict(type='CreateCube')
-        data['size'] = size
-        data['pos'] = pos
-        data['rot'] = rot_quat
-        data['material'] = material
-        data['name'] = name
-        return self.connection.send(data)
-
-    @ack('CreatedRing')
-    def create_ring(self, name, radius, thickness, pos, rot_quat=None, material=None):
-        """
-        Creates a procedurally generated ring with the given properties at the
-        given position and rotation. The material can optionally be specified
-        and a name can be assigned for later identification.
-
-        Args:
-            name (str): Name for the mesh. Should be unique.
-            radius (float): Radius of the circle encompassing the ring.
-            thickness (float): Thickness of the rim.
-            pos (tuple): (X, Y, Z) coordinate triplet specifying the cylinder's
-                         position.
-            rot_quat (tuple): Quaternion specifying the ring's rotation
-            material (str): Optional material name to use as a texture for the
-                            mesh.
-        """
-        data = dict(type='CreateRing')
-        data['radius'] = radius
-        data['thickness'] = thickness
-        data['pos'] = pos
-        data['rot'] = rot_quat
-        data['material'] = material
-        data['name'] = name
-        return self.connection.send(data)
-
-    def get_vehicle_bbox(self, vehicle):
-        """
-        Retrieves the current bounding box of the vehicle. The bounding box
-        corresponds to the vehicle's location/rotation in world space, i.e. if
-        the vehicle moves/turns, the bounding box moves acoordingly. Note that
-        the bounding box contains the min/max coordinates of the entire
-        vehicle. This means that the vehicle losing a part like a mirror will
-        cause the bounding box to "expand" while the vehicle moves as the
-        mirror is left behind, but still counts as part of the box containing
-        the vehicle.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle to get the bounding box of
-
-        Returns:
-            The vehicle's current bounding box as a dictionary of eight points.
-            Points are named following the convention that the cuboid has a
-            "near" rectangle towards the rear of the vehicle and "far"
-            rectangle towards the front. The points are then named like this:
-
-            * `front_bottom_left`: Bottom left point of the front rectangle as
-                                   an (x, y ,z) triplet
-            * `front_bottom_right`: Bottom right point of the front rectangle
-                                    as an (x, y, z) triplet
-            * `front_top_left`: Top left point of the front rectangle as an
-                                (x, y, z) triplet
-            * `front_top_right`: Top right point of the front rectangle as an
-                                 (x, y, z) triplet
-            * `rear_bottom_left`: Bottom left point of the rear rectangle as an
-                                  (x, y, z) triplet
-            * `rear_bottom_right`: Bottom right point of the rear rectangle as
-                                   an (x, y, z) triplet
-            * `rear_top_left`: Top left point of the rear rectangle as an
-                               (x, y, z) triplet
-            * `rear_top_right`: Top right point of the rear rectangle as an
-                                (x, y, z) triplet
-        """
-        data = dict(type='GetBBoxCorners')
-        data['vid'] = vehicle.vid
-        resp = self.connection.send(data).recv('BBoxCorners')
-        points = resp['points']
-        bbox = {
-            'front_bottom_left': points[3],
-            'front_bottom_right': points[0],
-            'front_top_left': points[2],
-            'front_top_right': points[1],
-            'rear_bottom_left': points[7],
-            'rear_bottom_right': points[4],
-            'rear_top_left': points[6],
-            'rear_top_right': points[5],
-        }
-        return bbox
 
     @ack('GravitySet')
     def set_gravity(self, gravity=-9.807):
@@ -1153,9 +953,9 @@ class BeamNGpy:
             gravity (float): The gravity value to set. The default one is
                              that of earth (-9.807)
         """
-        data = dict(type='SetGravity')
+        data: ConnData = dict(type='SetGravity')
         data['gravity'] = gravity
-        return self.connection.send(data)
+        return self.send(data)
 
     def get_available_vehicles(self):
         """
@@ -1169,15 +969,11 @@ class BeamNGpy:
         Raises:
             BNGError: If the game is not running to accept a request.
         """
-        if not self.connection.skt:
-            raise BNGError('The game needs to be started to retrieve '
-                           'vehicles.')
-
         data = dict(type='GetAvailableVehicles')
-        return self.connection.send(data).recv('AvailableVehicles')
+        return self.send(data).recv('AvailableVehicles')
 
     @ack('TrafficStarted')
-    def start_traffic(self, participants):
+    def start_traffic(self, participants: List[Vehicle]):
         """
         Enables traffic simulation for the given list of vehicles.
 
@@ -1187,10 +983,9 @@ class BeamNGpy:
                                  beforehand and the simulation will take
                                  control of them.
         """
-        participants = [p.vid for p in participants]
-        data = dict(type='StartTraffic')
-        data['participants'] = participants
-        return self.connection.send(data)
+        data: ConnData = dict(type='StartTraffic')
+        data['participants'] = [p.vid for p in participants]
+        return self.send(data)
 
     @ack('TrafficStopped')
     def stop_traffic(self, stop=False):
@@ -1203,9 +998,9 @@ class BeamNGpy:
                          False, the AI will simply stop controlling the
                          vehicle.
         """
-        data = dict(type='StopTraffic')
+        data: ConnData = dict(type='StopTraffic')
         data['stop'] = stop
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('SettingsChanged')
     def change_setting(self, key, value):
@@ -1222,7 +1017,7 @@ class BeamNGpy:
         data = dict(type='ChangeSetting')
         data['key'] = key
         data['value'] = value
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('GraphicsSettingApplied')
     def apply_graphics_setting(self):
@@ -1234,10 +1029,10 @@ class BeamNGpy:
         take effect after the next launch.
         """
         data = dict(type='ApplyGraphicsSetting')
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('ExecutedLuaChunkGE')
-    def queue_lua_command(self, chunk):
+    def queue_lua_command(self, chunk: str):
         """
         Executes one lua chunk in the game engine VM.
 
@@ -1246,10 +1041,10 @@ class BeamNGpy:
         """
         data = dict(type='QueueLuaCommandGE')
         data['chunk'] = chunk
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('RelativeCamSet')
-    def set_relative_camera(self, pos, rot_quat=None):
+    def set_relative_camera(self, pos: Float3, rot_quat: Optional[Quat] = None):
         """
         Switches the camera mode for the currently-entered vehicle to the
         'relative' mode in which the camera can be placed at an arbitrary point
@@ -1261,128 +1056,126 @@ class BeamNGpy:
             rot (tuple): Euler angles expressing the rotation of the camera.
             rot_quat (tuple): The camera's rotation but written as a quat.
         """
-        data = dict(type='SetRelativeCam')
+        data: ConnData = dict(type='SetRelativeCam')
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        return self.connection.send(data)
+        return self.send(data)
 
     def add_debug_spheres(self, coordinates, radii, rgba_colors,
-                          cling=False, offset=0):
-        data = dict(type="AddDebugSpheres")
+                                cling=False, offset=0):
+        data: ConnData = dict(type="AddDebugSpheres")
         assert len(coordinates) == len(radii) == len(rgba_colors)
         data['coordinates'] = coordinates
         data['radii'] = radii
         data['colors'] = rgba_colors
         data['cling'] = cling
         data['offset'] = offset
-        resp = self.connection.send(data).recv('DebugSphereAdded')
+        resp = self.send(data).recv('DebugSphereAdded')
         return resp['sphereIDs']
 
     @ack('DebugObjectsRemoved')
-    def remove_debug_spheres(self, sphere_ids):
-        data = dict(type='RemoveDebugObjects')
+    def remove_debug_spheres(self, sphere_ids: List[str]):
+        data: ConnData = dict(type='RemoveDebugObjects')
         data['objType'] = 'spheres'
         data['objIDs'] = sphere_ids
-        return self.connection.send(data)
+        return self.send(data)
 
     def add_debug_polyline(self, coordinates, rgba_color,
-                           cling=False, offset=0):
-        data = dict(type='AddDebugPolyline')
+                                 cling=False, offset=0):
+        data: ConnData = dict(type='AddDebugPolyline')
         data['coordinates'] = coordinates
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        resp = self.connection.send(data).recv('DebugPolylineAdded')
+        resp = self.send(data).recv('DebugPolylineAdded')
         return resp['lineID']
 
     @ack('DebugObjectsRemoved')
-    def remove_debug_polyline(self, line_id):
-        data = dict(type='RemoveDebugObjects')
+    def remove_debug_polyline(self, line_id: str):
+        data: ConnData = dict(type='RemoveDebugObjects')
         data['objType'] = 'polylines'
         data['objIDs'] = [line_id]
-        return self.connection.send(data)
+        return self.send(data)
 
     def add_debug_cylinder(self, circle_positions, radius, rgba_color):
-        data = dict(type='AddDebugCylinder')
+        data: ConnData = dict(type='AddDebugCylinder')
         data['circlePositions'] = circle_positions
         data['radius'] = radius
         data['color'] = rgba_color
-        resp = self.connection.send(data).recv('DebugCylinderAdded')
+        resp = self.send(data).recv('DebugCylinderAdded')
         return resp['cylinderID']
 
     @ack('DebugObjectsRemoved')
     def remove_debug_cylinder(self, cylinder_id):
-        data = dict(type='RemoveDebugObjects')
+        data: ConnData = dict(type='RemoveDebugObjects')
         data['objType'] = 'cylinders'
         data['objIDs'] = [cylinder_id]
-        return self.connection.send(data)
+        return self.send(data)
 
     def add_debug_triangle(self, vertices, rgba_color, cling=False, offset=0):
-        data = dict(type='AddDebugTriangle')
+        data: ConnData = dict(type='AddDebugTriangle')
         data['vertices'] = vertices
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        resp = self.connection.send(data).recv('DebugTriangleAdded')
+        resp = self.send(data).recv('DebugTriangleAdded')
         return resp['triangleID']
 
     @ack('DebugObjectsRemoved')
     def remove_debug_triangle(self, triangle_id):
-        data = dict(type='RemoveDebugObjects')
+        data: ConnData = dict(type='RemoveDebugObjects')
         data['objType'] = 'triangles'
         data['objIDs'] = [triangle_id]
-        return self.connection.send(data)
+        return self.send(data)
 
     def add_debug_rectangle(self, vertices, rgba_color, cling=False, offset=0):
-        data = dict(type='AddDebugRectangle')
+        data: ConnData = dict(type='AddDebugRectangle')
         data['vertices'] = vertices
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        resp = self.connection.send(data).recv('DebugRectangleAdded')
+        resp = self.send(data).recv('DebugRectangleAdded')
         return resp['rectangleID']
 
     @ack('DebugObjectsRemoved')
-    def remove_debug_rectangle(self, rectangle_id):
-        data = dict(type='RemoveDebugObjects')
+    def remove_debug_rectangle(self, rectangle_id: str):
+        data: ConnData = dict(type='RemoveDebugObjects')
         data['objType'] = 'rectangles'
         data['objIDs'] = [rectangle_id]
-        return self.connection.send(data)
+        return self.send(data)
 
-    def add_debug_text(self, origin, content, rgba_color,
-                       cling=False, offset=0):
-        data = dict(type='AddDebugText')
+    def add_debug_text(self, origin, content, rgba_color, cling=False, offset=0):
+        data: ConnData = dict(type='AddDebugText')
         data['origin'] = origin
         data['content'] = content
         data['color'] = rgba_color
         data['cling'] = cling
         data['offset'] = offset
-        self.connection.send(data)
-        resp = self.connection.send(data).recv('DebugTextAdded')
+        resp = self.send(data).recv('DebugTextAdded')
         return resp['textID']
 
     @ack('DebugObjectsRemoved')
-    def remove_debug_text(self, text_id):
-        data = dict(type='RemoveDebugObjects')
+    def remove_debug_text(self, text_id: str):
+        data: ConnData = dict(type='RemoveDebugObjects')
         data['objType'] = 'text'
         data['objIDs'] = [text_id]
-        return self.connection.send(data)
+        return self.send(data)
 
     def add_debug_square_prism(self, end_points, end_point_dims, rgba_color):
         data = dict(type='AddDebugSquarePrism')
         data['endPoints'] = end_points
         data['dims'] = end_point_dims
         data['color'] = rgba_color
-        resp = self.connection.send(data).recv('DebugSquarePrismAdded')
+        resp = self.send(data).recv('DebugSquarePrismAdded')
         return resp['prismID']
 
     @ack('DebugObjectsRemoved')
-    def remove_debug_square_prism(self, prism_id):
-        data = dict(type='RemoveDebugObjects')
+    def remove_debug_square_prism(self, prism_id: str):
+        data: ConnData = dict(type='RemoveDebugObjects')
         data['objType'] = 'squarePrisms'
         data['objIDs'] = [prism_id]
-        return self.connection.send(data)
+        return self.send(data)
 
     def get_annotations(self):
         """
@@ -1393,7 +1186,7 @@ class BeamNGpy:
             values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')
-        resp = self.connection.send(data).recv('Annotations')
+        resp = self.send(data).recv('Annotations')
         return resp['annotations']
 
     def get_annotation_classes(self, annotations):
@@ -1428,7 +1221,7 @@ class BeamNGpy:
             prefab (str): Contents of the scenario's prefab file
             info (dict): Contents of the scenario's info.json
         """
-        return self.connection.message('CreateScenario', level=level, name=name, prefab=prefab, info=info)
+        return self.message('CreateScenario', level=level, name=name, prefab=prefab, info=info)
 
     def delete_scenario(self, path):
         """
@@ -1439,73 +1232,12 @@ class BeamNGpy:
             path (str): The path to the scenario relative to the
             user directory.
         """
-        self.connection.message('DeleteScenario', path=path)
+        self.message('DeleteScenario', path=path)
 
     @ack('Quit')
     def quit_beamng(self):
         data = dict(type='Quit')
-        return self.connection.send(data)
-
-    def get_part_config(self, vehicle):
-        """
-        Retrieves the current part configuration of the given vehicle. The
-        configuration contains both the current values of adjustable vehicle
-        parameters and a mapping of part types to their currently-selected
-        part.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle to get part config of
-
-        Returns:
-            The current vehicle configuration as a dictionary.
-        """
-        data = dict(type='GetPartConfig')
-        data['vid'] = vehicle.vid
-        resp = self.connection.send(data).recv('PartConfig')
-        resp = resp['config']
-        if 'parts' not in resp or not resp['parts']:
-            resp['parts'] = dict()
-        if 'vars' not in resp or not resp['vars']:
-            resp['vars'] = dict()
-        return resp
-
-    def get_part_options(self, vehicle):
-        """
-        Retrieves a mapping of part slots for the given vehicle and their
-        possible parts.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle to get part options of
-
-        Returns:
-            A mapping of part configuration options for the given.
-        """
-        data = dict(type='GetPartOptions')
-        data['vid'] = vehicle.vid
-        resp = self.connection.send(data).recv('PartOptions')
-        return resp['options']
-
-    def set_part_config(self, vehicle, cfg):
-        """
-        Sets the current part configuration of the given vehicle. The
-        configuration is given as a dictionary containing both adjustable
-        vehicle parameters and a mapping of part types to their selected parts.
-
-        Args:
-            vehicle (:class:`.Vehicle`): The vehicle to change the config of
-            cfg (dict): The new vehicle configuration as a dictionary.
-
-        Notes:
-            Changing parts causes the vehicle to respawn, which repairs it as
-            a side-effect.
-        """
-        data = dict(type='SetPartConfig')
-        data['vid'] = vehicle.vid
-        data['config'] = cfg
-        self.connection.send(data)
-        self.await_vehicle_spawn(vehicle.vid)
-        vehicle.close()
-        vehicle.connect(self)
+        return self.send(data)
 
     @ack('PlayerCameraModeSet')
     def set_player_camera_mode(self, vid, mode, config, custom_data=None):
@@ -1536,14 +1268,14 @@ class BeamNGpy:
             config (dict): Dictionary of further properties to set in the mode.
             custom_data (dict): Custom data used by the specific camera mode. Defaults to None.
         """
-        data = dict(type='SetPlayerCameraMode')
+        data: ConnData = dict(type='SetPlayerCameraMode')
         data['vid'] = vid
         data['mode'] = mode
         data['config'] = config
         data['customData'] = custom_data
-        return self.connection.send(data)
+        return self.send(data)
 
-    def get_player_camera_modes(self, vid):
+    def get_player_camera_modes(self, vid: str):
         """
         Retrieves information about the camera modes configured for the vehicle
         identified by the given ID.
@@ -1557,11 +1289,11 @@ class BeamNGpy:
         """
         data = dict(type='GetPlayerCameraMode')
         data['vid'] = vid
-        resp = self.connection.send(data).recv('PlayerCameraMode')
+        resp = self.send(data).recv('PlayerCameraMode')
         return resp['cameraData']
 
     @ack('TrackBuilderTrackLoaded')
-    def load_trackbuilder_track(self, path):
+    def load_trackbuilder_track(self, path: str):
         """
         Spawns a TrackBuilder track provided by the given path to a TrackBuilder
         ``.json`` file.
@@ -1571,7 +1303,7 @@ class BeamNGpy:
         """
         data = dict(type='LoadTrackBuilderTrack')
         data['path'] = path
-        return self.connection.send(data)
+        return self.send(data)
 
     def __enter__(self):
         self.open()

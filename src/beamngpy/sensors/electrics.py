@@ -114,7 +114,6 @@ class Electrics(Sensor):
         convention and especially don't follow this library's, so we rename
         some of them here to be more consistent.
         """
-
         for k, v in Electrics.name_map.items():
             if k in vals:
                 vals[v] = vals[k]

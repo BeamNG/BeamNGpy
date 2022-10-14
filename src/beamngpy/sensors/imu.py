@@ -1,5 +1,5 @@
-from beamngpy.beamngcommon import BNGValueError
-
+from ..beamngcommon import BNGValueError
+from ..types import ConnData
 from .sensor import Sensor
 
 
@@ -41,6 +41,6 @@ class IMU(Sensor):
         vehicle.remove_imu(self._name)
 
     def encode_vehicle_request(self):
-        req = dict(type='IMU')
+        req: ConnData = dict(type='IMU')
         req['name'] = self._name
         return req

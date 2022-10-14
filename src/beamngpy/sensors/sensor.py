@@ -13,7 +13,15 @@
 This module implements various sensors that can be attached to vehicles to
 extract data from simulations.
 """
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Dict, Optional
+
+if TYPE_CHECKING:
+    from ..beamng import BeamNGpy
+    from ..types import ConnData
+    from ..vehicle import Vehicle
 
 
 class AbstractSensor(ABC):
@@ -63,7 +71,7 @@ class Sensor(AbstractSensor):
     def __getitem__(self, item):
         return self.data[item]
 
-    def attach(self, vehicle, name):
+    def attach(self, vehicle: Vehicle, name: str):
         """
         Called when the sensor is attached to a :class:`.Vehicle` instance.
         Used to perform sensor setup code before the simulation is started.
@@ -77,7 +85,7 @@ class Sensor(AbstractSensor):
         """
         pass
 
-    def detach(self, vehicle, name):
+    def detach(self, vehicle: Vehicle, name: str):
         """
         Called when the sensor is detached from a :class:`.Vehicle` instance.
         Used to perform sensor teardown code after the simulation is finished.
@@ -91,7 +99,7 @@ class Sensor(AbstractSensor):
         """
         pass
 
-    def encode_engine_request(self):
+    def encode_engine_request(self) -> Optional[Dict]:
         """
         Called to retrieve this sensor's data request to the engine as a
         dictionary. The dictionary returned by this method will be bundled
@@ -111,7 +119,7 @@ class Sensor(AbstractSensor):
         """
         return None
 
-    def encode_vehicle_request(self):
+    def encode_vehicle_request(self) -> ConnData:
         """
         Called to retrieve this sensor's request to the vehicle as a
         dictionary. The dictionary returned by this method will be bundled
@@ -129,9 +137,9 @@ class Sensor(AbstractSensor):
         Returns:
             The request to send to the vehicle as a dictionary.
         """
-        return None
+        return {}
 
-    def decode_response(self, resp):
+    def decode_response(self, resp: ConnData):
         """
         Called to do post-processing on sensor data obtained from the
         simulation. This method is called after raw simulation data is received
@@ -144,7 +152,7 @@ class Sensor(AbstractSensor):
         """
         return resp
 
-    def connect(self, bng, vehicle):
+    def connect(self, bng: BeamNGpy, vehicle: Vehicle):
         """
         Called when the attached vehicle is being initialised in the
         simulation. This method is used to perform setup code that requires the
@@ -152,7 +160,7 @@ class Sensor(AbstractSensor):
         """
         pass
 
-    def disconnect(self, bng, vehicle):
+    def disconnect(self, bng: BeamNGpy, vehicle: Vehicle):
         """
         Called when the attached vehicle is being removed from simulation. This
         method is used to perform teardown code after the simulation.

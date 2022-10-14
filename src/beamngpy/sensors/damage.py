@@ -1,5 +1,5 @@
 from .sensor import Sensor
-
+from ..types import ConnData
 
 class Damage(Sensor):
     """
@@ -14,7 +14,7 @@ class Damage(Sensor):
         super().__init__()
 
     def encode_vehicle_request(self):
-        req = dict(type='Damage')
+        req: ConnData = dict(type='Damage')
         if 'part_damage' in req.keys():
             req['part_damage'] = req['part_damage'] if req['part_damage'] else {}
         return req

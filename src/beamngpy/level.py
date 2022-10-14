@@ -8,8 +8,10 @@
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
 
+from logging import DEBUG, getLogger
+from typing import Optional
+
 from .beamngcommon import LOGGER_ID
-from logging import getLogger, DEBUG
 
 module_logger = getLogger(f'{LOGGER_ID}.level')
 module_logger.setLevel(DEBUG)
@@ -48,7 +50,7 @@ class Level:
 
         return level
 
-    def __init__(self, name, size, path, **props):
+    def __init__(self, name: str, size, path: Optional[str], **props):
         self.logger = getLogger(f'{LOGGER_ID}.Level')
         self.logger.setLevel(DEBUG)
         self.name = name

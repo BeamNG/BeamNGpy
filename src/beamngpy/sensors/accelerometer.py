@@ -4,18 +4,24 @@ This sensor can be attached to a vehicle, or can be fixed to a position in space
 A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
 will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
 """
+from __future__ import annotations
 
 from logging import DEBUG, getLogger
+from typing import TYPE_CHECKING
 
-from beamngpy.beamngcommon import LOGGER_ID, ack
+from beamngpy.beamngcommon import LOGGER_ID, BNGError, ack
 
 from .utils import _send_sensor_request, _set_sensor
+
+if TYPE_CHECKING:
+    from ..beamng import BeamNGpy, Vehicle
+    from ..types import Float3
 
 
 class Accelerometer:
     def __init__(
-            self, name, bng, vehicle, requested_update_time=0.1,
-            pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
+            self, name: str, bng: BeamNGpy, vehicle: Vehicle, requested_update_time: float = 0.1,
+            pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1),
             is_using_gravity=False, is_visualised=True, is_snapping_desired=False, is_force_inside_triangle=False):
         """
         Creates an accelerometer sensor.
@@ -33,12 +39,14 @@ class Accelerometer:
             is_snapping_desired (bool): A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
             is_force_inside_triangle (bool): A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
         """
+        if not bng.connection:
+            raise BNGError('The simulator is not connected to BeamNGpy!')
 
         self.logger = getLogger(f'{LOGGER_ID}.Accelerometer')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
+        self.connection = bng.connection
         self.name = name
         self.vid = vehicle.vid
 
@@ -48,16 +56,16 @@ class Accelerometer:
         self.logger.debug('Accelerometer - sensor created: 'f'{self.name}')
 
     def _send_sensor_request(self, type, ack=None, **kwargs):
-        return _send_sensor_request(self.bng.connection, type, ack, **kwargs)
+        return _send_sensor_request(self.connection, type, ack, **kwargs)
 
     def _set_sensor(self, type, **kwargs):
-        return _set_sensor(self.bng.connection, type, **kwargs)
+        return _set_sensor(self.connection, type, **kwargs)
 
     def remove(self):
         """
         Removes this sensor from the simulation.
         """
-        self._close_accelerometer(self.name)
+        self._close_accelerometer()
         self.logger.debug('Accelerometer - sensor removed: 'f'{self.name}')
 
     def poll(self):
@@ -189,7 +197,7 @@ class Accelerometer:
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        resp = self.bng.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Opened accelerometer sensor: "{name}"')
         return resp
 
@@ -198,6 +206,6 @@ class Accelerometer:
         data = dict(type='CloseAccelerometer')
         data['name'] = self.name
         data['vid'] = self.vid
-        resp = self.bng.connection.send(data)
+        resp = self.connection.send(data)
         self.logger.info(f'Closed accelerometer sensor: "{self.name}"')
         return resp

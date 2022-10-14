@@ -10,18 +10,29 @@
 .. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
 
+from __future__ import annotations
+
 import copy
 from logging import DEBUG, getLogger
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
-from .beamng import Level
+from beamngpy.types import ConnData
+
+from .level import Level
 from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError,
-                           create_warning, quat_as_rotation_mat_str)
+                           quat_as_rotation_mat_str)
+
+if TYPE_CHECKING:
+    from .beamng import BeamNGpy, Vehicle
+    from .procedural import ProceduralMesh
+    from .road import MeshRoad, Road
+    from .types import Float3, Quat
+
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
-
 
 module_logger = getLogger(f'{LOGGER_ID}.scenario')
 module_logger.setLevel(DEBUG)
@@ -63,7 +74,7 @@ class Scenario:
 
         return scenario
 
-    def __init__(self, level, name, path=None, **options):
+    def __init__(self, level: str | Level, name: str, path: Optional[str] = None, **options):
         """
         Instantiates a scenario instance with the given name taking place in
         the given level.
@@ -79,23 +90,20 @@ class Scenario:
         self.path = path
         self.options = options
 
-        self.vehicles = set()
-        self.transient_vehicles = set()  # Vehicles added during scenario
-        self._vehicle_locations = {}
-        self._focus_vehicle = None
+        self.vehicles: Set[Vehicle] = set()
+        self.transient_vehicles: Set[Vehicle] = set()  # Vehicles added during scenario
+        self._vehicle_locations: Dict[str, Tuple[Float3, Quat]] = {}
+        self._focus_vehicle: Optional[str] = None
 
-        self.roads = list()
-        self.mesh_roads = list()
-        self.waypoints = list()
-        self.checkpoints = list()
-        self.proc_meshes = list()
-        self.objects = list()
-
-        self.cameras = dict()
+        self.roads: List[Road] = list()
+        self.mesh_roads: List[MeshRoad] = list()
+        self.checkpoints: List[str] = list()
+        self.proc_meshes: List[ProceduralMesh] = list()
+        self.objects: List[ScenarioObject] = list()
 
         self.scene = None
 
-        self.bng = None
+        self.bng: Optional[BeamNGpy] = None
 
         self.logger = getLogger(f'{LOGGER_ID}.Scenario')
         self.logger.setLevel(DEBUG)
@@ -109,7 +117,7 @@ class Scenario:
             A list of dictionaries representing :class:`.ScenarioObject`
             instances to be placed in the prefab.
         """
-        objs = list()
+        objs: List[Dict[str, Any]] = list()
         for obj in self.objects:
             obj_dict = dict(type=obj.type, id=obj.id)
             obj_dict['options'] = copy.deepcopy(obj.opts)
@@ -135,7 +143,7 @@ class Scenario:
             Dictionary of information to write into the scenario files of the
             simulator.
         """
-        info = dict()
+        info: Dict[str, Any] = dict()
         info['name'] = self.options.get('human_name', self.name)
         info['description'] = self.options.get('description', None)
         info['difficulty'] = self.options.get('difficulty', 0)
@@ -167,7 +175,7 @@ class Scenario:
         Returns:
             All vehicles as a dict including position and rotation.
         """
-        vehicles = list()
+        vehicles: List[Dict[str, Any]] = list()
         for vehicle in self.vehicles:
             pos, rot = self._vehicle_locations[vehicle.vid]
             vehicle_dict = dict(vid=vehicle.vid)
@@ -188,7 +196,7 @@ class Scenario:
         Returns:
             All roads encoded as a dict in one list.
         """
-        ret = list()
+        ret: List[Dict[str, Any]] = list()
         for idx, road in enumerate(self.roads):
             road_dict = dict(**road.__dict__)
 
@@ -212,7 +220,7 @@ class Scenario:
         Returns:
             All mesh roads encoded as a dict in one list.
         """
-        ret = list()
+        ret: List[Dict[str, Any]] = list()
         for idx, road in enumerate(self.mesh_roads):
             road_dict = dict(**road.__dict__)
 
@@ -251,8 +259,10 @@ class Scenario:
         else:
             return self.level
 
-    def _get_existing_vehicles(self, bng):
-        current_vehicles = set(bng.get_current_vehicles().values())
+    def _load_existing_vehicles(self):
+        assert self.bng
+
+        current_vehicles = set((self.bng.get_current_vehicles()).values())
         self.logger.debug(
             f'Got {len(current_vehicles)} vehicles from scenario.')
         self.transient_vehicles = current_vehicles.copy()
@@ -264,7 +274,7 @@ class Scenario:
 
         self.vehicles = current_vehicles
 
-    def add_object(self, obj):
+    def add_object(self, obj: ScenarioObject):
         """
         Adds an extra object to be placed in the prefab. Objects are expected
         to be :class:`.ScenarioObject` instances with additional, type-
@@ -272,7 +282,7 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1), cling=True):
+    def add_vehicle(self, vehicle: Vehicle, pos: Float3 = (0, 0, 0), rot_quat: Quat = (0, 0, 0, 1), cling=True):
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation.
@@ -304,10 +314,10 @@ class Scenario:
             self.transient_vehicles.add(vehicle)
             vehicle.connect(self.bng)
         else:
-            self.logger.debug('No beamngpy instance available. '
+            self.logger.debug('No BeamNGpy instance available. '
                               f'Did not spawn vehicle with id \'{vehicle.vid}\'.')
 
-    def remove_vehicle(self, vehicle):
+    def remove_vehicle(self, vehicle: Vehicle):
         """
         Removes the given :class:`.Vehicle`: from this scenario. If the
         scenario is currently loaded, the vehicle will be despawned.
@@ -329,7 +339,7 @@ class Scenario:
         else:
             self.logger.debug(f'No vehicle with id {vehicle.vid} found.')
 
-    def get_vehicle(self, vehicle_id):
+    def get_vehicle(self, vehicle_id: str):
         """
         Retrieves the vehicle with the given ID from this scenario.
 
@@ -345,7 +355,7 @@ class Scenario:
         self.logger.debug(f'Could not find vehicle with id {vehicle_id}')
         return None
 
-    def set_initial_focus(self, vehicle_id):
+    def set_initial_focus(self, vehicle_id: str):
         """defines which vehicle has the initial focus
 
         Args:
@@ -353,7 +363,7 @@ class Scenario:
         """
         self._focus_vehicle = vehicle_id
 
-    def add_road(self, road):
+    def add_road(self, road: Road):
         """Adds a road to this scenario.
 
         Args:
@@ -361,7 +371,7 @@ class Scenario:
         """
         self.roads.append(road)
 
-    def add_mesh_road(self, road):
+    def add_mesh_road(self, road: MeshRoad):
         """Adds a mesh road to this scenario.
 
         Args:
@@ -369,23 +379,7 @@ class Scenario:
         """
         self.mesh_roads.append(road)
 
-    def add_camera(self, camera, name):
-        """
-        Adds a :class:`beamngpy.sensors.Camera` to this scenario which can be
-        used to obtain rendered frames from a location in the world (e.g.
-        something like a surveillance camera.)
-
-        Args:
-            camera (:class:`beamngpy.sensors.Camera` ): The camera to add.
-            name (str): The name the camera should be identified with.
-        """
-        if name in self.cameras.keys():
-            raise BNGValueError('One scenario cannot have multiple cameras'
-                                f'with the same name: "{name}"')
-        self.cameras[name] = camera
-        camera.attach(None, name)
-
-    def add_procedural_mesh(self, mesh):
+    def add_procedural_mesh(self, mesh: ProceduralMesh):
         """
         Adds a :class:`.ProceduralMesh` to be placed in world to the scenario.
 
@@ -425,6 +419,7 @@ class Scenario:
         self.checkpoints.extend(ids)
 
     def _convert_scene_object(self, obj):
+        assert self.bng
         data = self.bng.get_scene_object_data(obj['id'])
         clazz = data['class']
         if clazz in Scenario.game_classes:
@@ -440,6 +435,7 @@ class Scenario:
         return converted
 
     def _fill_scene(self):
+        assert self.bng
         scenetree = self.bng.get_scenetree()
         assert scenetree['class'] == 'SimGroup'
         self.scene = self._convert_scene_object(scenetree)
@@ -451,9 +447,10 @@ class Scenario:
         :class:`.SceneObject`. The result is not returned but rather stored
         in the ``scene`` field of this class.
         """
+        assert self.bng
         self._fill_scene()
 
-    def connect(self, bng, connect_existing=True):
+    def connect(self, bng: BeamNGpy, connect_existing=True):
         """
         Connects this scenario to the simulator, hooking up any cameras to
         their counterpart in the simulator.
@@ -471,60 +468,14 @@ class Scenario:
         for mesh in self.proc_meshes:
             mesh.place(self.bng)
 
-        self.logger.debug(f'Connecting to {len(self.cameras)} cameras.')
-        for _, cam in self.cameras.items():
-            cam.connect(self.bng, None)
-
         if connect_existing:
-            self._get_existing_vehicles(bng)
+            self._load_existing_vehicles()
 
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles:
             vehicle.connect(bng)
 
         self.logger.info(f'Connected to scenario: {self.name}')
-
-    def decode_frames(self, camera_data):
-        """
-        Decodes raw camera sensor data as a :class:`.Image`
-        """
-        response = dict()
-        for name, data in camera_data.items():
-            cam = self.cameras[name]
-            data = cam.decode_response(data)
-            response[name] = data
-        return response
-
-    def encode_requests(self):
-        """
-        Encodes the sensor requests of cameras placed in this scenario for the
-        simulator.
-
-        Returns:
-            Dictionary of camera names to their corresponding sensor requests.
-        """
-        requests = dict()
-        for name, cam in self.cameras.items():
-            request = cam.encode_engine_request()
-            requests[name] = request
-            self.logger.debug('Added engine request for '
-                              f'camera with id <{name}>.')
-
-        requests = dict(type='SensorRequest', sensors=requests)
-        return requests
-
-    def get_engine_flags(self):
-        """
-        Gathers engine flags to set for cameras in this scenario to work.
-
-        Returns:
-            Dictionary of flag names to their state.
-        """
-        flags = dict()
-        for _, cam in self.cameras.items():
-            camera_flags = cam.get_engine_flags()
-            flags.update(camera_flags)
-        return flags
 
     def make(self, bng):
         """
@@ -569,7 +520,7 @@ class Scenario:
                 self.path = path
         return self.path
 
-    def delete(self, bng):
+    def delete(self, bng: BeamNGpy):
         """
         Deletes files created by this scenario from the given
         :class:`.BeamNGpy`'s home/user path.
@@ -592,7 +543,7 @@ class Scenario:
                            'instance to be started.')
 
         self.bng.start_scenario()
-        self.logger(f'Started scenario: "{self.name}"')
+        self.logger.info(f'Started scenario: "{self.name}"')
 
     def restart(self):
         """
@@ -707,7 +658,7 @@ class ScenarioObject:
     """
 
     @staticmethod
-    def from_game_dict(d):
+    def from_game_dict(d: ConnData):
         oid = None
         name = None
         otype = None
@@ -779,7 +730,7 @@ class ScenarioObject:
 
 
 class SceneObject:
-    def __init__(self, options):
+    def __init__(self, options: ConnData):
         self.id = options.get('id', None)
         if 'id' in options:
             del options['id']

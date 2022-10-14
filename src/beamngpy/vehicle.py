@@ -1,8 +1,17 @@
-from logging import DEBUG, getLogger
+from __future__ import annotations
 
-from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError, ack, create_warning)
+from logging import DEBUG, getLogger
+from typing import TYPE_CHECKING, Dict, Optional
+
+from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError, ack,
+                           create_warning)
 from .connection import Connection
 from .sensors import State
+from .sensors.sensor import Sensor
+from .types import ConnData
+
+if TYPE_CHECKING:
+    from .beamng import BeamNGpy
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -46,7 +55,7 @@ class Vehicle:
         vehicle = Vehicle(vid, model, port=port, **options)
         return vehicle
 
-    def __init__(self, vid, model, port=None, **options):
+    def __init__(self, vid: str, model: str, port: Optional[int] = None, **options):
         """
         Creates a vehicle with the given vehicle ID. The ID must be unique
         within the scenario.
@@ -64,7 +73,7 @@ class Vehicle:
         self.port = port
         self.connection = None
 
-        self.sensors = dict()
+        self.sensors: Dict[str, Sensor] = dict()
 
         options['model'] = model
         options['licenseText'] = options.get('licence')
@@ -91,11 +100,7 @@ class Vehicle:
         return 'V:{}'.format(self.vid)
 
     def is_connected(self):
-        return self.connection is not None and self.connection.skt is not None
-
-    @property
-    def bng(self):
-        return self.connection.bng if self.connection else None
+        return self.connection and self.connection.skt
 
     @property
     def state(self):
@@ -122,13 +127,42 @@ class Vehicle:
     def state(self):
         del self.sensors[self._veh_state_sensor_id].data
 
-    def connect(self, bng):
+    def send(self, data: ConnData):
+        if not self.connection:
+            raise BNGError('Not connected to the vehicle!')
+        return self.send(data)
+
+    def connect(self, bng: BeamNGpy):
         """
         Opens socket communication with the corresponding vehicle.
         """
+        if not bng.connection:
+            raise BNGError('The simulator is not connected to BeamNGpy!')
         if self.connection is None:
-            self.connection = Connection(bng, bng.host, self.port)
+            self.connection = Connection(bng.host, self.port)
+
+            # If we do not have a port (ie because it is the first time we wish to send to the given vehicle), then fetch a new port from the simulator.
+            if self.connection.port is None:
+                connection_msg = {'type': 'StartVehicleConnection'}
+                connection_msg['vid'] = self.vid
+                if self.extensions is not None:
+                    connection_msg['exts'] = self.extensions
+                resp = bng.connection.send(connection_msg).recv('StartVehicleConnection')
+                vid = resp['vid']
+                assert vid == self.vid
+                self.connection.port = int(resp['result'])
+                self.logger.debug(f'Created new vehicle connection on port {self.connection.port}')
+                self.logger.info(f'Vehicle {vid} connected to simulation.')
+
+        # Now attempt to connect to the given vehicle.
+        flags = self.get_engine_flags()
+        bng.set_engine_flags(flags)
         self.connection.connect_to_vehicle(self)
+
+        # Connect the vehicle sensors.
+        for _, sensor in self.sensors.items():
+            sensor.connect(bng, self)
+        self.bng = bng
 
     def disconnect(self):
         """
@@ -142,7 +176,7 @@ class Vehicle:
             self.connection.disconnect()
             self.connection = None
 
-    def attach_sensor(self, name, sensor):
+    def attach_sensor(self, name: str, sensor: Sensor):
         """
         Enters a sensor into this vehicle's map of known sensors and calls the
         attach-hook of said sensor. The sensor is identified using the given
@@ -157,7 +191,7 @@ class Vehicle:
         self.sensors[name] = sensor
         sensor.attach(self, name)
 
-    def detach_sensor(self, name):
+    def detach_sensor(self, name: str):
         """
         Detaches a sensor from the vehicle's map of known sensors and calls the detach-hook of said sensor.
 
@@ -237,16 +271,14 @@ class Vehicle:
                              removed in future versions.
 
         Returns:
-            Dict with sensor data to support compatibility with
-            previous versions.
-            Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` to
+            Nothing. Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` to
             access the polled sensor data.
         """
         engine_reqs, vehicle_reqs = self.encode_sensor_requests()
         sensor_data = dict()
 
-        engine_resp = self.bng.connection.send(engine_reqs) if engine_reqs['sensors'] else None
-        vehicle_resp = self.connection.send(vehicle_reqs) if vehicle_reqs['sensors'] else None
+        engine_resp = self.bng.send(engine_reqs) if engine_reqs['sensors'] else None
+        vehicle_resp = self.send(vehicle_reqs) if vehicle_reqs['sensors'] else None
 
         if engine_resp:
             resp = engine_resp.recv('SensorData')
@@ -291,9 +323,9 @@ class Vehicle:
             raise BNGValueError(f'Non-existent shift mode: {mode}')
 
         mode = SHIFT_MODES[mode]
-        data = dict(type='SetShiftMode')
+        data: ConnData = dict(type='SetShiftMode')
         data['mode'] = mode
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('Controlled')
     def control(self, **options):
@@ -312,7 +344,7 @@ class Vehicle:
             **kwargs (dict): The input values to set.
         """
         data = dict(type='Control', **options)
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiModeSet')
     def ai_set_mode(self, mode):
@@ -339,7 +371,7 @@ class Vehicle:
         """
         data = dict(type='SetAiMode')
         data['mode'] = mode
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiSpeedSet')
     def ai_set_speed(self, speed, mode='limit'):
@@ -358,7 +390,7 @@ class Vehicle:
         data = dict(type='SetAiSpeed')
         data['speed'] = speed
         data['mode'] = mode
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiTargetSet')
     def ai_set_target(self, target, mode='chase'):
@@ -375,7 +407,7 @@ class Vehicle:
         self.ai_set_mode(mode)
         data = dict(type='SetAiTarget')
         data['target'] = target
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiWaypointSet')
     def ai_set_waypoint(self, waypoint):
@@ -389,7 +421,7 @@ class Vehicle:
         self.ai_set_mode('manual')
         data = dict(type='SetAiWaypoint')
         data['target'] = waypoint
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiDriveInLaneSet')
     def ai_drive_in_lane(self, lane):
@@ -406,7 +438,7 @@ class Vehicle:
         else:
             lane = 'off'
         data['lane'] = lane
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiLineSet')
     def ai_set_line(self, line, cling=True):
@@ -420,10 +452,10 @@ class Vehicle:
             line (list): Polyline as list of dicts as described above.
             cling (bool): Whether or not to align the z coordinate of
         """
-        data = dict(type='SetAiLine')
+        data: ConnData = dict(type='SetAiLine')
         data['line'] = line
         data['cling'] = cling
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiScriptSet')
     def ai_set_script(self, script, start_dir=None, up_dir=None, cling=True,
@@ -472,16 +504,16 @@ class Vehicle:
         if len(script) < 3:
             raise BNGValueError('AI script must have at least 3 nodes.')
 
-        data = dict(type='SetAiScript')
+        data: ConnData = dict(type='SetAiScript')
         data['script'] = script
         data['cling'] = cling
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('AiAggressionSet')
     def ai_set_aggression(self, aggr):
         data = dict(type='SetAiAggression')
         data['aggression'] = aggr
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('ExecutedLuaChunkVE')
     def queue_lua_command(self, chunk):
@@ -493,21 +525,27 @@ class Vehicle:
         """
         data = dict(type='QueueLuaCommandVE')
         data['chunk'] = chunk
-        return self.connection.send(data)
+        return self.send(data)
 
     def get_part_options(self):
         """
-        Retrieves a mapping of part slots in this vehicle and their possible
-        parts.
+        Retrieves a mapping of part slots for the given vehicle and their
+        possible parts.
+
+        Args:
+            vehicle (:class:`.Vehicle`): The vehicle to get part options of
 
         Returns:
-            A mapping of part configuration options for this vehicle.
+            A mapping of part configuration options for the given.
         """
-        return self.bng.get_part_options(self)
+        data = dict(type='GetPartOptions')
+        data['vid'] = self.vid
+        resp = self.bng.send(data).recv('PartOptions')
+        return resp['options']
 
     def get_part_config(self):
         """
-        Retrieves the current part configuration of this vehicle. The
+        Retrieves the current part configuration of the given vehicle. The
         configuration contains both the current values of adjustable vehicle
         parameters and a mapping of part types to their currently-selected
         part.
@@ -515,13 +553,21 @@ class Vehicle:
         Returns:
             The current vehicle configuration as a dictionary.
         """
-        return self.bng.get_part_config(self)
+        data = dict(type='GetPartConfig')
+        data['vid'] = self.vid
+        resp = self.bng.send(data).recv('PartConfig')
+        resp = resp['config']
+        if 'parts' not in resp or not resp['parts']:
+            resp['parts'] = dict()
+        if 'vars' not in resp or not resp['vars']:
+            resp['vars'] = dict()
+        return resp
 
-    def set_part_config(self, cfg):
+    def set_part_config(self, cfg: Dict):
         """
-        Sets the current part configuration of this vehicle. The configuration
-        is given as a dictionary containing both adjustable vehicle parameters
-        and a mapping of part types to their selected parts.
+        Sets the current part configuration of the given vehicle. The
+        configuration is given as a dictionary containing both adjustable
+        vehicle parameters and a mapping of part types to their selected parts.
 
         Args:
             cfg (dict): The new vehicle configuration as a dictionary.
@@ -530,7 +576,13 @@ class Vehicle:
             Changing parts causes the vehicle to respawn, which repairs it as
             a side-effect.
         """
-        return self.bng.set_part_config(self, cfg)
+        data: ConnData = dict(type='SetPartConfig')
+        data['vid'] = self.vid
+        data['config'] = cfg
+        self.bng.send(data)
+        self.bng.await_vehicle_spawn(self.vid)
+        self.close()
+        self.connect(self.bng)
 
     @ack('ColorSet')
     def set_color(self, rgba=(1., 1., 1., 1.)):
@@ -547,7 +599,7 @@ class Vehicle:
         data['g'] = rgba[1]
         data['b'] = rgba[2]
         data['a'] = rgba[3]
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('VelocitySet')
     def set_velocity(self, velocity, dt=1.0):
@@ -564,17 +616,24 @@ class Vehicle:
             dt (float): The time interval over which the vehicle reaches the
                         target velocity. Defaults to 1.0.
         """
-        data = dict(type='SetVelocity')
+        data: ConnData = dict(type='SetVelocity')
         data['velocity'] = velocity
         data['dt'] = dt
-        return self.connection.send(data)
+        return self.send(data)
 
     set_colour = set_color
 
     def get_bbox(self):
         """
         Returns this vehicle's current bounding box as a dictionary containing
-        eight points.
+        eight points. The bounding box
+        corresponds to the vehicle's location/rotation in world space, i.e. if
+        the vehicle moves/turns, the bounding box moves acoordingly. Note that
+        the bounding box contains the min/max coordinates of the entire
+        vehicle. This means that the vehicle losing a part like a mirror will
+        cause the bounding box to "expand" while the vehicle moves as the
+        mirror is left behind, but still counts as part of the box containing
+        the vehicle.
 
         Returns:
             The vehicle's current bounding box as a dictionary of eight points.
@@ -599,10 +658,21 @@ class Vehicle:
             * `rear_top_right`: Top right point of the rear rectangle as an
                                (x, y, z) triplet
         """
-        if self.bng is None:
-            raise BNGError('The vehicle needs to be loaded in the simulator '
-                           'to obtain its current bounding box.')
-        return self.bng.get_vehicle_bbox(self)
+        data = dict(type='GetBBoxCorners')
+        data['vid'] = self.vid
+        resp = self.bng.send(data).recv('BBoxCorners')
+        points = resp['points']
+        bbox = {
+            'front_bottom_left': points[3],
+            'front_bottom_right': points[0],
+            'front_top_left': points[2],
+            'front_top_right': points[1],
+            'rear_bottom_left': points[7],
+            'rear_bottom_right': points[4],
+            'rear_top_left': points[6],
+            'rear_top_right': points[5],
+        }
+        return bbox
 
     @ack('IMUPositionAdded')
     def add_imu_position(self, name, pos, debug=False):
@@ -624,14 +694,14 @@ class Vehicle:
             debug (bool): Optional flag which enables debug rendering of the
                           IMU. Useful to verify placement.
         """
-        data = dict(type='AddIMUPosition')
+        data: ConnData = dict(type='AddIMUPosition')
         data['name'] = name
         data['pos'] = pos
         data['debug'] = debug
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('IMUNodeAdded')
-    def add_imu_node(self, name, node, debug=False):
+    def add_imu_node(self, name: str, node: int, debug=False):
         """
         Adds an IMU to this vehicle at the given node identified by the given
         name. The node is specified as a number and can be found by inspecting
@@ -644,11 +714,11 @@ class Vehicle:
             debug (bool): Optional flag which enables debug rendering of the
                           IMU. Useful to verify placement.
         """
-        data = dict(type='AddIMUNode')
+        data: ConnData = dict(type='AddIMUNode')
         data['name'] = name
         data['node'] = node
         data['debug'] = debug
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('IMURemoved')
     def remove_imu(self, name):
@@ -663,10 +733,12 @@ class Vehicle:
         """
         data = dict(type='RemoveIMU')
         data['name'] = name
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('LightsSet')
-    def set_lights(self, **kwargs):
+    def set_lights(self, left_signal: Optional[bool] = None, right_signal: Optional[bool] = None,
+                   hazard_signal: Optional[bool] = None, headlights: Optional[int] = None, fog_lights: Optional[int] = None,
+                   lightbar: Optional[int] = None):
         """
         Sets the vehicle's lights to given intensity values. The lighting
         system features lights that are simply binary on/off, but also ones
@@ -711,21 +783,18 @@ class Vehicle:
             Nothing. To query light states, attach an
             :class:`.sensors.Electrics` sensor and poll it.
         """
-        lights = {}
+        lights: ConnData = {}
 
-        left_signal = kwargs.get('left_signal', None)
         if left_signal is not None:
             if not isinstance(left_signal, bool):
                 raise BNGValueError('Non-boolean value for left_signal.')
             lights['leftSignal'] = left_signal
 
-        right_signal = kwargs.get('right_signal', None)
         if right_signal is not None:
             if not isinstance(right_signal, bool):
                 raise BNGValueError('Non-boolean value for right_signal.')
             lights['rightSignal'] = right_signal
 
-        hazard_signal = kwargs.get('hazard_signal', None)
         if hazard_signal is not None:
             if not isinstance(hazard_signal, bool):
                 raise BNGValueError('Non-boolean value for hazard_signal.')
@@ -733,7 +802,6 @@ class Vehicle:
 
         valid_lights = {0, 1, 2}
 
-        headlights = kwargs.get('headlights', None)
         if headlights is not None:
             if not isinstance(headlights, int):
                 raise BNGValueError('Non-int value given for headlights.')
@@ -743,7 +811,6 @@ class Vehicle:
                 raise BNGValueError(msg)
             lights['headLights'] = headlights
 
-        fog_lights = kwargs.get('fog_lights', None)
         if fog_lights is not None:
             if not isinstance(fog_lights, int):
                 raise BNGValueError('Non-int value given for fog lights.')
@@ -753,7 +820,6 @@ class Vehicle:
                 raise BNGValueError(msg)
             lights['fogLights'] = fog_lights
 
-        lightbar = kwargs.get('lightbar', None)
         if lightbar is not None:
             if not isinstance(lightbar, int):
                 raise BNGValueError('Non-int value given for lighbar.')
@@ -764,21 +830,27 @@ class Vehicle:
             lights['lightBar'] = lightbar
 
         lights['type'] = 'SetLights'
-        return self.connection.send(lights)
+        return self.send(lights)
 
+    @ack('PartsAnnotated')
     def annotate_parts(self):
         """
         Triggers the process to have individual parts of a vehicle have unique
         annotation colors.
         """
-        self.bng.annotate_parts(self)
+        data = dict(type='AnnotateParts')
+        data['vid'] = self.vid
+        return self.bng.send(data)
 
+    @ack('AnnotationsReverted')
     def revert_annotations(self):
         """
-        Reverts per-part annotations of this vehicle such that it will be
-        annotated with the same color for the entire vehicle.
+        Reverts the given vehicle's annotations back to the object-based mode,
+        removing the per-part annotations.
         """
-        self.bng.revert_annotations(self)
+        data = dict(type='RevertAnnotations')
+        data['vid'] = self.vid
+        return self.bng.send(data)
 
     def close(self):
         """
@@ -806,7 +878,7 @@ class Vehicle:
             fileName
         """
         data = dict(type='ApplyVSLSettingsFromJSON', fileName=fileName)
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('WroteVSLSettingsToJSON')
     def write_in_game_logging_options_to_json(self, fileName='template.json'):
@@ -824,7 +896,7 @@ class Vehicle:
                            the name of the json
         """
         data = dict(type='WriteVSLSettingsToJSON', fileName=fileName)
-        return self.connection.send(data)
+        return self.send(data)
 
     @ack('StartedVSLLogging')
     def start_in_game_logging(self, outputDir):
@@ -841,7 +913,7 @@ class Vehicle:
                             <userpath>/<BeamNG version number>/<outputDir>
         """
         data = dict(type='StartVSLLogging', outputDir=outputDir)
-        resp = self.connection.send(data)
+        resp = self.send(data)
         log_msg = ('Started in game logging.'
                    'The output for the vehicle stats logging can be found in '
                    f'{self.bng.user}/<BeamNG version number>/{outputDir}.')
@@ -854,7 +926,7 @@ class Vehicle:
         Stops in game logging.
         """
         data = dict(type='StopVSLLogging')
-        resp = self.connection.send(data)
+        resp = self.send(data)
         self.logger.info('Stopped in game logging.')
         return resp
 
