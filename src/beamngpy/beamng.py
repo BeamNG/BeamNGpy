@@ -1258,10 +1258,10 @@ class BeamNGpy:
         # Send the request for the property to the simulation.
         self.connection.send(data)
 
-    @ack('OpenedAccelerometer')
-    def open_accelerometer(self, name, vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
+    @ack('OpenedAdvancedIMU')
+    def open_advanced_IMU(self, name, vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
         is_snapping_desired, is_force_inside_triangle):
-        data = dict(type='OpenAccelerometer')
+        data = dict(type='OpenAdvancedIMU')
         data['name'] = name
         data['vid'] = vid
         data['GFXUpdateTime'] = gfx_update_time
@@ -1276,21 +1276,21 @@ class BeamNGpy:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
         self.connection.send(data)
-        self.logger.info(f'Opened accelerometer sensor: "{name}')
+        self.logger.info(f'Opened advanced IMU sensor: "{name}')
 
-    @ack('ClosedAccelerometer')
-    def close_accelerometer(self, name, vid):
-        data = dict(type='CloseAccelerometer')
+    @ack('ClosedAdvancedIMU')
+    def close_advanced_IMU(self, name, vid):
+        data = dict(type='CloseAdvancedIMU')
         data['name'] = name
         data['vid'] = vid
         self.connection.send(data)
-        self.logger.info(f'Closed accelerometer sensor: "{name}"')
+        self.logger.info(f'Closed advanced IMU sensor: "{name}"')
 
-    @ack('PolledAccelerometer')
-    def poll_accelerometer(self, name):
+    @ack('PolledAdvancedIMU')
+    def poll_advanced_IMU(self, name):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='PollAccelerometer')
+        data = dict(type='PollAdvancedIMU')
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
@@ -1299,11 +1299,11 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.connection.recv()
 
-    @ack('CompletedSendAdHocRequestAccelerometer')
-    def send_ad_hoc_request_accelerometer(self, name, vid):
+    @ack('CompletedSendAdHocRequestAdvancedIMU')
+    def send_ad_hoc_request_advanced_IMU(self, name, vid):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SendAdHocRequestAccelerometer')
+        data = dict(type='SendAdHocRequestAdvancedIMU')
         data['name'] = name
         data['vid'] = vid
 
@@ -1313,11 +1313,11 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.connection.recv()
 
-    @ack('CompletedIsAdHocPollRequestReadyAccelerometer')
-    def is_ad_hoc_poll_request_ready_accelerometer(self, request_id):
+    @ack('CompletedIsAdHocPollRequestReadyAdvancedIMU')
+    def is_ad_hoc_poll_request_ready_advanced_IMU(self, request_id):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='IsAdHocPollRequestReadyAccelerometer')
+        data = dict(type='IsAdHocPollRequestReadyAdvancedIMU')
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
@@ -1326,11 +1326,11 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.connection.recv()
 
-    @ack('CompletedCollectAdHocPollRequestAccelerometer')
-    def collect_ad_hoc_poll_request_accelerometer(self, request_id):
+    @ack('CompletedCollectAdHocPollRequestAdvancedIMU')
+    def collect_ad_hoc_poll_request_advanced_IMU(self, request_id):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='CollectAdHocPollRequestAccelerometer')
+        data = dict(type='CollectAdHocPollRequestAdvancedIMU')
         data['requestId'] = request_id
 
         # Send the request for updated readings to the simulation.
@@ -1339,11 +1339,11 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.connection.recv()
 
-    @ack('CompletedGetAccelerometerSensorPosition')
-    def get_accelerometer_sensor_position(self, name):
+    @ack('CompletedGetAdvancedIMUSensorPosition')
+    def get_advanced_IMU_sensor_position(self, name):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetAccelerometerSensorPosition')
+        data = dict(type='GetAdvancedIMUSensorPosition')
         data['name'] = name
 
         # Send the request for the property to the simulation.
@@ -1352,11 +1352,11 @@ class BeamNGpy:
         # Receive the property value from the simulation.
         return self.connection.recv()
 
-    @ack('CompletedGetAccelerometerSensorDirection')
-    def get_accelerometer_sensor_direction(self, name):
+    @ack('CompletedGetAdvancedIMUSensorDirection')
+    def get_advanced_IMU_sensor_direction(self, name):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='GetAccelerometerSensorDirection')
+        data = dict(type='GetAdvancedIMUSensorDirection')
         data['name'] = name
 
         # Send the request for the property to the simulation.
@@ -1365,11 +1365,11 @@ class BeamNGpy:
         # Receive the property value from the simulation.
         return self.connection.recv()
 
-    @ack('CompletedSetAccelerometerRequestedUpdateTime')
-    def set_accelerometer_requested_update_time(self, name, vid, requested_GFX_update_time):
+    @ack('CompletedSetAdvancedIMURequestedUpdateTime')
+    def set_advanced_IMU_requested_update_time(self, name, vid, requested_GFX_update_time):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetAccelerometerRequestedUpdateTime')
+        data = dict(type='SetAdvancedIMURequestedUpdateTime')
         data['name'] = name
         data['vid'] = vid
         data['GFXUpdateTime'] = requested_GFX_update_time
@@ -1377,11 +1377,11 @@ class BeamNGpy:
         # Send the request for the property to the simulation.
         self.connection.send(data)
 
-    @ack('CompletedSetAccelerometerIsUsingGravity')
-    def set_accelerometer_is_using_gravity(self, name, vid, is_using_gravity):
+    @ack('CompletedSetAdvancedIMUIsUsingGravity')
+    def set_advanced_IMU_is_using_gravity(self, name, vid, is_using_gravity):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetAccelerometerIsUsingGravity')
+        data = dict(type='SetAdvancedIMUIsUsingGravity')
         data['name'] = name
         data['vid'] = vid
         data['isUsingGravity'] = is_using_gravity
@@ -1389,11 +1389,11 @@ class BeamNGpy:
         # Send the request for the property to the simulation.
         self.connection.send(data)
 
-    @ack('CompletedSetAccelerometerIsVisualised')
-    def set_accelerometer_is_visualised(self, name, vid, is_visualised):
+    @ack('CompletedSetAdvancedIMUIsVisualised')
+    def set_advanced_IMU_is_visualised(self, name, vid, is_visualised):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='SetAccelerometerIsVisualised')
+        data = dict(type='SetAdvancedIMUIsVisualised')
         data['name'] = name
         data['vid'] = vid
         data['isVisualised'] = is_visualised

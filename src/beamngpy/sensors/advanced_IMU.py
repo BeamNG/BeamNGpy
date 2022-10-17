@@ -1,5 +1,5 @@
 """
-An interactive, automated accelerometer sensor, which produces regular acceleration measurements in a local coordinate space.
+An interactive, automated IMU sensor, which produces regular acceleration and gyroscopic measurements in a local coordinate space.
 This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
 A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
 will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
@@ -10,32 +10,31 @@ from logging import DEBUG, getLogger
 from beamngpy.beamngcommon import LOGGER_ID
 
 
-class Accelerometer:
+class Advanced_IMU:
     def __init__(
             self, name, bng, vehicle, gfx_update_time=0.1, physics_update_time=0.015, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), window_width=None,
             frequency_cutoff=None, is_using_gravity=False, is_visualised=True, is_snapping_desired=False, is_force_inside_triangle=False):
         """
-        Creates an accelerometer sensor.
-        The user can recieve both a dictionary of raw, unprocessed accelerometer readings and a smoothed reading (based on a window width or a cutoff frequency).
+        Creates an advanced IMU sensor.
 
         Args:
-            name (str): A unique name for this accelerometer sensor.
+            name (str): A unique name for this advanced IMU sensor.
             bng (BeamNGpy): The BeamNGpy instance, with which to communicate to the simulation.
-            vehicle (Vehicle class): The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the accelerometer.
+            vehicle (Vehicle class): The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the advanced IMU sensor.
             gfx_update_time (float): The gfx-step time which should pass between sensor reading updates to the user, in seconds.
             physics_update_time (float): The physics-step time which should pass between actual sampling the sensor, in seconds.
             pos (tuple): (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
             dir (tuple): (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
             up (tuple): (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
-            window_width (float): The width of the window used in smoothing the accelerometer data, if required.
+            window_width (float): The width of the window used in smoothing the data, if required.
             frequency_cutoff (float): The filtering cutoff frequency to be used (instead of a window width). of required.
             is_using_gravity (bool): A flag which indicates whether this sensor should consider acceleration due to gravity in its computations, or not.
             is_visualised (bool): Whether or not to render the ultrasonic sensor points in the simulator.
-            is_snapping_desired (bool): A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
-            is_force_inside_triangle (bool): A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+            is_snapping_desired (bool): A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle.
+            is_force_inside_triangle (bool): A flag which indicates if the sensor should be forced inside the nearest vehicle triangle.
         """
 
-        self.logger = getLogger(f'{LOGGER_ID}.Accelerometer')
+        self.logger = getLogger(f'{LOGGER_ID}.Advanced IMU')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -44,9 +43,9 @@ class Accelerometer:
         self.vid = vehicle.vid
 
         # Create and initialise this sensor in the simulation.
-        bng.open_accelerometer(name, self.vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
+        bng.open_advanced_IMU(name, self.vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
             is_snapping_desired, is_force_inside_triangle)
-        self.logger.debug('Accelerometer - sensor created: 'f'{self.name}')
+        self.logger.debug('Advanced IMU - sensor created: 'f'{self.name}')
 
     def remove(self):
         """
@@ -54,8 +53,8 @@ class Accelerometer:
         """
 
         # Remove this sensor from the simulation.
-        self.bng.close_accelerometer(self.name, self.vid)
-        self.logger.debug('Accelerometer - sensor removed: 'f'{self.name}')
+        self.bng.close_advanced_IMU(self.name, self.vid)
+        self.logger.debug('Advanced IMU - sensor removed: 'f'{self.name}')
 
     def poll(self):
         """
@@ -63,14 +62,14 @@ class Accelerometer:
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            (dict): A dictionary containing the acceleration in each dimension of the local coordinate system of the accelerometer sensor.
+            (dict): A dictionary containing the sensor readings data.
         """
 
         # Send and receive a request for readings data from this sensor.
-        acceleration_data = self.bng.poll_accelerometer(self.name)['data']
-        self.logger.debug('Accelerometer - sensor readings received from simulation: 'f'{self.name}')
+        readings_data = self.bng.poll_advanced_IMU(self.name)['data']
+        self.logger.debug('Advanced IMU - sensor readings received from simulation: 'f'{self.name}')
 
-        return acceleration_data
+        return readings_data
 
     def send_ad_hoc_poll_request(self):
         """
@@ -82,8 +81,8 @@ class Accelerometer:
             (int): A unique Id number for the ad-hoc request.
         """
 
-        self.logger.debug('Accelerometer  - ad-hoc polling request sent: 'f'{self.name}')
-        return self.bng.send_ad_hoc_request_accelerometer(self.name, self.vid)['data']
+        self.logger.debug('Advanced IMU - ad-hoc polling request sent: 'f'{self.name}')
+        return self.bng.send_ad_hoc_request_advanced_IMU(self.name, self.vid)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -96,8 +95,8 @@ class Accelerometer:
             (bool): A flag which indicates if the ad-hoc polling request is complete.
         """
 
-        self.logger.debug('Accelerometer  - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self.bng.is_ad_hoc_poll_request_ready_accelerometer(request_id)
+        self.logger.debug('Advanced IMU - ad-hoc polling request checked for completion: 'f'{self.name}')
+        return self.bng.is_ad_hoc_poll_request_ready_advanced_IMU(request_id)
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -110,8 +109,8 @@ class Accelerometer:
             (dict): The readings data.
         """
 
-        readings = self.bng.collect_ad_hoc_poll_request_accelerometer(request_id)['data']
-        self.logger.debug('Accelerometer  - ad-hoc polling request returned and processed: 'f'{self.name}')
+        readings = self.bng.collect_ad_hoc_poll_request_advanced_IMU(request_id)['data']
+        self.logger.debug('Advanced IMU - ad-hoc polling request returned and processed: 'f'{self.name}')
 
         return readings
 
@@ -122,7 +121,7 @@ class Accelerometer:
         Returns:
             (list): The sensor position.
         """
-        table = self.bng.get_accelerometer_sensor_position(self.name)['data']
+        table = self.bng.get_advanced_IMU_sensor_position(self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def get_direction(self):
@@ -132,7 +131,7 @@ class Accelerometer:
         Returns:
             (list): The sensor direction.
         """
-        table = self.bng.get_accelerometer_sensor_direction(self.name)['data']
+        table = self.bng.get_advanced_IMU_sensor_direction(self.name)['data']
         return [table['x'], table['y'], table['z']]
 
     def set_requested_update_time(self, requested_update_time):
@@ -143,24 +142,24 @@ class Accelerometer:
             requested_update_time (float): The new requested update time.
         """
 
-        self.bng.set_accelerometer_requested_update_time(self.name, self.vid, requested_update_time)
+        self.bng.set_advanced_IMU_requested_update_time(self.name, self.vid, requested_update_time)
 
     def set_is_using_gravity(self, is_using_gravity):
         """
-        Sets whether this accelerometer sensor is to include gravity in the computation or not.
+        Sets whether this sensor is to include gravity in the computation or not.
 
         Args:
-            is_visualised(bool): A flag which indicates if this accelerometer sensor is to use gravity in the computation or not.
+            is_visualised(bool): A flag which indicates if this sensor is to use gravity in the computation or not.
         """
 
-        self.bng.set_accelerometer_is_using_gravity(self.name, self.vid, is_using_gravity)
+        self.bng.set_advanced_IMU_is_using_gravity(self.name, self.vid, is_using_gravity)
 
     def set_is_visualised(self, is_visualised):
         """
-        Sets whether this accelerometer sensor is to be visualised or not.
+        Sets whether this sensor is to be visualised or not.
 
         Args:
-            is_visualised(bool): A flag which indicates if this accelerometer sensor is to be visualised or not.
+            is_visualised(bool): A flag which indicates if this sensor is to be visualised or not.
         """
 
-        self.bng.set_accelerometer_is_visualised(self.name, self.vid, is_visualised)
+        self.bng.set_advanced_IMU_is_visualised(self.name, self.vid, is_visualised)
