@@ -13,7 +13,8 @@ from beamngpy.beamngcommon import LOGGER_ID
 class Advanced_IMU:
     def __init__(
             self, name, bng, vehicle, gfx_update_time=0.1, physics_update_time=0.015, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), window_width=None,
-            frequency_cutoff=None, is_using_gravity=False, is_visualised=True, is_snapping_desired=False, is_force_inside_triangle=False):
+            frequency_cutoff=None, is_send_immediately=False, is_using_gravity=False, is_visualised=True, is_snapping_desired=False,
+            is_force_inside_triangle=False):
         """
         Creates an advanced IMU sensor.
 
@@ -28,6 +29,7 @@ class Advanced_IMU:
             up (tuple): (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
             window_width (float): The width of the window used in smoothing the data, if required.
             frequency_cutoff (float): The filtering cutoff frequency to be used (instead of a window width). of required.
+            is_send_immediately (bool): A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
             is_using_gravity (bool): A flag which indicates whether this sensor should consider acceleration due to gravity in its computations, or not.
             is_visualised (bool): Whether or not to render the ultrasonic sensor points in the simulator.
             is_snapping_desired (bool): A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle.
@@ -40,11 +42,24 @@ class Advanced_IMU:
         # Cache some properties we will need later.
         self.bng = bng
         self.name = name
-        self.vid = vehicle.vid
+        self.vehicle = vehicle
+        self.is_send_immediately = is_send_immediately
 
         # Create and initialise this sensor in the simulation.
-        bng.open_advanced_IMU(name, self.vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
-            is_snapping_desired, is_force_inside_triangle)
+        bng.open_advanced_IMU(name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, window_width, is_send_immediately,
+            frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
+        ddd = bng.get_advanced_imu_id(name)
+        print("ddd: ", ddd)
+        ddd = bng.get_advanced_imu_id(name)
+        print("ddd: ", ddd)
+        ddd = bng.get_advanced_imu_id(name)
+        print("ddd: ", ddd)
+        ddd = bng.get_advanced_imu_id(name)
+        print("ddd: ", ddd)
+        ddd = bng.get_advanced_imu_id(name)
+        print("ddd: ", ddd)
+        self.sensorId = bng.get_advanced_imu_id(name)['data']
+        print("ID: ",self.sensorId)
         self.logger.debug('Advanced IMU - sensor created: 'f'{self.name}')
 
     def remove(self):
@@ -53,7 +68,7 @@ class Advanced_IMU:
         """
 
         # Remove this sensor from the simulation.
-        self.bng.close_advanced_IMU(self.name, self.vid)
+        self.bng.close_advanced_IMU(self.name, self.vehicle)
         self.logger.debug('Advanced IMU - sensor removed: 'f'{self.name}')
 
     def poll(self):
@@ -66,9 +81,13 @@ class Advanced_IMU:
         """
 
         # Send and receive a request for readings data from this sensor.
-        readings_data = self.bng.poll_advanced_IMU(self.name)['data']
-        self.logger.debug('Advanced IMU - sensor readings received from simulation: 'f'{self.name}')
+        readings_data = []
+        if self.is_send_immediately:
+            readings_data = self.bng.poll_advanced_IMU_VE(self.name)['data']    # We get the most-recent single reading data from vlua.
+        else:
+            readings_data = self.bng.poll_advanced_IMU_GE(self.name)['data']    # We get the bulk data from ge lua.
 
+        self.logger.debug('Advanced IMU - sensor readings received from simulation: 'f'{self.name}')
         return readings_data
 
     def send_ad_hoc_poll_request(self):
@@ -82,7 +101,7 @@ class Advanced_IMU:
         """
 
         self.logger.debug('Advanced IMU - ad-hoc polling request sent: 'f'{self.name}')
-        return self.bng.send_ad_hoc_request_advanced_IMU(self.name, self.vid)['data']
+        return self.bng.send_ad_hoc_request_advanced_IMU(self.name, self.vehicle.vid)['data']
 
     def is_ad_hoc_poll_request_ready(self, request_id):
         """
@@ -142,7 +161,7 @@ class Advanced_IMU:
             requested_update_time (float): The new requested update time.
         """
 
-        self.bng.set_advanced_IMU_requested_update_time(self.name, self.vid, requested_update_time)
+        self.bng.set_advanced_IMU_requested_update_time(self.name, self.vehicle.vid, requested_update_time)
 
     def set_is_using_gravity(self, is_using_gravity):
         """
@@ -152,7 +171,7 @@ class Advanced_IMU:
             is_visualised(bool): A flag which indicates if this sensor is to use gravity in the computation or not.
         """
 
-        self.bng.set_advanced_IMU_is_using_gravity(self.name, self.vid, is_using_gravity)
+        self.bng.set_advanced_IMU_is_using_gravity(self.name, self.vehicle.vid, is_using_gravity)
 
     def set_is_visualised(self, is_visualised):
         """
@@ -162,4 +181,4 @@ class Advanced_IMU:
             is_visualised(bool): A flag which indicates if this sensor is to be visualised or not.
         """
 
-        self.bng.set_advanced_IMU_is_visualised(self.name, self.vid, is_visualised)
+        self.bng.set_advanced_IMU_is_visualised(self.name, self.vehicle.vid, is_visualised)

@@ -423,6 +423,19 @@ class BeamNGpy:
         self.logger.debug(f'set following engine flags: {flags}')
         self.connection.send(flags)
 
+    @ack('CompletedGetAdvancedImuId')
+    def get_advanced_imu_id(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetAdvancedImuId')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.connection.send(data)
+
+        # Receive the property value from the simulation.
+        return self.connection.recv()
+
     @ack('OpenedCamera')
     def open_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y, near_far_planes, pos, dir, up, is_using_shared_memory,
         colour_shmem_handle, colour_shmem_size, annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size, is_render_colours,
@@ -1259,11 +1272,11 @@ class BeamNGpy:
         self.connection.send(data)
 
     @ack('OpenedAdvancedIMU')
-    def open_advanced_IMU(self, name, vid, gfx_update_time, physics_update_time, pos, dir, up, window_width, frequency_cutoff, is_using_gravity, is_visualised,
-        is_snapping_desired, is_force_inside_triangle):
+    def open_advanced_IMU(self, name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, window_width, is_send_immediately, frequency_cutoff,
+        is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle):
         data = dict(type='OpenAdvancedIMU')
         data['name'] = name
-        data['vid'] = vid
+        data['vid'] = vehicle.vid
         data['GFXUpdateTime'] = gfx_update_time
         data['physicsUpdateTime'] = physics_update_time
         data['pos'] = pos
@@ -1271,26 +1284,27 @@ class BeamNGpy:
         data['up'] = up
         data['windowWidth'] = window_width
         data['frequencyCutoff'] = frequency_cutoff
+        data['isSendImmediately'] = is_send_immediately
         data['isUsingGravity'] = is_using_gravity
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
         self.connection.send(data)
-        self.logger.info(f'Opened advanced IMU sensor: "{name}')
+        self.logger.info(f'Opened advanced IMU sensor: "{name}"')
 
     @ack('ClosedAdvancedIMU')
-    def close_advanced_IMU(self, name, vid):
+    def close_advanced_IMU(self, name, vehicle):
         data = dict(type='CloseAdvancedIMU')
         data['name'] = name
-        data['vid'] = vid
+        data['vid'] = vehicle.vid
         self.connection.send(data)
         self.logger.info(f'Closed advanced IMU sensor: "{name}"')
 
-    @ack('PolledAdvancedIMU')
-    def poll_advanced_IMU(self, name):
+    @ack('PolledAdvancedImuGE')
+    def poll_advanced_IMU_GE(self, name):
 
         # Populate a dictionary with the data needed for a request from this sensor.
-        data = dict(type='PollAdvancedIMU')
+        data = dict(type='PollAdvancedImuGE')
         data['name'] = name
 
         # Send the request for updated readings to the simulation.
@@ -1298,6 +1312,19 @@ class BeamNGpy:
 
         # Receive the updated readings from the simulation.
         return self.connection.recv()
+
+    @ack('PolledAdvancedImuVE')
+    def poll_advanced_IMU_VE(self, name, vehicle):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollAdvancedImuVE')
+        data['name'] = name
+
+        # Send the request for updated readings to the vlua instance for this vehicle.
+        vehicle.connection.send(data)
+
+        # Receive the updated readings from the vlua instance for this vehicle.
+        return vehicle.connection.recv()
 
     @ack('CompletedSendAdHocRequestAdvancedIMU')
     def send_ad_hoc_request_advanced_IMU(self, name, vid):
