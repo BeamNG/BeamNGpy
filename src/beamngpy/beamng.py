@@ -1300,7 +1300,7 @@ class BeamNGpy:
         self.connection.send(data)
         self.logger.info(f'Closed advanced IMU sensor: "{name}"')
 
-    @ack('PolledAdvancedImuGE')
+    @ack('PolledAdvancedImuGECompleted')
     def poll_advanced_IMU_GE(self, name):
 
         # Populate a dictionary with the data needed for a request from this sensor.
@@ -1313,12 +1313,12 @@ class BeamNGpy:
         # Receive the updated readings from the simulation.
         return self.connection.recv()
 
-    @ack('PolledAdvancedImuVE')
-    def poll_advanced_IMU_VE(self, name, vehicle):
+    def poll_advanced_IMU_VE(self, name, vehicle, sensorId):
 
         # Populate a dictionary with the data needed for a request from this sensor.
         data = dict(type='PollAdvancedImuVE')
         data['name'] = name
+        data['sensorId'] = sensorId
 
         # Send the request for updated readings to the vlua instance for this vehicle.
         vehicle.connection.send(data)

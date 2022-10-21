@@ -48,18 +48,9 @@ class Advanced_IMU:
         # Create and initialise this sensor in the simulation.
         bng.open_advanced_IMU(name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, window_width, is_send_immediately,
             frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
-        ddd = bng.get_advanced_imu_id(name)
-        print("ddd: ", ddd)
-        ddd = bng.get_advanced_imu_id(name)
-        print("ddd: ", ddd)
-        ddd = bng.get_advanced_imu_id(name)
-        print("ddd: ", ddd)
-        ddd = bng.get_advanced_imu_id(name)
-        print("ddd: ", ddd)
-        ddd = bng.get_advanced_imu_id(name)
-        print("ddd: ", ddd)
-        self.sensorId = bng.get_advanced_imu_id(name)['data']
-        print("ID: ",self.sensorId)
+
+        self.sensorId = int(bng.get_advanced_imu_id(name)['data'])
+
         self.logger.debug('Advanced IMU - sensor created: 'f'{self.name}')
 
     def remove(self):
@@ -83,9 +74,9 @@ class Advanced_IMU:
         # Send and receive a request for readings data from this sensor.
         readings_data = []
         if self.is_send_immediately:
-            readings_data = self.bng.poll_advanced_IMU_VE(self.name)['data']    # We get the most-recent single reading data from vlua.
+            readings_data = self.bng.poll_advanced_IMU_VE(self.name, self.vehicle, self.sensorId)['data']   # Get the most-recent single reading data from vlua.
         else:
-            readings_data = self.bng.poll_advanced_IMU_GE(self.name)['data']    # We get the bulk data from ge lua.
+            readings_data = self.bng.poll_advanced_IMU_GE(self.name)['data']                                # Get the bulk data from ge lua.
 
         self.logger.debug('Advanced IMU - sensor readings received from simulation: 'f'{self.name}')
         return readings_data

@@ -24,7 +24,7 @@ if __name__ == '__main__':
     print("Advanced IMU test start.")
 
     # Create a default advanced IMU sensor.
-    IMU1 = Advanced_IMU('advancedIMU1', bng, vehicle)
+    IMU1 = Advanced_IMU('advancedIMU1', bng, vehicle, is_send_immediately=True)
 
     # Test the automatic polling functionality of the advanced IMU sensor, to make sure we retrieve the point cloud data via shared memory.
     sleep(2)
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     print("advanced IMU sensor removed.")
 
     # Create an advanced IMU sensor which has a negative requested update rate, and ensure that no readings are computed from it.
-    IMU2 = Advanced_IMU('advancedIMU2', bng, vehicle, gfx_update_time=-1.0)
+    IMU2 = Advanced_IMU('advancedIMU2', bng, vehicle, gfx_update_time=-1.0, is_send_immediately=True)
     print("Testing an advanced IMU sensor with a negative requested update time...")
     sleep(2)
     sensor_readings = IMU2.poll()
