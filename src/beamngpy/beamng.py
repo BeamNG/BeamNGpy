@@ -12,12 +12,11 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from .beamngcommon import (ENV, LOGGER_ID, BNGError, BNGValueError, ack,
                            create_warning)
 from .connection import Connection
-from .scenario import ScenarioObject
+from .scenario import ScenarioObject, Scenario
 from .vehicle import Vehicle
 
 if TYPE_CHECKING:
     from .level import Level
-    from .scenario import Scenario
     from .types import ConnData, Float3, Quat
 
 BINARIES = ['Bin64/BeamNG.tech.x64.exe', 'Bin64/BeamNG.drive.x64.exe']
@@ -1063,7 +1062,7 @@ class BeamNGpy:
         return self.send(data)
 
     def add_debug_spheres(self, coordinates, radii, rgba_colors,
-                                cling=False, offset=0):
+                          cling=False, offset=0):
         data: ConnData = dict(type="AddDebugSpheres")
         assert len(coordinates) == len(radii) == len(rgba_colors)
         data['coordinates'] = coordinates
@@ -1082,7 +1081,7 @@ class BeamNGpy:
         return self.send(data)
 
     def add_debug_polyline(self, coordinates, rgba_color,
-                                 cling=False, offset=0):
+                           cling=False, offset=0):
         data: ConnData = dict(type='AddDebugPolyline')
         data['coordinates'] = coordinates
         data['color'] = rgba_color
