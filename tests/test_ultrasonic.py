@@ -37,7 +37,7 @@ if __name__ == '__main__':
     request_id = ultrasonic1.send_ad_hoc_poll_request()                                                     # send an ad-hoc polling request to the simulator.
     print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
     sleep(3)
-    print("Is ad-hoc request complete? ", ultrasonic1.is_ad_hoc_poll_request_ready(request_id)['data'])     # Ensure that the data has been processed before collecting.
+    print("Is ad-hoc request complete? ", ultrasonic1.is_ad_hoc_poll_request_ready(request_id))             # Ensure that the data has been processed before collecting.
     sensor_readings_ad_hoc = ultrasonic1.collect_ad_hoc_poll_request(request_id)                            # Collect the data now that it has been computed.
     print("Ultrasonic readings (ad-hoc polling): ", sensor_readings_ad_hoc)
     ultrasonic1.remove()

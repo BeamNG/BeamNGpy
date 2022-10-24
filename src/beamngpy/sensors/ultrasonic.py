@@ -5,19 +5,24 @@ A requested update rate can be provided, to tell the simulator how often to read
 will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
 """
 
+from __future__ import annotations
+
 from logging import DEBUG, getLogger
+from typing import TYPE_CHECKING, Optional
 
-from beamngpy.beamngcommon import LOGGER_ID, ack
+from beamngpy.beamngcommon import LOGGER_ID, BNGError, ack
 
-from .utils import _send_sensor_request, _set_sensor
+from .communication_utils import send_sensor_request, set_sensor
+
+if TYPE_CHECKING:
+    from ..beamng import BeamNGpy, Vehicle
+    from ..types import ConnData
 
 
 class Ultrasonic:
     def __init__(
-            self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 1.7),
-            dir=(0, -1, 0),
-            up=(0, 0, 1),
-            resolution=(200, 200),
+            self, name: str, bng: BeamNGpy, vehicle: Optional[Vehicle] = None, requested_update_time=0.1,
+            update_priority=0.0, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(200, 200),
             field_of_view_y=5.7, near_far_planes=(0.1, 5.1),
             range_roundess=-1.15, range_cutoff_sensitivity=0.0, range_shape=0.3, range_focus=0.376,
             range_min_cutoff=0.1, range_direct_max_cutoff=5.0, sensitivity=3.0, fixed_window_size=10,
@@ -65,11 +70,15 @@ class Ultrasonic:
             is_force_inside_triangle)
         self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')
 
-    def _send_sensor_request(self, type, ack=None, **kwargs):
-        return _send_sensor_request(self.bng.connection, type, ack, **kwargs)
+    def _send_sensor_request(self, type: str, ack: Optional[str] = None, **kwargs):
+        if not self.bng.connection:
+            raise BNGError('The simulator is not connected!')
+        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
 
-    def _set_sensor(self, type, **kwargs):
-        return _set_sensor(self.bng.connection, type, **kwargs)
+    def _set_sensor(self, type: str, **kwargs):
+        if not self.bng.connection:
+            raise BNGError('The simulator is not connected!')
+        return set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self):
         """
@@ -115,7 +124,7 @@ class Ultrasonic:
         """
         self.logger.debug('Ultrasonic - ad-hoc polling request checked for completion: 'f'{self.name}')
         return self._send_sensor_request('IsAdHocPollRequestReadyUltrasonic',
-                                         ack='CompletedIsAdHocPollRequestReadyUltrasonic', requestId=request_id)
+                                         ack='CompletedIsAdHocPollRequestReadyUltrasonic', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -230,7 +239,7 @@ class Ultrasonic:
             near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
             range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
             is_force_inside_triangle):
-        data = dict(type='OpenUltrasonic')
+        data: ConnData = dict(type='OpenUltrasonic')
         data['name'] = name
         data['vid'] = 0
         if vehicle is not None:
@@ -256,7 +265,7 @@ class Ultrasonic:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
-        resp = self.bng.connection.send(data)
+        resp = self.bng.send(data)
         self.logger.info(f'Opened ultrasonic sensor: "{name}"')
         return resp
 
@@ -264,6 +273,6 @@ class Ultrasonic:
     def _close_ultrasonic(self):
         data = dict(type='CloseUltrasonic')
         data['name'] = self.name
-        resp = self.bng.connection.send(data)
+        resp = self.bng.send(data)
         self.logger.info(f'Closed ultrasonic sensor: "{self.name}"')
         return resp

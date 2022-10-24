@@ -120,8 +120,8 @@ if __name__ == '__main__':
     request_id_2 = cam2.send_ad_hoc_poll_request()      # send a request on the non shared memory sensor.
     print("Ad-hoc poll requests sent. Unique request Id numbers: ", request_id_1, request_id_2)
     sleep(3)
-    print("Is ad-hoc request 1 complete? ", cam1.is_ad_hoc_poll_request_ready(request_id_1)['data'])
-    print("Is ad-hoc request 2 complete? ", cam2.is_ad_hoc_poll_request_ready(request_id_2)['data'])
+    print("Is ad-hoc request 1 complete? ", cam1.is_ad_hoc_poll_request_ready(request_id_1))
+    print("Is ad-hoc request 2 complete? ", cam2.is_ad_hoc_poll_request_ready(request_id_2))
 
     images1 = cam1.collect_ad_hoc_poll_request(request_id_1)        # Display the image data from request 1.
     plt.imshow(np.asarray(images1['colour'].convert('RGB')))

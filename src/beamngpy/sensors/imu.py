@@ -1,6 +1,12 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
 from ..beamngcommon import BNGValueError
-from ..types import ConnData
 from .sensor import Sensor
+
+if TYPE_CHECKING:
+    from ..types import ConnData, Float3
 
 
 class IMU(Sensor):
@@ -11,7 +17,7 @@ class IMU(Sensor):
     from its rotation and acceleration.
     """
 
-    def __init__(self, pos=None, node=None, name=None, debug=False):
+    def __init__(self, pos: Optional[Float3] = None, node=None, name: Optional[str] = None, debug=False):
         super().__init__()
 
         if pos is not None and node is not None:
@@ -24,10 +30,7 @@ class IMU(Sensor):
         self._pos = pos
         self._node = node
 
-        self._name = name
-        if self._name is None:
-            self._name = str(hash(self))
-
+        self._name = name if name is not None else str(hash(self))
         self._debug = debug
 
     def connect(self, bng, vehicle):

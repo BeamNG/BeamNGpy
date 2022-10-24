@@ -39,7 +39,7 @@ if __name__ == '__main__':
     request_id = lidar1.send_ad_hoc_poll_request()                                                  # send an ad-hoc polling request to the simulator.
     print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
     sleep(3)
-    print("Is ad-hoc request complete? ", lidar1.is_ad_hoc_poll_request_ready(request_id)['data'])  # Ensure that the data has been processed before collecting.
+    print("Is ad-hoc request complete? ", lidar1.is_ad_hoc_poll_request_ready(request_id))  # Ensure that the data has been processed before collecting.
     data_ad_hoc = lidar1.collect_ad_hoc_poll_request(request_id)                                    # Collect the data now that it has been computed.
     print("LiDAR point cloud data (ad-hoc polling): ", data_ad_hoc['pointCloud'])
     print("LiDAR colour data (ad-hoc polling): ", data_ad_hoc['colours'])
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     request_id = lidar2.send_ad_hoc_poll_request()                                                      # send an ad-hoc polling request to the simulator.
     print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
     sleep(3)
-    print("Is ad-hoc request 1 complete? ", lidar2.is_ad_hoc_poll_request_ready(request_id)['data'])    # Ensure that the data has been processed before collecting.
+    print("Is ad-hoc request 1 complete? ", lidar2.is_ad_hoc_poll_request_ready(request_id))            # Ensure that the data has been processed before collecting.
     data_ad_hoc = lidar2.collect_ad_hoc_poll_request(request_id)                                        # Collect the data now that it has been computed.
     print("LiDAR point cloud data (ad-hoc polling): ", data_ad_hoc['pointCloud'])
     print("LiDAR colour data (ad-hoc polling): ", data_ad_hoc['colours'])

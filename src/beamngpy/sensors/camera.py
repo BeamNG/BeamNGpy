@@ -5,22 +5,27 @@ A requested update rate can be provided, to tell the simulator how often to read
 will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
 """
 
+from __future__ import annotations
+
 import math
 import mmap
 import os
 import struct
 from logging import DEBUG, getLogger
+from typing import TYPE_CHECKING, Optional
 from xml.dom import minidom
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
-from beamngpy.beamngcommon import LOGGER_ID, BNGValueError, ack
+from beamngpy.beamngcommon import LOGGER_ID, BNGError, BNGValueError, ack
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from beamngpy.types import ConnData
+from .communication_utils import send_sensor_request, set_sensor
 
-from .utils import _send_sensor_request, _set_sensor
+if TYPE_CHECKING:
+    from ..beamng import BeamNGpy, Vehicle
+    from ..types import ConnData
 
 
 class Camera:
@@ -196,10 +201,8 @@ class Camera:
         return ret.toprettyxml(indent='  ')
 
     def __init__(
-            self, name, bng, vehicle=None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 3),
-            dir=(0, -1, 0),
-            up=(0, 0, 1),
-            resolution=(512, 512),
+            self, name: str, bng: BeamNGpy, vehicle: Optional[Vehicle] = None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 3),
+            dir=(0, -1, 0), up=(0, 0, 1), resolution=(512, 512),
             field_of_view_y=70, near_far_planes=(0.05, 100.0),
             is_using_shared_memory=True, is_render_colours=True, is_render_annotations=True, is_render_instance=False,
             is_render_depth=True, is_depth_inverted=False, is_visualised=True, is_static=False,
@@ -288,11 +291,15 @@ class Camera:
             is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
-    def _send_sensor_request(self, type, ack=None, **kwargs):
-        return _send_sensor_request(self.bng.connection, type, ack, **kwargs)
+    def _send_sensor_request(self, type: str, ack: Optional[str] = None, **kwargs):
+        if not self.bng.connection:
+            raise BNGError('The simulator is not connected!')
+        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
 
-    def _set_sensor(self, type, **kwargs):
-        return _set_sensor(self.bng.connection, type, **kwargs)
+    def _set_sensor(self, type: str, **kwargs):
+        if not self.bng.connection:
+            raise BNGError('The simulator is not connected!')
+        return set_sensor(self.bng.connection, type, **kwargs)
 
     def _convert_to_image(self, raw_data, width, height, channels, data_type):
         """
@@ -554,7 +561,7 @@ class Camera:
         """
         self.logger.debug('Camera - ad-hoc polling request checked for completion: 'f'{self.name}')
         return self._send_sensor_request(
-            'IsAdHocPollRequestReadyCamera', ack='CompletedIsAdHocPollRequestReadyCamera', requestId=request_id)
+            'IsAdHocPollRequestReadyCamera', ack='CompletedIsAdHocPollRequestReadyCamera', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id):
         """
@@ -774,14 +781,14 @@ class Camera:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        resp = self.bng.connection.send(data)
+        resp = self.bng.send(data)
         self.logger.info(f'Opened Camera: "{name}"')
         return resp
 
-    @ ack('ClosedCamera')
+    @ack('ClosedCamera')
     def _close_camera(self):
         data = dict(type='CloseCamera')
         data['name'] = self.name
-        resp = self.bng.connection.send(data)
+        resp = self.bng.send(data)
         self.logger.info(f'Closed Camera: "{self.name}"')
         return resp

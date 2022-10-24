@@ -1,7 +1,7 @@
 import random
 from time import sleep
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import Accelerometer
+from beamngpy.sensors import Advanced_IMU
 
 def main():
     random.seed(1703)
@@ -10,7 +10,7 @@ def main():
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
 
-    scenario = Scenario('west_coast_usa', 'accelerometer_demo', description='Spanning the map with an accelerometer sensor')
+    scenario = Scenario('west_coast_usa', 'advanced_IMU_demo', description='Spanning the map with an advanced IMU sensor')
 
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='RED', color='Red')
 
@@ -25,17 +25,17 @@ def main():
     bng.start_scenario()
 
     # NOTE: Create sensor after scenario has started.
-    accel = Accelerometer('accel1', bng, vehicle, requested_update_time=0.01)
-    #accel = Accelerometer('accel1', bng, vehicle, requested_update_time=0.01, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1)) # if we want to specify a local frame
+    IMU = Advanced_IMU('accel1', bng, vehicle, gfx_update_time=0.01)
+    #IMU = Advanced_IMU('accel1', bng, vehicle, gfx_update_time=0.01, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1)) # if we want to specify a local frame
 
     vehicle.ai_set_mode('span')
-    print('Driving around, polling the accelerometer sensor at regular intervals...')
+    print('Driving around, polling the advanced IMU sensor at regular intervals...')
     for i in range(10000):
         sleep(0.1) # Include a small delay between each reading.
-        data = accel.poll() # Fetch the latest readings from the sensor.
+        data = IMU.poll() # Fetch the latest readings from the sensor.
         print("Acceleration in each axis of the sensor: ", data)
 
-    accel.remove()
+    IMU.remove()
     bng.close()
 
 
