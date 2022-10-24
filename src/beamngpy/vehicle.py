@@ -135,7 +135,7 @@ class Vehicle:
     def send(self, data: ConnData):
         if not self.connection:
             raise BNGError('Not connected to the vehicle!')
-        return self.send(data)
+        return self.connection.send(data)
 
     def connect(self, bng: BeamNGpy):
         """

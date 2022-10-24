@@ -183,6 +183,7 @@ class Scenario:
             vehicle_dict['position'] = ' '.join([str(p) for p in pos])
             vehicle_dict['rotationMatrix'] = quat_as_rotation_mat_str(rot)
             vehicles.append(vehicle_dict)
+        vehicles = sorted(vehicles, key=lambda v: v['vid'])
         vehicle_names = [v.vid for v in self.vehicles]
         self.logger.debug(f'The scenario {self.name} has {len(vehicles)} '
                           f'vehicles: {", ".join(vehicle_names)}')
