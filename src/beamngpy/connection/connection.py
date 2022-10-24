@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import socket
 from time import sleep
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
 
 import msgpack
 
@@ -36,7 +36,7 @@ class Connection:
             return data
 
     @staticmethod
-    def _string_cleanup(data: ConnData | list | bytes):
+    def _string_cleanup_rec(data: dict | list | bytes):
         """
         Recursively iterates through data, and attempts to convert all binary data to utf-8.
         If we can do this with any elements of the data, we do it. If not, we leave them as binary data.
@@ -45,23 +45,29 @@ class Connection:
         Returns:
             The (possibly) converted data.
         """
-        type_d = type(data)
-        if type_d is list:
+        if isinstance(data, list):
             for i, val in enumerate(data):
-                type_v = type(val)
-                if type_v is bytes:
+                if isinstance(val, bytes):
                     data[i] = Connection._textify_string(val)
-                elif type_v is list or type_v is dict:
-                    Connection._string_cleanup(val)
-        elif type_d is dict:
+                elif isinstance(val, (list, dict)):
+                    Connection._string_cleanup_rec(val)
+        elif isinstance(data, dict):
             for key, val in data.items():
-                type_v = type(val)
-                if type_v is bytes:
+                if isinstance(val, bytes):
                     data[key] = Connection._textify_string(val)
-                elif type_v is list or type_v is dict:
-                    Connection._string_cleanup(val)
-        elif type_d is bytes:
-            data = Connection._textify_string(data)
+                elif isinstance(val, (list, dict)):
+                    Connection._string_cleanup_rec(val)
+        elif isinstance(data, bytes):
+            return Connection._textify_string(data)
+        return data
+
+    @staticmethod
+    def _string_cleanup(data: ConnData):
+        for key, val in data.items():
+            if isinstance(val, bytes):
+                data[key] = Connection._textify_string(val)
+            elif isinstance(val, (list, dict)):
+                Connection._string_cleanup_rec(val)
         return data
 
     def __init__(self, host: str, port: Optional[int] = None):
@@ -90,6 +96,8 @@ class Connection:
             vehicle (:class:`.Vehicle`): The vehicle instance to be connected.
             tries (int): The number of connection attempts.
         """
+        if not self.port:
+            raise BNGError('The simulator port is not set!')
         while tries > 0:
             try:
                 self.logger.info(f'Attempting to connect to vehicle {vehicle.vid}')
@@ -118,6 +126,9 @@ class Connection:
         Returns:
             True if the connection was successful, False otherwise.
         """
+        if not self.port:
+            raise BNGError('The simulator port is not set!')
+
         # Attempt to connect to the simulator through this socket.
         if log_tries:
             self.logger.info('Connecting to BeamNG.tech at: 'f'({self.host}, {self.port})')
@@ -147,8 +158,6 @@ class Connection:
         """
         if self.skt is not None:
             self.skt.close()
-        self.port = None
-        self.host = None
         self.skt = None
 
     def _assign_request_id(self):
@@ -160,16 +169,15 @@ class Connection:
         req_id = self._assign_request_id()
         data['_id'] = req_id
         self.comm_logger.debug(f'Sending {data}.')
-        packed = msgpack.packb(data, use_bin_type=True)
+        packed = cast(bytes, msgpack.packb(data, use_bin_type=True))  # the cast is for type checker
         return req_id, packed
 
     def _unpack_data(self, data: bytes):
-        data: ConnData = msgpack.unpackb(data, raw=False, strict_map_key=False)
-        self.comm_logger.debug(f'Received {data}.')
+        unpacked: ConnData = msgpack.unpackb(data, raw=False, strict_map_key=False)
+        self.comm_logger.debug(f'Received {unpacked}.')
 
         # Converts all non-binary strings in the data into utf-8 format.
-        data = self._string_cleanup(data)
-        return data
+        return self._string_cleanup(unpacked)
 
     def send(self, data: ConnData):
         """
@@ -253,7 +261,7 @@ class Response:
         self.connection = connection
         self.req_id = req_id
 
-    def recv(self, type: Optional[str] = None) -> dict:
+    def recv(self, type: Optional[str] = None) -> ConnData:
         message = self.connection.recv(self.req_id)
         if isinstance(message, Exception):
             raise message

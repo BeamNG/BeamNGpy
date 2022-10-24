@@ -25,7 +25,7 @@ from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from ..beamng import BeamNGpy, Vehicle
-    from ..types import ConnData
+    from ..types import ConnData, Float2, Float3, Int2
 
 
 class Camera:
@@ -201,9 +201,9 @@ class Camera:
         return ret.toprettyxml(indent='  ')
 
     def __init__(
-            self, name: str, bng: BeamNGpy, vehicle: Optional[Vehicle] = None, requested_update_time=0.1, update_priority=0.0, pos=(0, 0, 3),
-            dir=(0, -1, 0), up=(0, 0, 1), resolution=(512, 512),
-            field_of_view_y=70, near_far_planes=(0.05, 100.0),
+            self, name: str, bng: BeamNGpy, vehicle: Optional[Vehicle] = None, requested_update_time=0.1, update_priority=0.0,
+            pos: Float3 = (0, 0, 3), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1),
+            resolution: Int2 = (512, 512), field_of_view_y=70, near_far_planes: Float2 = (0.05, 100.0),
             is_using_shared_memory=True, is_render_colours=True, is_render_annotations=True, is_render_instance=False,
             is_render_depth=True, is_depth_inverted=False, is_visualised=True, is_static=False,
             is_snapping_desired=False, is_force_inside_triangle=False):

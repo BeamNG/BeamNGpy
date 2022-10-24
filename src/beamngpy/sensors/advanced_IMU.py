@@ -21,14 +21,14 @@ from beamngpy.beamngcommon import LOGGER_ID, BNGError, ack
 from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
-    from ..beamng import BeamNGpy, Vehicle
+    from ..beamng import BeamNGpy, Vehicle, Float3
 
 
 class Advanced_IMU:
     def __init__(
             self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time=0.1, physics_update_time=0.015,
-            pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
-            window_width=None, frequency_cutoff=None, is_send_immediately=False, is_using_gravity=False,
+            pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1),
+            window_width: Optional[float] = None, frequency_cutoff: Optional[float] = None, is_send_immediately=False, is_using_gravity=False,
             is_visualised=True, is_snapping_desired=False, is_force_inside_triangle=False):
         """
         Creates an advanced IMU sensor.
@@ -212,7 +212,7 @@ class Advanced_IMU:
 
     @ack('OpenedAdvancedIMU')
     def _open_advanced_IMU(
-            self, name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, window_width, is_send_immediately,
+            self, name: str, vehicle: Vehicle, gfx_update_time, physics_update_time, pos, dir, up, window_width, is_send_immediately,
             frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle):
         data = dict(type='OpenAdvancedIMU')
         data['name'] = name

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError, ack,
                            create_warning)
 from .connection import Connection
 from .sensors import State
 from .sensors.sensor import Sensor
-from .types import ConnData
 
 if TYPE_CHECKING:
     from .beamng import BeamNGpy
+    from .types import ConnData, Float3
 
 SHIFT_MODES = {
     'realistic_manual': 0,
@@ -52,10 +52,14 @@ class Vehicle:
             options = d['options']
             del d['options']
 
+        if not model:
+            raise BNGError('The model of the vehicle is not specified!')
         vehicle = Vehicle(vid, model, port=port, **options)
         return vehicle
 
-    def __init__(self, vid: str, model: str, port: Optional[int] = None, **options):
+    def __init__(self, vid: str, model: str, port: Optional[int] = None, license: Optional[str] = None,
+                 color: Optional[Any] = None, color2: Optional[Any] = None, color3: Optional[Any] = None,
+                 extensions: Optional[Any] = None, part_config: Optional[str] = None, **options):
         """
         Creates a vehicle with the given vehicle ID. The ID must be unique
         within the scenario.
@@ -76,13 +80,14 @@ class Vehicle:
         self.sensors: Dict[str, Sensor] = dict()
 
         options['model'] = model
-        options['licenseText'] = options.get('licence')
-        options['color'] = options.get('colour', options.get('color'))
-        options['color2'] = options.get('colour2', options.get('color2'))
-        options['color3'] = options.get('colour3', options.get('color3'))
+        options['licenseText'] = license or options.get('licence')
+        options['color'] = color or options.get('colour')
+        options['color2'] = color2 or options.get('colour2')
+        options['color3'] = color3 or options.get('colour3')
+        options['partConfig'] = part_config or options.get('partConfig')
         self.options = options
 
-        self.extensions = options.get('extensions')
+        self.extensions = extensions
 
         self._veh_state_sensor_id = "state"
         state = State()
@@ -675,7 +680,7 @@ class Vehicle:
         return bbox
 
     @ack('IMUPositionAdded')
-    def add_imu_position(self, name, pos, debug=False):
+    def add_imu_position(self, name: str, pos: Float3, debug=False):
         """
         Adds an IMU to this vehicle at the given position identified by the
         given name. The position is relative to the vehicle's coordinate
@@ -736,9 +741,10 @@ class Vehicle:
         return self.send(data)
 
     @ack('LightsSet')
-    def set_lights(self, left_signal: Optional[bool] = None, right_signal: Optional[bool] = None,
-                   hazard_signal: Optional[bool] = None, headlights: Optional[int] = None, fog_lights: Optional[int] = None,
-                   lightbar: Optional[int] = None):
+    def set_lights(
+            self, left_signal: Optional[bool] = None, right_signal: Optional[bool] = None, hazard_signal:
+            Optional[bool] = None, headlights: Optional[int] = None, fog_lights: Optional[int] = None,
+            lightbar: Optional[int] = None):
         """
         Sets the vehicle's lights to given intensity values. The lighting
         system features lights that are simply binary on/off, but also ones

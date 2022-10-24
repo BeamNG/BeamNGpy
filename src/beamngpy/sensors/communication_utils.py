@@ -1,9 +1,10 @@
 from typing import Optional
 
-from ..connection import Connection
+from ..connection.connection import Connection
+from ..types import ConnData
 
 
-def send_sensor_request(connection: Connection, type: str, ack: Optional[str] = None, **kwargs):
+def send_sensor_request(connection: Connection, type: str, ack: Optional[str] = None, **kwargs) -> ConnData:
     # Populate a dictionary with the data needed for a request from this sensor.
     data = dict(type=type, **kwargs)
     # Send the request for updated readings to the simulation, receive the updated readings from the simulation.
