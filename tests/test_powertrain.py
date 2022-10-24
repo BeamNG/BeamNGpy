@@ -1,6 +1,6 @@
 from time import sleep
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import Powertrain
+from beamngpy.sensors import PowertrainSensor
 
 # Executing this file will perform various tests on all available functionality relating to the powertrain sensor.
 # It is provided to give examples on how to use all powertrain sensor functions currently available in beamngpy.
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     print("Powertrain test start.")
 
     # Create a default powertrain sensor.
-    powertrain1 = Powertrain('powertrain1', bng, vehicle, is_send_immediately=True)
+    powertrain1 = PowertrainSensor('powertrain1', bng, vehicle, is_send_immediately=True)
 
     # Test the automatic polling functionality of the powertrain sensor, to make sure we retrieve the readings data via shared memory.
     sleep(2)
