@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # Create a default advanced IMU sensor.
     IMU1 = Advanced_IMU('advancedIMU1', bng, vehicle, is_send_immediately=True)
 
-    # Test the automatic polling functionality of the advanced IMU sensor, to make sure we retrieve the point cloud data via shared memory.
+    # Test the automatic polling functionality of the advanced IMU sensor, to make sure we retrieve the readings data via shared memory.
     sleep(2)
     sensor_readings = IMU1.poll()
     print("advanced IMU readings (automatic polling): ", sensor_readings)
@@ -43,15 +43,7 @@ if __name__ == '__main__':
     IMU1.remove()
     print("advanced IMU sensor removed.")
 
-    # Create an advanced IMU sensor which has a negative requested update rate, and ensure that no readings are computed from it.
-    IMU2 = Advanced_IMU('advancedIMU2', bng, vehicle, gfx_update_time=-1.0, is_send_immediately=True)
-    print("Testing an advanced IMU sensor with a negative requested update time...")
-    sleep(2)
-    sensor_readings = IMU2.poll()
-    print("advanced IMU readings (should be zeros): ", sensor_readings)
-    IMU2.remove()
-
-    # Recreate the first advanced IMU sensor.
+    # Recreate the advanced IMU sensor.
     IMU1 = Advanced_IMU('advancedIMU1', bng, vehicle)
 
     # Test that the property getter function return the correct data which was set.

@@ -10,6 +10,7 @@ from .electrics import Electrics
 from .gforces import GForces
 from .imu import IMU
 from .lidar import Lidar
+from .powertrain import Powertrain
 from .sensor import Sensor
 from .state import State
 from .timer import Timer

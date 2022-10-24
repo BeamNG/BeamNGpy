@@ -436,6 +436,19 @@ class BeamNGpy:
         # Receive the property value from the simulation.
         return self.connection.recv()
 
+    @ack('CompletedGetPowertrainId')
+    def get_powertrain_id(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='GetPowertrainId')
+        data['name'] = name
+
+        # Send the request for the property to the simulation.
+        self.connection.send(data)
+
+        # Receive the property value from the simulation.
+        return self.connection.recv()
+
     @ack('OpenedCamera')
     def open_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y, near_far_planes, pos, dir, up, is_using_shared_memory,
         colour_shmem_handle, colour_shmem_size, annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size, is_render_colours,
@@ -1424,6 +1437,103 @@ class BeamNGpy:
         data['name'] = name
         data['vid'] = vid
         data['isVisualised'] = is_visualised
+
+        # Send the request for the property to the simulation.
+        self.connection.send(data)
+
+    @ack('OpenedPowertrain')
+    def open_powertrain(self, name, vehicle, gfx_update_time, physics_update_time, is_send_immediately):
+        data = dict(type='OpenPowertrain')
+        data['name'] = name
+        data['vid'] = vehicle.vid
+        data['GFXUpdateTime'] = gfx_update_time
+        data['physicsUpdateTime'] = physics_update_time
+        data['isSendImmediately'] = is_send_immediately
+        self.connection.send(data)
+        self.logger.info(f'Opened Powertrain sensor: "{name}"')
+
+    @ack('ClosedPowertrain')
+    def close_powertrain(self, name, vehicle):
+        data = dict(type='ClosePowertrain')
+        data['name'] = name
+        data['vid'] = vehicle.vid
+        self.connection.send(data)
+        self.logger.info(f'Closed Powertrain sensor: "{name}"')
+
+    @ack('PolledPowertrainGECompleted')
+    def poll_powertrain_GE(self, name):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollPowertrainGE')
+        data['name'] = name
+
+        # Send the request for updated readings to the simulation.
+        self.connection.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.connection.recv()
+
+    def poll_powertrain_VE(self, name, vehicle, sensorId):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='PollPowertrainVE')
+        data['name'] = name
+        data['sensorId'] = sensorId
+
+        # Send the request for updated readings to the vlua instance for this vehicle.
+        vehicle.connection.send(data)
+
+        # Receive the updated readings from the vlua instance for this vehicle.
+        return vehicle.connection.recv()
+
+    @ack('CompletedSendAdHocRequestPowertrain')
+    def send_ad_hoc_request_powertrain(self, name, vid):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SendAdHocRequestPowertrain')
+        data['name'] = name
+        data['vid'] = vid
+
+        # Send the request for updated readings to the simulation.
+        self.connection.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.connection.recv()
+
+    @ack('CompletedIsAdHocPollRequestReadyPowertrain')
+    def is_ad_hoc_poll_request_ready_powertrain(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='IsAdHocPollRequestReadyPowertrain')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.connection.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.connection.recv()
+
+    @ack('CompletedCollectAdHocPollRequestPowertrain')
+    def collect_ad_hoc_poll_request_powertrain(self, request_id):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='CollectAdHocPollRequestPowertrain')
+        data['requestId'] = request_id
+
+        # Send the request for updated readings to the simulation.
+        self.connection.send(data)
+
+        # Receive the updated readings from the simulation.
+        return self.connection.recv()
+
+    @ack('CompletedSetPowertrainRequestedUpdateTime')
+    def set_advanced_powertrain_update_time(self, name, vid, requested_GFX_update_time):
+
+        # Populate a dictionary with the data needed for a request from this sensor.
+        data = dict(type='SetPowertrainRequestedUpdateTime')
+        data['name'] = name
+        data['vid'] = vid
+        data['GFXUpdateTime'] = requested_GFX_update_time
 
         # Send the request for the property to the simulation.
         self.connection.send(data)

@@ -1,14 +1,19 @@
 """
 An interactive, automated IMU sensor, which produces regular acceleration and gyroscopic measurements in a local coordinate space.
-This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
+This sensor must be attached to a vehicle; it cannot be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
 A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
 will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
+We can set this sensor to poll the send data back in two modes:
+i) immediate mode: data is sent back as soon as it is available (single readings arrive instantly) - this method is suitable when working with
+tightly-coupled systems requiring fast feedback, or
+ii) post-processing mode: we can set it to send the data back in bulk on the simulations graphics step - this method is appropriate for the case when the
+user wishes simply to post-process the data (such as for plotting graphs etc) and is also more efficient. In this case, the returned data will contain all
+the individual samples which were measured in the simulations physics step, so the data is the same as in mode i); it just arrives later, in bulk.
 """
 
 from logging import DEBUG, getLogger
 
 from beamngpy.beamngcommon import LOGGER_ID
-
 
 class Advanced_IMU:
     def __init__(
@@ -49,6 +54,7 @@ class Advanced_IMU:
         bng.open_advanced_IMU(name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, window_width, is_send_immediately,
             frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
 
+        # Fetch the unique Id number (in the simulator) for this advanced IMU sensor.  We will need this later.
         self.sensorId = int(bng.get_advanced_imu_id(name)['data'])
 
         self.logger.debug('Advanced IMU - sensor created: 'f'{self.name}')
@@ -74,7 +80,7 @@ class Advanced_IMU:
         # Send and receive a request for readings data from this sensor.
         readings_data = []
         if self.is_send_immediately:
-            readings_data = self.bng.poll_advanced_IMU_VE(self.name, self.vehicle, self.sensorId)['data']   # Get the most-recent single reading data from vlua.
+            readings_data = self.bng.poll_advanced_IMU_VE(self.name, self.vehicle, self.sensorId)['data']   # Get the most-recent single reading from vlua.
         else:
             readings_data = self.bng.poll_advanced_IMU_GE(self.name)['data']                                # Get the bulk data from ge lua.
 
@@ -121,7 +127,6 @@ class Advanced_IMU:
 
         readings = self.bng.collect_ad_hoc_poll_request_advanced_IMU(request_id)['data']
         self.logger.debug('Advanced IMU - ad-hoc polling request returned and processed: 'f'{self.name}')
-
         return readings
 
     def get_position(self):
