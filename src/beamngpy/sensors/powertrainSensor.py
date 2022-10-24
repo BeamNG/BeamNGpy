@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from ..beamng import BeamNGpy, Vehicle
 
 class PowertrainSensor:
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time=0.1, physics_update_time=0.015,
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time=0.0, physics_update_time=0.01,
                  is_send_immediately=False):
         """
         Creates a powertrain sensor.

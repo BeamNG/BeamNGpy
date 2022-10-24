@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 class Advanced_IMU:
     def __init__(
-            self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time=0.1, physics_update_time=0.015,
+            self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time=0.0, physics_update_time=0.01,
             pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1),
             window_width: Optional[float] = None, frequency_cutoff: Optional[float] = None, is_send_immediately=False, is_using_gravity=False,
             is_visualised=True, is_snapping_desired=False, is_force_inside_triangle=False):
