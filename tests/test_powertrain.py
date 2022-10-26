@@ -24,7 +24,7 @@ if __name__ == '__main__':
     print("Powertrain test start.")
 
     # Create a default powertrain sensor.
-    powertrain1 = PowertrainSensor('powertrain1', bng, vehicle, is_send_immediately=True)
+    powertrain1 = PowertrainSensor('powertrain1', bng, vehicle, is_send_immediately=False, physics_update_time=0.001) # will sample every ms with this setting.
 
     # Test the automatic polling functionality of the powertrain sensor, to make sure we retrieve the readings data via shared memory.
     sleep(2)
