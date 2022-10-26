@@ -15,63 +15,27 @@ extract data from simulations.
 """
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict
+
+from beamngpy.types import StrDict
 
 if TYPE_CHECKING:
-    from ..beamng import BeamNGpy
-    from ..types import ConnData
-    from ..vehicle import Vehicle
+    from beamngpy.beamng import BeamNGpy
+    from beamngpy.vehicle import Vehicle
 
 
-class AbstractSensor(ABC):
-    """
-    Abstract Sensor class declaring properties common to the sensors.
-    """
-
-    @property
-    @abstractmethod
-    def data(self):
-        pass
-
-    @data.setter
-    @abstractmethod
-    def data(self, data):
-        pass
-
-    @data.deleter
-    @abstractmethod
-    def data(self):
-        pass
-
-
-class Sensor(AbstractSensor):
+class Sensor:
     """
     Sensor meta-class declaring methods common to them.
     """
 
     def __init__(self):
-        self._data = dict()
+        self.data: Dict[str, Any] = {}
 
-    @property
-    def data(self):
-        """
-        Property used to store sensor readings.
-        """
-        return self._data
-
-    @data.setter
-    def data(self, data):
-        self._data = data
-
-    @data.deleter
-    def data(self):
-        self._data = None
-
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> Any:
         return self.data[item]
 
-    def attach(self, vehicle: Vehicle, name: str):
+    def attach(self, vehicle: Vehicle, name: str) -> None:
         """
         Called when the sensor is attached to a :class:`.Vehicle` instance.
         Used to perform sensor setup code before the simulation is started.
@@ -85,7 +49,7 @@ class Sensor(AbstractSensor):
         """
         pass
 
-    def detach(self, vehicle: Vehicle, name: str):
+    def detach(self, vehicle: Vehicle, name: str) -> None:
         """
         Called when the sensor is detached from a :class:`.Vehicle` instance.
         Used to perform sensor teardown code after the simulation is finished.
@@ -99,7 +63,7 @@ class Sensor(AbstractSensor):
         """
         pass
 
-    def encode_engine_request(self) -> Optional[Dict]:
+    def encode_engine_request(self) -> StrDict | None:
         """
         Called to retrieve this sensor's data request to the engine as a
         dictionary. The dictionary returned by this method will be bundled
@@ -119,7 +83,7 @@ class Sensor(AbstractSensor):
         """
         return None
 
-    def encode_vehicle_request(self) -> ConnData:
+    def encode_vehicle_request(self) -> StrDict:
         """
         Called to retrieve this sensor's request to the vehicle as a
         dictionary. The dictionary returned by this method will be bundled
@@ -139,7 +103,7 @@ class Sensor(AbstractSensor):
         """
         return {}
 
-    def decode_response(self, resp: ConnData):
+    def decode_response(self, resp: StrDict):
         """
         Called to do post-processing on sensor data obtained from the
         simulation. This method is called after raw simulation data is received
@@ -152,7 +116,7 @@ class Sensor(AbstractSensor):
         """
         return resp
 
-    def connect(self, bng: BeamNGpy, vehicle: Vehicle):
+    def connect(self, bng: BeamNGpy, vehicle: Vehicle) -> None:
         """
         Called when the attached vehicle is being initialised in the
         simulation. This method is used to perform setup code that requires the
@@ -160,20 +124,9 @@ class Sensor(AbstractSensor):
         """
         pass
 
-    def disconnect(self, bng: BeamNGpy, vehicle: Vehicle):
+    def disconnect(self, bng: BeamNGpy, vehicle: Vehicle) -> None:
         """
         Called when the attached vehicle is being removed from simulation. This
         method is used to perform teardown code after the simulation.
         """
         pass
-
-    def get_engine_flags(self):
-        """
-        Called to retrieve a dictionary of settings in the engine this sensor
-        requires.
-
-        Returns:
-            A dictionary of flags to set in the engine for this sensor to
-            function.
-        """
-        return dict()

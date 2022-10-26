@@ -7,16 +7,15 @@
 """
 
 import ctypes
-import random
-import sys
 
 import numpy as np
 
 try:
     from OpenGL.GL import *
-    from OpenGL.GLU import *
-    from OpenGL.GLUT import *
-except AttributeError: # workaround to fix conda build
+    from OpenGL.GLU import gluLookAt, gluPerspective
+    from OpenGL.GLUT import (glutDisplayFunc, glutKeyboardFunc, glutMotionFunc,
+                             glutReshapeFunc, glutSwapBuffers)
+except AttributeError:  # workaround to fix conda build
     pass
 
 CLEAR_COLOUR = (0.1, 0.1, 0.1, 1.0)
@@ -34,7 +33,6 @@ def lidar_resize(width, height):
 
 
 class LidarVisualiser:
-
     def __init__(self, points_ceiling):
         self.points_ceiling = points_ceiling
         self.points_count = 0
@@ -179,7 +177,7 @@ class LidarVisualiser:
             self.pos[2] = self.focus[2] + vehicle_state['dir'][2] + 10
 
     def render(self):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClear(int(GL_COLOR_BUFFER_BIT) | int(GL_DEPTH_BUFFER_BIT))
 
         glMatrixMode(GL_MODELVIEW)
 

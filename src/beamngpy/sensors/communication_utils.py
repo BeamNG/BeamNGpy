@@ -1,10 +1,10 @@
-from typing import Optional
+from __future__ import annotations
 
-from ..connection.connection import Connection
-from ..types import ConnData
+from beamngpy.connection import Connection
+from beamngpy.types import StrDict
 
 
-def send_sensor_request(connection: Connection, type: str, ack: Optional[str] = None, **kwargs) -> ConnData:
+def send_sensor_request(connection: Connection, type: str, ack: str | None = None, **kwargs) -> StrDict:
     # Populate a dictionary with the data needed for a request from this sensor.
     data = dict(type=type, **kwargs)
     # Send the request for updated readings to the simulation, receive the updated readings from the simulation.
@@ -15,8 +15,10 @@ def send_sensor_request(connection: Connection, type: str, ack: Optional[str] = 
     return result
 
 
-def set_sensor(connection: Connection, type: str, **kwargs):
+def set_sensor(connection: Connection, type: str, ack: str | None = None, **kwargs):
     # Populate a dictionary with the data needed for a request from this sensor.
     data = dict(type=type, **kwargs)
     # Send the request for updated readings to the simulation.
-    return connection.send(data)
+    response = connection.send(data)
+    if ack:
+        response.ack(ack)

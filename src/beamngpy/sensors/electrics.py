@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import List
+
+from beamngpy.types import StrDict
+
 from .sensor import Sensor
+
 
 class Electrics(Sensor):
     """
@@ -108,7 +115,8 @@ class Electrics(Sensor):
     def __init__(self):
         super().__init__()
 
-    def _rename_values(self, vals):
+    @staticmethod
+    def _rename_values(vals: StrDict) -> StrDict:
         """
         The values returned from the game often don't follow any naming
         convention and especially don't follow this library's, so we rename
@@ -120,7 +128,7 @@ class Electrics(Sensor):
                 del vals[k]
         return vals
 
-    def _reassign_values(self, vals):
+    def _reassign_values(self, vals: StrDict) -> StrDict:
         if 'left_signal' in vals:
             vals['left_signal'] = vals['left_signal'] == 1
         if 'right_signal' in vals:

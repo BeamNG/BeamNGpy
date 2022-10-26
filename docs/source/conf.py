@@ -12,12 +12,13 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('../../src'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'BeamNGpy'
-copyright = '2021, BeamNG GmbH'
+copyright = '2022, BeamNG GmbH'
 author = 'BeamNG GmbH'
 
 
@@ -29,6 +30,7 @@ author = 'BeamNG GmbH'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    # 'sphinx.ext.autodoc.typehints',
     'sphinx_rtd_theme',
     'm2r2'
 ]
@@ -60,6 +62,18 @@ source_suffix = ['.rst', '.md']
 
 # -- Napoleon options --------------------------------------------------------
 napoleon_google_docstring = True
+# napoleon_use_param = True
 
 # -- Autodoc options ---------------------------------------------------------
 autodoc_mock_imports = ['msgpack', 'numpy', 'OpenGL', 'PIL', 'skimage']
+autodoc_typehints = 'both'
+autodoc_type_aliases = {
+    'StrDict': 'StrDict',
+    'Float2': 'Float2',
+    'Float3': 'Float3',
+    'Float4': 'Float4',
+    'Float5': 'Float5',
+    'Int2': 'Int2',
+    'Int3': 'Int3',
+    'Quat': 'Quat'
+}

@@ -9,28 +9,25 @@
 .. moduleauthor:: Sedonas <https://github.com/Sedonas>
 .. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
-
 from __future__ import annotations
 
 import copy
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple
 
+from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
+from beamngpy.quat import quat_as_rotation_mat_str
+from beamngpy.types import Float3, Quat, StrDict
+from beamngpy.vehicle import Vehicle
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
-from beamngpy.types import ConnData
-
 from .level import Level
-from .beamngcommon import (LOGGER_ID, BNGError, BNGValueError,
-                           quat_as_rotation_mat_str)
 
 if TYPE_CHECKING:
-    from .beamng import BeamNGpy, Vehicle
-    from .procedural import ProceduralMesh
-    from .road import MeshRoad, Road
-    from .types import Float3, Quat
-
+    from beamngpy.beamng import BeamNGpy
+    from beamngpy.scenario.procedural import ProceduralMesh
+    from beamngpy.scenario.road import MeshRoad, Road
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
 
@@ -43,15 +40,24 @@ class Scenario:
     The scenario class contains information for setting up and executing
     simulation scenarios along with methods to extract data during their
     execution.
+
+    Instantiates a scenario instance with the given name taking place in
+    the given level.
+
+    Args:
+        level: Either the name of the level this scenario takes place in
+                as a string or as an instance of :class:`.Level`
+        name: The name of this scenario. Should be unique for the
+                    level it's taking place in to avoid file collisions.
     """
 
-    game_classes = {
+    game_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
         'MissionGroup': lambda d: SceneObject(d),
-        'DecalRoad': lambda d: __import__("beamngpy").DecalRoad(d),
+        'DecalRoad': lambda d: DecalRoad(d),
     }
 
     @staticmethod
-    def from_dict(d):
+    def from_dict(d: StrDict) -> Scenario:
         if 'sourceFile' in d:
             path = d['sourceFile']
             del d['sourceFile']
@@ -74,17 +80,7 @@ class Scenario:
 
         return scenario
 
-    def __init__(self, level: str | Level, name: str, path: Optional[str] = None, **options):
-        """
-        Instantiates a scenario instance with the given name taking place in
-        the given level.
-
-        Args:
-            level: Either the name of the level this scenario takes place in
-                   as a string or as an instance of :class:`.Level`
-            name (str): The name of this scenario. Should be unique for the
-                        level it's taking place in to avoid file collisions.
-        """
+    def __init__(self, level: str | Level, name: str, path: str | None = None, **options: Any):
         self.level = level
         self.name = name
         self.path = path
@@ -93,7 +89,7 @@ class Scenario:
         self.vehicles: Set[Vehicle] = set()
         self.transient_vehicles: Set[Vehicle] = set()  # Vehicles added during scenario
         self._vehicle_locations: Dict[str, Tuple[Float3, Quat]] = {}
-        self._focus_vehicle: Optional[str] = None
+        self._focus_vehicle: str | None = None
 
         self.roads: List[Road] = list()
         self.mesh_roads: List[MeshRoad] = list()
@@ -103,12 +99,12 @@ class Scenario:
 
         self.scene = None
 
-        self.bng: Optional[BeamNGpy] = None
+        self.bng: BeamNGpy | None = None
 
         self.logger = getLogger(f'{LOGGER_ID}.Scenario')
         self.logger.setLevel(DEBUG)
 
-    def _get_objects_list(self):
+    def _get_objects_list(self) -> List[StrDict]:
         """
         Encodes extra objects to be placed in the scene as dictionaries for the
         prefab template.
@@ -117,12 +113,13 @@ class Scenario:
             A list of dictionaries representing :class:`.ScenarioObject`
             instances to be placed in the prefab.
         """
-        objs: List[Dict[str, Any]] = list()
+        objs: List[StrDict] = list()
         for obj in self.objects:
-            obj_dict = dict(type=obj.type, id=obj.id)
+            obj_dict: StrDict = dict(type=obj.type, id=obj.id)
             obj_dict['options'] = copy.deepcopy(obj.opts)
 
             pos_str = '{} {} {}'.format(*obj.pos)
+            assert isinstance(obj.rot, tuple)
             rot_mat = quat_as_rotation_mat_str(obj.rot)
             scale_str = '{} {} {}'.format(*obj.scale)
             obj_dict['options']['position'] = pos_str
@@ -134,7 +131,7 @@ class Scenario:
                           'objects of type `beamngpy.ScenarioObject`')
         return objs
 
-    def _get_info_dict(self):
+    def _get_info_dict(self) -> StrDict:
         """
         Generates a dictionary of information to be written to the scenario's
         files in the simulation diretory and returns it.
@@ -143,7 +140,7 @@ class Scenario:
             Dictionary of information to write into the scenario files of the
             simulator.
         """
-        info: Dict[str, Any] = dict()
+        info: StrDict = dict()
         info['name'] = self.options.get('human_name', self.name)
         info['description'] = self.options.get('description', None)
         info['difficulty'] = self.options.get('difficulty', 0)
@@ -166,7 +163,7 @@ class Scenario:
 
         return info
 
-    def _get_vehicles_list(self):
+    def _get_vehicles_list(self) -> List[StrDict]:
         """
         Gets the vehicles contained in this scenario encoded as a dict and
         put into one list, including their position and rotation as a matrix
@@ -175,7 +172,7 @@ class Scenario:
         Returns:
             All vehicles as a dict including position and rotation.
         """
-        vehicles: List[Dict[str, Any]] = list()
+        vehicles: List[StrDict] = list()
         for vehicle in self.vehicles:
             pos, rot = self._vehicle_locations[vehicle.vid]
             vehicle_dict = dict(vid=vehicle.vid)
@@ -189,7 +186,7 @@ class Scenario:
                           f'vehicles: {", ".join(vehicle_names)}')
         return vehicles
 
-    def _get_roads_list(self):
+    def _get_roads_list(self) -> List[StrDict]:
         """
         Gets the roads defined in this scenario encoded as a dict and put into
         one list ready to be placed in the simulator.
@@ -197,15 +194,10 @@ class Scenario:
         Returns:
             All roads encoded as a dict in one list.
         """
-        ret: List[Dict[str, Any]] = list()
+        ret: List[StrDict] = list()
         for idx, road in enumerate(self.roads):
             road_dict = dict(**road.__dict__)
-
-            if road.rid is None:
-                road_id = 'beamngpy_road_{}_{:03}'.format(self.name, idx)
-            else:
-                road_id = road.rid
-            road_dict['road_id'] = road_id
+            road_dict['road_id'] = f'beamngpy_road_{self.name}_{idx:03}' if road.rid is None else road.rid
             road_dict['render_priority'] = idx
 
             ret.append(road_dict)
@@ -213,7 +205,7 @@ class Scenario:
                           'scenario-specific roads.')
         return ret
 
-    def _get_mesh_roads_list(self):
+    def _get_mesh_roads_list(self) -> List[StrDict]:
         """
         Gets the mesh roads defined in this scenario encoded as a dict and put into
         one list ready to be placed in the simulator.
@@ -221,15 +213,10 @@ class Scenario:
         Returns:
             All mesh roads encoded as a dict in one list.
         """
-        ret: List[Dict[str, Any]] = list()
+        ret: List[StrDict] = list()
         for idx, road in enumerate(self.mesh_roads):
             road_dict = dict(**road.__dict__)
-
-            if road.rid is None:
-                road_id = 'beamngpy_mesh_road_{}_{:03}'.format(self.name, idx)
-            else:
-                road_id = road.rid
-            road_dict['road_id'] = road_id
+            road_dict['road_id'] = f'beamngpy_mesh_road_{self.name}_{idx:03}' if road.rid is None else road.rid
             road_dict['render_priority'] = idx
 
             ret.append(road_dict)
@@ -237,7 +224,7 @@ class Scenario:
                           'scenario-specific mesh roads.')
         return ret
 
-    def _get_prefab(self):
+    def _get_prefab(self) -> str:
         """
         Generates prefab code to describe this scenario to the simulation
         engine and returns it as a string.
@@ -254,16 +241,16 @@ class Scenario:
 
         return template.render(vehicles=vehicles, roads=roads, mesh_roads=mesh_roads, objects=objs)
 
-    def _get_level_name(self):
+    def _get_level_name(self) -> str:
         if isinstance(self.level, Level):
             return self.level.name
         else:
             return self.level
 
-    def _load_existing_vehicles(self):
+    def _load_existing_vehicles(self) -> None:
         assert self.bng
 
-        current_vehicles = set((self.bng.get_current_vehicles()).values())
+        current_vehicles = set((self.bng.scenario.get_current_vehicles()).values())
         self.logger.debug(
             f'Got {len(current_vehicles)} vehicles from scenario.')
         self.transient_vehicles = current_vehicles.copy()
@@ -275,7 +262,7 @@ class Scenario:
 
         self.vehicles = current_vehicles
 
-    def add_object(self, obj: ScenarioObject):
+    def add_object(self, obj: ScenarioObject) -> None:
         """
         Adds an extra object to be placed in the prefab. Objects are expected
         to be :class:`.ScenarioObject` instances with additional, type-
@@ -283,14 +270,17 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle: Vehicle, pos: Float3 = (0, 0, 0), rot_quat: Quat = (0, 0, 0, 1), cling=True):
+    def add_vehicle(
+            self, vehicle: Vehicle, pos: Float3 = (0, 0, 0),
+            rot_quat: Quat = (0, 0, 0, 1),
+            cling: bool = True) -> None:
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation.
 
         Args:
-            pos (tuple): (x,y,z) tuple specifying the position of the vehicle.
-            rot_quat (tuple, optional): (x, y, z, w) tuple specifying
+            pos: (x,y,z) tuple specifying the position of the vehicle.
+            rot_quat: (x, y, z, w) tuple specifying
                                         the rotation as quaternion
         """
         if self.name == vehicle.vid:
@@ -310,25 +300,24 @@ class Scenario:
         self.logger.debug(f'Added vehicle with id \'{vehicle.vid}\'.')
 
         if self.bng:
-            self.bng.spawn_vehicle(
-                vehicle, pos, rot_quat=rot_quat, cling=cling)
+            self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, cling=cling)
             self.transient_vehicles.add(vehicle)
             vehicle.connect(self.bng)
         else:
             self.logger.debug('No BeamNGpy instance available. '
                               f'Did not spawn vehicle with id \'{vehicle.vid}\'.')
 
-    def remove_vehicle(self, vehicle: Vehicle):
+    def remove_vehicle(self, vehicle: Vehicle) -> None:
         """
         Removes the given :class:`.Vehicle`: from this scenario. If the
         scenario is currently loaded, the vehicle will be despawned.
 
         Args:
-            vehicle (:class:`.Vehicle`): The vehicle to remove.
+            vehicle: The vehicle to remove.
         """
         if vehicle in self.vehicles:
             if self.bng:
-                self.bng.despawn_vehicle(vehicle)
+                self.bng.vehicles.despawn(vehicle)
                 self.transient_vehicles.discard(vehicle)
             else:
                 self.logger.debug('No beamngpy instance available, cannot '
@@ -340,12 +329,12 @@ class Scenario:
         else:
             self.logger.debug(f'No vehicle with id {vehicle.vid} found.')
 
-    def get_vehicle(self, vehicle_id: str):
+    def get_vehicle(self, vehicle_id: str) -> Vehicle | None:
         """
         Retrieves the vehicle with the given ID from this scenario.
 
         Args:
-            vehicle_id (str): The ID of the vehicle to find.
+            vehicle_id: The ID of the vehicle to find.
 
         Returns:
             The :class:`.Vehicle` with the given ID. None if it wasn't found.
@@ -356,49 +345,49 @@ class Scenario:
         self.logger.debug(f'Could not find vehicle with id {vehicle_id}')
         return None
 
-    def set_initial_focus(self, vehicle_id: str):
+    def set_initial_focus(self, vehicle_id: str) -> None:
         """defines which vehicle has the initial focus
 
         Args:
-            vehicle_id (string): vehicle id of focussed vehicle
+            vehicle_id: vehicle id of focussed vehicle
         """
         self._focus_vehicle = vehicle_id
 
-    def add_road(self, road: Road):
+    def add_road(self, road: Road) -> None:
         """Adds a road to this scenario.
 
         Args:
-            road (:class:`beamngpy.Road`): road to be added to the scenario.
+            road: road to be added to the scenario.
         """
         self.roads.append(road)
 
-    def add_mesh_road(self, road: MeshRoad):
+    def add_mesh_road(self, road: MeshRoad) -> None:
         """Adds a mesh road to this scenario.
 
         Args:
-            road (:class:`beamngpy.MeshRoad`): mesh road to be added to the scenario.
+            road: mesh road to be added to the scenario.
         """
         self.mesh_roads.append(road)
 
-    def add_procedural_mesh(self, mesh: ProceduralMesh):
+    def add_procedural_mesh(self, mesh: ProceduralMesh) -> None:
         """
         Adds a :class:`.ProceduralMesh` to be placed in world to the scenario.
 
         Args:
-            mesh (:class:`.ProceduralMesh`): The mesh to place.
+            mesh: The mesh to place.
         """
         self.proc_meshes.append(mesh)
         if self.bng:
             mesh.place(self.bng)
 
-    def add_checkpoints(self, positions, scales, ids=None):
+    def add_checkpoints(self, positions: List[Float3], scales: List[Float3], ids: List[str] | None = None) -> None:
         """
         Adds checkpoints to the scenario.
 
         Args:
-            positions(list): positions (tuple of length 3) of individual points
-            scales(list): scale (tuple of length 3) of individual points
-            ids(list): optional, names of the individual points
+            positions: positions (tuple of length 3) of individual points
+            scales: scale (tuple of length 3) of individual points
+            ids: optional, names of the individual points
         """
         if ids is None:
             ids = [f"wp{i}" for i in range(len(positions))]
@@ -419,9 +408,9 @@ class Scenario:
             self.add_object(cp)
         self.checkpoints.extend(ids)
 
-    def _convert_scene_object(self, obj):
+    def _convert_scene_object(self, obj: StrDict) -> SceneObject:
         assert self.bng
-        data = self.bng.get_scene_object_data(obj['id'])
+        data = self.bng.message('GetObject', id=obj['id'])
         clazz = data['class']
         if clazz in Scenario.game_classes:
             converted = Scenario.game_classes[clazz](data)
@@ -435,13 +424,7 @@ class Scenario:
 
         return converted
 
-    def _fill_scene(self):
-        assert self.bng
-        scenetree = self.bng.get_scenetree()
-        assert scenetree['class'] == 'SimGroup'
-        self.scene = self._convert_scene_object(scenetree)
-
-    def sync_scene(self):
+    def sync_scene(self) -> None:
         """
         Retrieves the current scene tree of the scenario from the simulator,
         converting them into the most appropriate known (sub)class of
@@ -449,19 +432,21 @@ class Scenario:
         in the ``scene`` field of this class.
         """
         assert self.bng
-        self._fill_scene()
+        scenetree = self.bng.message('GetSceneTree')
+        assert scenetree['class'] == 'SimGroup'
+        self.scene = self._convert_scene_object(scenetree)
 
-    def connect(self, bng: BeamNGpy, connect_existing=True):
+    def connect(self, bng: BeamNGpy, connect_existing: bool = True) -> None:
         """
         Connects this scenario to the simulator, hooking up any cameras to
         their counterpart in the simulator.
 
         Args:
-            bng (:class:`.BeamNGpy`): The BeamNGpy instance to generate the
+            bng: The BeamNGpy instance to generate the
                                       scenario for.
-            connect_existing (bool): Whether vehicles spawned already
-                                     in the scenario should be connected to
-                                     this (:class:``.Scenario``) instance.
+            connect_existing: Whether vehicles spawned already
+                              in the scenario should be connected to
+                              this (:class:``.Scenario``) instance.
         """
         self.bng = bng
 
@@ -478,13 +463,13 @@ class Scenario:
 
         self.logger.info(f'Connected to scenario: {self.name}')
 
-    def make(self, bng):
+    def make(self, bng: BeamNGpy) -> None:
         """
         Generates necessary files to describe the scenario in the simulation
         and outputs them to the simulator.
 
         Args:
-            bng (:class:`.BeamNGpy`): The BeamNGpy instance to generate the
+            bng: The BeamNGpy instance to generate the
                                       scenario for.
 
         Raises:
@@ -500,53 +485,39 @@ class Scenario:
         self.logger.debug(f'Generated prefab:\n{prefab}\n')
         self.logger.debug(f'Generated scenarios info dict:\n{info}\n')
 
-        self.path = bng.create_scenario(level_name, self.name, prefab, info)
+        self.path = bng.message('CreateScenario', level=level_name, name=self.name, prefab=prefab, info=info)
 
-    def find(self, bng):
+    def find(self, bng: BeamNGpy) -> str | None:
         """
         Looks for the files of an existing scenario and returns the path to the
         info file of this scenario, iff one is found.
 
         Args:
-            bng (:class:`.BeamNGpy`): The BeamNGpy instance to look for the
+            bng: The BeamNGpy instance to look for the
                                       scenario in.
 
         Returns:
             The path to the information file of his scenario found in the
             simulator as a string, None if it could not be found.
         """
-        scenarios = bng.get_level_scenarios(self.level)
-        for path, scenario in scenarios:
+        scenarios = bng.scenario.get_level_scenarios(self.level)
+        for path, scenario in scenarios.items():
             if scenario.name == self.name and scenario.level == self.level:
                 self.path = path
-        return self.path
+                return self.path
+        return None
 
-    def delete(self, bng: BeamNGpy):
+    def delete(self, bng: BeamNGpy) -> None:
         """
         Deletes files created by this scenario from the given
         :class:`.BeamNGpy`'s home/user path.
         """
         if self.path is None:
             self.find(bng)
-        bng.delete_scenario(self.path)
+        bng.message('DeleteScenario', path=self.path)
         self.logger.info(f'Deleted scenario from simulation: "{self.name}".')
 
-    def start(self):
-        """
-        Starts this scenario. Requires the scenario to be loaded into a
-        running :class:`.BeamNGpy` instance first.
-
-        Raises:
-            BNGError: If the scenario is not loaded.
-        """
-        if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to be started.')
-
-        self.bng.start_scenario()
-        self.logger.info(f'Started scenario: "{self.name}"')
-
-    def restart(self):
+    def restart(self) -> None:
         """
         Restarts this scenario. Requires the scenario to be loaded into a
         running :class:`.BeamNGpy` instance first.
@@ -566,11 +537,11 @@ class Scenario:
         while self.transient_vehicles:
             vehicle = self.transient_vehicles.pop()
             if vehicle in self.vehicles:
-                self.bng.despawn_vehicle(vehicle)
+                self.bng.vehicles.despawn(vehicle)
                 self.vehicles.discard(vehicle)
         self.logger.info(f'Restarted scenario: "{self.name}"')
 
-    def close(self):
+    def close(self) -> None:
         """
         Closes open connections and allocations of the scenario.
         """
@@ -584,7 +555,38 @@ class Scenario:
         self.bng = None
         self.logger.debug('Removed beamngpy instance from scenario class.')
 
-    def find_waypoints(self):
+    def _find_objects_class(self, clazz: str) -> List[ScenarioObject]:
+        """
+        Scans the current environment in the simulator for objects of a
+        certain class and returns them as a list of :class:`.ScenarioObject`.
+
+        What kind of classes correspond to what kind of objects is described
+        in the BeamNG.drive documentation.
+
+        Args:
+            clazz: The class name of objects to find.
+
+        Returns:
+            Found objects as a list.
+        """
+        if not self.bng:
+            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
+                           'instance to find objects.')
+
+        data = dict(type='FindObjectsClass')
+        data['class'] = clazz
+        resp = self.bng.send(data).recv()
+        ret: List[ScenarioObject] = list()
+        for obj in resp['objects']:
+            sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
+                                  tuple(obj['position']),
+                                  tuple(obj['scale']),
+                                  rot_quat=tuple(obj['rotation']),
+                                  **obj['options'])
+            ret.append(sobj)
+        return ret
+
+    def find_waypoints(self) -> List[ScenarioObject]:
         """
         Finds waypoints placed in the world right now.
 
@@ -595,13 +597,9 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to find objects.')
+        return self._find_objects_class('BeamNGWaypoint')
 
-        return self.bng.find_objects_class('BeamNGWaypoint')
-
-    def find_procedural_meshes(self):
+    def find_procedural_meshes(self) -> List[ScenarioObject]:
         """
         Finds procedural meshes placed in the world right now.
 
@@ -612,13 +610,9 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to find objects.')
+        return self._find_objects_class('ProceduralMesh')
 
-        return self.bng.find_objects_class('ProceduralMesh')
-
-    def find_static_objects(self):
+    def find_static_objects(self) -> List[ScenarioObject]:
         """
         Finds static objects placed in the world right now.
 
@@ -629,13 +623,9 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to find objects.')
+        return self._find_objects_class('TSStatic')
 
-        return self.bng.find_objects_class('TSStatic')
-
-    def update(self):
+    def update(self) -> None:
         """
         Synchronizes object states of this scenario with the simulator. For
         example, this is used to update the :attr:`.Vehicle.state` fields of
@@ -648,7 +638,17 @@ class Scenario:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to update its state.')
 
-        self.bng.update_scenario()
+        data: StrDict = dict(type='UpdateScenario')
+        data['vehicles'] = list()
+        for vehicle in self.vehicles:
+            data['vehicles'].append(vehicle.vid)
+        resp = self.bng.send(data).recv('ScenarioUpdate')
+
+        scenario_vehicles = {vehicle.vid: vehicle for vehicle in self.vehicles}
+        for name, vehicle_state in resp['vehicles'].items():
+            vehicle = scenario_vehicles.get(name, None)
+            if vehicle:
+                vehicle.state = vehicle_state
 
 
 class ScenarioObject:
@@ -656,16 +656,26 @@ class ScenarioObject:
     This class is used to represent objects in the simulator's environment. It
     contains basic information like the object type, position, rotation, and
     scale.
+
+    Creates a scenario object with the given parameters.
+
+    Args:
+        oid: name of the asset
+        name: asset id
+        otype: type of the object according to the BeamNG classification
+        pos: x, y, and z coordinates
+        scale: defining the scale along the x,y, and z axis.
+        rot_quat: Quaternion describing the initial orientation. Defaults to None.
     """
 
     @staticmethod
-    def from_game_dict(d: ConnData):
-        oid = None
-        name = None
-        otype = None
-        pos = None
-        rot_quat = None
-        scale = None
+    def from_game_dict(d: StrDict) -> ScenarioObject:
+        oid = ''
+        name = ''
+        otype = ''
+        pos = (0, 0, 0)
+        rot_quat = (0, 0, 0, 0)
+        scale = (0, 0, 0)
         if 'id' in d:
             oid = d['id']
             del d['id']
@@ -692,17 +702,9 @@ class ScenarioObject:
 
         return ScenarioObject(oid, name, otype, pos, scale, rot_quat, **d)
 
-    def __init__(self, oid, name, otype, pos, scale, rot_quat=None, **options):
-        """Creates a scenario object with the given parameters.
-
-        Args:
-            oid (string): name of the asset
-            name (string): asset id
-            otype (string): type of the object according to the BeamNG classification
-            pos (tuple): x, y, and z coordinates
-            scale (tuple): defining the scale along the x,y, and z axis.
-            rot_quat (tuple, optional): Quatertnion describing the initial orientation. Defaults to None.
-        """
+    def __init__(
+            self, oid: str, name: str | None, otype: str, pos: Float3, scale: Float3, rot_quat: Quat | None = None, **
+            options: str):
         self.id = oid
         self.name = name
         self.type = otype
@@ -712,26 +714,24 @@ class ScenarioObject:
         self.opts = options
         self.children = []
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, type(self)):
             return self.id == other.id
 
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __str__(self):
-        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
-        s = s.format(self.type, self.id, self.name, *self.pos)
-        return s
+    def __str__(self) -> str:
+        return f'{self.type} [{self.id}:{self.name}] @ ({self.pos[0]:5.2f}, {self.pos[1]:5.2f}, {self.pos[2]:5.2f})'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
 class SceneObject:
-    def __init__(self, options: ConnData):
+    def __init__(self, options: StrDict):
         self.id = options.get('id', None)
         if 'id' in options:
             del options['id']
@@ -744,15 +744,15 @@ class SceneObject:
         if 'type' in options:
             del options['type']
 
-        self.pos = options.get('position', [0, 0, 0])
+        self.pos = options.get('position', (0, 0, 0))
         if 'position' in options:
             del options['position']
 
-        self.rot = options.get('rotation', [0, 0, 0, 0])
+        self.rot = options.get('rotation', (0, 0, 0, 0))
         if 'rotation' in options:
             del options['rotation']
 
-        self.scale = options.get('scale', [0, 0, 0])
+        self.scale = options.get('scale', (0, 0, 0))
         if 'scale' in options:
             del options['scale']
 
@@ -765,20 +765,36 @@ class SceneObject:
 
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
         s = s.format(self.type, self.id, self.name, *self.pos)
         return s
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
+class DecalRoad(SceneObject):
+    def __init__(self, options: StrDict):
+        super(DecalRoad, self).__init__(options)
+        self.lines = options.get('lines', [])
+
+        self.annotation = options.get('annotation', None)
+        self.detail = options.get('Detail', None)
+        self.material = options.get('Material', None)
+        self.break_angle = options.get('breakAngle', None)
+        self.drivability = options.get('drivability', None)
+        self.flip_direction = options.get('flipDirection', False)
+        self.improved_spline = options.get('improvedSpline', False)
+        self.lanes_left = options.get('lanesLeft', None)
+        self.lanes_right = options.get('lanesRight', None)
+        self.one_way = options.get('oneWay', False)
+        self.over_objects = options.get('overObjects', False)
+
+
 class StaticObject(ScenarioObject):
-    def __init__(self, name, pos, scale, shape, rot_quat=None):
-        super(StaticObject, self).__init__(name, None, 'TSStatic',
-                                           pos, scale, rot_quat=rot_quat,
-                                           shapeName=shape)
+    def __init__(self, name: str, pos: Float3, scale: Float3, shape: str, rot_quat: Quat | None = None):
+        super(StaticObject, self).__init__(name, None, 'TSStatic', pos, scale, rot_quat=rot_quat, shapeName=shape)

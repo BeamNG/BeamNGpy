@@ -12,227 +12,122 @@ import mmap
 import os
 import struct
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Optional
-from xml.dom import minidom
-from xml.etree import ElementTree
-from xml.etree.ElementTree import Element, SubElement
+from typing import TYPE_CHECKING, Any, List, Type
 
 import numpy as np
-from beamngpy.beamngcommon import LOGGER_ID, BNGError, BNGValueError, ack
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
+from beamngpy.sensors.communication_utils import (send_sensor_request,
+                                                  set_sensor)
+from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
+from PIL import Image, ImageOps
 
-from .communication_utils import send_sensor_request, set_sensor
+from . import utils
 
 if TYPE_CHECKING:
-    from ..beamng import BeamNGpy, Vehicle
-    from ..types import ConnData, Float2, Float3, Int2
+    from beamngpy.beamng import BeamNGpy
+    from beamngpy.vehicle import Vehicle
 
 
 class Camera:
+    """
+    Creates a camera sensor.
+
+    Args:
+        name: A unique name for this camera sensor.
+        bng: The BeamNGpy instance, with which to communicate to the simulation.
+        vehicle: The vehicle to which this sensor should be attached, if any.
+        requested_update_time: The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
+        update_priority: The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1.
+        pos: (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
+        dir: (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
+        up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
+        resolution: (X, Y) The resolution of the sensor images.
+        field_of_view_y: The sensor vertical field of view parameters.
+        near_far_planes: (X, Y) The sensor near and far plane distances.
+        is_using_shared_memory: A flag which indicates if we should use shared memory to send/recieve the sensor readings data.
+        is_render_colours: A flag which indicates if this sensor should render colour data.
+        is_render_annotations: A flag which indicates if this sensor should render semantic annotation data.
+        is_render_instance: A flag which indicates if this sensor should render instance annotation data.
+        is_render_depth: A flag which indicates if this sensor should render depth data.
+        is_depth_inverted: A flag which indicates if the depth values should be shown white->black or black->white, as distance increases.
+        is_visualised: A flag which indicates if this LiDAR sensor should appear visualised or not.
+        is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
+        is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
+        is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+    """
+
     @staticmethod
-    def extract_bounding_boxes(semantic_data, instance_data, classes):
+    def extract_bounding_boxes(
+            semantic_image: Image.Image, instance_image: Image.Image, classes: StrDict) -> List[StrDict]:
         """
         Analyzes the given semantic annotation and instance annotation images for its object bounding boxes. The identified objects are returned as
         a list of dictionaries containing their bounding box corners, class of object according to the corresponding colour in the semantic
         annotations and the given class mapping, and the colour of the object in the instance annotation.
 
         Args:
-            semantic_data (:class:`.Image`): The image containing semantic annotation information.
-            instance_data (:class:`.Image`): The image containing instance annotation information.
-            classes (dict): A mapping of colours to their class names to identify object types based on the semantic annotation information. The keys in
-                this dictionary are the respective colours expressed as a 24-bit integer, i.e. [r * 256^2 + g * 256 + b].
+            semantic_image: The image containing semantic annotation information.
+            instance_image: The image containing instance annotation information.
+            classes: A mapping of colours to their class names to identify object types based on the semantic annotation information. The keys in
+                    this dictionary are the respective colours expressed as a 24-bit integer, i.e. [r * 256^2 + g * 256 + b].
 
         Returns:
             A list of bounding boxes specified as dictionaries. Example: 'bbox': [min_x, min_y, max_x, max_y], 'color': [233, 11, 15], 'class': ['CAR'],
             where min_x, min_y, max_x, max_y mark the corners of the bounding box, colour contains the RGB colour of the object in the instance
             annotations, and class the object type identified through the given class mapping.
         """
-
-        semantic_data = np.array(semantic_data)
-        instance_data = np.array(instance_data)
-
-        if semantic_data.shape != instance_data.shape:
-            raise BNGValueError('Error - The given semantic and instance annotation images have different resolutions.')
-
-        bounding_boxes = {}
-        for y in range(semantic_data.shape[0]):
-            for x in range(semantic_data.shape[1]):
-                colour = instance_data[y, x]
-                colour_key = colour[0] * 65536 + colour[1] * 256 + colour[2]
-                if colour_key == 0:
-                    continue
-
-                clazz = semantic_data[y, x]
-                clazz_key = clazz[0] * 65536 + clazz[1] * 256 + clazz[2]
-                if classes[clazz_key] == 'BACKGROUND':
-                    continue
-
-                if colour_key in bounding_boxes:
-                    entry = bounding_boxes[colour_key]
-                    box = entry['bbox']
-                    box[0] = min(box[0], x)
-                    box[1] = min(box[1], y)
-                    box[2] = max(box[2], x)
-                    box[3] = max(box[3], y)
-                else:
-                    entry = {
-                        'bbox': [x, y, x, y],
-                        'class': classes[clazz_key],
-                        'color': [*colour],
-                    }
-                    bounding_boxes[colour_key] = entry
-
-        box_list = []
-        for _, v in bounding_boxes.items():
-            box_list.append(v)
-        return box_list
+        return utils.extract_bounding_boxes(semantic_image, instance_image, classes)
 
     @staticmethod
-    def draw_bounding_boxes(bounding_boxes, colour, width=3, font='arial.ttf', font_size=14):
+    def draw_bounding_boxes(
+            bounding_boxes: List[StrDict],
+            colour: Image.Image, width: int = 3, font: str = 'arial.ttf', font_size: int = 14) -> Image.Image:
         """
         Draws the given list of bounding boxes onto the given image. The boxes are drawn with the given width of outlines in pixels and the given font
         and size configuration. NOTE: The given image is not directly modified and the boxes are drawn onto a copy.
 
         Args:
-            bounding_boxes (list): List of bounding boxes to draw.
-            colour (:class:`.Image`): The image to draw the bounding boxes on.
-            width (int): The width of bounding box outlines in pixels.
-            font (str): A string specifying the font which bounding box labels will have.
-            fontsize (int): The font size used when drawing labels.
+            bounding_boxes: List of bounding boxes to draw.
+            colour: The image to draw the bounding boxes on.
+            width: The width of bounding box outlines in pixels.
+            font: A string specifying the font which bounding box labels will have.
+            font_size: The font size used when drawing labels.
 
         Returns:
             A `:class:`.Image` that is a copy of the given image with bounding boxes drawn onto it.
         """
-
-        colour = colour.copy()
-        draw = ImageDraw.Draw(colour)
-
-        font = ImageFont.truetype(font=font, size=font_size)
-
-        for i, box in enumerate(bounding_boxes):
-            box_colour = box['color']
-            box_colour = (box_colour[0], box_colour[1], box_colour[2])
-            box_corners = box['bbox']
-            draw.rectangle(box_corners, outline=box_colour, width=width)
-
-            text = '{}_{}'.format(box['class'], i)
-            text_pos = (box_corners[0], box_corners[3])
-            text_anchor = 'lt'
-
-            if text_pos[1] > colour.size[1] * 0.9:
-                text_pos = (box_corners[0], box_corners[1])
-                text_anchor = 'lb'
-
-            draw.text(text_pos, text, fill='#FFFFFF', stroke_width=2,
-                      stroke_fill='#000000', font=font, anchor=text_anchor)
-
-        return colour
+        return utils.draw_bounding_boxes(bounding_boxes, colour, width, font, font_size)
 
     @staticmethod
-    def export_bounding_boxes_xml(bounding_boxes, folder=None, filename=None, path=None, database=None, size=None):
+    def export_bounding_boxes_xml(
+            bounding_boxes: List[StrDict],
+            folder: str | None = None, filename: str | None = None, path: str | None = None, database: str | None = None, size: Int3
+            | None = None) -> str:
         """
         Exports the given list of bounding boxes to the Pascal-VOC XML standard. Additional properties to this function correspond to tags in the
         Pascal-VOC standard.
 
         Args:
-            bounding_boxes (list): The list of bounding boxes to export.
-            folder (str): Contents of the 'folder' tag.
-            filename (str): Contents of the 'filename' tag.
-            path (str): Contents of the 'path' tag.
-            database (str): Contents of the 'database' tag.
-            size (tuple): Contents of the 'size tag. It's expected to be a tuple of the image width, height, and depth.
+            bounding_boxes: The list of bounding boxes to export.
+            folder: Contents of the 'folder' tag.
+            filename: Contents of the 'filename' tag.
+            path: Contents of the 'path' tag.
+            database: Contents of the 'database' tag.
+            size: Contents of the 'size tag. It's expected to be a tuple of the image width, height, and depth.
 
         Returns:
             XML string encoding of the given list of bounding boxes according to Pascal-VOC.
         """
-        root = Element('annotation')
-
-        if folder:
-            folder_elem = SubElement(root, 'folder')
-            folder_elem.text = folder
-
-        if filename:
-            file_elem = SubElement(root, 'filename')
-            file_elem.text = filename
-
-        if path:
-            path_elem = SubElement(root, 'path')
-            path_elem.text = path
-
-        if database:
-            source = SubElement(root, 'source')
-            database_elem = SubElement(source, 'database')
-            database_elem.text = database
-
-        if size:
-            size_elem = SubElement(root, 'size')
-            width = SubElement(size_elem, 'width')
-            width.text = str(size[0])
-            height = SubElement(size_elem, 'height')
-            height.text = str(size[1])
-            depth = SubElement(size_elem, 'depth')
-            depth.text = str(size[2])
-
-        segmented = SubElement(root, 'segmented')
-        segmented.text = '0'
-
-        for i, bbox in enumerate(bounding_boxes):
-            object_elem = SubElement(root, 'object')
-            name = SubElement(object_elem, 'name')
-            name.text = '{}_{}'.format(bbox['class'], i)
-            pose = SubElement(object_elem, 'pose')
-            pose.text = 'Unspecified'
-            truncated = SubElement(object_elem, 'truncated')
-            truncated.text = '0'
-            difficult = SubElement(object_elem, 'difficult')
-            difficult.text = '0'
-            bndbox = SubElement(object_elem, 'bndbox')
-            xmin = SubElement(bndbox, 'xmin')
-            xmin.text = str(bbox['bbox'][0])
-            ymin = SubElement(bndbox, 'ymin')
-            ymin.text = str(bbox['bbox'][1])
-            xmax = SubElement(bndbox, 'xmax')
-            xmax.text = str(bbox['bbox'][2])
-            ymax = SubElement(bndbox, 'ymax')
-            ymax.text = str(bbox['bbox'][3])
-
-        ret = ElementTree.tostring(root, 'utf-8')
-        ret = minidom.parseString(ret)
-        return ret.toprettyxml(indent='  ')
+        return utils.export_bounding_boxes_xml(bounding_boxes, folder, filename, path, database, size)
 
     def __init__(
-            self, name: str, bng: BeamNGpy, vehicle: Optional[Vehicle] = None, requested_update_time=0.1, update_priority=0.0,
-            pos: Float3 = (0, 0, 3), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1),
-            resolution: Int2 = (512, 512), field_of_view_y=70, near_far_planes: Float2 = (0.05, 100.0),
-            is_using_shared_memory=True, is_render_colours=True, is_render_annotations=True, is_render_instance=False,
-            is_render_depth=True, is_depth_inverted=False, is_visualised=True, is_static=False,
-            is_snapping_desired=False, is_force_inside_triangle=False):
-        """
-        Creates a camera sensor.
-
-        Args:
-            name (str): A unique name for this camera sensor.
-            bng (BeamNGpy): The BeamNGpy instance, with which to communicate to the simulation.
-            vehicle (Vehicle class): The vehicle to which this sensor should be attached, if any.
-            requested_update_time (float): The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
-            update_priority (float): The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1.
-            pos (tuple): (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
-            dir (tuple): (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
-            up (tuple): (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
-            resolution (tuple): (X, Y) The resolution of the sensor images.
-            field_of_view_y (float): The sensor vertical field of view parameters.
-            near_far_planes (tuple): (X, Y) The sensor near and far plane distances.
-            is_using_shared_memory (bool): A flag which indicates if we should use shared memory to send/recieve the sensor readings data.
-            is_render_colours (bool): A flag which indicates if this sensor should render colour data.
-            is_render_annotations (bool): A flag which indicates if this sensor should render semantic annotation data.
-            is_render_instance (bool): A flag which indicates if this sensor should render instance annotation data.
-            is_render_depth (bool): A flag which indicates if this sensor should render depth data.
-            is_depth_inverted (bool): A flag which indicates if the depth values should be shown white->black or black->white, as distance increases.
-            is_visualised (bool): A flag which indicates if this LiDAR sensor should appear visualised or not.
-            is_static (bool): A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
-            is_snapping_desired (bool): A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
-            is_force_inside_triangle (bool): A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
-        """
+            self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
+            update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
+            dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512),
+            field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
+            is_using_shared_memory: bool = True, is_render_colours: bool = True, is_render_annotations: bool = True,
+            is_render_instance: bool = False, is_render_depth: bool = True, is_depth_inverted: bool = False,
+            is_visualised: bool = True, is_static: bool = False, is_snapping_desired: bool = False,
+            is_force_inside_triangle: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
         self.logger.setLevel(DEBUG)
 
@@ -291,29 +186,31 @@ class Camera:
             is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
-    def _send_sensor_request(self, type: str, ack: Optional[str] = None, **kwargs):
+    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
         if not self.bng.connection:
             raise BNGError('The simulator is not connected!')
         return send_sensor_request(self.bng.connection, type, ack, **kwargs)
 
-    def _set_sensor(self, type: str, **kwargs):
+    def _set_sensor(self, type: str, ack: str | None = None, **kwargs: Any) -> None:
         if not self.bng.connection:
             raise BNGError('The simulator is not connected!')
-        return set_sensor(self.bng.connection, type, **kwargs)
+        set_sensor(self.bng.connection, type, ack, **kwargs)
 
-    def _convert_to_image(self, raw_data, width, height, channels, data_type):
+    def _convert_to_image(
+            self, raw_data: List[Any],
+            width: int, height: int, channels: int, data_type: Type) -> Image.Image:
         """
         Converts raw image data from the simulator into image format.
 
         Args:
-            raw_data (array): The 1D buffer to be processed.
-            width (int): The width of the image to be rendered.
-            height (int): The height of the image to be rendered.
-            channels (int): The number of channels in the data, here either 4 for RGBA or 1 for depth data.
+            raw_data: The 1D buffer to be processed.
+            width: The width of the image to be rendered.
+            height: The height of the image to be rendered.
+            channels: The number of channels in the data, here either 4 for RGBA or 1 for depth data.
             data_type: The type of data, eg 'np.uint8', 'np.float32'.
 
         Returns:
-            (PIL image object): The processed image.
+            The processed image.
         """
         # Convert to a numpy array.
         decoded = np.frombuffer(bytes(raw_data), dtype=data_type)
@@ -331,16 +228,16 @@ class Camera:
         else:
             return ImageOps.mirror(ImageOps.flip(image))
 
-    def _depth_buffer_processing(self, raw_depth_values):
+    def _depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
         """
         Converts raw depth buffer data to visually-clear intensity values in the range [0, 255].
         We process the data so that small changes in distance are better shown, rather than just using linear interpolation.
 
         Args:
-            raw_depth_values (array): The raw 1D buffer of depth values.
+            raw_depth_values: The raw 1D buffer of depth values.
 
         Returns:
-            (array): The processed intensity values in the range [0, 255].
+            The processed intensity values in the range [0, 255].
         """
 
         # Sort the depth values, and cache the sorting map.
@@ -385,20 +282,19 @@ class Camera:
 
         return depth_intensity
 
-    def _binary_to_image(self, binary):
+    def _binary_to_image(self, binary: StrDict) -> StrDict:
         """
         Converts the binary string data from the simulator, which contains the data buffers for colour, annotations, and depth, into images.
 
         Args:
-            binary (binary string): The raw readings data, as a binary string.
+            binary: The raw readings data, as a binary string.
         Returns:
-            (dict): A dictionary containing the processed images.
+            A dictionary containing the processed images.
         """
         width = self.resolution[0]
         height = self.resolution[1]
 
-        processed_readings: ConnData = dict(type='Camera')
-
+        processed_readings: StrDict = dict(type='Camera')
         if self.is_render_colours:
             colour = []
             for i in range(len(binary['colour'])):
@@ -433,7 +329,7 @@ class Camera:
 
         return processed_readings
 
-    def remove(self):
+    def remove(self) -> None:
         """
         Removes this sensor from the simulation.
         """
@@ -463,13 +359,13 @@ class Camera:
         self._close_camera()
         self.logger.debug('Camera - sensor removed: 'f'{self.name}')
 
-    def poll(self):
+    def poll(self) -> StrDict:
         """
         Gets the most-recent readings for this sensor.
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            (dict): The processed images.
+            The processed images.
         """
         # Send and receive a request for readings data from this sensor.
         raw_readings = self._send_sensor_request(
@@ -481,7 +377,7 @@ class Camera:
         width = self.resolution[0]
         height = self.resolution[1]
         buffer_size = width * height * 4
-        images: ConnData = dict(type='Camera')
+        images: StrDict = dict(type='Camera')
         if self.is_using_shared_memory:
             # CASE 1: We are using shared memory.
             if self.colour_shmem:
@@ -536,42 +432,42 @@ class Camera:
             self.logger.debug('Camera - raw sensor readings converted from base64 to image format: 'f'{self.name}')
         return images
 
-    def send_ad_hoc_poll_request(self):
+    def send_ad_hoc_poll_request(self) -> int:
         """
         Sends an ad-hoc polling request to the simulator. This will be executed by the simulator immediately, but will take time to process, so the
         result can be queried after some time has passed. To check if it has been processed, we first call the is_ad_hoc_poll_request_ready() function,
         then call the collect_ad_hoc_poll_request() function to retrieve the sensor reading.
 
         Returns:
-            (int): A unique Id number for the ad-hoc request.
+            A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Camera - ad-hoc polling request sent: 'f'{self.name}')
-        return self._send_sensor_request(
-            'SendAdHocRequestCamera', ack='CompletedSendAdHocRequestCamera', name=self.name)['data']
+        return int(self._send_sensor_request(
+            'SendAdHocRequestCamera', ack='CompletedSendAdHocRequestCamera', name=self.name)['data'])
 
-    def is_ad_hoc_poll_request_ready(self, request_id):
+    def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
         Checks if a previously-issued ad-hoc polling request has been processed and is ready to collect.
 
         Args:
-            request_id (int): The unique Id number of the ad-hoc request. This was returned from the simulator upon sending the ad-hoc polling request.
+            request_id: The unique Id number of the ad-hoc request. This was returned from the simulator upon sending the ad-hoc polling request.
 
         Returns:
-            (bool): A flag which indicates if the ad-hoc polling request is complete.
+            A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Camera - ad-hoc polling request checked for completion: 'f'{self.name}')
         return self._send_sensor_request(
             'IsAdHocPollRequestReadyCamera', ack='CompletedIsAdHocPollRequestReadyCamera', requestId=request_id)['data']
 
-    def collect_ad_hoc_poll_request(self, request_id):
+    def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
         Collects a previously-issued ad-hoc polling request, if it has been processed.
 
         Args:
-            request_id (int): The unique Id number of the ad-hoc request. This was returned from the simulator upon sending the ad-hoc polling request.
+            request_id: The unique Id number of the ad-hoc request. This was returned from the simulator upon sending the ad-hoc polling request.
 
         Returns:
-            (dict): The readings data.
+            The readings data.
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
         raw_readings = self._send_sensor_request(
@@ -581,13 +477,13 @@ class Camera:
         return self._binary_to_image(raw_readings)
 
     # TODO: Should be removed when GE-2170 is complete.
-    def get_full_poll_request(self):
+    def get_full_poll_request(self) -> StrDict:
         """
         Gets a full camera request (semantic annotation and instance annotation data included).
         NOTE: this function blocks the simulation until the data request is completed.
 
         Returns:
-            (dict): The camera data, as images
+            The camera data, as images
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
         raw_readings = self._send_sensor_request(
@@ -606,154 +502,160 @@ class Camera:
         # Format the binary string data from the simulator.
         return data
 
-    def world_point_to_pixel(self, point):
+    def world_point_to_pixel(self, point: Float3) -> Int2:
         """
         Converts a 3D point in world space to the 2D pixel coordinate at which it is represented on this camera.
         NOTE: The pixel does not have to actually be visible on the camera image itself in order to retrieve a value; it can be obscured by geometry
         which is closer, or it can be run without respect to the near and far plane values of the camera.
 
         Args:
-            point (tuple): The given 3D point, in world space coordinates.
+            point: The given 3D point, in world space coordinates.
 
         Returns:
-            (list): The 2D pixel value which represents the given 3D point, on this camera.
+            The 2D pixel value which represents the given 3D point, on this camera.
         """
         pixel_data = self._send_sensor_request(
-            'CameraWorldPointToPixel', ack='CompletedCameraWorldPointToPixel', name=self.name, pointX=point[0],
-            pointY=point[1],
-            pointZ=point[2])['data']
-        return [int(pixel_data['x']), int(pixel_data['y'])]
+            'CameraWorldPointToPixel', ack='CompletedCameraWorldPointToPixel', name=self.name,
+            pointX=point[0], pointY=point[1], pointZ=point[2])['data']
+        return (int(pixel_data['x']), int(pixel_data['y']))
 
-    def get_position(self):
+    def get_position(self) -> Float3:
         """
         Gets the current world-space position of this sensor.
 
         Returns:
-            (list): The sensor position.
+            The sensor position.
         """
         table = self._send_sensor_request('GetCameraSensorPosition',
                                           ack='CompletedGetCameraSensorPosition', name=self.name)['data']
-        return [table['x'], table['y'], table['z']]
+        return (table['x'], table['y'], table['z'])
 
-    def get_direction(self):
+    def get_direction(self) -> Float3:
         """
         Gets the current forward direction vector of this sensor.
 
         Returns:
-            (list): The sensor direction.
+            The sensor direction.
         """
         table = self._send_sensor_request('GetCameraSensorDirection',
                                           ack='CompletedGetCameraSensorDirection', name=self.name)['data']
-        return [table['x'], table['y'], table['z']]
+        return (table['x'], table['y'], table['z'])
 
-    def get_up(self):
+    def get_up(self) -> Float3:
         """
         Gets the current up direction vector of this sensor.
 
         Returns:
-            (list): The sensor direction.
+            The sensor direction.
         """
         table = self._send_sensor_request('GetCameraSensorUp', ack='CompletedGetCameraSensorUp', name=self.name)['data']
-        return [table['x'], table['y'], table['z']]
+        return (table['x'], table['y'], table['z'])
 
-    def get_requested_update_time(self):
+    def get_requested_update_time(self) -> float:
         """
         Gets the current 'requested update time' value for this sensor.
 
         Returns:
-            (float): The requested update time.
+            The requested update time.
         """
         return self._send_sensor_request(
             'GetCameraRequestedUpdateTime', ack='CompletedGetCameraRequestedUpdateTime', name=self.name)['data']
 
-    def get_update_priority(self):
+    def get_update_priority(self) -> float:
         """
         Gets the current 'update priority' value for this sensor, in range [0, 1], with priority going 0 --> 1, highest to lowest.
 
         Returns:
-            (float): The update priority value.
+            The update priority value.
         """
         return self._send_sensor_request(
             'GetCameraUpdatePriority', ack='CompletedGetCameraUpdatePriority', name=self.name)['data']
 
-    def get_max_pending_requests(self):
+    def get_max_pending_requests(self) -> int:
         """
         Gets the current 'max pending requests' value for this sensor. This is the maximum number of polling requests which can be issued at one time.
 
         Returns:
-            (int): The max pending requests value.
+            The max pending requests value.
         """
-        return self._send_sensor_request('GetCameraMaxPendingGpuRequests',
-                                         ack='CompletedGetCameraMaxPendingGpuRequests', name=self.name)['data']
+        return int(self._send_sensor_request('GetCameraMaxPendingGpuRequests',
+                                             ack='CompletedGetCameraMaxPendingGpuRequests', name=self.name)['data'])
 
-    @ ack('CompletedSetCameraSensorPosition')
-    def set_position(self, pos):
+    def set_position(self, pos: Float3) -> None:
         """
         Sets the current world-space position for this sensor.
 
         Args:
-            pos (tuple): The new position.
+            pos: The new position.
         """
-        return self._set_sensor('SetCameraSensorPosition', name=self.name, posX=pos[0], posY=pos[1], posZ=pos[2])
+        return self._set_sensor(
+            'SetCameraSensorPosition', ack='CompletedSetCameraSensorPosition', name=self.name, posX=pos[0],
+            posY=pos[1],
+            posZ=pos[2])
 
-    @ ack('CompletedSetCameraSensorDirection')
-    def set_direction(self, dir):
+    def set_direction(self, dir: Float3) -> None:
         """
         Sets the current forward direction vector of this sensor.
 
         Args:
-            pos (tuple): The new forward direction vector.
+            dir: The new forward direction vector.
         """
-        return self._set_sensor('SetCameraSensorDirection', name=self.name, dirX=dir[0], dirY=dir[1], dirZ=dir[2])
+        self._set_sensor(
+            'SetCameraSensorDirection', ack='CompletedSetCameraSensorDirection', name=self.name,
+            dirX=dir[0], dirY=dir[1], dirZ=dir[2])
 
-    @ ack('CompletedSetCameraSensorUp')
-    def set_up(self, up):
+    def set_up(self, up: Float3) -> None:
         """
         Sets the current up vector of this sensor.
 
         Args:
-            pos (tuple): The new up vector.
+            pos: The new up vector.
         """
-        return self._set_sensor('SetCameraSensorUp', name=self.name, upX=up[0], upY=up[1], upZ=up[2])
+        self._set_sensor('SetCameraSensorUp', ack='CompletedSetCameraSensorUp',
+                         name=self.name, upX=up[0], upY=up[1], upZ=up[2])
 
-    @ ack('CompletedSetCameraRequestedUpdateTime')
-    def set_requested_update_time(self, requested_update_time):
+    def set_requested_update_time(self, requested_update_time: float) -> None:
         """
         Sets the current 'requested update time' value for this sensor.
 
         Args:
-            requested_update_time (float): The new requested update time.
+            requested_update_time: The new requested update time.
         """
-        return self._set_sensor('SetCameraRequestedUpdateTime', name=self.name, updateTime=requested_update_time)
+        return self._set_sensor(
+            'SetCameraRequestedUpdateTime', ack='CompletedSetCameraRequestedUpdateTime', name=self.name,
+            updateTime=requested_update_time)
 
-    @ ack('CompletedSetCameraUpdatePriority')
-    def set_update_priority(self, update_priority):
+    def set_update_priority(self, update_priority: float) -> None:
         """
         Sets the current 'update priority' value for this sensor, in range [0, 1], with priority going 0 --> 1, , highest to lowest.
 
         Args:
-            update_priority (float): The new update priority value.
+            update_priority: The new update priority value.
         """
-        return self._set_sensor('SetCameraUpdatePriority', name=self.name, updatePriority=update_priority)
+        return self._set_sensor(
+            'SetCameraUpdatePriority', ack='CompletedSetCameraUpdatePriority', name=self.name,
+            updatePriority=update_priority)
 
-    @ ack('CompletedSetCameraMaxPendingGpuRequests')
-    def set_max_pending_requests(self, max_pending_requests):
+    def set_max_pending_requests(self, max_pending_requests: int) -> None:
         """
         Sets the current 'max pending requests' value for this sensor. This is the maximum number of polling requests which can be issued at one time.
 
         Args:
-            max_pending_requests (int): The new max pending requests value.
+            max_pending_requests: The new max pending requests value.
         """
-        return self._set_sensor('SetCameraMaxPendingGpuRequests', name=self.name,
-                                maxPendingGpuRequests=max_pending_requests)
+        return self._set_sensor(
+            'SetCameraMaxPendingGpuRequests', ack='CompletedSetCameraMaxPendingGpuRequests', name=self.name,
+            maxPendingGpuRequests=max_pending_requests)
 
-    @ ack('OpenedCamera')
-    def _open_camera(self, name, vehicle, requested_update_time, update_priority, size, field_of_view_y,
-                     near_far_planes, pos, dir, up, is_using_shared_memory, colour_shmem_handle, colour_shmem_size,
-                     annotation_shmem_handle, annotation_shmem_size, depth_shmem_handle, depth_shmem_size,
-                     is_render_colours, is_render_annotations, is_render_instance, is_render_depth, is_visualised,
-                     is_static, is_snapping_desired, is_force_inside_triangle):
-        data: ConnData = dict(type='OpenCamera')
+    def _open_camera(
+            self, name: str, vehicle: Vehicle | None, requested_update_time: float, update_priority: float, size: Int2,
+            field_of_view_y: float, near_far_planes: Float2, pos: Float3, dir: Float3, up: Float3,
+            is_using_shared_memory: bool, colour_shmem_handle: str | None, colour_shmem_size: int,
+            annotation_shmem_handle: str | None, annotation_shmem_size: int, depth_shmem_handle: str | None,
+            depth_shmem_size: int, is_render_colours: bool, is_render_annotations: bool, is_render_instance: bool,
+            is_render_depth: bool, is_visualised: bool, is_static: bool, is_snapping_desired: bool,
+            is_force_inside_triangle: bool) -> None:
+        data: StrDict = dict(type='OpenCamera')
         data['vid'] = 0
         if vehicle is not None:
             data['vid'] = vehicle.vid
@@ -781,14 +683,11 @@ class Camera:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        resp = self.bng.send(data)
+        self.bng.send(data).ack('OpenedCamera')
         self.logger.info(f'Opened Camera: "{name}"')
-        return resp
 
-    @ack('ClosedCamera')
-    def _close_camera(self):
+    def _close_camera(self) -> None:
         data = dict(type='CloseCamera')
         data['name'] = self.name
-        resp = self.bng.send(data)
+        self.bng.send(data).ack('ClosedCamera')
         self.logger.info(f'Closed Camera: "{self.name}"')
-        return resp

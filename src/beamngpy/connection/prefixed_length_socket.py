@@ -11,7 +11,7 @@ class PrefixedLengthSocket:
     HEADER_BYTES = 4
 
     @staticmethod
-    def _initialize_socket():
+    def _initialize_socket() -> socket.socket:
         """
         Create a socket with the appropriate parameters for TCP_NODELAY.
         """
@@ -20,7 +20,7 @@ class PrefixedLengthSocket:
         skt.settimeout(None)
         return skt
 
-    def _recv_exactly(self, length: int):
+    def _recv_exactly(self, length: int) -> bytes:
         """
         Receives exactly ``length`` bytes from the socket. If a socket error happens, the function
         tries to re-establish the connection.
@@ -49,22 +49,22 @@ class PrefixedLengthSocket:
     def __hash__(self) -> int:
         return id(self)
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
         length = pack('!I', len(data))  # Prefix the message length to the front of the message data.
         data = length + data
         self.skt.sendall(data)
 
-    def recv(self):
+    def recv(self) -> bytes:
         packed_length = self._recv_exactly(self.HEADER_BYTES)
         length = unpack('!I', packed_length)[0]
 
         message = self._recv_exactly(length)
         return message
 
-    def close(self):
+    def close(self) -> None:
         self.skt.close()
 
-    def reconnect(self):
+    def reconnect(self) -> None:
         """
         Attempts to re-connect using this instance, with the cached port and host.
         This will be called if a connection has been lost, in order to re-establish the connection.

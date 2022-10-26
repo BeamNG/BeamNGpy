@@ -7,11 +7,13 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
 """
+from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from typing import Optional
+from typing import Any, cast
 
-from .beamngcommon import LOGGER_ID
+from beamngpy.logging import LOGGER_ID
+from beamngpy.types import Int2, StrDict
 
 module_logger = getLogger(f'{LOGGER_ID}.level')
 module_logger.setLevel(DEBUG)
@@ -24,7 +26,7 @@ class Level:
     """
 
     @staticmethod
-    def from_dict(d):
+    def from_dict(d: StrDict) -> Level:
         if 'levelName' in d:
             name = d['levelName']
             del d['levelName']
@@ -32,10 +34,11 @@ class Level:
             name = 'unknown'
 
         if 'size' in d:
-            size = d['size']
+            assert isinstance(d['size'], tuple)
+            size = cast(Int2, d['size'])
             del d['size']
         else:
-            size = [-1, -1]
+            size = (-1, -1)
 
         if 'misFilePath' in d:
             path = d['misFilePath']
@@ -50,7 +53,7 @@ class Level:
 
         return level
 
-    def __init__(self, name: str, size, path: Optional[str], **props):
+    def __init__(self, name: str, size: Int2, path: str | None, **props: Any):
         self.logger = getLogger(f'{LOGGER_ID}.Level')
         self.logger.setLevel(DEBUG)
         self.name = name
@@ -61,19 +64,19 @@ class Level:
             path = 'unknown.{}'.format(id(self))
             self.logger.debug(f'No path given, setting path to \'{path}\'')
 
-        self.properties = {**props}
+        self.properties = props
         self.scenarios = {}
         prop_description = ', '.join(list(self.properties.keys()))
         self.logger.debug('adding these properties to level object: '
                           f'{prop_description}')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.path)
 
-    def __eq__(self, o):
+    def __eq__(self, o: Any) -> bool:
         if isinstance(o, Level):
             return self.path == o.path
         return False
