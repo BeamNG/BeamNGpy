@@ -129,10 +129,10 @@ class BeamNGpy:
         self.add_debug_square_prism = self.debug.add_square_prism
         self.remove_debug_square_prism = self.debug.remove_square_prism
 
-        self.environment = EnvironmentApi(self)
-        self.set_tod = self.environment.set_tod
-        self.set_weather_preset = self.environment.set_weather_preset
-        self.set_gravity = self.environment.set_gravity
+        self.env = EnvironmentApi(self)
+        self.set_tod = self.env.set_tod
+        self.set_weather_preset = self.env.set_weather_preset
+        self.set_gravity = self.env.set_gravity
 
         self.scenario = ScenarioApi(self)
         self.get_levels = self.scenario.get_levels

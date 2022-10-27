@@ -22,7 +22,7 @@ class TrafficApi(Api):
         """
         data: StrDict = dict(type='StartTraffic')
         data['participants'] = [p.vid for p in participants]
-        self.send(data).ack('TrafficStarted')
+        self._send(data).ack('TrafficStarted')
 
     def stop(self, stop: bool = False) -> None:
         """
@@ -35,4 +35,4 @@ class TrafficApi(Api):
         """
         data: StrDict = dict(type='StopTraffic')
         data['stop'] = stop
-        self.send(data).ack('TrafficStopped')
+        self._send(data).ack('TrafficStopped')

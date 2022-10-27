@@ -20,7 +20,7 @@ class SettingsApi(Api):
         data = dict(type='ChangeSetting')
         data['key'] = key
         data['value'] = value
-        return self.send(data).ack('SettingsChanged')
+        return self._send(data).ack('SettingsChanged')
 
     def apply_graphics_setting(self) -> None:
         """
@@ -31,7 +31,7 @@ class SettingsApi(Api):
         take effect after the next launch.
         """
         data = dict(type='ApplyGraphicsSetting')
-        self.send(data).ack('GraphicsSettingApplied')
+        self._send(data).ack('GraphicsSettingApplied')
 
     def set_deterministic(self) -> None:
         """
@@ -41,7 +41,7 @@ class SettingsApi(Api):
         :meth:`~.BeamnGpy.set_steps_per_second`.
         """
         data = dict(type='SetPhysicsDeterministic')
-        self.send(data).ack('SetPhysicsDeterministic')
+        self._send(data).ack('SetPhysicsDeterministic')
 
     def set_nondeterministic(self) -> None:
         """
@@ -49,7 +49,7 @@ class SettingsApi(Api):
         setting is retained.
         """
         data = dict(type='SetPhysicsNonDeterministic')
-        self.send(data).ack('SetPhysicsNonDeterministic')
+        self._send(data).ack('SetPhysicsNonDeterministic')
 
     def set_steps_per_second(self, sps: int) -> None:
         """
@@ -63,7 +63,7 @@ class SettingsApi(Api):
             sps (int): The steps per second to set.
         """
         data = dict(type='FPSLimit', fps=sps)
-        self.send(data).ack('SetFPSLimit')
+        self._send(data).ack('SetFPSLimit')
 
     def remove_step_limit(self) -> None:
         """
@@ -71,7 +71,7 @@ class SettingsApi(Api):
         undefined time slices.
         """
         data = dict(type='RemoveFPSLimit')
-        self.send(data).ack('RemovedFPSLimit')
+        self._send(data).ack('RemovedFPSLimit')
 
     def set_particles_enabled(self, enabled: bool) -> None:
         """
@@ -82,4 +82,4 @@ class SettingsApi(Api):
         """
         data: StrDict = dict(type='ParticlesEnabled')
         data['enabled'] = enabled
-        self.send(data).ack('ParticlesSet')
+        self._send(data).ack('ParticlesSet')

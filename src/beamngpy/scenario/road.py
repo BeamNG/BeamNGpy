@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import List
 
 from beamngpy.logging import BNGValueError
-from beamngpy.types import Float3, Float4, Float5
+from beamngpy.scenario.scenario_object import SceneObject
+from beamngpy.types import Float3, Float4, Float5, StrDict
 
 
 class Road:
@@ -138,3 +139,21 @@ class MeshRoad:
                 raise BNGValueError(
                     'A decal road node should be either a 3-tuple (x, y, z), '
                     '4-tuple (x, y, z, width) or a 5-tuple (x, y, z, width, depth).')
+
+
+class DecalRoad(SceneObject):
+    def __init__(self, options: StrDict):
+        super(DecalRoad, self).__init__(options)
+        self.lines = options.get('lines', [])
+
+        self.annotation = options.get('annotation', None)
+        self.detail = options.get('Detail', None)
+        self.material = options.get('Material', None)
+        self.break_angle = options.get('breakAngle', None)
+        self.drivability = options.get('drivability', None)
+        self.flip_direction = options.get('flipDirection', False)
+        self.improved_spline = options.get('improvedSpline', False)
+        self.lanes_left = options.get('lanesLeft', None)
+        self.lanes_right = options.get('lanesRight', None)
+        self.one_way = options.get('oneWay', False)
+        self.over_objects = options.get('overObjects', False)

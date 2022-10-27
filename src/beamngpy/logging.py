@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import io
 import logging
+import pydoc
 import warnings
 from pathlib import Path
 from shutil import move
@@ -12,6 +14,7 @@ bngpy_logger = logging.getLogger(LOGGER_ID)
 module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
 comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
 bngpy_handlers = list()
+
 
 class BNGError(Exception):
     """
@@ -32,6 +35,7 @@ class BNGDisconnectedError(ValueError):
     Exception class for BeamNGpy being disconnected when it shouldn't.
     """
     pass
+
 
 def create_warning(msg: str, category: Any = None) -> None:
     """Helper function for BeamNGpy modules to create warnings.
@@ -122,3 +126,14 @@ def set_up_simple_logging(log_file: str | None = None,
                    log_communication=log_communication)
     if moved_log and fh is not None:
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
+
+
+def generate_docstring(obj: Any) -> str:
+    try:
+        buffer = io.StringIO()
+        pydoc.doc(obj, output=buffer)
+        buffer.seek(0)
+        docstring = buffer.read().split('\n')
+        return '\n'.join(docstring[2:])
+    except:
+        return ''

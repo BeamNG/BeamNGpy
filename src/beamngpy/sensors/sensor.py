@@ -24,16 +24,16 @@ if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
 
-class Sensor:
+class Sensor(dict):
     """
     Sensor meta-class declaring methods common to them.
     """
-
     def __init__(self):
-        self.data: Dict[str, Any] = {}
+        self.data: StrDict = self # backwards compatibility
 
-    def __getitem__(self, item: str) -> Any:
-        return self.data[item]
+    def replace(self, data: StrDict):
+        self.clear()
+        self.update(data)
 
     def attach(self, vehicle: Vehicle, name: str) -> None:
         """
@@ -43,9 +43,8 @@ class Sensor:
         map of sensors under the given name.
 
         Args:
-            vehicle (:class:`.Vehicle`): The vehicle instance the sensor is
-                                         being attached to.
-            name (str): The name the sensor is known under to the vehicle.
+            vehicle: The vehicle instance the sensor is being attached to.
+            name: The name the sensor is known under to the vehicle.
         """
         pass
 
@@ -57,9 +56,8 @@ class Sensor:
         vehicle's map of sensors under the given name.
 
         Args:
-            vehicle (:class:`.Vehicle`): The vehicle instance the sensor is
-                                         being detached from.
-            name (str): The name the sensor was known under to the vehicle.
+            vehicle: The vehicle instance the sensor is being detached from.
+            name: The name the sensor was known under to the vehicle.
         """
         pass
 
@@ -73,10 +71,6 @@ class Sensor:
         Note:
             Sensors require corresponding code in the simulator to handle
             requests.
-
-        Example:
-            Consult the implementation of the :class:`.Camera` sensor for a
-            good example of an engine request.
 
         Returns:
             The request to send to the engine as a dictionary.
@@ -94,25 +88,17 @@ class Sensor:
             Sensors require corresponding code in the simulator to handle
             requests.
 
-        Example:
-            Consult the implementation of the :class:`.Electrics` sensor for a
-            good example of a vehicle request.
-
         Returns:
             The request to send to the vehicle as a dictionary.
         """
         return {}
 
-    def decode_response(self, resp: StrDict):
+    def decode_response(self, resp: StrDict) -> StrDict:
         """
         Called to do post-processing on sensor data obtained from the
         simulation. This method is called after raw simulation data is received
         and the resulting processed data is considered the result of a sensor
         request.
-
-        Example:
-            Consult the implementation of the :class:`.Camera` sensor for a
-            good example of decoding sensor data.
         """
         return resp
 

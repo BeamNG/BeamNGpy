@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, Iterable, List
 
 from beamngpy.logging import create_warning
 from beamngpy.types import Float3, Quat, StrDict
@@ -11,13 +11,14 @@ from .base import Api
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
+
 class VehiclesApi(Api):
     def start_connection(self, vehicle: Vehicle, extensions: List[str] | None) -> StrDict:
         connection_msg: StrDict = {'type': 'StartVehicleConnection'}
         connection_msg['vid'] = vehicle.vid
         if extensions is not None:
             connection_msg['exts'] = extensions
-        return self.send(connection_msg).recv('StartVehicleConnection')
+        return self._send(connection_msg).recv('StartVehicleConnection')
 
     def spawn(self, vehicle: Vehicle, pos: Float3, rot_quat: Quat = (0, 0, 0, 1), cling: bool = True) -> bool:
         """
@@ -45,9 +46,9 @@ class VehiclesApi(Api):
         data['pos'] = pos
         data['rot'] = rot_quat
         data.update(vehicle.options)
-        resp = self.send(data).recv('VehicleSpawned')
+        resp = self._send(data).recv('VehicleSpawned')
         if resp['success']:
-            vehicle.connect(self.beamng)
+            vehicle.connect(self._beamng)
         return resp['success']
 
     def despawn(self, vehicle: Vehicle) -> None:
@@ -60,7 +61,7 @@ class VehiclesApi(Api):
         vehicle.disconnect()
         data = dict(type='DespawnVehicle')
         data['vid'] = vehicle.vid
-        self.send(data).ack('VehicleDespawned')
+        self._send(data).ack('VehicleDespawned')
 
     def get_available(self) -> StrDict:
         """
@@ -75,7 +76,7 @@ class VehiclesApi(Api):
             BNGError: If the game is not running to accept a request.
         """
         data = dict(type='GetAvailableVehicles')
-        return self.send(data).recv('AvailableVehicles')
+        return self._send(data).recv('AvailableVehicles')
 
     def await_spawn(self, vid: str | Vehicle) -> None:
         """
@@ -87,7 +88,7 @@ class VehiclesApi(Api):
         """
         data: StrDict = dict(type='WaitForSpawn')
         data['name'] = vid
-        resp = self.send(data).recv('VehicleSpawned')
+        resp = self._send(data).recv('VehicleSpawned')
         assert resp['name'] == vid
 
     def switch(self, vehicle: str | Vehicle) -> None:
@@ -101,7 +102,7 @@ class VehiclesApi(Api):
         """
         data = dict(type='SwitchVehicle')
         data['vid'] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
-        self.send(data).ack('VehicleSwitched')
+        self._send(data).ack('VehicleSwitched')
 
     def teleport(self, vehicle: str | Vehicle, pos: Float3, rot_quat: Quat | None = None, reset: bool = True) -> bool:
         """
@@ -122,7 +123,7 @@ class VehiclesApi(Api):
         """
         vehicle_id = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
 
-        self.logger.info(f'Teleporting vehicle <{vehicle_id}>.')
+        self._logger.info(f'Teleporting vehicle <{vehicle_id}>.')
         data: StrDict = dict(type='Teleport')
         data['vehicle'] = vehicle_id
         data['pos'] = pos
@@ -134,22 +135,39 @@ class VehiclesApi(Api):
                            'the usage of `rot_quat` in `beamng.teleport_vehicle`; '
                            'rotation will not be applied to the vehicle',
                            RuntimeWarning)
-        resp = self.send(data).recv('Teleported')
+        resp = self._send(data).recv('Teleported')
         return resp['success']
 
     def get_part_annotations(self, vehicle: Vehicle):
         data = dict(type='GetPartAnnotations')
         data['vid'] = vehicle.vid
-        resp = self.send(data).recv('PartAnnotations')
+        resp = self._send(data).recv('PartAnnotations')
         return resp['colors']
 
     def get_part_annotation(self, part):
         data = dict(type='GetPartAnnotation')
         data['part'] = part
-        resp = self.send(data).recv('PartAnnotation')
+        resp = self._send(data).recv('PartAnnotation')
         if 'color' in resp:
             return resp['color']
         return None
+
+    def get_states(self, vehicles: Iterable[str]) -> Dict[str, Dict[str, Float3]]:
+        """
+        Gets the states of the vehicles provided as the argument to this function.
+        The returned state includes position, direction vectors and the velocities.
+
+        Args:
+            vehicles: A list of the vehicle IDs to query state from.
+
+        Returns:
+            A mapping of the vehicle IDs to their state stored as a dictionary
+            with [``pos``, ``dir``, ``up``, ``vel``] keys.
+        """
+        data: StrDict = dict(type='UpdateScenario')
+        data['vehicles'] = list(vehicles)
+        resp = self._send(data).recv('ScenarioUpdate')
+        return resp['vehicles']
 
 
 class BoundVehiclesApi(Api):
@@ -194,7 +212,7 @@ class BoundVehiclesApi(Api):
         """
         data = dict(type='GetBBoxCorners')
         data['vid'] = self.vehicle.vid
-        resp = self.send(data).recv('BBoxCorners')
+        resp = self._send(data).recv('BBoxCorners')
         points = resp['points']
         bbox = {
             'front_bottom_left': points[3],
@@ -215,7 +233,7 @@ class BoundVehiclesApi(Api):
         """
         data = dict(type='AnnotateParts')
         data['vid'] = self.vehicle.vid
-        self.send(data).ack('PartsAnnotated')
+        self._send(data).ack('PartsAnnotated')
 
     def revert_annotations(self) -> None:
         """
@@ -224,7 +242,7 @@ class BoundVehiclesApi(Api):
         """
         data = dict(type='RevertAnnotations')
         data['vid'] = self.vehicle.vid
-        self.send(data).ack('AnnotationsReverted')
+        self._send(data).ack('AnnotationsReverted')
 
     def teleport(self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True) -> bool:
         """
@@ -241,7 +259,7 @@ class BoundVehiclesApi(Api):
             the vehicle. With the current implementation, it is not possible to
             set the rotation of the vehicle and to keep its velocity during teleport.
         """
-        return self.beamng.teleport_vehicle(self.vehicle.vid, pos, rot_quat, reset)
+        return self._beamng.teleport_vehicle(self.vehicle.vid, pos, rot_quat, reset)
 
     def get_part_options(self) -> StrDict:
         """
@@ -253,7 +271,7 @@ class BoundVehiclesApi(Api):
         """
         data = dict(type='GetPartOptions')
         data['vid'] = self.vehicle.vid
-        resp = self.send(data).recv('PartOptions')
+        resp = self._send(data).recv('PartOptions')
         return resp['options']
 
     def get_part_config(self) -> StrDict:
@@ -268,7 +286,7 @@ class BoundVehiclesApi(Api):
         """
         data = dict(type='GetPartConfig')
         data['vid'] = self.vehicle.vid
-        resp = self.send(data).recv('PartConfig')
+        resp = self._send(data).recv('PartConfig')
         resp = resp['config']
         if 'parts' not in resp or not resp['parts']:
             resp['parts'] = dict()
@@ -292,7 +310,7 @@ class BoundVehiclesApi(Api):
         data: StrDict = dict(type='SetPartConfig')
         data['vid'] = self.vehicle.vid
         data['config'] = cfg
-        self.send(data)
-        self.beamng.await_vehicle_spawn(self.vehicle.vid)
+        self._send(data)
+        self._beamng.await_vehicle_spawn(self.vehicle.vid)
         self.vehicle.close()
-        self.vehicle.connect(self.beamng)
+        self.vehicle.connect(self._beamng)

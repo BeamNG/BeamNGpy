@@ -43,7 +43,7 @@ class ControlApi(VehicleApi):
 
         data: StrDict = dict(type='SetShiftMode')
         data['mode'] = SHIFT_MODES[mode]
-        self.send(data).ack('ShiftModeSet')
+        self._send(data).ack('ShiftModeSet')
 
     def control(self, steering: float | None = None, throttle: float | None = None, brake: float | None = None,
                 parkingbrake: float | None = None, clutch: float | None = None, gear: int | None = None) -> None:
@@ -74,7 +74,7 @@ class ControlApi(VehicleApi):
             options['gear'] = gear
 
         data = dict(type='Control', **options)
-        self.send(data).ack('Controlled')
+        self._send(data).ack('Controlled')
 
     def set_color(self, rgba: Float4 = (1., 1., 1., 1.)) -> None:
         """
@@ -90,7 +90,7 @@ class ControlApi(VehicleApi):
         data['g'] = rgba[1]
         data['b'] = rgba[2]
         data['a'] = rgba[3]
-        self.send(data).ack('ColorSet')
+        self._send(data).ack('ColorSet')
 
     def set_velocity(self, velocity: float, dt: float = 1.0) -> None:
         """
@@ -109,7 +109,7 @@ class ControlApi(VehicleApi):
         data: StrDict = dict(type='SetVelocity')
         data['velocity'] = velocity
         data['dt'] = dt
-        self.send(data).ack('VelocitySet')
+        self._send(data).ack('VelocitySet')
 
     def set_lights(
             self, left_signal: bool | None = None, right_signal: bool | None = None, hazard_signal:
@@ -206,15 +206,15 @@ class ControlApi(VehicleApi):
             lights['lightBar'] = lightbar
 
         lights['type'] = 'SetLights'
-        self.send(lights).ack('LightsSet')
+        self._send(lights).ack('LightsSet')
 
     def queue_lua_command(self, chunk: str) -> None:
         """
         Executes lua chunk in the vehicle engine VM.
 
         Args:
-            chunk(str): lua chunk as a string
+            chunk: lua chunk as a string
         """
         data = dict(type='QueueLuaCommandVE')
         data['chunk'] = chunk
-        self.send(data).ack('ExecutedLuaChunkVE')
+        self._send(data).ack('ExecutedLuaChunkVE')

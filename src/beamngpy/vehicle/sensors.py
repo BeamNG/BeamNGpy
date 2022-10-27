@@ -95,7 +95,7 @@ class Sensors(dict):
         Updates the vehicle's sensor readings.
 
         Returns:
-            Nothing. Use `vehicle.sensors[<sensor_id>].data[<data_access_id>]` to
+            Nothing. Use `vehicle.sensors[<sensor_id>][<data_access_id>]` to
             access the polled sensor data.
         """
         engine_reqs, vehicle_reqs = self._encode_requests()
@@ -114,7 +114,7 @@ class Sensors(dict):
         result = self._decode_response(sensor_data)
 
         for sensor, data in result.items():
-            self[sensor].data = data
+            self[sensor].replace(data)
 
     def __getitem__(self, __key: str) -> Sensor:
         return super().__getitem__(__key)

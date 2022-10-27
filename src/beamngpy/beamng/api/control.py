@@ -28,10 +28,10 @@ class ControlApi(Api):
         """
         data: StrDict = dict(type='Step', count=count)
         data['ack'] = wait
-        resp = self.send(data)
+        resp = self._send(data)
         if wait:
             resp.ack('Stepped')
-        self.logger.info(f'Advancing the simulation by {count} steps.')
+        self._logger.info(f'Advancing the simulation by {count} steps.')
 
     def pause(self) -> None:
         """
@@ -39,8 +39,8 @@ class ControlApi(Api):
         paused.
         """
         data = dict(type='Pause')
-        self.send(data).ack('Paused')
-        self.logger.info('Pausing the simulation.')
+        self._send(data).ack('Paused')
+        self._logger.info('Pausing the simulation.')
 
     def resume(self) -> None:
         """
@@ -48,8 +48,8 @@ class ControlApi(Api):
         is resumed.
         """
         data = dict(type='Resume')
-        self.send(data).ack('Resumed')
-        self.logger.info('Resuming the simulation.')
+        self._send(data).ack('Resumed')
+        self._logger.info('Resuming the simulation.')
 
     def get_gamestate(self) -> Dict[str, str]:
         """
@@ -67,7 +67,7 @@ class ControlApi(Api):
             The game state as a dictionary as described above.
         """
         data = dict(type='GameStateRequest')
-        resp = self.send(data).recv('GameState')
+        resp = self._send(data).recv('GameState')
         return resp
 
     def queue_lua_command(self, chunk: str) -> None:
@@ -79,11 +79,11 @@ class ControlApi(Api):
         """
         data = dict(type='QueueLuaCommandGE')
         data['chunk'] = chunk
-        self.send(data).ack('ExecutedLuaChunkGE')
+        self._send(data).ack('ExecutedLuaChunkGE')
 
     def quit_beamng(self) -> None:
         data = dict(type='Quit')
-        self.send(data).ack('Quit')
+        self._send(data).ack('Quit')
 
     def display_gui_message(self, msg: str) -> None:
         """
@@ -94,18 +94,18 @@ class ControlApi(Api):
         """
         data = dict(type='DisplayGuiMessage')
         data['message'] = msg
-        self.send(data).ack('GuiMessageDisplayed')
+        self._send(data).ack('GuiMessageDisplayed')
 
     def hide_hud(self) -> None:
         """
         Hides the HUD in the simulator.
         """
         data = dict(type='HideHUD')
-        self.send(data)
+        self._send(data)
 
     def show_hud(self) -> None:
         """
         Shows the HUD in the simulator.
         """
         data = dict(type='ShowHUD')
-        self.send(data)
+        self._send(data)

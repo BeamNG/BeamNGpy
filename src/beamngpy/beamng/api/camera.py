@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict
+from typing import Dict
 
 from beamngpy.types import Float3, Int3, Quat, StrDict
 
 from .base import Api
-
-if TYPE_CHECKING:
-    from beamngpy.vehicle import Vehicle
 
 
 class CameraApi(Api):
@@ -24,7 +21,7 @@ class CameraApi(Api):
         data: StrDict = dict(type='SetFreeCamera')
         data['pos'] = pos
         data['dir'] = direction
-        self.send(data).ack('FreeCameraSet')
+        self._send(data).ack('FreeCameraSet')
 
     def set_relative(self, pos: Float3, rot_quat: Quat | None = None) -> None:
         """
@@ -41,7 +38,7 @@ class CameraApi(Api):
         data['pos'] = pos
         if rot_quat:
             data['rot'] = rot_quat
-        self.send(data).ack('RelativeCamSet')
+        self._send(data).ack('RelativeCamSet')
 
     def set_player_mode(self, vid: str, mode: str, config: StrDict, custom_data: StrDict | None = None) -> None:
         """
@@ -76,7 +73,7 @@ class CameraApi(Api):
         data['mode'] = mode
         data['config'] = config
         data['customData'] = custom_data
-        self.send(data).ack('PlayerCameraModeSet')
+        self._send(data).ack('PlayerCameraModeSet')
 
     def get_player_modes(self, vid: str) -> StrDict:
         """
@@ -91,7 +88,7 @@ class CameraApi(Api):
         """
         data = dict(type='GetPlayerCameraMode')
         data['vid'] = vid
-        resp = self.send(data).recv('PlayerCameraMode')
+        resp = self._send(data).recv('PlayerCameraMode')
         return resp['cameraData']
 
     def get_annotations(self) -> Dict[str, Int3]:
@@ -103,7 +100,7 @@ class CameraApi(Api):
             values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')
-        resp = self.send(data).recv('Annotations')
+        resp = self._send(data).recv('Annotations')
         return {key: tuple(int(v) for v in value) for key, value in resp['annotations'].items()}
 
     def get_annotation_classes(self, annotations: Dict[str, Int3]) -> Dict[int, str]:

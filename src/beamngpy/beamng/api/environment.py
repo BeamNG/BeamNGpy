@@ -17,7 +17,7 @@ class EnvironmentApi(Api):
         """
         data: StrDict = dict(type='TimeOfDayChange')
         data['tod'] = tod
-        self.send(data).ack('TimeOfDayChanged')
+        self._send(data).ack('TimeOfDayChanged')
 
     def set_weather_preset(self, preset: str, time: float = 1) -> None:
         """
@@ -36,7 +36,7 @@ class EnvironmentApi(Api):
         data: StrDict = dict(type='SetWeatherPreset')
         data['preset'] = preset
         data['time'] = time
-        self.send(data).ack('WeatherPresetChanged')
+        self._send(data).ack('WeatherPresetChanged')
 
     def set_gravity(self, gravity: float = -9.807) -> None:
         """
@@ -47,4 +47,4 @@ class EnvironmentApi(Api):
         """
         data: StrDict = dict(type='SetGravity')
         data['gravity'] = gravity
-        self.send(data).ack('GravitySet')
+        self._send(data).ack('GravitySet')

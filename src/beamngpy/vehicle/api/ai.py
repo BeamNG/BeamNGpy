@@ -31,7 +31,7 @@ class AIApi(VehicleApi):
         """
         data = dict(type='SetAiMode')
         data['mode'] = mode
-        self.send(data).ack('AiModeSet')
+        self._send(data).ack('AiModeSet')
 
     def set_speed(self, speed: float, mode: str = 'limit') -> None:
         """
@@ -49,7 +49,7 @@ class AIApi(VehicleApi):
         data: StrDict = dict(type='SetAiSpeed')
         data['speed'] = speed
         data['mode'] = mode
-        self.send(data).ack('AiSpeedSet')
+        self._send(data).ack('AiSpeedSet')
 
     def set_target(self, target: str, mode: str = 'chase') -> None:
         """
@@ -65,7 +65,7 @@ class AIApi(VehicleApi):
         self.set_mode(mode)
         data = dict(type='SetAiTarget')
         data['target'] = target
-        self.send(data).ack('AiTargetSet')
+        self._send(data).ack('AiTargetSet')
 
     def set_waypoint(self, waypoint: str) -> None:
         """
@@ -78,7 +78,7 @@ class AIApi(VehicleApi):
         self.set_mode('manual')
         data = dict(type='SetAiWaypoint')
         data['target'] = waypoint
-        self.send(data).ack('AiWaypointSet')
+        self._send(data).ack('AiWaypointSet')
 
     def drive_in_lane(self, lane: bool) -> None:
         """
@@ -90,7 +90,7 @@ class AIApi(VehicleApi):
         """
         data = dict(type='SetDriveInLane')
         data['lane'] = 'on' if lane else 'off'
-        self.send(data).ack('AiDriveInLaneSet')
+        self._send(data).ack('AiDriveInLaneSet')
 
     def set_line(self, line: List[Dict[str, Float3 | float]], cling: bool = True) -> None:
         """
@@ -106,7 +106,7 @@ class AIApi(VehicleApi):
         data: StrDict = dict(type='SetAiLine')
         data['line'] = line
         data['cling'] = cling
-        return self.send(data).ack('AiLineSet')
+        return self._send(data).ack('AiLineSet')
 
     def set_script(self, script: List[Dict[str, float]], cling: bool = True) -> None:
         """
@@ -146,9 +146,9 @@ class AIApi(VehicleApi):
         data: StrDict = dict(type='SetAiScript')
         data['script'] = script
         data['cling'] = cling
-        self.send(data).ack('AiScriptSet')
+        self._send(data).ack('AiScriptSet')
 
     def set_aggression(self, aggr: float) -> None:
         data: StrDict = dict(type='SetAiAggression')
         data['aggression'] = aggr
-        self.send(data).ack('AiAggressionSet')
+        self._send(data).ack('AiAggressionSet')

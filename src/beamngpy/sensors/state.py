@@ -1,5 +1,6 @@
 from .sensor import Sensor
 
+
 class State(Sensor):
     """
     The state sensor monitors general stats of the vehicle, such as position,

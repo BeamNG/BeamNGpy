@@ -15,7 +15,7 @@ class LoggingApi(VehicleApi):
             file_name
         """
         data = dict(type='ApplyVSLSettingsFromJSON', fileName=file_name)
-        self.send(data).ack('AppliedVSLSettings')
+        self._send(data).ack('AppliedVSLSettings')
 
     def write_in_game_logging_options_to_json(self, file_name: str = 'template.json') -> None:
         """
@@ -31,7 +31,7 @@ class LoggingApi(VehicleApi):
             file_name: not the absolute file path but the name of the json
         """
         data = dict(type='WriteVSLSettingsToJSON', fileName=file_name)
-        self.send(data).ack('WroteVSLSettingsToJSON')
+        self._send(data).ack('WroteVSLSettingsToJSON')
 
     def start_in_game_logging(self, output_dir: str) -> None:
         """
@@ -46,16 +46,16 @@ class LoggingApi(VehicleApi):
                         found in: <userpath>/<BeamNG version number>/<output_dir>
         """
         data = dict(type='StartVSLLogging', outputDir=output_dir)
-        self.send(data).ack('StartedVSLLogging')
+        self._send(data).ack('StartedVSLLogging')
         log_msg = ('Started in game logging.'
                    'The output for the vehicle stats logging can be found in '
                    f'userfolder/<BeamNG version number>/{output_dir}.')
-        self.logger.info(log_msg)
+        self._logger.info(log_msg)
 
     def stop_in_game_logging(self) -> None:
         """
         Stops in game logging.
         """
         data = dict(type='StopVSLLogging')
-        self.send(data).ack('StoppedVSLLogging')
-        self.logger.info('Stopped in game logging.')
+        self._send(data).ack('StoppedVSLLogging')
+        self._logger.info('Stopped in game logging.')

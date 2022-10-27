@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple
 
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.quat import quat_as_rotation_mat_str
+from beamngpy.scenario.road import DecalRoad
+from beamngpy.scenario.scenario_object import ScenarioObject, SceneObject
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
 from jinja2 import Environment
@@ -493,8 +495,7 @@ class Scenario:
         info file of this scenario, iff one is found.
 
         Args:
-            bng: The BeamNGpy instance to look for the
-                                      scenario in.
+            bng: The BeamNGpy instance to look for the scenario in.
 
         Returns:
             The path to the information file of his scenario found in the
@@ -556,35 +557,11 @@ class Scenario:
         self.logger.debug('Removed beamngpy instance from scenario class.')
 
     def _find_objects_class(self, clazz: str) -> List[ScenarioObject]:
-        """
-        Scans the current environment in the simulator for objects of a
-        certain class and returns them as a list of :class:`.ScenarioObject`.
-
-        What kind of classes correspond to what kind of objects is described
-        in the BeamNG.drive documentation.
-
-        Args:
-            clazz: The class name of objects to find.
-
-        Returns:
-            Found objects as a list.
-        """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to find objects.')
 
-        data = dict(type='FindObjectsClass')
-        data['class'] = clazz
-        resp = self.bng.send(data).recv()
-        ret: List[ScenarioObject] = list()
-        for obj in resp['objects']:
-            sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
-                                  tuple(obj['position']),
-                                  tuple(obj['scale']),
-                                  rot_quat=tuple(obj['rotation']),
-                                  **obj['options'])
-            ret.append(sobj)
-        return ret
+        return self.bng.scenario.find_objects_class(clazz)
 
     def find_waypoints(self) -> List[ScenarioObject]:
         """
@@ -638,163 +615,11 @@ class Scenario:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to update its state.')
 
-        data: StrDict = dict(type='UpdateScenario')
-        data['vehicles'] = list()
-        for vehicle in self.vehicles:
-            data['vehicles'].append(vehicle.vid)
-        resp = self.bng.send(data).recv('ScenarioUpdate')
+        vids = (v.vid for v in self.vehicles)
+        states = self.bng.vehicles.get_states(vids)
 
         scenario_vehicles = {vehicle.vid: vehicle for vehicle in self.vehicles}
-        for name, vehicle_state in resp['vehicles'].items():
+        for name, vehicle_state in states.items():
             vehicle = scenario_vehicles.get(name, None)
             if vehicle:
                 vehicle.state = vehicle_state
-
-
-class ScenarioObject:
-    """
-    This class is used to represent objects in the simulator's environment. It
-    contains basic information like the object type, position, rotation, and
-    scale.
-
-    Creates a scenario object with the given parameters.
-
-    Args:
-        oid: name of the asset
-        name: asset id
-        otype: type of the object according to the BeamNG classification
-        pos: x, y, and z coordinates
-        scale: defining the scale along the x,y, and z axis.
-        rot_quat: Quaternion describing the initial orientation. Defaults to None.
-    """
-
-    @staticmethod
-    def from_game_dict(d: StrDict) -> ScenarioObject:
-        oid = ''
-        name = ''
-        otype = ''
-        pos = (0, 0, 0)
-        rot_quat = (0, 0, 0, 0)
-        scale = (0, 0, 0)
-        if 'id' in d:
-            oid = d['id']
-            del d['id']
-
-        if 'name' in d:
-            name = d['name']
-            del d['name']
-
-        if 'class' in d:
-            otype = d['class']
-            del d['class']
-
-        if 'pos' in d:
-            pos = d['position']
-            del d['position']
-
-        if 'rot' in d:
-            rot_quat = d['rotation']
-            del d['rotation']
-
-        if 'scale' in d:
-            scale = d['scale']
-            del d['scale']
-
-        return ScenarioObject(oid, name, otype, pos, scale, rot_quat, **d)
-
-    def __init__(
-            self, oid: str, name: str | None, otype: str, pos: Float3, scale: Float3, rot_quat: Quat | None = None, **
-            options: str):
-        self.id = oid
-        self.name = name
-        self.type = otype
-        self.pos = pos
-        self.rot = rot_quat
-        self.scale = scale
-        self.opts = options
-        self.children = []
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, type(self)):
-            return self.id == other.id
-
-        return False
-
-    def __hash__(self) -> int:
-        return hash(self.id)
-
-    def __str__(self) -> str:
-        return f'{self.type} [{self.id}:{self.name}] @ ({self.pos[0]:5.2f}, {self.pos[1]:5.2f}, {self.pos[2]:5.2f})'
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-class SceneObject:
-    def __init__(self, options: StrDict):
-        self.id = options.get('id', None)
-        if 'id' in options:
-            del options['id']
-
-        self.name = options.get('name', None)
-        if 'name' in options:
-            del options['name']
-
-        self.type = options.get('class', None)
-        if 'type' in options:
-            del options['type']
-
-        self.pos = options.get('position', (0, 0, 0))
-        if 'position' in options:
-            del options['position']
-
-        self.rot = options.get('rotation', (0, 0, 0, 0))
-        if 'rotation' in options:
-            del options['rotation']
-
-        self.scale = options.get('scale', (0, 0, 0))
-        if 'scale' in options:
-            del options['scale']
-
-        self.options = options
-        self.children = []
-
-    def __eq__(self, other):
-        if isinstance(other, type(self)):
-            return self.id == other.id
-
-        return False
-
-    def __hash__(self) -> int:
-        return hash(self.id)
-
-    def __str__(self) -> str:
-        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
-        s = s.format(self.type, self.id, self.name, *self.pos)
-        return s
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-class DecalRoad(SceneObject):
-    def __init__(self, options: StrDict):
-        super(DecalRoad, self).__init__(options)
-        self.lines = options.get('lines', [])
-
-        self.annotation = options.get('annotation', None)
-        self.detail = options.get('Detail', None)
-        self.material = options.get('Material', None)
-        self.break_angle = options.get('breakAngle', None)
-        self.drivability = options.get('drivability', None)
-        self.flip_direction = options.get('flipDirection', False)
-        self.improved_spline = options.get('improvedSpline', False)
-        self.lanes_left = options.get('lanesLeft', None)
-        self.lanes_right = options.get('lanesRight', None)
-        self.one_way = options.get('oneWay', False)
-        self.over_objects = options.get('overObjects', False)
-
-
-class StaticObject(ScenarioObject):
-    def __init__(self, name: str, pos: Float3, scale: Float3, shape: str, rot_quat: Quat | None = None):
-        super(StaticObject, self).__init__(name, None, 'TSStatic', pos, scale, rot_quat=rot_quat, shapeName=shape)
