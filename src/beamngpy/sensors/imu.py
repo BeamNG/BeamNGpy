@@ -33,7 +33,7 @@ class IMU(Sensor):
         self._pos = pos
         self._node = node
 
-        self._name = name if name is not None else str(hash(self))
+        self._name = name if name is not None else str(id(self))
         self._debug = debug
 
     def connect(self, bng: BeamNGpy, vehicle: Vehicle) -> None:

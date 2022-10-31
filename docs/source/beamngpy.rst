@@ -10,10 +10,16 @@ beamngpy.beamng module
    :undoc-members:
    :show-inheritance:
 
-beamngpy.beamng.api module
+beamngpy.api module
 --------------------------
 
-.. automodule:: beamngpy.beamng.api
+.. automodule:: beamngpy.api.beamng
+   :members:
+   :imported-members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: beamngpy.api.vehicle
    :members:
    :imported-members:
    :undoc-members:
@@ -99,15 +105,6 @@ beamngpy.vehicle module
 -----------------------
 
 .. automodule:: beamngpy.vehicle
-   :members:
-   :imported-members:
-   :undoc-members:
-   :show-inheritance:
-
-beamngpy.vehicle.api module
----------------------------
-
-.. automodule:: beamngpy.vehicle.api
    :members:
    :imported-members:
    :undoc-members:

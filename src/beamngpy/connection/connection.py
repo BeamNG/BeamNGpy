@@ -180,7 +180,7 @@ class Connection:
         # Converts all non-binary strings in the data into utf-8 format.
         return self._string_cleanup(unpacked)
 
-    def send(self, data: StrDict):
+    def send(self, data: StrDict) -> Response:
         """
         Encodes the given data using Messagepack and sends the resulting bytes over the socket of this Connection instance.
         NOTE: messages are prefixed by the message length value.

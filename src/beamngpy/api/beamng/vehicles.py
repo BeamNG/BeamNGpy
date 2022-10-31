@@ -244,6 +244,13 @@ class BoundVehiclesApi(Api):
         data['vid'] = self.vehicle.vid
         self._send(data).ack('AnnotationsReverted')
 
+    def switch(self):
+        """
+        Switches the simulator to this vehicle. This means that the simulator's main camera,
+        inputs by the user, and so on will all focus on this vehicle from now on.
+        """
+        return self._beamng.switch_vehicle(self.vehicle)
+
     def teleport(self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True) -> bool:
         """
         Teleports the vehicle to the given position with the given

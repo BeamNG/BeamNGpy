@@ -1,3 +1,4 @@
+from .base import Api
 from .camera import CameraApi
 from .control import ControlApi
 from .debug import DebugApi

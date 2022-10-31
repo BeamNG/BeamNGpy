@@ -9,7 +9,7 @@ from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, List, Optional, cast
 
-from beamngpy.beamng.api import (CameraApi, ControlApi, DebugApi,
+from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  EnvironmentApi, ScenarioApi, SettingsApi,
                                  TrafficApi, VehiclesApi)
 from beamngpy.connection import Connection
@@ -54,7 +54,7 @@ class BeamNGpy:
     Attributes
     ----------
         camera: CameraApi
-        control: beamngpy.beamng.api.ControlApi
+        control: beamngpy.api.beamng.ControlApi
         debug: DebugApi
         environment: EnvironmentApi
         scenario: ScenarioApi

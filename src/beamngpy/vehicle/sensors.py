@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Tuple, cast
+from typing import TYPE_CHECKING, Dict, Tuple
 
 from beamngpy.logging import BNGValueError
 from beamngpy.sensors import Sensor
@@ -9,10 +9,14 @@ from beamngpy.types import StrDict
 if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
-class Sensors(dict):
+class Sensors:
     def __init__(self, vehicle: Vehicle):
-        super(Sensors, self).__init__()
+        self._sensors: Dict[str, Sensor] = {}
         self.vehicle = vehicle
+
+    @property
+    def data(self):
+        return self._sensors
 
     def attach(self, name: str, sensor: Sensor) -> None:
         """
@@ -24,9 +28,9 @@ class Sensors(dict):
             name: The name of the sensor.
             sensor: The sensor to attach to the vehicle.
         """
-        if name in self.keys():
+        if name in self._sensors.keys():
             raise BNGValueError('One vehicle cannot have multiple sensors with the same name: "{name}"')
-        self[name] = sensor
+        self._sensors[name] = sensor
         sensor.attach(self.vehicle, name)
 
     def detach(self, name: str) -> None:
@@ -36,10 +40,9 @@ class Sensors(dict):
         Args:
             name: The name of the sensor to disconnect.
         """
-        if name in self:
-            sensor = cast(Sensor, self[name])
-            sensor.detach(self.vehicle, name)
-        del self[name]
+        if name in self._sensors:
+            self._sensors[name].detach(self.vehicle, name)
+        del self._sensors[name]
 
     def _encode_requests(self) -> Tuple[StrDict, StrDict]:
         """
@@ -52,8 +55,7 @@ class Sensors(dict):
         """
         engine_reqs = dict()
         vehicle_reqs = dict()
-        for name, sensor in self.items():
-            sensor = cast(Sensor, sensor)
+        for name, sensor in self._sensors.items():
             engine_req = sensor.encode_engine_request()
             vehicle_req = sensor.encode_vehicle_request()
 
@@ -85,7 +87,7 @@ class Sensors(dict):
         """
         response = dict()
         for name, data in sensor_data.items():
-            sensor = cast(Sensor, self[name])
+            sensor = self._sensors[name]
             data = sensor.decode_response(data)
             response[name] = data
         return response
@@ -114,10 +116,13 @@ class Sensors(dict):
         result = self._decode_response(sensor_data)
 
         for sensor, data in result.items():
-            self[sensor].replace(data)
+            self._sensors[sensor].replace(data)
+
+    def __repr__(self):
+        return f'Sensors[{self.vehicle.vid}]: {self._sensors}'
 
     def __getitem__(self, __key: str) -> Sensor:
-        return super().__getitem__(__key)
+        return self._sensors.__getitem__(__key)
 
     def items(self):
-        return ((cast(str, key), cast(Sensor, value)) for key, value in super().items())
+        return self._sensors.items()

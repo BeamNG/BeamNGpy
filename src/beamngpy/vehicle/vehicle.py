@@ -3,11 +3,11 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Dict
 
+from beamngpy.api.vehicle import AIApi, ControlApi, LoggingApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
 from beamngpy.types import Float3, Float4, StrDict
-from beamngpy.vehicle.api import AIApi, ControlApi, LoggingApi
 from beamngpy.vehicle.sensors import Sensors
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ class Vehicle:
         self.poll_sensors = self.sensors.poll
 
     def _init_beamng_api(self, beamng: BeamNGpy | None = None):
-        from beamngpy.beamng.api import BoundVehiclesApi
+        from beamngpy.api.beamng import BoundVehiclesApi
 
         # create dummy BeamNGpy object for API hints to work properly (it will be replaced during `connect`)
         if beamng is None:
@@ -132,6 +132,7 @@ class Vehicle:
         self.get_part_config = api.get_part_config
         self.set_part_config = api.set_part_config
         self.teleport = api.teleport
+        self.switch = api.switch
 
     def __hash__(self) -> int:
         return hash(self.vid)
