@@ -103,8 +103,8 @@ class Sensors:
         engine_reqs, vehicle_reqs = self._encode_requests()
         sensor_data = dict()
 
-        engine_resp = self.vehicle.bng.send(engine_reqs) if engine_reqs['sensors'] else None
-        vehicle_resp = self.vehicle.send(vehicle_reqs) if vehicle_reqs['sensors'] else None
+        engine_resp = self.vehicle.bng._send(engine_reqs) if engine_reqs['sensors'] else None
+        vehicle_resp = self.vehicle._send(vehicle_reqs) if vehicle_reqs['sensors'] else None
 
         if engine_resp:
             resp = engine_resp.recv('SensorData')

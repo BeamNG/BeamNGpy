@@ -75,7 +75,7 @@ class IMU(Sensor):
         data['name'] = name
         data['pos'] = pos
         data['debug'] = debug
-        vehicle.send(data).ack('IMUPositionAdded')
+        vehicle._send(data).ack('IMUPositionAdded')
 
     @staticmethod
     def _add_imu_node(vehicle: Vehicle, name: str, node: int, debug: bool = False):
@@ -94,7 +94,7 @@ class IMU(Sensor):
         data['name'] = name
         data['node'] = node
         data['debug'] = debug
-        vehicle.send(data).ack('IMUNodeAdded')
+        vehicle._send(data).ack('IMUNodeAdded')
 
     @staticmethod
     def _remove_imu(vehicle: Vehicle, name: str):
@@ -109,4 +109,4 @@ class IMU(Sensor):
         """
         data = dict(type='RemoveIMU')
         data['name'] = name
-        vehicle.send(data).ack('IMURemoved')
+        vehicle._send(data).ack('IMURemoved')

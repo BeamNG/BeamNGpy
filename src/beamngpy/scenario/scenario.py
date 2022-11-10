@@ -15,14 +15,15 @@ import copy
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple
 
+from jinja2 import Environment
+from jinja2.loaders import PackageLoader
+
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.quat import quat_as_rotation_mat_str
 from beamngpy.scenario.road import DecalRoad
 from beamngpy.scenario.scenario_object import ScenarioObject, SceneObject
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
-from jinja2 import Environment
-from jinja2.loaders import PackageLoader
 
 from .level import Level
 
@@ -412,7 +413,7 @@ class Scenario:
 
     def _convert_scene_object(self, obj: StrDict) -> SceneObject:
         assert self.bng
-        data = self.bng.message('GetObject', id=obj['id'])
+        data = self.bng._message('GetObject', id=obj['id'])
         clazz = data['class']
         if clazz in Scenario.game_classes:
             converted = Scenario.game_classes[clazz](data)
@@ -434,7 +435,7 @@ class Scenario:
         in the ``scene`` field of this class.
         """
         assert self.bng
-        scenetree = self.bng.message('GetSceneTree')
+        scenetree = self.bng._message('GetSceneTree')
         assert scenetree['class'] == 'SimGroup'
         self.scene = self._convert_scene_object(scenetree)
 
@@ -487,7 +488,7 @@ class Scenario:
         self.logger.debug(f'Generated prefab:\n{prefab}\n')
         self.logger.debug(f'Generated scenarios info dict:\n{info}\n')
 
-        self.path = bng.message('CreateScenario', level=level_name, name=self.name, prefab=prefab, info=info)
+        self.path = bng._message('CreateScenario', level=level_name, name=self.name, prefab=prefab, info=info)
 
     def find(self, bng: BeamNGpy) -> str | None:
         """
@@ -515,7 +516,7 @@ class Scenario:
         """
         if self.path is None:
             self.find(bng)
-        bng.message('DeleteScenario', path=self.path)
+        bng._message('DeleteScenario', path=self.path)
         self.logger.info(f'Deleted scenario from simulation: "{self.name}".')
 
     def restart(self) -> None:

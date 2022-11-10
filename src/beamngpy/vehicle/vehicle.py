@@ -3,7 +3,7 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Dict
 
-from beamngpy.api.vehicle import AIApi, ControlApi, LoggingApi
+from beamngpy.api.vehicle import AIApi, ControlApi, ControllerApi, LoggingApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
@@ -112,6 +112,8 @@ class Vehicle:
         self.start_in_game_logging = self.logging.start_in_game_logging
         self.stop_in_game_logging = self.logging.stop_in_game_logging
 
+        self.controller = ControllerApi(self)
+
         self.attach_sensor = self.sensors.attach
         self.detach_sensor = self.sensors.detach
         self.poll_sensors = self.sensors.poll
@@ -122,7 +124,7 @@ class Vehicle:
         # create dummy BeamNGpy object for API hints to work properly (it will be replaced during `connect`)
         if beamng is None:
             from beamngpy.beamng import BeamNGpy
-            beamng = BeamNGpy('', -1, remote=True)
+            beamng = BeamNGpy('', -1)
 
         api = BoundVehiclesApi(beamng, self)
         self.annotate_parts = api.annotate_parts
@@ -172,7 +174,7 @@ class Vehicle:
     def state(self) -> None:
         self.sensors[self._veh_state_sensor_id].clear()
 
-    def send(self, data: StrDict) -> Response:
+    def _send(self, data: StrDict) -> Response:
         if not self.connection:
             raise BNGError('Not connected to the vehicle!')
         return self.connection.send(data)

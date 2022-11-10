@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .scenario import ScenarioObject
 from beamngpy.types import Float3, Quat, StrDict
+
+from .scenario import ScenarioObject
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -52,7 +53,7 @@ class ProceduralCylinder(ProceduralMesh):
         data['rot'] = self.rot
         data['name'] = self.name
         data['material'] = self.material
-        bng.send(data).ack('CreatedCylinder')
+        bng._send(data).ack('CreatedCylinder')
 
 
 class ProceduralBump(ProceduralMesh):
@@ -97,7 +98,7 @@ class ProceduralBump(ProceduralMesh):
         data['rot'] = self.rot
         data['name'] = self.name
         data['material'] = self.material
-        bng.send(data).ack('CreatedBump')
+        bng._send(data).ack('CreatedBump')
 
 
 class ProceduralCone(ProceduralMesh):
@@ -131,7 +132,7 @@ class ProceduralCone(ProceduralMesh):
         data['name'] = self.name
         data['pos'] = self.pos
         data['rot'] = self.rot
-        bng.send(data).ack('CreatedCone')
+        bng._send(data).ack('CreatedCone')
 
 
 class ProceduralCube(ProceduralMesh):
@@ -162,7 +163,7 @@ class ProceduralCube(ProceduralMesh):
         data['rot'] = self.rot
         data['material'] = self.material
         data['name'] = self.name
-        bng.send(data).ack('CreatedCube')
+        bng._send(data).ack('CreatedCube')
 
 
 class ProceduralRing(ProceduralMesh):
@@ -195,4 +196,4 @@ class ProceduralRing(ProceduralMesh):
         data['rot'] = self.rot
         data['material'] = self.material
         data['name'] = self.name
-        return bng.send(data).ack('CreatedRing')
+        return bng._send(data).ack('CreatedRing')

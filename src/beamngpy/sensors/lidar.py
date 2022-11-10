@@ -13,6 +13,7 @@ from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import Float3, StrDict
 
@@ -388,7 +389,7 @@ class Lidar:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.bng.send(data).ack('OpenedLidar')
+        self.bng._send(data).ack('OpenedLidar')
         self.logger.info(f'Opened lidar: "{name}"')
 
     def _close_lidar(self) -> None:
@@ -397,5 +398,5 @@ class Lidar:
         """
         data = dict(type='CloseLidar')
         data['name'] = self.name
-        self.bng.send(data).ack('ClosedLidar')
+        self.bng._send(data).ack('ClosedLidar')
         self.logger.info(f'Closed lidar: "{self.name}"')

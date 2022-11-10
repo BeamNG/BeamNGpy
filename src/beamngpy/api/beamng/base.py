@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class Api:
     def __init__(self, beamng: BeamNGpy):
         self._beamng = beamng
-        self._send = beamng.send
-        self._message = beamng.message
+        self._send = beamng._send
+        self._message = beamng._message
         self._logger = beamng.logger
         self.__doc__ = generate_docstring(self)

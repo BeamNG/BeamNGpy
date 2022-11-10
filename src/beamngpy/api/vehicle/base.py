@@ -11,6 +11,6 @@ if TYPE_CHECKING:
 class VehicleApi:
     def __init__(self, vehicle: Vehicle):
         self._vehicle = vehicle
-        self._send = vehicle.send
+        self._send = vehicle._send
         self._logger = vehicle.logger
         self.__doc__ = generate_docstring(self)

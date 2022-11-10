@@ -231,14 +231,14 @@ class Advanced_IMU:
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.bng.send(data).ack('OpenedAdvancedIMU')
+        self.bng._send(data).ack('OpenedAdvancedIMU')
         self.logger.info(f'Opened advanced IMU sensor: "{name}"')
 
     def _close_advanced_IMU(self) -> None:
         data = dict(type='CloseAdvancedIMU')
         data['name'] = self.name
         data['vid'] = self.vehicle.vid
-        self.bng.send(data).ack('ClosedAdvancedIMU')
+        self.bng._send(data).ack('ClosedAdvancedIMU')
         self.logger.info(f'Closed advanced IMU sensor: "{self.name}"')
 
     def _poll_advanced_IMU_GE(self) -> StrDict:

@@ -286,11 +286,11 @@ class Ultrasonic:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
-        self.bng.send(data).ack('OpenedUltrasonic')
+        self.bng._send(data).ack('OpenedUltrasonic')
         self.logger.info(f'Opened ultrasonic sensor: "{name}"')
 
     def _close_ultrasonic(self) -> None:
         data = dict(type='CloseUltrasonic')
         data['name'] = self.name
-        self.bng.send(data).ack('ClosedUltrasonic')
+        self.bng._send(data).ack('ClosedUltrasonic')
         self.logger.info(f'Closed ultrasonic sensor: "{self.name}"')

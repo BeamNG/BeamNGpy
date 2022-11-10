@@ -156,14 +156,14 @@ class PowertrainSensor:
         data['GFXUpdateTime'] = gfx_update_time
         data['physicsUpdateTime'] = physics_update_time
         data['isSendImmediately'] = is_send_immediately
-        self.bng.send(data).ack('OpenedPowertrain')
+        self.bng._send(data).ack('OpenedPowertrain')
         self.logger.info(f'Opened Powertrain sensor: "{name}"')
 
     def _close_powertrain(self) -> None:
         data = dict(type='ClosePowertrain')
         data['name'] = self.name
         data['vid'] = self.vehicle.vid
-        self.bng.send(data).ack('ClosedPowertrain')
+        self.bng._send(data).ack('ClosedPowertrain')
         self.logger.info(f'Closed Powertrain sensor: "{self.name}"')
 
     def _poll_powertrain_GE(self) -> StrDict:

@@ -15,11 +15,12 @@ from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, List, Type
 
 import numpy as np
+from PIL import Image, ImageOps
+
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.sensors.communication_utils import (send_sensor_request,
                                                   set_sensor)
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
-from PIL import Image, ImageOps
 
 from . import utils
 
@@ -683,11 +684,11 @@ class Camera:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.bng.send(data).ack('OpenedCamera')
+        self.bng._send(data).ack('OpenedCamera')
         self.logger.info(f'Opened Camera: "{name}"')
 
     def _close_camera(self) -> None:
         data = dict(type='CloseCamera')
         data['name'] = self.name
-        self.bng.send(data).ack('ClosedCamera')
+        self.bng._send(data).ack('ClosedCamera')
         self.logger.info(f'Closed Camera: "{self.name}"')
