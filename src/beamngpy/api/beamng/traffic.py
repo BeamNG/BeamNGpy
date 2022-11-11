@@ -24,6 +24,33 @@ class TrafficApi(Api):
         data['participants'] = [p.vid for p in participants]
         self._send(data).ack('TrafficStarted')
 
+    def spawn(self, max_amount: int | None = None, police_ratio: float = 0,
+              extra_amount: int | None = None, parked_amount: int | None = None) -> None:
+        """
+        Enables traffic simulation with freshly spawned vehicles.
+
+        Args:
+            max_amount: The maximum allowed vehicles to spawn. If None, defaults to in-game settings.
+            police_ratio: A number between 0.0 and 1.0 indicating the ratio of police vehicles in the traffic.
+            extra_amount: The maximum amount of inactive vehicles to spawn and swap in and out of the traffic system.
+                          If None, defaults to in-game settings.
+            parked_amount: The maximum amount of parked vehicles to spawn. If None, defaults to in-game settings.
+        """
+        data: StrDict = dict(type='SpawnTraffic')
+        data['max_amount'] = max_amount
+        data['police_ratio'] = police_ratio
+        data['extra_amount'] = extra_amount
+        data['parked_amount'] = parked_amount
+        self._send(data).ack('TrafficSpawned')
+
+    def reset(self) -> None:
+        """
+        Resets (force teleports) all vehicles in the traffic. Useful
+
+        """
+        data = dict(type='ResetTraffic')
+        self._send(data).ack('TrafficReset')
+
     def stop(self, stop: bool = False) -> None:
         """
         Stops the traffic simulation.

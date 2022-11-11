@@ -135,6 +135,7 @@ class Vehicle:
         self.set_part_config = api.set_part_config
         self.teleport = api.teleport
         self.switch = api.switch
+        self.focus = api.switch # alias
 
     def __hash__(self) -> int:
         return hash(self.vid)

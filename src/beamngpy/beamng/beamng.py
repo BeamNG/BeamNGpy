@@ -184,7 +184,9 @@ class BeamNGpy:
         self.set_particles_enabled = self.settings.set_particles_enabled
 
         self.traffic = TrafficApi(self)
+        self.spawn_traffic = self.traffic.spawn
         self.start_traffic = self.traffic.start
+        self.reset_traffic = self.traffic.reset
         self.stop_traffic = self.traffic.stop
 
         self.vehicles = VehiclesApi(self)
@@ -288,7 +290,12 @@ class BeamNGpy:
         termination.
         """
         home = filesystem.determine_home(self.home)
-        binary = home / self.binary if self.binary else filesystem.determine_binary(home)
+        if self.binary:
+            binary = home / self.binary
+            if not binary.is_file():
+                raise BNGError(f'The BeamNG binary {binary} was not found in BeamNG home.')
+        else:
+            binary = filesystem.determine_binary(home)
         userpath = Path(self.user) if self.user else filesystem.determine_userpath(binary)
         call = self._prepare_call(str(binary), userpath, extensions, *args, **opts)
 
