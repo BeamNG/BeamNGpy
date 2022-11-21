@@ -359,3 +359,9 @@ class Vehicle:
             chunk: lua chunk as a string
         """
         return self._control.queue_lua_command(chunk)
+
+    def recover(self) -> None:
+        """
+        Recovers the vehicle to a drivable position and state and repairs its damage.
+        """
+        return self._control.recover()

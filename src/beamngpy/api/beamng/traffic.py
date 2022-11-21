@@ -45,7 +45,8 @@ class TrafficApi(Api):
 
     def reset(self) -> None:
         """
-        Resets (force teleports) all vehicles in the traffic. Useful
+        Resets (force teleports) all vehicles in the traffic away from the player.
+        Useful for resolving traffic jam situations.
 
         """
         data = dict(type='ResetTraffic')

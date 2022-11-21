@@ -20,7 +20,7 @@ class VehiclesApi(Api):
             connection_msg['exts'] = extensions
         return self._send(connection_msg).recv('StartVehicleConnection')
 
-    def spawn(self, vehicle: Vehicle, pos: Float3, rot_quat: Quat = (0, 0, 0, 1), cling: bool = True) -> bool:
+    def spawn(self, vehicle: Vehicle, pos: Float3, rot_quat: Quat = (0, 0, 0, 1), cling: bool = True, connect: bool = True) -> bool:
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
         method is meant for spawning vehicles *during the simulation*. Vehicles
@@ -36,6 +36,7 @@ class VehiclesApi(Api):
                    will be set to the ground level at the given
                    position to avoid spawning the vehicle below ground
                    or in the air.
+            connect: Whether to connect the newly spawned vehicle to BeamNGpy.
 
         Returns:
             bool indicating whether the spawn was successful or not
@@ -47,7 +48,7 @@ class VehiclesApi(Api):
         data['rot'] = rot_quat
         data.update(vehicle.options)
         resp = self._send(data).recv('VehicleSpawned')
-        if resp['success']:
+        if resp['success'] and connect:
             vehicle.connect(self._beamng)
         return resp['success']
 
@@ -62,6 +63,33 @@ class VehiclesApi(Api):
         data = dict(type='DespawnVehicle')
         data['vid'] = vehicle.vid
         self._send(data).ack('VehicleDespawned')
+
+    def replace(self, new_vehicle: Vehicle, old_vehicle: Vehicle | str | None = None, connect: bool = True) -> None:
+        """
+        Replaces ``old_vehicle`` with ``new_vehicle`` in the scenario. The ``new_vehicle`` keeps
+        the position and rotation of ``old_vehicle``. If ``old_vehicle`` is not provided, then
+        the current player vehicle is replaced by ``new_vehicle``.
+
+        Args:
+            new_vehicle: The vehicle to
+            old_vehicle: The vehicle to be replaced, or its ID, or None if the currently focused
+                         vehicle should be replaced.
+            connect: Whether to connect the replaced vehicle to BeamNGpy.
+        """
+        if isinstance(old_vehicle, Vehicle) and old_vehicle.is_connected():
+            old_vehicle.disconnect()
+
+        data: StrDict = dict(type='SpawnVehicle')
+        data['name'] = new_vehicle.vid
+        data['model'] = new_vehicle.options['model']
+        data['replace'] = True
+        data['replace_vid'] = old_vehicle.vid if isinstance(old_vehicle, Vehicle) else old_vehicle
+        data.update(new_vehicle.options)
+
+        resp = self._send(data).recv('VehicleSpawned')
+        if resp['success'] and connect:
+            new_vehicle.connect(self._beamng)
+        return resp['success']
 
     def get_available(self) -> StrDict:
         """
@@ -84,7 +112,7 @@ class VehiclesApi(Api):
         has.
 
         Args:
-            vid: The name of the  vehicle to wait for.
+            vid: The name of the vehicle to wait for.
         """
         data: StrDict = dict(type='WaitForSpawn')
         data['name'] = vid

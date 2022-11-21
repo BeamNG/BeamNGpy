@@ -218,3 +218,10 @@ class ControlApi(VehicleApi):
         data = dict(type='QueueLuaCommandVE')
         data['chunk'] = chunk
         self._send(data).ack('ExecutedLuaChunkVE')
+
+    def recover(self) -> None:
+        """
+        Recovers the vehicle to a drivable position and state and repairs its damage.
+        """
+        data = dict(type='Recover')
+        self._send(data).ack('Recovered')

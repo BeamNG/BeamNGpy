@@ -6,6 +6,7 @@ from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, Tuple, cast
 
 import msgpack
+
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.types import StrDict
 

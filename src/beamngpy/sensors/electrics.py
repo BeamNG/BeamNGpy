@@ -67,7 +67,7 @@ class Electrics(Sensor):
     - running (bool): Engine running state
     - signal_l (int): Left signal state. 0.5 = halfway to full blink
     - signal_r (int): Right signal state. 0.5 = halfway to full blink
-    - steering (int): Steering state
+    - steering (float): Angle of the steering wheel in degrees.
     - steering_input (int): Steering input state
     - tcs (int): TCS state. 0 = not present/inactive, 1 = disabled, Blink = active
     - tcs_active (bool):
