@@ -3,7 +3,7 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Dict
 
-from beamngpy.api.vehicle import AIApi, ControlApi, ControllerApi, LoggingApi
+from beamngpy.api.vehicle import AIApi, ControlApi, LoggingApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
@@ -111,8 +111,6 @@ class Vehicle:
         self.write_in_game_logging_options_to_json = self.logging.write_in_game_logging_options_to_json
         self.start_in_game_logging = self.logging.start_in_game_logging
         self.stop_in_game_logging = self.logging.stop_in_game_logging
-
-        self.controller = ControllerApi(self)
 
         self.attach_sensor = self.sensors.attach
         self.detach_sensor = self.sensors.detach
