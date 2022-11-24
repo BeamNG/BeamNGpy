@@ -2,7 +2,7 @@
 Jinja2==2.11.3
 msgpack-python==0.5.6
 numpy==1.22.0
-Pillow==9.0.1
+Pillow==9.3.0
 PyOpenGL==3.1.5
 scipy==1.4.1
 scikit-image
