@@ -74,3 +74,10 @@ def quat_as_rotation_mat_str(quat: Quat) -> str:
     mat = compute_rotation_matrix(quat)
     mat = mat.reshape(9).astype(str)
     return ' '.join(mat)
+
+
+def quat_multiply(a: Quat, b: Quat) -> Quat:
+    return (a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+            a[3] * b[1] + a[1] * b[3] + a[2] * b[0] - a[0] * b[2],
+            a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0],
+            a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2])

@@ -139,15 +139,10 @@ class VehiclesApi(Api):
 
         Args:
             vehicle: The id/name of the vehicle to teleport or the vehicle's object.
-            pos: The target position as an (x,y,z) tuple containing world-space coordinates.
+            pos: The target position as an (x, y, z) tuple containing world-space coordinates.
             rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion.
             reset: Specifies if the vehicle will be reset to its initial
                    state during teleport (including its velocity).
-
-        Notes:
-            The ``reset=False`` option is incompatible with setting rotation of
-            the vehicle. With the current implementation, it is not possible to
-            set the rotation of the vehicle and to keep its velocity during teleport.
         """
         vehicle_id = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
 
@@ -158,11 +153,6 @@ class VehiclesApi(Api):
         data['reset'] = reset
         if rot_quat:
             data['rot'] = rot_quat
-        if not reset and rot_quat:
-            create_warning('the usage of `reset=False` is incompatible with '
-                           'the usage of `rot_quat` in `beamng.teleport_vehicle`; '
-                           'rotation will not be applied to the vehicle',
-                           RuntimeWarning)
         resp = self._send(data).recv('Teleported')
         return resp['success']
 
