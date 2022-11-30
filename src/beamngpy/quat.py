@@ -77,6 +77,16 @@ def quat_as_rotation_mat_str(quat: Quat) -> str:
 
 
 def quat_multiply(a: Quat, b: Quat) -> Quat:
+    """
+    Multiplies two quaternions.
+
+    Args:
+        a: Quaternion with the order (x, y, z, w) with w representing the real component.
+        b: Quaternion with the order (x, y, z, w) with w representing the real component.
+
+    Return:
+        The product of ``a`` and ``b`` as a quaternion.
+    """
     return (a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
             a[3] * b[1] + a[1] * b[3] + a[2] * b[0] - a[0] * b[2],
             a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0],
