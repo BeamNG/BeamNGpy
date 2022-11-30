@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  EnvironmentApi, ScenarioApi, SettingsApi,
-                                 TrafficApi, VehiclesApi)
+                                 TrafficApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning
@@ -131,9 +131,11 @@ class BeamNGpy:
         self.get_gamestate = self.control.get_gamestate
         self.queue_lua_command = self.control.queue_lua_command
         self.quit_beamng = self.control.quit_beamng
-        self.display_gui_message = self.control.display_gui_message
-        self.hide_hud = self.control.hide_hud
-        self.show_hud = self.control.show_hud
+
+        self.ui = UiApi(self)
+        self.display_gui_message = self.ui.display_message
+        self.hide_hud = self.ui.hide_hud
+        self.show_hud = self.ui.show_hud
 
         self.debug = DebugApi(self)
         self.add_debug_spheres = self.debug.add_spheres
