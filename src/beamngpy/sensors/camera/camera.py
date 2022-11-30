@@ -12,15 +12,14 @@ import mmap
 import os
 import struct
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any, List, Type
+from typing import TYPE_CHECKING, Any, List
 
 import numpy as np
-from PIL import Image, ImageOps
-
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.sensors.communication_utils import (send_sensor_request,
                                                   set_sensor)
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
+from PIL import Image, ImageOps
 
 from . import utils
 
@@ -197,9 +196,7 @@ class Camera:
             raise BNGError('The simulator is not connected!')
         set_sensor(self.bng.connection, type, ack, **kwargs)
 
-    def _convert_to_image(
-            self, raw_data: List[Any],
-            width: int, height: int, channels: int, data_type: Type) -> Image.Image:
+    def _convert_to_image(self, raw_data: bytes, width: int, height: int) -> Image.Image:
         """
         Converts raw image data from the simulator into image format.
 
@@ -207,24 +204,20 @@ class Camera:
             raw_data: The 1D buffer to be processed.
             width: The width of the image to be rendered.
             height: The height of the image to be rendered.
-            channels: The number of channels in the data, here either 4 for RGBA or 1 for depth data.
-            data_type: The type of data, eg 'np.uint8', 'np.float32'.
 
         Returns:
             The processed image.
         """
-        # Convert to a numpy array.
-        decoded = np.frombuffer(bytes(raw_data), dtype=data_type)
+        if len(raw_data) == 0:
+            return None
 
         # Re-shape the array, based on the number of channels present in the data.
-        if channels > 1:
-            decoded = decoded.reshape(height, width, channels)
-        else:
-            decoded = decoded.reshape(height, width)
+        decoded = np.frombuffer(raw_data, dtype=np.uint8)
+        decoded = decoded.reshape(height, width, 4)
 
         # Convert to image format.
         image = Image.fromarray(decoded)
-        if self.is_static == True:
+        if self.is_static:
             return image
         else:
             return ImageOps.mirror(ImageOps.flip(image))
@@ -297,36 +290,26 @@ class Camera:
 
         processed_readings: StrDict = dict(type='Camera')
         if self.is_render_colours:
-            colour = []
-            for i in range(len(binary['colour'])):
-                colour.append(np.uint8(binary['colour'][i]))
-            processed_readings['colour'] = self._convert_to_image(colour, width, height, 4, np.uint8)
+            processed_readings['colour'] = self._convert_to_image(binary['colour'], width, height)
 
         if self.is_render_annotations:
-            annotation = []
-            for i in range(len(binary['annotation'])):
-                annotation.append(np.uint8(binary['annotation'][i]))
-            processed_readings['annotation'] = self._convert_to_image(annotation, width, height, 4, np.uint8)
+            processed_readings['annotation'] = self._convert_to_image(binary['annotation'], width, height)
 
         if self.is_render_instance:
-            instance = []
-            for i in range(len(binary['instance'])):
-                instance.append(np.uint8(binary['instance'][i]))
-            processed_readings['instance'] = self._convert_to_image(instance, width, height, 4, np.uint8)
+            processed_readings['instance'] = self._convert_to_image(binary['instance'], width, height)
 
         if self.is_render_depth:
-            depth = np.zeros(int(len(binary['depth']) / 4))
-            ctr = 0
-            for i in range(0, int(len(binary['depth'])), 4):
-                depth[ctr] = struct.unpack('f', binary['depth'][i:i + 4])[0]
-                ctr = ctr + 1
-            processed_values = self._depth_buffer_processing(depth)
-            reshaped_data = processed_values.reshape(height, width)
-            image = Image.fromarray(reshaped_data)
-            if self.is_static == True:
-                processed_readings['depth'] = image
+            if len(binary['depth']) == 0:
+                processed_readings['depth'] = None
             else:
-                processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(image))
+                depth = np.frombuffer(binary['depth'], dtype=np.float32)
+                processed_values = self._depth_buffer_processing(depth)
+                reshaped_data = processed_values.reshape(height, width)
+                image = Image.fromarray(reshaped_data)
+                if self.is_static == True:
+                    processed_readings['depth'] = image
+                else:
+                    processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(image))
 
         return processed_readings
 
