@@ -40,9 +40,10 @@ class PrefixedLengthSocket:
 
         return bytes(recv_buffer)
 
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, reconnect_tries: int = 5):
         self.host = host
         self.port = port
+        self.reconnect_tries = reconnect_tries
         self.skt = self._initialize_socket()
         self.skt.connect((host, port))
 
@@ -71,10 +72,14 @@ class PrefixedLengthSocket:
         """
         self.skt = self._initialize_socket()
         sleep_time = 0
-        while True:
+        tries = self.reconnect_tries
+        while tries > 0:
             try:
                 self.skt.connect((self.host, self.port))
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
                 time.sleep(sleep_time)
                 sleep_time = 0.5
+                tries -= 1
+                if tries == 0:
+                    raise
