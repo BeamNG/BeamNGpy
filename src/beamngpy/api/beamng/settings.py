@@ -6,7 +6,7 @@ from .base import Api
 
 
 class SettingsApi(Api):
-    def change_setting(self, key: str, value: str) -> None:
+    def change(self, key: str, value: str) -> None:
         """
         Changes a setting in the game. Examples of the key and value pairs
         given to this method can be found in your game's settings ini files.
@@ -22,7 +22,7 @@ class SettingsApi(Api):
         data['value'] = value
         return self._send(data).ack('SettingsChanged')
 
-    def apply_graphics_setting(self) -> None:
+    def apply_graphics(self) -> None:
         """
         Makes the game apply a graphics setting that has been changed since
         startup or the last time settings were applied. A call to this is
@@ -33,15 +33,18 @@ class SettingsApi(Api):
         data = dict(type='ApplyGraphicsSetting')
         self._send(data).ack('GraphicsSettingApplied')
 
-    def set_deterministic(self) -> None:
+    def set_deterministic(self, steps_per_second=None) -> None:
         """
         Sets the simulator to run in deterministic mode. For this to function
         properly, an amount of steps per second needs to have been specified
-        in the simulator's settings, or through
-        :meth:`~.BeamnGpy.set_steps_per_second`.
+        in the simulator's settings, through this function or through
+        :meth:`BeamNGpy.settings.set_steps_per_second`.
         """
         data = dict(type='SetPhysicsDeterministic')
         self._send(data).ack('SetPhysicsDeterministic')
+
+        if steps_per_second:
+            self.set_steps_per_second(steps_per_second)
 
     def set_nondeterministic(self) -> None:
         """
@@ -60,7 +63,7 @@ class SettingsApi(Api):
         one needs to advance the simulation two steps.
 
         Args:
-            sps (int): The steps per second to set.
+            sps: The steps per second to set.
         """
         data = dict(type='FPSLimit', fps=sps)
         self._send(data).ack('SetFPSLimit')

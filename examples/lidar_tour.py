@@ -8,13 +8,14 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 """
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import Lidar
-from beamngpy.sensors.lidar import MAX_LIDAR_POINTS
-from beamngpy.visualiser import LidarVisualiser
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
+
+from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
+from beamngpy.sensors import Lidar
+from beamngpy.sensors.lidar import MAX_LIDAR_POINTS
+from beamngpy.sensors.visualiser import LidarVisualiser
 
 SIZE = 1024
 
@@ -40,37 +41,31 @@ def main():
 
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
-    scenario = Scenario('west_coast_usa', 'lidar_tour',
-                        description='Tour through the west coast gathering '
-                                    'Lidar data')
+    scenario = Scenario('west_coast_usa', 'lidar_tour', description='Tour through the west coast gathering Lidar data')
+    vehicle = Vehicle('ego_vehicle', model='etk800', license='LIDAR')
 
-    vehicle = Vehicle('ego_vehicle', model='etk800', licence='LIDAR')
-
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                         rot_quat=(0, 0, 0.3826834, 0.9238795))
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
 
     try:
-        bng.load_scenario(scenario)
+        bng.scenario.load(scenario)
 
         window = open_window(SIZE, SIZE)
         lidar_vis = LidarVisualiser(MAX_LIDAR_POINTS)
         lidar_vis.open(SIZE, SIZE)
 
-        bng.set_steps_per_second(60)
-        bng.set_deterministic()
-
-        bng.hide_hud()
-        bng.start_scenario()
+        bng.settings.set_deterministic(60)
+        bng.ui.hide_hud()
+        bng.scenario.start()
 
         lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True)     # Send data via shared memory.
         #lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)   # Send data through lua socket instead.
 
-        bng.pause()
-        vehicle.ai_set_mode('span')
+        bng.control.pause()
+        vehicle.ai.set_mode('span')
 
         def update():
-            vehicle.poll_sensors()
+            vehicle.sensors.poll()
             points = lidar.poll()['pointCloud']
             bng.step(3, wait=False)
 

@@ -185,8 +185,8 @@ class BeamNGpy:
         self.load_trackbuilder_track = self.scenario.load_trackbuilder_track
 
         self.settings = SettingsApi(self)
-        self.change_setting = self.settings.change_setting
-        self.apply_graphics_setting = self.settings.apply_graphics_setting
+        self.change_setting = self.settings.change
+        self.apply_graphics_setting = self.settings.apply_graphics
         self.set_deterministic = self.settings.set_deterministic
         self.set_nondeterministic = self.settings.set_nondeterministic
         self.set_steps_per_second = self.settings.set_steps_per_second

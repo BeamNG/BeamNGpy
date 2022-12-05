@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import List
 
-from beamngpy.types import StrDict
+from beamngpy.types import Float3, Float4, StrDict
 
 from .base import Api
 
 
 class DebugApi(Api):
-    def add_spheres(self, coordinates, radii, rgba_colors,
-                          cling=False, offset=0):
-        data: StrDict = dict(type="AddDebugSpheres")
+    def add_spheres(self, coordinates: List[Float3], radii: List[float],
+                    rgba_colors: List[Float4], cling: bool = False, offset: float = 0):
+        data: StrDict = dict(type='AddDebugSpheres')
         assert len(coordinates) == len(radii) == len(rgba_colors)
         data['coordinates'] = coordinates
         data['radii'] = radii
@@ -26,7 +26,8 @@ class DebugApi(Api):
         data['objIDs'] = sphere_ids
         self._send(data).ack('DebugObjectsRemoved')
 
-    def add_polyline(self, coordinates, rgba_color, cling=False, offset=0):
+    def add_polyline(self, coordinates: List[Float3], rgba_color: List[Float4],
+                    cling: bool = False, offset: float = 0):
         data: StrDict = dict(type='AddDebugPolyline')
         data['coordinates'] = coordinates
         data['color'] = rgba_color

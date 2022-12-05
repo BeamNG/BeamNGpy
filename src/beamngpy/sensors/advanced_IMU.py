@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
 
-class Advanced_IMU:
+class AdvancedIMU:
     """
     Creates an advanced IMU sensor.
 

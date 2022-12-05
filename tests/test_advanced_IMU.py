@@ -1,6 +1,7 @@
 from time import sleep
+
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import Advanced_IMU
+from beamngpy.sensors import AdvancedIMU
 
 # Executing this file will perform various tests on all available functionality relating to the advanced IMU sensor.
 # It is provided to give examples on how to use all advanced IMU sensor functions currently available in beamngpy.
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     print("Advanced IMU test start.")
 
     # Create a default advanced IMU sensor.
-    IMU1 = Advanced_IMU('advancedIMU1', bng, vehicle, is_send_immediately=True)
+    IMU1 = AdvancedIMU('advancedIMU1', bng, vehicle, is_send_immediately=True)
 
     # Test the automatic polling functionality of the advanced IMU sensor, to make sure we retrieve the readings data via shared memory.
     sleep(2)
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     print("advanced IMU sensor removed.")
 
     # Recreate the advanced IMU sensor.
-    IMU1 = Advanced_IMU('advancedIMU1', bng, vehicle)
+    IMU1 = AdvancedIMU('advancedIMU1', bng, vehicle)
 
     # Test that the property getter function return the correct data which was set.
     sleep(1)

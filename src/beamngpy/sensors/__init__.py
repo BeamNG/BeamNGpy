@@ -3,7 +3,7 @@ This module implements various sensors that can be attached to vehicles to
 extract data from simulations.
 """
 
-from .advanced_IMU import Advanced_IMU
+from .advanced_IMU import AdvancedIMU
 from .camera import Camera
 from .damage import Damage
 from .electrics import Electrics

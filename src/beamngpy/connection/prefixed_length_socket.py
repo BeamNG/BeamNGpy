@@ -4,6 +4,8 @@ import socket
 import time
 from struct import pack, unpack
 
+from beamngpy.logging import BNGDisconnectedError
+
 BUF_SIZE = 131072
 
 
@@ -34,6 +36,8 @@ class PrefixedLengthSocket:
             except socket.error:
                 self.reconnect()
                 received = self.skt.recv(min(BUF_SIZE, length))
+            if not received:
+                raise BNGDisconnectedError('The simulator ended the connection.')
             recv_buffer.extend(received)
             length -= len(received)
         assert length == 0
