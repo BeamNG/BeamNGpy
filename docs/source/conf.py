@@ -65,7 +65,7 @@ napoleon_google_docstring = True
 # napoleon_use_param = True
 
 # -- Autodoc options ---------------------------------------------------------
-autodoc_mock_imports = ['msgpack', 'numpy', 'OpenGL', 'PIL', 'skimage']
+autodoc_mock_imports = ['msgpack', 'numpy', 'OpenGL', 'PIL']
 autodoc_typehints = 'both'
 autodoc_type_aliases = {
     'StrDict': 'StrDict',
