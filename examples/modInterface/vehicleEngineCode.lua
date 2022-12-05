@@ -1,24 +1,22 @@
 local M = {}
 
-local rcom = require('tech/techCommunication')
-
 local _log = log
 local function log(level, msg)
   _log(level, 'vehicleEngineCode', msg)
 end
 
-local function handleBar(skt, msg)
-    log("I", msg.text)
-    rcom.sendACK(skt, 'BarAck')
+local function handleBar(request)
+    log('I', request.text)
+    request:sendACK('BarAck')
 end
 
-local function onSocketMessage(skt, msg)
-    local msgType = 'handle' .. msg['type']
+local function onSocketMessage(request)
+    local msgType = 'handle' .. request['type']
     local handler = M[msgType]
     if handler ~= nil then
-        handler(skt, msg)
+        handler(request)
     else
-        log("E", "handler does not exist: " .. msgType)
+        log('E', 'handler does not exist: ' .. msgType)
     end
 end
 
