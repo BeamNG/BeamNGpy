@@ -253,7 +253,7 @@ class Scenario:
     def _load_existing_vehicles(self) -> None:
         assert self.bng
 
-        current_vehicles = set((self.bng.scenario.get_current_vehicles()).values())
+        current_vehicles = set((self.bng.scenario.get_current_vehicles(include_config=False)).values())
         self.logger.debug(
             f'Got {len(current_vehicles)} vehicles from scenario.')
         self.transient_vehicles = current_vehicles.copy()
@@ -605,8 +605,8 @@ class Scenario:
 
     def update(self) -> None:
         """
-        Synchronizes object states of this scenario with the simulator. For
-        example, this is used to update the :attr:`.Vehicle.state` fields of
+        Synchronizes object states of this scenario with the simulator.
+        This is used to update the :attr:`.Vehicle.state` fields of
         each vehicle in the scenario.
 
         Raises:
@@ -616,11 +616,5 @@ class Scenario:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to update its state.')
 
-        vids = (v.vid for v in self.vehicles)
-        states = self.bng.vehicles.get_states(vids)
-
-        scenario_vehicles = {vehicle.vid: vehicle for vehicle in self.vehicles}
-        for name, vehicle_state in states.items():
-            vehicle = scenario_vehicles.get(name, None)
-            if vehicle:
-                vehicle.state = vehicle_state
+        for vehicle in self.vehicles:
+            vehicle.sensors.poll('state')

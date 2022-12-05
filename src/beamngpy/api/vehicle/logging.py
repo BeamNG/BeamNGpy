@@ -4,7 +4,7 @@ from .base import VehicleApi
 
 
 class LoggingApi(VehicleApi):
-    def set_in_game_logging_options_from_json(self, file_name: str) -> None:
+    def set_options_from_json(self, filename: str) -> None:
         """
         Updates the in game logging with the settings specified
         in the given file/json. The file is expected to be in
@@ -12,12 +12,12 @@ class LoggingApi(VehicleApi):
         <userpath>/<version_number>/<file_name>
 
         Args:
-            file_name
+            filename
         """
-        data = dict(type='ApplyVSLSettingsFromJSON', fileName=file_name)
+        data = dict(type='ApplyVSLSettingsFromJSON', fileName=filename)
         self._send(data).ack('AppliedVSLSettings')
 
-    def write_in_game_logging_options_to_json(self, file_name: str = 'template.json') -> None:
+    def write_options_to_json(self, filename: str = 'template.json') -> None:
         """
         Writes all available options from the in-game-logger to a json file.
         The purpose of this functionality is to facilitate the acquisition of
@@ -28,12 +28,12 @@ class LoggingApi(VehicleApi):
         <userpath>/<BeamNG version number>/<fileName>
 
         Args:
-            file_name: not the absolute file path but the name of the json
+            filename: not the absolute file path but the name of the json
         """
-        data = dict(type='WriteVSLSettingsToJSON', fileName=file_name)
+        data = dict(type='WriteVSLSettingsToJSON', fileName=filename)
         self._send(data).ack('WroteVSLSettingsToJSON')
 
-    def start_in_game_logging(self, output_dir: str) -> None:
+    def start(self, output_dir: str) -> None:
         """
         Starts in game logging. Beware that any data
         from previous logging sessions is overwritten
@@ -52,7 +52,7 @@ class LoggingApi(VehicleApi):
                    f'userfolder/<BeamNG version number>/{output_dir}.')
         self._logger.info(log_msg)
 
-    def stop_in_game_logging(self) -> None:
+    def stop(self) -> None:
         """
         Stops in game logging.
         """

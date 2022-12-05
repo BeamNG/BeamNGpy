@@ -77,7 +77,7 @@ class PrefixedLengthSocket:
             try:
                 self.skt.connect((self.host, self.port))
                 break
-            except (ConnectionRefusedError, ConnectionAbortedError) as err:
+            except (ConnectionRefusedError, ConnectionAbortedError):
                 time.sleep(sleep_time)
                 sleep_time = 0.5
                 tries -= 1

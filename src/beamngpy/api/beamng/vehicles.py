@@ -188,7 +188,7 @@ class VehiclesApi(Api):
         return resp['vehicles']
 
 
-class BoundVehiclesApi(Api):
+class GEVehiclesApi(Api):
     def __init__(self, beamng: BeamNGpy, vehicle: Vehicle):
         super().__init__(beamng)
         self.vehicle = vehicle
@@ -339,3 +339,9 @@ class BoundVehiclesApi(Api):
         self._beamng.await_vehicle_spawn(self.vehicle.vid)
         self.vehicle.close()
         self.vehicle.connect(self._beamng)
+
+    def set_license_plate(self, text: str) -> None:
+        data: StrDict = dict(type='SetLicensePlate')
+        data['vid'] = self.vehicle.vid
+        data['text'] = text
+        self._send(data)

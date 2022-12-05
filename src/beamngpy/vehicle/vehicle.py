@@ -62,7 +62,7 @@ class Vehicle:
         return vehicle
 
     def __init__(self, vid: str, model: str, port: int | None = None, license: str | None = None,
-                 color: Any = None, color2: Any = None, color3: Any = None,
+                 color: Float4 | str | None = None, color2: Float4 | str | None = None, color3: Float4 | str | None = None,
                  extensions: Any = None, part_config: str | None = None, **options: Any):
         self.logger = getLogger(f'{LOGGER_ID}.Vehicle')
         self.logger.setLevel(DEBUG)
@@ -84,10 +84,7 @@ class Vehicle:
         self.options = options
 
         self.extensions = extensions
-
-        self._veh_state_sensor_id = "state"
-        state = State()
-        self.sensors.attach(self._veh_state_sensor_id, state)
+        self.sensors.attach('state', State())
 
         self._init_api()
         self._init_beamng_api()
@@ -103,37 +100,36 @@ class Vehicle:
         self.ai_set_script = self.ai.set_script
         self.ai_set_aggression = self.ai.set_aggression
 
-        control = ControlApi(self)  # this API is meant to be at the global level, so no self.control
-        self._control = control
+        self._control = ControlApi(self) # this API is meant to be at the global level, so it is not meant to be public
 
         self.logging = LoggingApi(self)
-        self.set_in_game_logging_options_from_json = self.logging.set_in_game_logging_options_from_json
-        self.write_in_game_logging_options_to_json = self.logging.write_in_game_logging_options_to_json
-        self.start_in_game_logging = self.logging.start_in_game_logging
-        self.stop_in_game_logging = self.logging.stop_in_game_logging
+        self.set_in_game_logging_options_from_json = self.logging.set_options_from_json
+        self.write_in_game_logging_options_to_json = self.logging.write_options_to_json
+        self.start_in_game_logging = self.logging.start
+        self.stop_in_game_logging = self.logging.stop
 
         self.attach_sensor = self.sensors.attach
         self.detach_sensor = self.sensors.detach
         self.poll_sensors = self.sensors.poll
 
     def _init_beamng_api(self, beamng: BeamNGpy | None = None):
-        from beamngpy.api.beamng import BoundVehiclesApi
+        from beamngpy.api.beamng import GEVehiclesApi
 
         # create dummy BeamNGpy object for API hints to work properly (it will be replaced during `connect`)
         if beamng is None:
             from beamngpy.beamng import BeamNGpy
             beamng = BeamNGpy('', -1)
 
-        api = BoundVehiclesApi(beamng, self)
-        self.annotate_parts = api.annotate_parts
-        self.revert_annotations = api.revert_annotations
-        self.get_bbox = api.get_bbox
-        self.get_part_options = api.get_part_options
-        self.get_part_config = api.get_part_config
-        self.set_part_config = api.set_part_config
-        self.teleport = api.teleport
-        self.switch = api.switch
-        self.focus = api.switch # alias
+        self._ge_api = GEVehiclesApi(beamng, self)
+        self.annotate_parts = self._ge_api.annotate_parts
+        self.revert_annotations = self._ge_api.revert_annotations
+        self.get_bbox = self._ge_api.get_bbox
+        self.get_part_options = self._ge_api.get_part_options
+        self.get_part_config = self._ge_api.get_part_config
+        self.set_part_config = self._ge_api.set_part_config
+        self.teleport = self._ge_api.teleport
+        self.switch = self._ge_api.switch
+        self.focus = self._ge_api.switch # alias
 
     def __hash__(self) -> int:
         return hash(self.vid)
@@ -160,18 +156,18 @@ class Vehicle:
          * ``up``: The vehicle's up vector as an (x,y,z) triplet
          * ``vel``: The vehicle's velocity along each axis in metres per second as an (x,y,z) triplet
 
-        Note that the `state` variable represents a *snapshot* of the last state. It has to be updated with a call to :meth:`.Vehicle.poll_sensors`
+        Note that the `state` variable represents a *snapshot* of the last state. It has to be updated with a call to :meth:`.Vehicle.sensors.poll`
         or to :meth:`.Scenario.update`.
         """
-        return self.sensors[self._veh_state_sensor_id]
+        return self.sensors['state']
 
     @state.setter
     def state(self, value: StrDict) -> None:
-        self.sensors[self._veh_state_sensor_id].replace(value)
+        self.sensors['state'].replace(value)
 
     @state.deleter
     def state(self) -> None:
-        self.sensors[self._veh_state_sensor_id].clear()
+        self.sensors['state'].clear()
 
     def _send(self, data: StrDict) -> Response:
         if not self.connection:
@@ -210,7 +206,7 @@ class Vehicle:
         Closes socket communication with the corresponding vehicle.
         """
         for name, sensor in self.sensors.items():
-            if name != self._veh_state_sensor_id:
+            if name != 'state':
                 sensor.disconnect(self.bng, self)
 
         if self.connection is not None:
@@ -363,3 +359,12 @@ class Vehicle:
         Recovers the vehicle to a drivable position and state and repairs its damage.
         """
         return self._control.recover()
+
+    def set_license_plate(self, text: str) -> None:
+        """
+        Sets the text of the vehicle's license plate.
+
+        Args:
+            text: The vehicle plate text to be set.
+        """
+        return self._ge_api.set_license_plate(text)

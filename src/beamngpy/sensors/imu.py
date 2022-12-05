@@ -24,11 +24,9 @@ class IMU(Sensor):
         super().__init__()
 
         if pos is not None and node is not None:
-            raise BNGValueError('Cannot specify both position and node for '
-                                'an IMU')
+            raise BNGValueError('Cannot specify both position and node for an IMU')
         if pos is None and node is None:
-            raise BNGValueError('Either position or node have to be specified '
-                                'for an IMU')
+            raise BNGValueError('Either position or node have to be specified for an IMU')
 
         self._pos = pos
         self._node = node

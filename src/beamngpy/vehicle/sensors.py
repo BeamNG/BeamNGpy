@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, Tuple
 
 from beamngpy.logging import BNGValueError
 from beamngpy.sensors import Sensor
@@ -44,10 +44,13 @@ class Sensors:
             self._sensors[name].detach(self.vehicle, name)
         del self._sensors[name]
 
-    def _encode_requests(self) -> Tuple[StrDict, StrDict]:
+    def _encode_requests(self, sensor_names: Iterable[str]) -> Tuple[StrDict, StrDict]:
         """
         Encodes engine and vehicle requests for this vehicle's sensors and
         returns them as a tuple of (engine requests, vehicle requests).
+
+        Args:
+            sensor_names: List of sensor names to poll.
 
         Returns:
             A tuple of two lists: the engine requests and the vehicle requests
@@ -55,7 +58,8 @@ class Sensors:
         """
         engine_reqs = dict()
         vehicle_reqs = dict()
-        for name, sensor in self._sensors.items():
+        for name in sensor_names:
+            sensor = self._sensors[name]
             engine_req = sensor.encode_engine_request()
             vehicle_req = sensor.encode_vehicle_request()
 
@@ -92,15 +96,22 @@ class Sensors:
             response[name] = data
         return response
 
-    def poll(self) -> None:
+    def poll(self, *sensor_names: str) -> None:
         """
         Updates the vehicle's sensor readings.
+
+        Args:
+            sensor_names: Names of sensors to poll. If none are provided, then all attached sensors
+                          are polled.
 
         Returns:
             Nothing. Use `vehicle.sensors[<sensor_id>][<data_access_id>]` to
             access the polled sensor data.
         """
-        engine_reqs, vehicle_reqs = self._encode_requests()
+        if not sensor_names:
+            sensor_names = tuple(self._sensors.keys())
+
+        engine_reqs, vehicle_reqs = self._encode_requests(sensor_names)
         sensor_data = dict()
 
         engine_resp = self.vehicle.bng._send(engine_reqs) if engine_reqs['sensors'] else None

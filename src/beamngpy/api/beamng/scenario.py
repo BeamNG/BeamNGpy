@@ -135,19 +135,32 @@ class ScenarioApi(Api):
         resp = self._send(data).recv('ScenarioName')
         return resp['name']
 
-    def get_current_vehicles_info(self) -> Dict[str, StrDict]:
+    def get_current_vehicles_info(self, include_config: bool = True) -> Dict[str, StrDict]:
         """
         Queries the currently active vehicles in the simulator.
+
+        Args:
+            include_config: Whether to include info about possible configurations of the vehicles.
+
+        Returns:
+            A mapping of vehicle IDs to dictionaries of data needed to represent
+            a :class:`.Vehicle`.
+        """
+        return self._message('GetCurrentVehicles', include_config=include_config)
+
+    def get_current_vehicles(self, include_config: bool = True) -> Dict[str, Vehicle]:
+        """
+        Queries the currently active vehicles in the simulator.
+
+        Args:
+            include_config: Whether to include info about possible configurations of the vehicles.
 
         Returns:
             A mapping of vehicle IDs to instances of the :class:`.Vehicle`
             class for each active vehicle. These vehicles are not connected to
             by this function.
         """
-        return self._message('GetCurrentVehicles')
-
-    def get_current_vehicles(self) -> Dict[str, Vehicle]:
-        vehicles = self.get_current_vehicles_info()
+        vehicles = self.get_current_vehicles_info(include_config=include_config)
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
 
