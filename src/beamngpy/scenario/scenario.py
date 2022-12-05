@@ -89,8 +89,8 @@ class Scenario:
         self.path = path
         self.options = options
 
-        self.vehicles: Set[Vehicle] = set()
-        self.transient_vehicles: Set[Vehicle] = set()  # Vehicles added during scenario
+        self.vehicles: Dict[str, Vehicle] = {}
+        self.transient_vehicles: Dict[str, Vehicle] = {}  # Vehicles added during scenario
         self._vehicle_locations: Dict[str, Tuple[Float3, Quat]] = {}
         self._focus_vehicle: str | None = None
 
@@ -151,12 +151,12 @@ class Scenario:
         info['lapConfig'] = self.checkpoints
 
         vehicles_dict = dict()
-        for vehicle in self.vehicles:
-            vehicles_dict[vehicle.vid] = {'playerUsable': True}
+        for vid in self.vehicles:
+            vehicles_dict[vid] = {'playerUsable': True}
 
         if self.vehicles:
             if self._focus_vehicle is None:
-                self._focus_vehicle = next(iter(self.vehicles)).vid
+                self._focus_vehicle = next(iter(self.vehicles))
 
             vehicles_dict[self._focus_vehicle]['startFocus'] = True
 
@@ -176,15 +176,15 @@ class Scenario:
             All vehicles as a dict including position and rotation.
         """
         vehicles: List[StrDict] = list()
-        for vehicle in self.vehicles:
-            pos, rot = self._vehicle_locations[vehicle.vid]
-            vehicle_dict = dict(vid=vehicle.vid)
+        for vid, vehicle in self.vehicles.items():
+            pos, rot = self._vehicle_locations[vid]
+            vehicle_dict = dict(vid=vid)
             vehicle_dict.update(vehicle.options)
             vehicle_dict['position'] = ' '.join([str(p) for p in pos])
             vehicle_dict['rotationMatrix'] = quat_as_rotation_mat_str(rot)
             vehicles.append(vehicle_dict)
         vehicles = sorted(vehicles, key=lambda v: v['vid'])
-        vehicle_names = [v.vid for v in self.vehicles]
+        vehicle_names = list(self.vehicles.keys())
         self.logger.debug(f'The scenario {self.name} has {len(vehicles)} '
                           f'vehicles: {", ".join(vehicle_names)}')
         return vehicles
@@ -253,15 +253,14 @@ class Scenario:
     def _load_existing_vehicles(self) -> None:
         assert self.bng
 
-        current_vehicles = set((self.bng.scenario.get_current_vehicles(include_config=False)).values())
+        current_vehicles = self.bng.scenario.get_current_vehicles(include_config=False)
         self.logger.debug(
             f'Got {len(current_vehicles)} vehicles from scenario.')
         self.transient_vehicles = current_vehicles.copy()
 
-        for vehicle in self.vehicles:
-            self.transient_vehicles.discard(vehicle)
-            current_vehicles.discard(vehicle)
-            current_vehicles.add(vehicle)
+        for vid, vehicle in self.vehicles.items():
+            self.transient_vehicles.pop('vid', None)
+            current_vehicles[vid] = vehicle
 
         self.vehicles = current_vehicles
 
@@ -273,18 +272,14 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(
-            self, vehicle: Vehicle, pos: Float3 = (0, 0, 0),
-            rot_quat: Quat = (0, 0, 0, 1),
-            cling: bool = True) -> None:
+    def add_vehicle( self, vehicle: Vehicle, pos: Float3 = (0, 0, 0), rot_quat: Quat = (0, 0, 0, 1), cling: bool = True) -> None:
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation.
 
         Args:
-            pos: (x,y,z) tuple specifying the position of the vehicle.
-            rot_quat: (x, y, z, w) tuple specifying
-                                        the rotation as quaternion
+            pos: (x, y, z) tuple specifying the position of the vehicle.
+            rot_quat: (x, y, z, w) tuple specifying the rotation as quaternion.
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
@@ -298,13 +293,13 @@ class Scenario:
         if vehicle.connection:
             vehicle.disconnect()
 
-        self.vehicles.add(vehicle)
+        self.vehicles[vehicle.vid] = vehicle
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
         self.logger.debug(f'Added vehicle with id \'{vehicle.vid}\'.')
 
         if self.bng:
             self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, cling=cling)
-            self.transient_vehicles.add(vehicle)
+            self.transient_vehicles[vehicle.vid] = vehicle
             vehicle.connect(self.bng)
         else:
             self.logger.debug('No BeamNGpy instance available. '
@@ -318,17 +313,17 @@ class Scenario:
         Args:
             vehicle: The vehicle to remove.
         """
-        if vehicle in self.vehicles:
+        if vehicle.vid in self.vehicles:
             if self.bng:
                 self.bng.vehicles.despawn(vehicle)
-                self.transient_vehicles.discard(vehicle)
+                self.transient_vehicles.pop(vehicle.vid, None)
             else:
                 self.logger.debug('No beamngpy instance available, cannot '
                                   f'despawn vehicle with id \'{vehicle.vid}\'')
 
             if vehicle.vid in self._vehicle_locations:
                 del self._vehicle_locations[vehicle.vid]
-            self.vehicles.remove(vehicle)
+            del self.vehicles[vehicle.vid]
         else:
             self.logger.debug(f'No vehicle with id {vehicle.vid} found.')
 
@@ -342,17 +337,16 @@ class Scenario:
         Returns:
             The :class:`.Vehicle` with the given ID. None if it wasn't found.
         """
-        for vehicle in self.vehicles:
-            if vehicle.vid == vehicle_id:
-                return vehicle
+        if vehicle_id in self.vehicles:
+            return self.vehicles[vehicle_id]
         self.logger.debug(f'Could not find vehicle with id {vehicle_id}')
         return None
 
     def set_initial_focus(self, vehicle_id: str) -> None:
-        """defines which vehicle has the initial focus
+        """Defines which vehicle has the initial focus.
 
         Args:
-            vehicle_id: vehicle id of focussed vehicle
+            vehicle_id: Vehicle id of focused vehicle
         """
         self._focus_vehicle = vehicle_id
 
@@ -445,11 +439,9 @@ class Scenario:
         their counterpart in the simulator.
 
         Args:
-            bng: The BeamNGpy instance to generate the
-                                      scenario for.
-            connect_existing: Whether vehicles spawned already
-                              in the scenario should be connected to
-                              this (:class:``.Scenario``) instance.
+            bng: The BeamNGpy instance to generate the scenario for.
+            connect_existing: Whether vehicles spawned already in the scenario
+                              should be connected to this (:class:``.Scenario``) instance.
         """
         self.bng = bng
 
@@ -461,7 +453,7 @@ class Scenario:
             self._load_existing_vehicles()
 
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
-        for vehicle in self.vehicles:
+        for vehicle in self.vehicles.values():
             vehicle.connect(bng)
 
         self.logger.info(f'Connected to scenario: {self.name}')
@@ -537,10 +529,10 @@ class Scenario:
                            'instance to be restarted.')
 
         while self.transient_vehicles:
-            vehicle = self.transient_vehicles.pop()
-            if vehicle in self.vehicles:
+            vid, vehicle = self.transient_vehicles.popitem()
+            if vid in self.vehicles:
                 self.bng.vehicles.despawn(vehicle)
-                self.vehicles.discard(vehicle)
+                del self.vehicles[vid]
         self.logger.info(f'Restarted scenario: "{self.name}"')
 
     def close(self) -> None:
@@ -551,7 +543,7 @@ class Scenario:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to be stopped.')
 
-        for vehicle in self.vehicles:
+        for vehicle in self.vehicles.values():
             vehicle.close()
 
         self.bng = None
@@ -564,7 +556,7 @@ class Scenario:
 
         return self.bng.scenario.find_objects_class(clazz)
 
-    def find_waypoints(self) -> List[ScenarioObject]:
+    def find_waypoints(self) -> Dict[str, ScenarioObject]:
         """
         Finds waypoints placed in the world right now.
 
@@ -575,9 +567,10 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        return self._find_objects_class('BeamNGWaypoint')
+        waypoints = self._find_objects_class('BeamNGWaypoint')
+        return {str(w.name): w for w in waypoints}
 
-    def find_procedural_meshes(self) -> List[ScenarioObject]:
+    def find_procedural_meshes(self) -> Dict[str, ScenarioObject]:
         """
         Finds procedural meshes placed in the world right now.
 
@@ -588,7 +581,8 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        return self._find_objects_class('ProceduralMesh')
+        meshes = self._find_objects_class('ProceduralMesh')
+        return {str(m.name): m for m in meshes}
 
     def find_static_objects(self) -> List[ScenarioObject]:
         """
@@ -616,5 +610,5 @@ class Scenario:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
                            'instance to update its state.')
 
-        for vehicle in self.vehicles:
+        for vehicle in self.vehicles.values():
             vehicle.sensors.poll('state')

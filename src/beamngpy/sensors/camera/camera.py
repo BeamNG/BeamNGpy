@@ -10,16 +10,16 @@ from __future__ import annotations
 import math
 import mmap
 import os
-import struct
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, List
 
 import numpy as np
+from PIL import Image, ImageOps
+
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.sensors.communication_utils import (send_sensor_request,
                                                   set_sensor)
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
-from PIL import Image, ImageOps
 
 from . import utils
 
@@ -57,8 +57,7 @@ class Camera:
     """
 
     @staticmethod
-    def extract_bounding_boxes(
-            semantic_image: Image.Image, instance_image: Image.Image, classes: StrDict) -> List[StrDict]:
+    def extract_bounding_boxes(semantic_image: Image.Image, instance_image: Image.Image, classes: StrDict) -> List[StrDict]:
         """
         Analyzes the given semantic annotation and instance annotation images for its object bounding boxes. The identified objects are returned as
         a list of dictionaries containing their bounding box corners, class of object according to the corresponding colour in the semantic
@@ -124,9 +123,9 @@ class Camera:
             update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
             dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512),
             field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
-            is_using_shared_memory: bool = True, is_render_colours: bool = True, is_render_annotations: bool = True,
-            is_render_instance: bool = False, is_render_depth: bool = True, is_depth_inverted: bool = False,
-            is_visualised: bool = True, is_static: bool = False, is_snapping_desired: bool = False,
+            is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = False,
+            is_render_instance: bool = False, is_render_depth: bool = False, is_depth_inverted: bool = False,
+            is_visualised: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
             is_force_inside_triangle: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
         self.logger.setLevel(DEBUG)
@@ -196,7 +195,7 @@ class Camera:
             raise BNGError('The simulator is not connected!')
         set_sensor(self.bng.connection, type, ack, **kwargs)
 
-    def _convert_to_image(self, raw_data: bytes, width: int, height: int) -> Image.Image:
+    def _convert_to_image(self, raw_data: bytes, width: int, height: int) -> Image.Image | None:
         """
         Converts raw image data from the simulator into image format.
 
@@ -306,7 +305,7 @@ class Camera:
                 processed_values = self._depth_buffer_processing(depth)
                 reshaped_data = processed_values.reshape(height, width)
                 image = Image.fromarray(reshaped_data)
-                if self.is_static == True:
+                if self.is_static:
                     processed_readings['depth'] = image
                 else:
                     processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(image))
@@ -343,6 +342,10 @@ class Camera:
         self._close_camera()
         self.logger.debug('Camera - sensor removed: 'f'{self.name}')
 
+    def _shmem_get_data(self, shmem: mmap.mmap, buffer_size: int):
+        shmem.seek(0)
+        return shmem.read(buffer_size)
+
     def poll(self) -> StrDict:
         """
         Gets the most-recent readings for this sensor.
@@ -366,54 +369,23 @@ class Camera:
             # CASE 1: We are using shared memory.
             if self.colour_shmem:
                 if 'colour' in raw_readings.keys():
-                    self.colour_shmem.seek(0)
-                    colour_data = self.colour_shmem.read(buffer_size)
-                    colour_data = np.frombuffer(colour_data, dtype=np.uint8)
-                    colour_data = colour_data.reshape(height, width, 4)
-                    if self.is_static:
-                        images['colour'] = Image.fromarray(colour_data)
-                    else:
-                        images['colour'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(colour_data)))
+                    raw_readings['colour'] = self._shmem_get_data(self.colour_shmem, buffer_size)
                 else:
-                    self.logger.error(
-                        'Camera - Colour buffer failed to render. Check that you are not running on low settings.')
-
+                    self.logger.error('Camera - Colour buffer failed to render. Check that you are not running on low settings.')
             if self.annotation_shmem:
                 if 'annotation' in raw_readings.keys():
-                    self.annotation_shmem.seek(0)
-                    annotation_data = self.annotation_shmem.read(buffer_size)
-                    annotation_data = np.frombuffer(annotation_data, dtype=np.uint8)
-                    annotation_data = annotation_data.reshape(height, width, 4)
-                    if self.is_static:
-                        images['annotation'] = Image.fromarray(annotation_data)
-                    else:
-                        images['annotation'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(annotation_data)))
+                    raw_readings['annotation'] = self._shmem_get_data(self.annotation_shmem, buffer_size)
                 else:
-                    self.logger.error(
-                        'Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
-
+                    self.logger.error('Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
             if self.depth_shmem:
                 if 'depth' in raw_readings.keys():
-                    self.depth_shmem.seek(0)
-                    depth_values = self.depth_shmem.read(buffer_size)
-                    depth_values = np.frombuffer(bytes(depth_values), dtype=np.float32)
-                    depth_values = self._depth_buffer_processing(depth_values)
-                    depth_values = depth_values.reshape(height, width)
-                    depth_values = np.uint8(depth_values)
-                    if self.is_static:
-                        images['depth'] = Image.fromarray(depth_values)
-                    else:
-                        images['depth'] = ImageOps.mirror(ImageOps.flip(Image.fromarray(depth_values)))
+                    raw_readings['depth'] = self._shmem_get_data(self.depth_shmem, buffer_size)
                 else:
-                    self.logger.error(
-                        'Camera - Depth buffer failed to render. Check that you are not running on low settings.')
-
+                    self.logger.error('Camera - Depth buffer failed to render. Check that you are not running on low settings.')
             self.logger.debug('Camera - sensor readings read from shared memory and processed: 'f'{self.name}')
-        else:
-            # CASE 2: We are not using shared memory. The data is coming back across the socket.
-            images = self._binary_to_image(raw_readings)
 
-            self.logger.debug('Camera - raw sensor readings converted from base64 to image format: 'f'{self.name}')
+        images = self._binary_to_image(raw_readings)
+        self.logger.debug('Camera - raw sensor readings converted to image format: 'f'{self.name}')
         return images
 
     def send_ad_hoc_poll_request(self) -> int:

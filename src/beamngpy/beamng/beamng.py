@@ -105,9 +105,17 @@ class BeamNGpy:
         self.connection.connect_to_beamng()
         return self
 
+    def disconnect(self) -> None:
+        """
+        Disconnects from the BeamNG simulator.
+        """
+        if self.connection:
+            self.connection.disconnect()
+            self.connection = None
+
     def close(self) -> None:
         """
-        Kills the BeamNG.* process.
+        Disconnects from the simulator and kills the BeamNG.* process.
         """
         self.logger.info('Closing BeamNGpy instance.')
         if self._scenario:
@@ -209,10 +217,11 @@ class BeamNGpy:
         if self.connection:
             try:
                 self.control.quit_beamng()
+                self.connection.disconnect()
             except ConnectionResetError:
                 self.connection = None
         if not self.process:
-            self.logger.warn('cannot kill remote BeamNG.research process, aborting subroutine')
+            self.logger.info('cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine')
             return
         if os.name == 'nt':
             with open(os.devnull, 'w') as devnull:

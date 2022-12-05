@@ -173,7 +173,7 @@ class ScenarioApi(Api):
             scenario: The scenario to load.
         """
         # clean up the vehicle connections if the `scenario` object is reused multiple times
-        for vehicle in scenario.vehicles:
+        for vehicle in scenario.vehicles.values():
             if vehicle.connection:
                 vehicle.disconnect()
 
@@ -224,7 +224,7 @@ class ScenarioApi(Api):
         if not self._beamng._scenario:
             raise BNGError('Need to have a scenario loaded to restart it.')
 
-        vehicles_to_reconnect = [v.vid for v in self._beamng._scenario.vehicles if v.is_connected()]
+        vehicles_to_reconnect = [v.vid for v in self._beamng._scenario.vehicles.values() if v.is_connected()]
         self._beamng._scenario.restart()
 
         self._logger.info('Restarting scenario.')
@@ -232,7 +232,7 @@ class ScenarioApi(Api):
         self._send(data).ack('ScenarioRestarted')
 
         self._beamng._scenario._load_existing_vehicles()
-        for vehicle in self._beamng._scenario.vehicles:
+        for vehicle in self._beamng._scenario.vehicles.values():
             if vehicle.vid in vehicles_to_reconnect and not vehicle.is_connected():
                 vehicle.connect(self._beamng)
 
