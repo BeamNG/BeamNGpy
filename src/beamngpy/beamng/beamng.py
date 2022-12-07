@@ -107,7 +107,7 @@ class BeamNGpy:
             self._start_beamng(extensions, *args, **opts)
             sleep(10)
             self.connection.connect_to_beamng()
-        self.host_os = self._get_host_os()
+        self._load_system_info()
         return self
 
     def disconnect(self) -> None:
@@ -131,8 +131,10 @@ class BeamNGpy:
             self._scenario = None
         self._kill_beamng()
 
-    def _get_host_os(self):
-        return self.system.get_info()['os']['type']
+    def _load_system_info(self):
+        info = self.system.get_info()
+        self.host_os = info['os']['type']
+        self.tech_enabled = info['tech']
 
     def _setup_api(self):
         self.camera = CameraApi(self)

@@ -7,7 +7,7 @@ from beamngpy.api.vehicle import AIApi, ControlApi, LoggingApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
-from beamngpy.types import Float3, Float4, StrDict
+from beamngpy.types import Float3, Float4, Quat, StrDict
 from beamngpy.vehicle.sensors import Sensors
 
 if TYPE_CHECKING:
@@ -148,15 +148,16 @@ class Vehicle:
         return bool(self.connection and self.connection.skt)
 
     @property
-    def state(self) -> Dict[str, Float3]:
+    def state(self) -> Dict[str, Float3 | Quat]:
         """
         This property contains the vehicle's current state in the running scenario. It is empty if no scenario is running or the state has not
         been retrieved yet. Otherwise, it contains the following key entries:
 
-         * ``pos``: The vehicle's position as an (x,y,z) triplet
-         * ``dir``: The vehicle's direction vector as an (x,y,z) triplet
-         * ``up``: The vehicle's up vector as an (x,y,z) triplet
-         * ``vel``: The vehicle's velocity along each axis in metres per second as an (x,y,z) triplet
+         * ``pos``: The vehicle's position as an (x, y, z) triplet
+         * ``dir``: The vehicle's direction vector as an (x, y, z) triplet
+         * ``up``: The vehicle's up vector as an (x, y, z) triplet
+         * ``vel``: The vehicle's velocity along each axis in metres per second as an (x, y, z) triplet
+         * ``rotation``: The vehicle's rotation as a (x, y, z, w) quaternion
 
         Note that the `state` variable represents a *snapshot* of the last state. It has to be updated with a call to :meth:`.Vehicle.sensors.poll`
         or to :meth:`.Scenario.update`.
