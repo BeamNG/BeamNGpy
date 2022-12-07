@@ -1,16 +1,19 @@
+from __future__ import annotations
+
 import time
 
 import pytest
+
 from beamngpy import BeamNGpy, Scenario, Vehicle
 
 
 @pytest.fixture()
 def beamng():
-    beamng = BeamNGpy('localhost', 64256)
+    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
     return beamng
 
 
-def test_camera_control(beamng):
+def test_camera_control(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'camera_control_test')
         ego = Vehicle('ego', model='etk800')
@@ -20,29 +23,29 @@ def test_camera_control(beamng):
         scenario.add_vehicle(other, pos=(5, 5, 0))
         scenario.make(bng)
 
-        bng.load_scenario(scenario)
-        bng.start_scenario()
+        bng.scenario.load(scenario)
+        bng.scenario.start()
 
-        vehicle_info = bng.get_current_vehicles_info()
-        ego_id_num = vehicle_info['ego']['id']
+        vehicle_info = bng.vehicles.get_current_info()
+        ego_id_num = vehicle_info[ego.vid]['id']
 
-        camera_configs = bng.get_player_camera_modes(ego.vid)
+        camera_configs = bng.camera.get_player_modes(ego)
         for camera in camera_configs.keys():
             if camera != 'crash':
-                bng.set_player_camera_mode(ego.vid, camera, {})
+                bng.camera.set_player_mode(ego, camera, {})
             else:
-                bng.set_player_camera_mode(ego.vid, camera, {}, {'veh1Id': ego_id_num})
+                bng.camera.set_player_mode(ego, camera, {}, {'veh1Id': ego_id_num})
             time.sleep(5)
-            current_camera = bng.get_player_camera_modes(ego.vid)
+            current_camera = bng.camera.get_player_modes(ego)
             assert current_camera[camera]['focused']
 
         time.sleep(10)
 
         assert 'orbit' in camera_configs
 
-        bng.set_player_camera_mode(ego.vid, 'orbit', {'distance': 50})
+        bng.camera.set_player_mode(ego, 'orbit', {'distance': 50})
         time.sleep(5)
-        current_camera = bng.get_player_camera_modes(ego.vid)
+        current_camera = bng.camera.get_player_modes(ego)
 
         assert current_camera['orbit']['focused']
         assert abs(current_camera['orbit']['camDist'] - 50) < 0.5

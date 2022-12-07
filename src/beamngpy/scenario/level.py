@@ -34,8 +34,8 @@ class Level:
             name = 'unknown'
 
         if 'size' in d:
-            assert isinstance(d['size'], tuple)
-            size = cast(Int2, d['size'])
+            assert len(d['size']) == 2
+            size = (int(d['size'][0]), int(d['size'][1]))
             del d['size']
         else:
             size = (-1, -1)

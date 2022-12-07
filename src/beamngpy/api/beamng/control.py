@@ -81,6 +81,13 @@ class ControlApi(Api):
         data['chunk'] = chunk
         self._send(data).ack('ExecutedLuaChunkGE')
 
+    def return_to_main_menu(self) -> None:
+        """
+        Returns to the main menu, possibly closing the loaded scenario.
+        """
+        data = dict(type='StopScenario')
+        self._send(data).ack('ScenarioStopped')
+
     def quit_beamng(self) -> None:
         data = dict(type='Quit')
         self._send(data).ack('Quit')

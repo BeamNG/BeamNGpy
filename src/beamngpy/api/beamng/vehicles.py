@@ -187,6 +187,38 @@ class VehiclesApi(Api):
         resp = self._send(data).recv('ScenarioUpdate')
         return resp['vehicles']
 
+    def get_current_info(self, include_config: bool = True) -> Dict[str, StrDict]:
+        """
+        Queries the currently active vehicles in the simulator.
+
+        Args:
+            include_config: Whether to include info about possible configurations of the vehicles.
+
+        Returns:
+            A mapping of vehicle IDs to dictionaries of data needed to represent
+            a :class:`.Vehicle`.
+        """
+        info = self._message('GetCurrentVehicles', include_config=include_config)
+        for vid, vehicle in info.items():
+            vehicle['id'] = int(vehicle['id'])
+        return info
+
+    def get_current(self, include_config: bool = True) -> Dict[str, Vehicle]:
+        """
+        Queries the currently active vehicles in the simulator.
+
+        Args:
+            include_config: Whether to include info about possible configurations of the vehicles.
+
+        Returns:
+            A mapping of vehicle IDs to instances of the :class:`.Vehicle`
+            class for each active vehicle. These vehicles are not connected to
+            by this function.
+        """
+        vehicles = self.get_current_info(include_config=include_config)
+        vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
+        return vehicles
+
 
 class GEVehiclesApi(Api):
     def __init__(self, beamng: BeamNGpy, vehicle: Vehicle):

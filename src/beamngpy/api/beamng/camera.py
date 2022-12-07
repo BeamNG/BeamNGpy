@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Dict
 
 from beamngpy.types import Float3, Int3, Quat, StrDict
+from beamngpy.vehicle import Vehicle
 
 from .base import Api
-
 
 class CameraApi(Api):
     def set_free(self, pos: Float3, direction: Float3) -> None:
@@ -40,7 +40,7 @@ class CameraApi(Api):
             data['rot'] = rot_quat
         self._send(data).ack('RelativeCamSet')
 
-    def set_player_mode(self, vid: str, mode: str, config: StrDict, custom_data: StrDict | None = None) -> None:
+    def set_player_mode(self, vehicle: str | Vehicle, mode: str, config: StrDict, custom_data: StrDict | None = None) -> None:
         """
         Sets the camera mode of the vehicle identified by the given vehicle ID.
         The mode is given as a string that identifies one of the valid modes
@@ -63,31 +63,31 @@ class CameraApi(Api):
         implementations of each camera mode.
 
         Args:
-            vid: Vehicle ID of the vehice to change the mode of.
+            vehicle: Vehicle ID of the vehicle to change the mode of.
             mode: Camera mode to set.
             config: Dictionary of further properties to set in the mode.
             custom_data: Custom data used by the specific camera mode. Defaults to None.
         """
         data: StrDict = dict(type='SetPlayerCameraMode')
-        data['vid'] = vid
+        data['vid'] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
         data['mode'] = mode
         data['config'] = config
         data['customData'] = custom_data
         self._send(data).ack('PlayerCameraModeSet')
 
-    def get_player_modes(self, vid: str) -> StrDict:
+    def get_player_modes(self, vehicle: str | Vehicle) -> StrDict:
         """
         Retrieves information about the camera modes configured for the vehicle
         identified by the given ID.
 
         Args:
-            vid: Vehicle ID of the vehicle to get camera mode information of.
+            vehicle: Vehicle ID of the vehicle to get camera mode information of.
 
         Returns:
             A dictionary mapping camera mode names to configuration options.
         """
         data = dict(type='GetPlayerCameraMode')
-        data['vid'] = vid
+        data['vid'] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
         resp = self._send(data).recv('PlayerCameraMode')
         return resp['cameraData']
 

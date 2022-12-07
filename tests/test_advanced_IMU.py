@@ -12,17 +12,16 @@ if __name__ == '__main__':
     # Start up the simulator.
     bng = BeamNGpy('localhost', 64256)
     bng.open(launch=True)
-    vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')                           # Create a vehicle.
+    vehicle = Vehicle('ego_vehicle', model='etki', license='PYTHON', color='Red')                           # Create a vehicle.
     scenario = Scenario('smallgrid', 'advanced_IMU_test', description='Testing the advanced IMU sensor')    # Create a scenario.
     scenario.add_vehicle(vehicle)                                                                           # Add the vehicle to the scenario.
     scenario.make(bng)
-    bng.set_deterministic()
-    bng.set_steps_per_second(60)                                                                            # Set simulator to 60hz temporal resolution
-    bng.load_scenario(scenario)
-    bng.hide_hud()
-    bng.start_scenario()
+    bng.settings.set_deterministic(60)                                                                      # Set simulator to 60hz temporal resolution
+    bng.scenario.load(scenario)
+    bng.ui.hide_hud()
+    bng.scenario.start()
 
-    print("Advanced IMU test start.")
+    print('Advanced IMU test start.')
 
     # Create a default advanced IMU sensor.
     IMU1 = AdvancedIMU('advancedIMU1', bng, vehicle, is_send_immediately=True)
@@ -30,30 +29,30 @@ if __name__ == '__main__':
     # Test the automatic polling functionality of the advanced IMU sensor, to make sure we retrieve the readings data via shared memory.
     sleep(2)
     sensor_readings = IMU1.poll()
-    print("advanced IMU readings (automatic polling): ", sensor_readings)
+    print('advanced IMU readings (automatic polling): ', sensor_readings)
 
     # Test the ad-hoc polling functionality of the advanced IMU sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
     sleep(1)
-    print("Ad-hoc poll request test.")
+    print('Ad-hoc poll request test.')
     request_id = IMU1.send_ad_hoc_poll_request()                                                  # send an ad-hoc polling request to the simulator.
-    print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
+    print('Ad-hoc poll requests sent. Unique request Id number: ', request_id)
     sleep(3)
-    print("Is ad-hoc request complete? ", IMU1.is_ad_hoc_poll_request_ready(request_id))          # Ensure that the data has been processed before collecting.
+    print('Is ad-hoc request complete? ', IMU1.is_ad_hoc_poll_request_ready(request_id))          # Ensure that the data has been processed before collecting.
     sensor_readings_ad_hoc = IMU1.collect_ad_hoc_poll_request(request_id)                         # Collect the data now that it has been computed.
-    print("advanced IMU readings (ad-hoc polling): ", sensor_readings_ad_hoc)
+    print('advanced IMU readings (ad-hoc polling): ', sensor_readings_ad_hoc)
     IMU1.remove()
-    print("advanced IMU sensor removed.")
+    print('advanced IMU sensor removed.')
 
     # Recreate the advanced IMU sensor.
     IMU1 = AdvancedIMU('advancedIMU1', bng, vehicle)
 
     # Test that the property getter function return the correct data which was set.
     sleep(1)
-    print("Property getter test.  The displayed values should be the values which were set during the creation of the advanced IMU sensor.")
-    print("Sensor Name: ", IMU1.name)
+    print('Property getter test.  The displayed values should be the values which were set during the creation of the advanced IMU sensor.')
+    print('Sensor Name: ', IMU1.name)
 
     # Test changing the visibility of the sensor.
-    print("Test visibility mode.  Advanced IMU visibility should cycle between on and off 3 times, staying at each for 1 second.")
+    print('Test visibility mode.  Advanced IMU visibility should cycle between on and off 3 times, staying at each for 1 second.')
     sleep(1)
     IMU1.set_is_visualised(False)
     sleep(1)
@@ -70,7 +69,7 @@ if __name__ == '__main__':
     IMU1.remove()
 
     sleep(3)
-    print("advanced IMU test complete.")
+    print('advanced IMU test complete.')
 
     # Close the simulation.
     bng.close()

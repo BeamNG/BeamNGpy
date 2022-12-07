@@ -7,7 +7,7 @@ import signal
 import subprocess
 from pathlib import Path
 from time import sleep
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List
 
 from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  EnvironmentApi, ScenarioApi, SettingsApi,
@@ -37,8 +37,6 @@ class BeamNGpy:
     to this constructor. If None is given, this class tries to read a
     home path from the ``BNG_HOME`` environment variable.
 
-    Note: If no home path is set, this class will not work properly.
-
     Args:
         host: The host to connect to
         port: The port to connect to
@@ -51,20 +49,23 @@ class BeamNGpy:
               used to set where custom files created during executions
               will be placed if the home folder shall not be touched.
         remote: Deprecated. The value of this argument is not used anymore.
+        quit_on_close: Whether the simulator should be closed when BeamNGpy.close() is called.
+                       Defaults to True.
 
     Attributes
     ----------
         camera: CameraApi
         control: beamngpy.api.beamng.ControlApi
         debug: DebugApi
-        environment: EnvironmentApi
+        env: EnvironmentApi
         scenario: ScenarioApi
         settings: SettingsApi
         traffic: TrafficApi
         vehicles: VehiclesApi
     """
 
-    def __init__(self, host: str, port: int, home: str | None = None, binary: str | None = None, user: str | None = None, remote: bool | None = None):
+    def __init__(self, host: str, port: int, home: str | None = None, binary: str | None = None,
+                 user: str | None = None, remote: bool | None = None, quit_on_close: bool = True):
         if remote is not None:
             create_warning('The `remote` argument is deprecated and its value is not used anymore.',
                            DeprecationWarning)
@@ -77,18 +78,22 @@ class BeamNGpy:
         self.binary = binary
         self.user = user
         self.process = None
+        self.quit_on_close = quit_on_close
         self._scenario: Scenario | None = None
         self.connection: Connection | None = None
 
         self._setup_api()
 
-    def open(self, extensions: Optional[List[str]] = None, *args: str, launch: bool = True, **opts: str) -> BeamNGpy:
+    def open(self, extensions: List[str] | None = None, *args: str,
+             launch: bool = True, **opts: str) -> BeamNGpy:
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the spawned BeamNG.* process to connect.
         This method blocks until the process started and is ready.
 
         Args:
-            launch: Whether to launch a new process or connect to a running one on the configured host/port. Defaults to True.
+            extensions: A list of non-default BeamNG Lua extensions to be loaded on start.
+            launch: Whether to launch a new process or connect to a running one on the configured host/port.
+                    Defaults to True.
         """
         self.connection = Connection(self.host, self.port)
 
@@ -118,6 +123,9 @@ class BeamNGpy:
         Disconnects from the simulator and kills the BeamNG.* process.
         """
         self.logger.info('Closing BeamNGpy instance.')
+        if not self.quit_on_close:
+            self.disconnect()
+            return
         if self._scenario:
             self._scenario.close()
             self._scenario = None
@@ -173,10 +181,8 @@ class BeamNGpy:
         self.get_levels_and_scenarios = self.scenario.get_levels_and_scenarios
         self.get_current_scenario = self.scenario.get_current
         self.get_scenario_name = self.scenario.get_name
-        self.get_current_vehicles_info = self.scenario.get_current_vehicles_info
-        self.get_current_vehicles = self.scenario.get_current_vehicles
         self.load_scenario = self.scenario.load
-        self.teleport_scenario_object = self.scenario.teleport_scenario_object
+        self.teleport_scenario_object = self.scenario.teleport_object
         self.start_scenario = self.scenario.start
         self.restart_scenario = self.scenario.restart
         self.stop_scenario = self.scenario.stop
@@ -208,6 +214,8 @@ class BeamNGpy:
         self.teleport_vehicle = self.vehicles.teleport
         self.get_part_annotation = self.vehicles.get_part_annotation
         self.get_part_annotations = self.vehicles.get_part_annotations
+        self.get_current_vehicles_info = self.vehicles.get_current_info
+        self.get_current_vehicles = self.vehicles.get_current
 
     def _kill_beamng(self) -> None:
         """
@@ -218,10 +226,12 @@ class BeamNGpy:
             try:
                 self.control.quit_beamng()
                 self.connection.disconnect()
+                self.connection = None
             except ConnectionResetError:
                 self.connection = None
         if not self.process:
-            self.logger.info('cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine')
+            self.logger.info(
+                'cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine')
             return
         if os.name == 'nt':
             with open(os.devnull, 'w') as devnull:
@@ -243,7 +253,8 @@ class BeamNGpy:
             raise BNGError('Not connected to the simulator!')
         return self.connection.message(req, **kwargs)
 
-    def _prepare_call(self, binary: str, user: Path | None, extensions: List[str] | None, *args: str, **usr_opts: str) -> List[str]:
+    def _prepare_call(self, binary: str, user: Path | None, extensions: List[str] | None,
+                      *args: str, **usr_opts: str) -> List[str]:
         """
         Prepares the command line call to execute to start BeamNG.*.
         according to this class' and the global configuration.
@@ -295,7 +306,7 @@ class BeamNGpy:
                           f'BeamNG process: `{call_str}`')
         return call
 
-    def _start_beamng(self, extensions: Optional[List[str]], *args: str, **opts: str) -> None:
+    def _start_beamng(self, extensions: List[str] | None, *args: str, **opts: str) -> None:
         """
         Spawns a BeamNG.* process and retains a reference to it for later
         termination.
@@ -310,7 +321,8 @@ class BeamNGpy:
         userpath = Path(self.user) if self.user else filesystem.determine_userpath(binary)
         call = self._prepare_call(str(binary), userpath, extensions, *args, **opts)
 
-        if platform.system() == 'Linux':  # keep the same behaviour as on Windows - do not print game logs to the Python stdout
+        if platform.system() == 'Linux':
+            # keep the same behaviour as on Windows - do not print game logs to the Python stdout
             self.process = subprocess.Popen(call, stdout=subprocess.DEVNULL, stdin=subprocess.PIPE)
         else:
             self.process = subprocess.Popen(call, stdin=subprocess.PIPE)

@@ -1,15 +1,18 @@
+from __future__ import annotations
+
 import pytest
+
 from beamngpy import BeamNGpy, Scenario, Vehicle
-from beamngpy.beamngcommon import BNGValueError
+from beamngpy.logging import BNGValueError
 
 
 @pytest.fixture
 def beamng():
-    beamng = BeamNGpy('localhost', 64256)
+    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
     return beamng
 
 
-def test_multi_vehicle(beamng):
+def test_multi_vehicle(beamng: BeamNGpy):
     """
     Test that a second client can connect to a running instance, check for
     active vehicles, connect to one, and control it
@@ -22,13 +25,13 @@ def test_multi_vehicle(beamng):
         scenario.add_vehicle(second, pos=(-2, -2, 0))
         scenario.make(a_client)
 
-        a_client.load_scenario(scenario)
-        a_client.start_scenario()
+        a_client.scenario.load(scenario)
+        a_client.scenario.start()
 
         b_client = BeamNGpy('localhost', 64256)
-        #  Do not deploy mod zip or launch new process
+        #  Do not launch new process
         b_client.open(launch=False)
-        vehicles = b_client.get_current_vehicles()
+        vehicles = b_client.vehicles.get_current(include_config=False)
         assert 'second' in vehicles
         vehicle = vehicles['second']
         vehicle.connect(b_client)
@@ -41,26 +44,27 @@ def test_multi_vehicle(beamng):
 
         for _ in range(8):
             # Verify position updating in both clients
-            a_veh.poll_sensors()
-            b_veh.poll_sensors()
-            a_ref = a_veh.sensors['state'].data['pos']
-            b_ref = b_veh.sensors['state'].data['pos']
-            b_client.step(100)
-            a_veh.poll_sensors()
-            b_veh.poll_sensors()
-            a_new = a_veh.sensors['state'].data['pos']
-            b_new = b_veh.sensors['state'].data['pos']
+            a_veh.sensors.poll()
+            b_veh.sensors.poll()
+            a_ref = a_veh.sensors['state']['pos']
+            b_ref = b_veh.sensors['state']['pos']
+            b_client.control.step(100)
+            a_veh.sensors.poll()
+            b_veh.sensors.poll()
+            a_new = a_veh.sensors['state']['pos']
+            b_new = b_veh.sensors['state']['pos']
 
             assert a_ref[0] != a_new[0] or a_ref[1] != a_new[1]
             assert b_ref[0] != b_new[0] or b_ref[1] != b_new[1]
 
 
-def test_multi_scenario(beamng):
+def test_multi_scenario(beamng: BeamNGpy):
     """
     Test that a second client can connect to a running instance and ask
     information about the loaded scenario.
     """
     with beamng as a_client:
+        a_client.control.return_to_main_menu()  # if a scenario was running previously
         scenario = Scenario('gridmap_v2', 'multi_scenario')
         vehicle = Vehicle('vehicle', model='etk800')
         scenario.add_vehicle(vehicle, pos=(0, 0, 100))
@@ -70,11 +74,11 @@ def test_multi_scenario(beamng):
         b_client.open(launch=False)
 
         with pytest.raises(BNGValueError):
-            running = b_client.get_current_scenario()
+            running = b_client.scenario.get_current()
 
-        a_client.load_scenario(scenario)
-        a_client.start_scenario()
+        a_client.scenario.load(scenario)
+        a_client.scenario.start()
 
-        running = b_client.get_current_scenario()
+        running = b_client.scenario.get_current()
         assert running.level == scenario.level
         assert running.name == scenario.name

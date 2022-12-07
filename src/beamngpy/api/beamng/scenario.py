@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
-from beamngpy.logging import BNGError
+from beamngpy.logging import BNGError, BNGValueError
 from beamngpy.scenario import Scenario, ScenarioObject
 from beamngpy.scenario.level import Level
 from beamngpy.types import Float3, Quat, StrDict
-from beamngpy.vehicle import Vehicle
 
 from .base import Api
 
@@ -115,7 +114,7 @@ class ScenarioApi(Api):
         """
         scenario = self._message('GetCurrentScenario')
         if not scenario:
-            raise BNGError('The current scenario could not be retrieved.')
+            raise BNGValueError('The current scenario could not be retrieved.')
         scenario = Scenario.from_dict(scenario)
 
         if levels is not None:
@@ -134,35 +133,6 @@ class ScenarioApi(Api):
         data = dict(type='GetScenarioName')
         resp = self._send(data).recv('ScenarioName')
         return resp['name']
-
-    def get_current_vehicles_info(self, include_config: bool = True) -> Dict[str, StrDict]:
-        """
-        Queries the currently active vehicles in the simulator.
-
-        Args:
-            include_config: Whether to include info about possible configurations of the vehicles.
-
-        Returns:
-            A mapping of vehicle IDs to dictionaries of data needed to represent
-            a :class:`.Vehicle`.
-        """
-        return self._message('GetCurrentVehicles', include_config=include_config)
-
-    def get_current_vehicles(self, include_config: bool = True) -> Dict[str, Vehicle]:
-        """
-        Queries the currently active vehicles in the simulator.
-
-        Args:
-            include_config: Whether to include info about possible configurations of the vehicles.
-
-        Returns:
-            A mapping of vehicle IDs to instances of the :class:`.Vehicle`
-            class for each active vehicle. These vehicles are not connected to
-            by this function.
-        """
-        vehicles = self.get_current_vehicles_info(include_config=include_config)
-        vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
-        return vehicles
 
     def load(self, scenario: Scenario) -> None:
         """
@@ -183,8 +153,7 @@ class ScenarioApi(Api):
         self._beamng._scenario = scenario
         self._beamng._scenario.connect(self._beamng)
 
-    def teleport_scenario_object(
-            self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
+    def teleport_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
         """
         Teleports the given scenario object to the given position with the
         given rotation.

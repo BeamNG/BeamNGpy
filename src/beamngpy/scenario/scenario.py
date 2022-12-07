@@ -253,13 +253,13 @@ class Scenario:
     def _load_existing_vehicles(self) -> None:
         assert self.bng
 
-        current_vehicles = self.bng.scenario.get_current_vehicles(include_config=False)
+        current_vehicles = self.bng.vehicles.get_current(include_config=False)
         self.logger.debug(
             f'Got {len(current_vehicles)} vehicles from scenario.')
         self.transient_vehicles = current_vehicles.copy()
 
         for vid, vehicle in self.vehicles.items():
-            self.transient_vehicles.pop('vid', None)
+            self.transient_vehicles.pop(vid, None)
             current_vehicles[vid] = vehicle
 
         self.vehicles = current_vehicles
@@ -286,7 +286,7 @@ class Scenario:
                     f' Scenario={self.name}, Vehicle={vehicle.vid}'
             raise BNGValueError(error)
 
-        if vehicle in self.vehicles:
+        if vehicle.vid in self.vehicles:
             error = f'The vehicle \'{vehicle.vid}\' is already in the scenario.'
             raise BNGValueError(error)
 
