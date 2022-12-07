@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, List
 
 from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  EnvironmentApi, ScenarioApi, SettingsApi,
-                                 TrafficApi, UiApi, VehiclesApi)
+                                 SystemApi, TrafficApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning
@@ -60,6 +60,7 @@ class BeamNGpy:
         env: EnvironmentApi
         scenario: ScenarioApi
         settings: SettingsApi
+        system: SystemApi
         traffic: TrafficApi
         vehicles: VehiclesApi
     """
@@ -101,13 +102,12 @@ class BeamNGpy:
         connected = self.connection.connect_to_beamng(tries=1, log_tries=False)
         if connected:
             self.logger.info('BeamNGpy successfully connected to existing BeamNG instance.')
-            return self
-
-        if launch:
+        elif launch:
             self.logger.info('Opening BeamNGpy instance.')
             self._start_beamng(extensions, *args, **opts)
             sleep(10)
-        self.connection.connect_to_beamng()
+            self.connection.connect_to_beamng()
+        self.host_os = self._get_host_os()
         return self
 
     def disconnect(self) -> None:
@@ -130,6 +130,9 @@ class BeamNGpy:
             self._scenario.close()
             self._scenario = None
         self._kill_beamng()
+
+    def _get_host_os(self):
+        return self.system.get_info()['os']['type']
 
     def _setup_api(self):
         self.camera = CameraApi(self)
@@ -198,6 +201,8 @@ class BeamNGpy:
         self.set_steps_per_second = self.settings.set_steps_per_second
         self.remove_step_limit = self.settings.remove_step_limit
         self.set_particles_enabled = self.settings.set_particles_enabled
+
+        self.system = SystemApi(self)
 
         self.traffic = TrafficApi(self)
         self.spawn_traffic = self.traffic.spawn
