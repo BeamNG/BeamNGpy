@@ -6,10 +6,10 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
-from beamngpy.logging import BNGValueError
 from PIL import Image, ImageDraw, ImageFont
 
-from ...types import Int3, StrDict
+from beamngpy.logging import BNGValueError
+from beamngpy.types import Int3, StrDict
 
 
 def extract_bounding_boxes(semantic_image: Image.Image, instance_image: Image.Image, classes: StrDict) -> List[StrDict]:
@@ -59,7 +59,10 @@ def draw_bounding_boxes(
     colour = colour.copy()
     draw = ImageDraw.Draw(colour)
 
-    image_font = ImageFont.truetype(font=font, size=font_size)
+    try:
+        image_font = ImageFont.truetype(font=font, size=font_size)
+    except OSError:
+        image_font = ImageFont.load_default()
 
     for i, box in enumerate(bounding_boxes):
         box_colour = box['color']
