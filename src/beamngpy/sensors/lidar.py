@@ -6,7 +6,6 @@ will not update automatically at all. However, ad-hoc polling requests can be se
 """
 from __future__ import annotations
 
-import mmap
 import os
 import struct
 from logging import DEBUG, getLogger
@@ -14,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+import beamngpy.sensors.shmem as shmem
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import Float3, StrDict
 
@@ -79,11 +79,11 @@ class Lidar:
         if is_using_shared_memory:
             pid = os.getpid()
             self.point_cloud_shmem_handle = f'{pid}.{name}.PointCloud'
-            self.point_cloud_shmem = mmap.mmap(0, self.point_cloud_shmem_size, self.point_cloud_shmem_handle)
+            self.point_cloud_shmem = shmem.allocate(self.point_cloud_shmem_size, self.point_cloud_shmem_handle)
             self.logger.debug(f'Lidar - Bound shared memory for point cloud data: {self.point_cloud_shmem_handle}')
 
             self.colour_shmem_handle = f'{pid}.{name}.Colour'
-            self.colour_shmem = mmap.mmap(0, self.colour_shmem_size, self.colour_shmem_handle)
+            self.colour_shmem = shmem.allocate(self.colour_shmem_size, self.colour_shmem_handle)
             self.logger.debug(f'Lidar - Bound shared memory for colour data: {self.colour_shmem_handle}')
 
         # Create and initialise this sensor in the simulation.
@@ -171,15 +171,13 @@ class Lidar:
             data_sizes = self._send_sensor_request('PollLidar', ack='PolledLidar', name=self.name,
                                                    isUsingSharedMemory=self.is_using_shared_memory)['data']
             assert self.point_cloud_shmem
-            self.point_cloud_shmem.seek(0)
-            point_cloud_data = self.point_cloud_shmem.read(self.point_cloud_shmem_size)
+            point_cloud_data = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
             point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
             processed_readings['pointCloud'] = point_cloud_data
             self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
 
             assert self.colour_shmem
-            self.colour_shmem.seek(0)
-            colour_data = self.colour_shmem.read(self.colour_shmem_size)
+            colour_data = shmem.read(self.colour_shmem, self.colour_shmem_size)
             colour_data = np.frombuffer(colour_data, dtype=np.uint8)
             processed_readings['colours'] = colour_data
             self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')

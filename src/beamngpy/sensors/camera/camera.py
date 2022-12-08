@@ -8,7 +8,6 @@ will not update automatically at all. However, ad-hoc polling requests can be se
 from __future__ import annotations
 
 import math
-import mmap
 import os
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, List
@@ -16,6 +15,7 @@ from typing import TYPE_CHECKING, Any, List
 import numpy as np
 from PIL import Image, ImageOps
 
+import beamngpy.sensors.shmem as shmem
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.sensors.communication_utils import (send_sensor_request,
                                                   set_sensor)
@@ -159,22 +159,22 @@ class Camera:
             buffer_size = resolution[0] * resolution[1] * 4
             if is_render_colours:
                 self.colour_handle = '{}.{}.{}.colour'.format(pid, '', name)
-                self.colour_shmem = mmap.mmap(0, buffer_size, self.colour_handle)
+                self.colour_shmem = shmem.allocate(buffer_size, self.colour_handle)
                 self.logger.debug('Camera - Bound shared memory for colour: 'f'{self.colour_handle}')
 
             if is_render_annotations:
                 self.annotation_handle = '{}.{}.{}.annotations'.format(pid, '', name)
-                self.annotation_shmem = mmap.mmap(0, buffer_size, self.annotation_handle)
+                self.annotation_shmem = shmem.allocate(buffer_size, self.annotation_handle)
                 self.logger.debug('Camera - Bound shared memory for semantic annotations: 'f'{self.annotation_handle}')
 
             if is_render_instance:
                 self.instance_handle = '{}.{}.{}.instance'.format(pid, '', name)
-                self.instance_shmem = mmap.mmap(0, buffer_size, self.instance_handle)
+                self.instance_shmem = shmem.allocate(buffer_size, self.instance_handle)
                 self.logger.debug('Camera - Bound shared memory for instance annotations: 'f'{self.instance_handle}')
 
             if is_render_depth:
                 self.depth_handle = '{}.{}.{}.depth'.format(pid, '', name)
-                self.depth_shmem = mmap.mmap(0, buffer_size, self.depth_handle)
+                self.depth_shmem = shmem.allocate(buffer_size, self.depth_handle)
                 self.logger.debug('Camera - Bound shared memory for depth: 'f'{self.depth_handle}')
 
         # Create and initialise the camera in the simulation.
@@ -342,9 +342,7 @@ class Camera:
         self._close_camera()
         self.logger.debug('Camera - sensor removed: 'f'{self.name}')
 
-    def _shmem_get_data(self, shmem: mmap.mmap, buffer_size: int):
-        shmem.seek(0)
-        return shmem.read(buffer_size)
+
 
     def poll(self) -> StrDict:
         """
@@ -369,17 +367,17 @@ class Camera:
             # CASE 1: We are using shared memory.
             if self.colour_shmem:
                 if 'colour' in raw_readings.keys():
-                    raw_readings['colour'] = self._shmem_get_data(self.colour_shmem, buffer_size)
+                    raw_readings['colour'] = shmem.read(self.colour_shmem, buffer_size)
                 else:
                     self.logger.error('Camera - Colour buffer failed to render. Check that you are not running on low settings.')
             if self.annotation_shmem:
                 if 'annotation' in raw_readings.keys():
-                    raw_readings['annotation'] = self._shmem_get_data(self.annotation_shmem, buffer_size)
+                    raw_readings['annotation'] = shmem.read(self.annotation_shmem, buffer_size)
                 else:
                     self.logger.error('Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
             if self.depth_shmem:
                 if 'depth' in raw_readings.keys():
-                    raw_readings['depth'] = self._shmem_get_data(self.depth_shmem, buffer_size)
+                    raw_readings['depth'] = shmem.read(self.depth_shmem, buffer_size)
                 else:
                     self.logger.error('Camera - Depth buffer failed to render. Check that you are not running on low settings.')
             self.logger.debug('Camera - sensor readings read from shared memory and processed: 'f'{self.name}')
