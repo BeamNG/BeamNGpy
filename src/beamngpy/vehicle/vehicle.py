@@ -3,15 +3,16 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Dict
 
-from beamngpy.api.vehicle import AIApi, ControlApi, LoggingApi
+from beamngpy.api.vehicle import AIApi, LoggingApi, RootApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
-from beamngpy.types import Float3, Float4, Quat, StrDict
+from beamngpy.types import Color, Float3, Float4, Quat, StrDict
 from beamngpy.vehicle.sensors import Sensors
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
+
 
 class Vehicle:
     """
@@ -62,7 +63,7 @@ class Vehicle:
         return vehicle
 
     def __init__(self, vid: str, model: str, port: int | None = None, license: str | None = None,
-                 color: Float4 | str | None = None, color2: Float4 | str | None = None, color3: Float4 | str | None = None,
+                 color: Color | None = None, color2: Color | None = None, color3: Color | None = None,
                  extensions: Any = None, part_config: str | None = None, **options: Any):
         self.logger = getLogger(f'{LOGGER_ID}.Vehicle')
         self.logger.setLevel(DEBUG)
@@ -102,7 +103,7 @@ class Vehicle:
         self.ai_set_script = self.ai.set_script
         self.ai_set_aggression = self.ai.set_aggression
 
-        self._control = ControlApi(self) # this API is meant to be at the global level, so it is not meant to be public
+        self._root = RootApi(self)  # this API is meant to be at the global level, so it is not meant to be public
 
         self.logging = LoggingApi(self)
         self.set_in_game_logging_options_from_json = self.logging.set_options_from_json
@@ -131,7 +132,7 @@ class Vehicle:
         self.set_part_config = self._ge_api.set_part_config
         self.teleport = self._ge_api.teleport
         self.switch = self._ge_api.switch
-        self.focus = self._ge_api.switch # alias
+        self.focus = self._ge_api.switch  # alias
 
     def __hash__(self) -> int:
         return hash(self.vid)
@@ -253,7 +254,7 @@ class Vehicle:
         Raises:
             BNGValueError: If an invalid mode is given.
         """
-        return self._control.set_shift_mode(mode)
+        return self._root.set_shift_mode(mode)
 
     def control(self, steering: float | None = None, throttle: float | None = None, brake: float | None = None,
                 parkingbrake: float | None = None, clutch: float | None = None, gear: int | None = None) -> None:
@@ -269,7 +270,7 @@ class Vehicle:
             clutch: Clutch level, from 0.0 to 1.0.
             gear: Gear to shift to, -1 eq backwards, 0 eq neutral, 1 to X eq nth gear
         """
-        return self._control.control(steering, throttle, brake, parkingbrake, clutch, gear)
+        return self._root.control(steering, throttle, brake, parkingbrake, clutch, gear)
 
     def set_color(self, rgba: Float4 = (1., 1., 1., 1.)) -> None:
         """
@@ -280,7 +281,7 @@ class Vehicle:
             rgba: The new colour given as a tuple of RGBA floats, where
                   the alpha channel encodes the shininess of the paint.
         """
-        return self._control.set_color(rgba)
+        return self._root.set_color(rgba)
 
     def set_velocity(self, velocity: float, dt: float = 1.0) -> None:
         """
@@ -296,7 +297,7 @@ class Vehicle:
             dt: The time interval over which the vehicle reaches the target velocity.
                 Defaults to 1.0.
         """
-        return self._control.set_velocity(velocity, dt)
+        return self._root.set_velocity(velocity, dt)
 
     def set_lights(
             self, left_signal: bool | None = None, right_signal: bool | None = None, hazard_signal:
@@ -346,7 +347,7 @@ class Vehicle:
             Nothing. To query light states, attach an
             :class:`.sensors.Electrics` sensor and poll it.
         """
-        return self._control.set_lights(left_signal, right_signal, hazard_signal, headlights, fog_lights, lightbar)
+        return self._root.set_lights(left_signal, right_signal, hazard_signal, headlights, fog_lights, lightbar)
 
     def queue_lua_command(self, chunk: str) -> None:
         """
@@ -355,13 +356,13 @@ class Vehicle:
         Args:
             chunk: lua chunk as a string
         """
-        return self._control.queue_lua_command(chunk)
+        return self._root.queue_lua_command(chunk)
 
     def recover(self) -> None:
         """
         Recovers the vehicle to a drivable position and state and repairs its damage.
         """
-        return self._control.recover()
+        return self._root.recover()
 
     def set_license_plate(self, text: str) -> None:
         """

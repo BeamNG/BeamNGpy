@@ -12,7 +12,8 @@ SHIFT_MODES = {
     'realistic_automatic': 3,
 }
 
-class ControlApi(VehicleApi):
+
+class RootApi(VehicleApi):
     def set_shift_mode(self, mode: str) -> None:
         """
         Sets the shifting mode of the vehicle. This changes whether or not and

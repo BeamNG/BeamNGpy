@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, List
 from beamngpy.logging import create_warning
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
+from beamngpy.vehicle.colors import coerce_vehicle_color
 
 from .base import Api
 
@@ -42,11 +43,15 @@ class VehiclesApi(Api):
             bool indicating whether the spawn was successful or not
         """
         data: StrDict = dict(type='SpawnVehicle', cling=cling)
+        data.update(vehicle.options)
         data['name'] = vehicle.vid
         data['model'] = vehicle.options['model']
         data['pos'] = pos
         data['rot'] = rot_quat
-        data.update(vehicle.options)
+        for color in ('color', 'color2', 'color3'):
+            if data[color] is not None:
+                data[color] = coerce_vehicle_color(data[color])
+
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success'] and connect:
             vehicle.connect(self._beamng)

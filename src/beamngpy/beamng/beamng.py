@@ -55,7 +55,7 @@ class BeamNGpy:
     Attributes
     ----------
         camera: CameraApi
-        control: beamngpy.api.beamng.ControlApi
+        control: ControlApi
         debug: DebugApi
         env: EnvironmentApi
         scenario: ScenarioApi

@@ -272,7 +272,7 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle( self, vehicle: Vehicle, pos: Float3 = (0, 0, 0), rot_quat: Quat = (0, 0, 0, 1), cling: bool = True) -> None:
+    def add_vehicle(self, vehicle: Vehicle, pos: Float3 = (0, 0, 0), rot_quat: Quat = (0, 0, 0, 1), cling: bool = True) -> None:
         """
         Adds a vehicle to this scenario at the given position with the given
         orientation.
