@@ -78,12 +78,13 @@ class Vehicle:
 
         options['model'] = model
         options['licenseText'] = license or options.get('licence')
-        if not options['licenseText']:
-            del options['licenseText']
         options['color'] = color or options.get('colour')
         options['color2'] = color2 or options.get('colour2')
         options['color3'] = color3 or options.get('colour3')
         options['partConfig'] = part_config or options.get('partConfig')
+        for key in ('licenseText', 'partConfig'):
+            if options[key] is None:
+                del options[key]
         self.options = options
 
         self.extensions = extensions
