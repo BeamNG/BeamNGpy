@@ -80,10 +80,24 @@ class BeamNGpy:
         self.user = user
         self.process = None
         self.quit_on_close = quit_on_close
-        self._scenario: Scenario | None = None
         self.connection: Connection | None = None
+        self._scenario: Scenario | None = None
+        self._host_os: str | None = None
+        self._tech_enabled: bool | None = None
 
         self._setup_api()
+
+    def host_os(self) -> str | None:
+        """
+        The operating system of the host the simulator is running on.
+        """
+        return self._host_os
+
+    def tech_enabled(self) -> bool | None:
+        """
+        A flag that specifies whether a BeamNG.tech features are enabled or not.
+        """
+        return self._tech_enabled
 
     def open(self, extensions: List[str] | None = None, *args: str,
              launch: bool = True, **opts: str) -> BeamNGpy:
@@ -131,12 +145,12 @@ class BeamNGpy:
             self._scenario = None
         self._kill_beamng()
 
-    def _load_system_info(self):
+    def _load_system_info(self) -> None:
         info = self.system.get_info()
-        self.host_os = info['os']['type']
-        self.tech_enabled = info['tech']
+        self._host_os = info['os']['type']
+        self._tech_enabled = info['tech']
 
-    def _setup_api(self):
+    def _setup_api(self) -> None:
         self.camera = CameraApi(self)
         self.set_free_camera = self.camera.set_free
         self.set_relative_camera = self.camera.set_relative
