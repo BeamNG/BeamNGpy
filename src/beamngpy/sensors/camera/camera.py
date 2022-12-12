@@ -191,7 +191,7 @@ class Camera:
             raise BNGError('The simulator is not connected!')
         set_sensor(self.bng.connection, type, ack, **kwargs)
 
-    def _convert_to_image(self, raw_data: bytes, width: int, height: int) -> Image.Image | None:
+    def _convert_to_image(self, raw_data: bytes | str, width: int, height: int) -> Image.Image | None:
         """
         Converts raw image data from the simulator into image format.
 
@@ -205,9 +205,10 @@ class Camera:
         """
         if len(raw_data) == 0:
             return None
+        data = raw_data if isinstance(raw_data, bytes) else raw_data.encode()
 
         # Re-shape the array, based on the number of channels present in the data.
-        decoded = np.frombuffer(raw_data, dtype=np.uint8)
+        decoded = np.frombuffer(data, dtype=np.uint8)
         decoded = decoded.reshape(height, width, 4)
 
         # Convert to image format.
