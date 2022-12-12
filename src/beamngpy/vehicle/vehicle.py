@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from beamngpy.api.vehicle import AIApi, LoggingApi, RootApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
-from beamngpy.types import Color, Float3, Float4, Quat, StrDict
+from beamngpy.types import Color, Float3, Quat, StrDict
 from beamngpy.vehicle.sensors import Sensors
 
 if TYPE_CHECKING:
@@ -27,11 +27,26 @@ class Vehicle:
     Args:
         vid: The vehicle's ID.
         model: Model of the vehicle.
+        port: The TCP port on which the vehicle should connect. If None, a
+              new port is requested from the simulator.
+        license: The license plate's text.
+        color: The primary vehicle color.
+        color2: The secondary vehicle color.
+        color3: The tertiary vehicle color.
+        extensions: A list of vehicle Lua extensions to load for the vehicle.
+        part_config: The path to the vehicle part configuration (a ``.pc`` file).
+        options: Other possible vehicle options.
 
     Attributes
     ----------
+        sensors: Sensors
+            The sensors attached to the vehicle.
         ai: AIApi
+            The API module to control the AI behavior of the vehicle.
+            See :class:`.AIApi` for details.
         logging: LoggingApi
+            The API module to control the in-game logging behavior of the vehicle.
+            See :class:`.LoggingApi` for details.
     """
 
     @staticmethod
@@ -64,7 +79,7 @@ class Vehicle:
 
     def __init__(self, vid: str, model: str, port: int | None = None, license: str | None = None,
                  color: Color | None = None, color2: Color | None = None, color3: Color | None = None,
-                 extensions: Any = None, part_config: str | None = None, **options: Any):
+                 extensions: List[str] | None = None, part_config: str | None = None, **options: Any):
         self.logger = getLogger(f'{LOGGER_ID}.Vehicle')
         self.logger.setLevel(DEBUG)
 
@@ -125,15 +140,7 @@ class Vehicle:
             beamng = BeamNGpy('', -1)
 
         self._ge_api = GEVehiclesApi(beamng, self)
-        self.annotate_parts = self._ge_api.annotate_parts
-        self.revert_annotations = self._ge_api.revert_annotations
-        self.get_bbox = self._ge_api.get_bbox
-        self.get_part_options = self._ge_api.get_part_options
-        self.get_part_config = self._ge_api.get_part_config
-        self.set_part_config = self._ge_api.set_part_config
-        self.teleport = self._ge_api.teleport
-        self.switch = self._ge_api.switch
-        self.focus = self._ge_api.switch  # alias
+        self.focus = self.switch  # alias
 
     def __hash__(self) -> int:
         return hash(self.vid)
@@ -147,6 +154,9 @@ class Vehicle:
         return 'V:{}'.format(self.vid)
 
     def is_connected(self) -> bool:
+        """
+        Whether the vehicle is connected to the simulator and can be controlled from Python.
+        """
         return bool(self.connection and self.connection.skt)
 
     @property
@@ -155,13 +165,13 @@ class Vehicle:
         This property contains the vehicle's current state in the running scenario. It is empty if no scenario is running or the state has not
         been retrieved yet. Otherwise, it contains the following key entries:
 
-         * ``pos``: The vehicle's position as an (x, y, z) triplet
-         * ``dir``: The vehicle's direction vector as an (x, y, z) triplet
-         * ``up``: The vehicle's up vector as an (x, y, z) triplet
-         * ``vel``: The vehicle's velocity along each axis in metres per second as an (x, y, z) triplet
-         * ``rotation``: The vehicle's rotation as a (x, y, z, w) quaternion
+         * ``pos``: The vehicle's position as an ``(x, y, z)`` triplet
+         * ``dir``: The vehicle's direction vector as an ``(x, y, z)`` triplet
+         * ``up``: The vehicle's up vector as an ``(x, y, z)`` triplet
+         * ``vel``: The vehicle's velocity along each axis in metres per second as an ``(x, y, z)`` triplet
+         * ``rotation``: The vehicle's rotation as an ``(x, y, z, w)`` quaternion
 
-        Note that the `state` variable represents a *snapshot* of the last state. It has to be updated with a call to :meth:`.Vehicle.sensors.poll`
+        Note that the ``state`` variable represents a *snapshot* of the last state. It has to be updated with a call to :meth:`.Sensors.poll`
         or to :meth:`.Scenario.update`.
         """
         return self.sensors['state']
@@ -182,6 +192,9 @@ class Vehicle:
     def connect(self, bng: BeamNGpy) -> None:
         """
         Opens socket communication with the corresponding vehicle.
+
+        Args:
+            bng: An instance of the simulator.
         """
         if not bng.connection:
             raise BNGError('The simulator is not connected to BeamNGpy!')
@@ -236,18 +249,15 @@ class Vehicle:
         Sets the shifting mode of the vehicle. This changes whether or not and
         how the vehicle shifts gears depending on the RPM. Available modes are:
 
-         * ``realistic_manual``: Gears have to be shifted manually by the
-                                 user, including engaging the clutch.
-         * ``realistic_manual_auto_clutch``: Gears have to be shifted manually
-                                             by the user, without having to
-                                             use the clutch.
-         * ``arcade``: Gears shift up and down automatically. If the brake is
-                       held, the vehicle automatically shifts into reverse
-                       and accelerates backward until brake is released or
-                       throttle is engaged.
-         * ``realistic_automatic``: Gears shift up automatically, but reverse
-                                    and parking need to be shifted to
-                                    manually.
+         * ``realistic_manual``
+            Gears have to be shifted manually by the user, including engaging the clutch.
+         * ``realistic_manual_auto_clutch``
+            Gears have to be shifted manually by the user, without having to use the clutch.
+         * ``arcade``
+            Gears shift up and down automatically. If the brake is held, the vehicle automatically
+            shifts into reverse and accelerates backward until brake is released or throttle is engaged.
+         * ``realistic_automatic``
+            Gears shift up automatically, but reverse and parking need to be shifted to manually.
 
         Args:
             mode: The mode to set. Must be a string from the options listed above.
@@ -273,7 +283,7 @@ class Vehicle:
         """
         return self._root.control(steering, throttle, brake, parkingbrake, clutch, gear)
 
-    def set_color(self, rgba: Float4 = (1., 1., 1., 1.)) -> None:
+    def set_color(self, rgba: Color = (1., 1., 1., 1.)) -> None:
         """
         Sets the color of this vehicle. Colour can be adjusted on the RGB
         spectrum and the "shininess" of the paint.
@@ -281,6 +291,7 @@ class Vehicle:
         Args:
             rgba: The new colour given as a tuple of RGBA floats, where
                   the alpha channel encodes the shininess of the paint.
+                  Also can be given in any format specified in :class:`~beamngpy.types.Color`.
         """
         return self._root.set_color(rgba)
 
@@ -290,8 +301,8 @@ class Vehicle:
         it is acquired gradually over the time interval set by the `dt` argument.
 
         As the method of setting velocity uses physical forces, at high velocities
-        it is important to set `dt` to an appropriately high value. The default
-        `dt` value of 1.0 is suitable for velocities up to 30 m/s.
+        it is important to set ``dt`` to an appropriately high value. The default
+        ``dt`` value of 1.0 is suitable for velocities up to 30 m/s.
 
         Args:
             velocity: The target velocity in m/s.
@@ -309,17 +320,17 @@ class Vehicle:
         system features lights that are simply binary on/off, but also ones
         where the intensity can be varied. Binary lights include:
 
-            * `left_signal`
-            * `right_signal`
-            * `hazard_signal`
+            * ``left_signal``
+            * ``right_signal``
+            * ``hazard_signal``
 
         Non-binary lights vary between 0 for off, 1 for on, 2 for higher
         intensity. For example, headlights can be turned on with 1 and set to
         be more intense with 2. Non-binary lights include:
 
-            * `headlights`
-            * `fog_lights`
-            * `lightbar`
+            * ``headlights``
+            * ``fog_lights``
+            * ``lightbar``
 
         Args:
             left_signal: On/off state of the left signal
@@ -352,10 +363,10 @@ class Vehicle:
 
     def queue_lua_command(self, chunk: str) -> None:
         """
-        Executes lua chunk in the vehicle engine VM.
+        Executes a chunk of Lua code in the vehicle engine VM.
 
         Args:
-            chunk: lua chunk as a string
+            chunk: chunk of Lua code as a string
         """
         return self._root.queue_lua_command(chunk)
 
@@ -364,6 +375,118 @@ class Vehicle:
         Recovers the vehicle to a drivable position and state and repairs its damage.
         """
         return self._root.recover()
+
+    def get_bbox(self) -> Dict[str, Float3]:
+        """
+        Returns a vehicle's current bounding box as a dictionary containing
+        eight points. The bounding box
+        corresponds to the vehicle's location/rotation in world space, i.e. if
+        the vehicle moves/turns, the bounding box moves accordingly. Note that
+        the bounding box contains the min/max coordinates of the entire
+        vehicle. This means that the vehicle losing a part like a mirror will
+        cause the bounding box to "expand" while the vehicle moves as the
+        mirror is left behind, but still counts as part of the box containing
+        the vehicle.
+
+        Returns:
+            The vehicle's current bounding box as a dictionary of eight points.
+            Points are named following the convention that the cuboid has a
+            "near" rectangle towards the rear of the vehicle and "far"
+            rectangle towards the front. The points are then named like this:
+
+            * ``front_bottom_left``
+                Bottom left point of the front rectangle as an ``(x, y, z)`` triplet
+            * ``front_bottom_right``
+                Bottom right point of the front rectangle as an ``(x, y, z)`` triplet
+            * ``front_top_left``
+                Top left point of the front rectangle as an ``(x, y, z)`` triplet
+            * ``front_top_right``
+                Top right point of the front rectangle as an ``(x, y, z)`` triplet
+            * ``rear_bottom_left``
+                Bottom left point of the rear rectangle as an ``(x, y, z)`` triplet
+            * ``rear_bottom_right``
+                Bottom right point of the rear rectangle as an ``(x, y, z)`` triplet
+            * ``rear_top_left``
+                Top left point of the rear rectangle as an ``(x, y, z)`` triplet
+            * ``rear_top_right``
+                Top right point of the rear rectangle as an ``(x, y, z)`` triplet
+        """
+        return self._ge_api.get_bbox()
+
+    def annotate_parts(self) -> None:
+        """
+        Triggers the process to have individual parts of a vehicle have unique
+        annotation colors.
+        """
+        return self._ge_api.annotate_parts()
+
+    def revert_annotations(self) -> None:
+        """
+        Reverts the given vehicle's annotations back to the object-based mode,
+        removing the per-part annotations.
+        """
+        return self._ge_api.revert_annotations()
+
+    def switch(self) -> None:
+        """
+        Switches the simulator to this vehicle. This means that the simulator's main camera,
+        inputs by the user, and so on will all focus on this vehicle from now on.
+        """
+        return self._ge_api.switch()
+
+    def teleport(self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True) -> bool:
+        """
+        Teleports the vehicle to the given position with the given
+        rotation.
+
+        Args:
+            pos: The target position as an (x,y,z) tuple containing world-space coordinates.
+            rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion
+            reset: Specifies if the vehicle will be reset to its initial state during teleport (including its velocity).
+
+        Notes:
+            The ``reset=False`` option is incompatible with setting rotation of
+            the vehicle. With the current implementation, it is not possible to
+            set the rotation of the vehicle and to keep its velocity during teleport.
+        """
+        return self._ge_api.teleport(pos, rot_quat, reset)
+
+    def get_part_options(self) -> StrDict:
+        """
+        Retrieves a mapping of part slots for the given vehicle and their
+        possible parts.
+
+        Returns:
+            A mapping of part configuration options for the given.
+        """
+        return self._ge_api.get_part_options()
+
+    def get_part_config(self) -> StrDict:
+        """
+        Retrieves the current part configuration of the given vehicle. The
+        configuration contains both the current values of adjustable vehicle
+        parameters and a mapping of part types to their currently-selected
+        part.
+
+        Returns:
+            The current vehicle configuration as a dictionary.
+        """
+        return self._ge_api.get_part_config()
+
+    def set_part_config(self, cfg: StrDict) -> None:
+        """
+        Sets the current part configuration of the given vehicle. The
+        configuration is given as a dictionary containing both adjustable
+        vehicle parameters and a mapping of part types to their selected parts.
+
+        Args:
+            cfg: The new vehicle configuration as a dictionary.
+
+        Notes:
+            Changing parts causes the vehicle to respawn, which repairs it as
+            a side-effect.
+        """
+        return self._ge_api.set_part_config(cfg)
 
     def set_license_plate(self, text: str) -> None:
         """

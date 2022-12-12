@@ -8,6 +8,14 @@ from .base import Api
 
 
 class ControlApi(Api):
+    """
+    An API allowing control of the flow of the simulation - pausing/resuming, stepping,
+    and also enabling support for calling custom Lua code.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def step(self, count: int, wait: bool = True) -> None:
         """
         Advances the simulation the given amount of steps, assuming it is

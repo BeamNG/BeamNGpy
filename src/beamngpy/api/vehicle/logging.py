@@ -4,6 +4,13 @@ from .base import VehicleApi
 
 
 class LoggingApi(VehicleApi):
+    """
+    A base API class from which all the API communicating with a vehicle derive.
+
+    Args:
+        vehicle: An instance of a vehicle object.
+    """
+
     def set_options_from_json(self, filename: str) -> None:
         """
         Updates the in game logging with the settings specified

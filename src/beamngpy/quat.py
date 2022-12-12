@@ -13,11 +13,10 @@ def angle_to_quat(angle: Float3) -> Quat:
     Converts an euler angle to a quaternion.
 
     Args:
-        angle: Euler angle (degrees)
+        angle: Euler angle in degrees.
 
-    Return:
-        Quaternion with the order (x, y, z, w) with w representing the real
-        component
+    Returns:
+        Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
     """
     angle_rad = [math.radians(x) for x in angle]
 
@@ -42,10 +41,10 @@ def compute_rotation_matrix(quat: Quat) -> ndarray:
     to be used in a scenario prefab.
 
     Args:
-        quat: Quaternion with the order (x, y, z, w) with w representing the real component.
+        quat: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
 
-    Return:
-        The rotation matrix as np array.
+    Returns:
+        The rotation matrix as a ``NumPy`` array.
     """
     norm = np.linalg.norm(quat)
     eps = np.finfo(float).eps
@@ -66,10 +65,10 @@ def quat_as_rotation_mat_str(quat: Quat) -> str:
     matrix and converts it into a string.
 
     Args:
-        quat: Quaternion with the order (x, y, z, w) with w representing the real component.
+        quat: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
 
-    Return:
-        Rotation matrix as string.
+    Returns:
+        Rotation matrix as a string.
     """
     mat = compute_rotation_matrix(quat)
     mat = mat.reshape(9).astype(str)
@@ -81,10 +80,10 @@ def quat_multiply(a: Quat, b: Quat) -> Quat:
     Multiplies two quaternions.
 
     Args:
-        a: Quaternion with the order (x, y, z, w) with w representing the real component.
-        b: Quaternion with the order (x, y, z, w) with w representing the real component.
+        a: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
+        b: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
 
-    Return:
+    Returns:
         The product of ``a`` and ``b`` as a quaternion.
     """
     return (a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],

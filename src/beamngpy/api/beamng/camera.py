@@ -7,7 +7,16 @@ from beamngpy.vehicle import Vehicle
 
 from .base import Api
 
+
 class CameraApi(Api):
+    """
+    An API class which allows control of the in-game camera and also provides
+    information about the semantic annotation classes.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def set_free(self, pos: Float3, direction: Float3) -> None:
         """
         Sets the position and direction of the free camera. The free camera is
@@ -51,15 +60,15 @@ class CameraApi(Api):
         but it is not guaranteed the camera mode will respect all of them.
         These parameters include:
 
-            * rotation: The rotation of the camera as a triplet of Euler angles
-            * fov: The field of view angle
-            * offset: The (x, y, z) vector to offset the camera's position by
-            * distance: The distance of the camera to the vehicle
+            * ``rotation``: The rotation of the camera as a triplet of Euler angles
+            * ``fov``: The field of view angle
+            * ``offset``: The (x, y, z) vector to offset the camera's position by
+            * ``distance``: The distance of the camera to the vehicle
 
         Since each camera mode is implemented as a custom Lua extension, it is
         not possible to automatically query the exact features of the mode.
         Further information can be found in the
-        lua/ge/extensions/core/cameraModes files which contain the
+        ``lua/ge/extensions/core/cameraModes`` files which contain the
         implementations of each camera mode.
 
         Args:
@@ -96,7 +105,7 @@ class CameraApi(Api):
         Method to obtain the annotation configuration of the simulator.
 
         Returns:
-            A mapping of object classes to lists containing the [R, G, B]
+            A mapping of object classes to lists containing the ``[R, G, B]``
             values of the colors objects of that class are rendered with.
         """
         data = dict(type='GetAnnotations')

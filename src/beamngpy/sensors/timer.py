@@ -1,5 +1,6 @@
 from .sensor import Sensor
 
+
 class Timer(Sensor):
     """
     The timer sensor keeps track of the time that has passed since the
@@ -9,7 +10,7 @@ class Timer(Sensor):
     sensor does not progress while the simulation is paused.
 
     When polled, this sensor provides the time in seconds since the start of
-    the scenario in a dictionary under the 'time' key.
+    the scenario in a dictionary under the ``time`` key.
     """
 
     def __init__(self):

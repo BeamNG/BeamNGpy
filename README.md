@@ -1,7 +1,7 @@
 # BeamNGpy
 <a href="https://beamngpy.readthedocs.io/en/latest/"><img src="https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png" /></a>
 
-**BeamNGpy** is an official library providing a Python API to BeamNG.tech,
+**BeamNGpy** is an official library providing a Python API to [BeamNG.tech][11],
 the academia- and industry-oriented fork of the video game [BeamNG.drive][4].
 BeamNGpy and BeamNG.tech are designed to go hand in hand, both being kept up
 to date to support each other's functions, meaning using the latest versions
@@ -175,6 +175,7 @@ However we do not maintain minor versions: bug fixes and new features will only 
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
+| 0.27                | [1.25](https://github.com/BeamNG/BeamNGpy/tree/v1.25)     |
 | 0.26                | [1.24](https://github.com/BeamNG/BeamNGpy/tree/v1.24)     |
 | 0.25                | [1.23.1](https://github.com/BeamNG/BeamNGpy/tree/v1.23.1) |
 | 0.24                | [1.22](https://github.com/BeamNG/BeamNGpy/tree/v1.22)     |
@@ -218,3 +219,4 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
 [10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb
+[11]: https://beamng.tech/

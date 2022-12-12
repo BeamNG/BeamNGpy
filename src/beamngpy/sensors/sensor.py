@@ -28,8 +28,9 @@ class Sensor(dict):
     """
     Sensor meta-class declaring methods common to them.
     """
+
     def __init__(self):
-        self.data: StrDict = self # backwards compatibility
+        self.data: StrDict = self  # backwards compatibility
 
     def replace(self, data: StrDict):
         self.clear()

@@ -11,6 +11,13 @@ if TYPE_CHECKING:
 
 
 class TrafficApi(Api):
+    """
+    An API for controlling the traffic
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def start(self, participants: List[Vehicle]) -> None:
         """
         Enables traffic simulation for the given list of vehicles.

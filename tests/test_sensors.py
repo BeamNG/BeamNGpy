@@ -66,7 +66,7 @@ def test_damage(beamng: BeamNGpy):
 
 def test_state(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'vehicle_state_test')
+        scenario = Scenario('smallgrid', 'state_test')
         vehicle = Vehicle('test_car', model='pickup')
 
         state = State()
@@ -81,12 +81,12 @@ def test_state(beamng: BeamNGpy):
 
         vehicle.sensors.poll()
 
-    assert state.data['pos'][0] < 0.1
+    assert state['pos'][0] < 0.1
 
 
 def test_imu(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'vehicle_state_test')
+        scenario = Scenario('smallgrid', 'imu_test')
         vehicle = Vehicle('test_car', model='etk800')
 
         imu_pos = IMU(pos=(0.73, 0.51, 0.8), debug=True)
@@ -107,12 +107,12 @@ def test_imu(beamng: BeamNGpy):
             # Stand still, sample IMU
             bng.control.step(60)
             vehicle.sensors.poll()
-            pax.append(imu_pos.data['aX'])
-            pay.append(imu_pos.data['aY'])
-            paz.append(imu_pos.data['aZ'])
-            pgx.append(imu_pos.data['gX'])
-            pgy.append(imu_pos.data['gY'])
-            pgz.append(imu_pos.data['gZ'])
+            pax.append(imu_pos['aX'])
+            pay.append(imu_pos['aY'])
+            paz.append(imu_pos['aZ'])
+            pgx.append(imu_pos['gX'])
+            pgy.append(imu_pos['gY'])
+            pgz.append(imu_pos['gZ'])
 
         # Some slight movement is bound to happen since the engine is one and
         # the vehicle isn't perfectly stable; hence no check for == 0
@@ -133,19 +133,19 @@ def test_imu(beamng: BeamNGpy):
             vehicle.control(throttle=t, steering=s)
             bng.control.step(60)
             vehicle.sensors.poll()
-            pax.append(imu_pos.data['aX'])
-            pay.append(imu_pos.data['aY'])
-            paz.append(imu_pos.data['aZ'])
-            pgx.append(imu_pos.data['gX'])
-            pgy.append(imu_pos.data['gY'])
-            pgz.append(imu_pos.data['gZ'])
+            pax.append(imu_pos['aX'])
+            pay.append(imu_pos['aY'])
+            paz.append(imu_pos['aZ'])
+            pgx.append(imu_pos['gX'])
+            pgy.append(imu_pos['gY'])
+            pgz.append(imu_pos['gZ'])
 
-            nax.append(imu_node.data['aX'])
-            nay.append(imu_node.data['aY'])
-            naz.append(imu_node.data['aZ'])
-            ngx.append(imu_node.data['gX'])
-            ngy.append(imu_node.data['gY'])
-            ngz.append(imu_node.data['gZ'])
+            nax.append(imu_node['aX'])
+            nay.append(imu_node['aY'])
+            naz.append(imu_node['aZ'])
+            ngx.append(imu_node['gX'])
+            ngy.append(imu_node['gY'])
+            ngz.append(imu_node['gZ'])
 
         for arr in [pax, pay, pgx, pgy, pgz]:
             assert np.max(arr) > 0.01

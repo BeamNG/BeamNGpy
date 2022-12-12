@@ -9,6 +9,13 @@ from .base import VehicleApi
 
 
 class AIApi(VehicleApi):
+    """
+    An API class gathering AI-related functionality.
+
+    Args:
+        vehicle: An instance of a vehicle object.
+    """
+
     def set_mode(self, mode: str) -> None:
         """
         Sets the desired mode of the simulator's built-in AI for this vehicle.

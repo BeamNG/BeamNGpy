@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
+__all__ = ['IMU']
 
 class IMU(Sensor):
     """

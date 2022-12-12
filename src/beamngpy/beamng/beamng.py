@@ -28,18 +28,18 @@ module_logger.setLevel(logging.DEBUG)
 
 class BeamNGpy:
     """
-    The BeamNGpy class is the backbone of communication with the BeamNG
+    The :class:`BeamNGpy` class is the backbone of communication with the BeamNG
     simulation and offers methods of starting, stopping, connecting to, and
     controlling the state of the simulator.
 
     Instantiates a BeamNGpy instance connecting to the simulator on the
     given host and port. The home directory of the simulator can be passed
-    to this constructor. If None is given, this class tries to read a
+    to this constructor. If ``None`` is given, this class tries to read a
     home path from the ``BNG_HOME`` environment variable.
 
     Args:
-        host: The host to connect to
-        port: The port to connect to
+        host: The host to connect to.
+        port: The port to connect to.
         home: Path to the simulator's home directory.
         binary: Optional custom path to the binary, relative to the simulator's
                 home directory. Default is ``Bin64/BeamNG.{tech/drive}.x64.exe``
@@ -49,20 +49,38 @@ class BeamNGpy:
               used to set where custom files created during executions
               will be placed if the home folder shall not be touched.
         remote: Deprecated. The value of this argument is not used anymore.
-        quit_on_close: Whether the simulator should be closed when BeamNGpy.close() is called.
+        quit_on_close: Whether the simulator should be closed when :func:`close()` is called.
                        Defaults to True.
 
     Attributes
     ----------
         camera: CameraApi
+            The API module to control the in-game camera.
+            See :class:`.CameraApi` for details.
         control: ControlApi
+            The API module to control the flow of the simulation.
+            See :class:`.ControlApi` for details.
         debug: DebugApi
+            The API module to control debug objects.
+            See :class:`.DebugApi` for details.
         env: EnvironmentApi
+            The API module to control the simulation's environment.
+            See :class:`.EnvironmentApi` for details.
         scenario: ScenarioApi
+            The API module to control the scenarios.
+            See :class:`.ScenarioApi` for details.
         settings: SettingsApi
+            The API module to control the settings of the simulator.
+            See :class:`.SettingsApi` for details.
         system: SystemApi
+            The API module for getting information about the host system.
+            See :class:`.SystemApi` for details.
         traffic: TrafficApi
+            The API module to control the traffic.
+            See :class:`.TrafficApi` for details.
         vehicles: VehiclesApi
+            The API module to control the vehicles in the scenario.
+            See :class:`.VehiclesApi` for details.
     """
 
     def __init__(self, host: str, port: int, home: str | None = None, binary: str | None = None,

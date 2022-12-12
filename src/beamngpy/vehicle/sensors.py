@@ -9,7 +9,15 @@ from beamngpy.types import StrDict
 if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
+
 class Sensors:
+    """
+    A sensor collection for a vehicle.
+
+    Args:
+        vehicle: The vehicle to which this object instance should belong to.
+    """
+
     def __init__(self, vehicle: Vehicle):
         self._sensors: Dict[str, Sensor] = {}
         self.vehicle = vehicle
@@ -105,7 +113,7 @@ class Sensors:
                           are polled.
 
         Returns:
-            Nothing. Use `vehicle.sensors[<sensor_id>][<data_access_id>]` to
+            Nothing. Use ``vehicle.sensors[<sensor_id>][<data_access_id>]`` to
             access the polled sensor data.
         """
         if not sensor_names:

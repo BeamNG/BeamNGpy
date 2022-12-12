@@ -8,4 +8,5 @@ from .settings import SettingsApi
 from .system import SystemApi
 from .traffic import TrafficApi
 from .ui import UiApi
-from .vehicles import GEVehiclesApi, VehiclesApi
+from .vehicles import VehiclesApi
+from .vehicles_ge import GEVehiclesApi

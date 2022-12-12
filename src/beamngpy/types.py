@@ -23,9 +23,10 @@ Quat = Tuple[float, float, float, float]
 Color = Union[Float3, Float4, str]
 '''
 Vehicle color. Can be either:
-    - (R, G, B) tuple of floats
-    - (R, G, B, A) tuple of floats
-    - string of format 'R G B'
-    - string of format 'R G B A'
-    - a common color name
+
+    - ``(R, G, B)`` tuple of floats,
+    - ``(R, G, B, A)`` tuple of floats,
+    - string of format ``'R G B'``,
+    - string of format ``'R G B A'``,
+    - a common color name (parsable by ``matplotlib.colors``).
 '''

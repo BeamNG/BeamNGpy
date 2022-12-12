@@ -1,19 +1,22 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Iterable, List
+from typing import Dict, Iterable, List
 
-from beamngpy.logging import create_warning
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
-from beamngpy.vehicle.colors import coerce_vehicle_color
+from beamngpy.vehicle.colors import coerce_vehicle_color, rgba_to_str
 
 from .base import Api
 
-if TYPE_CHECKING:
-    from beamngpy.beamng import BeamNGpy
-
 
 class VehiclesApi(Api):
+    """
+    An API for vehicle manipulation in the simulator.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def start_connection(self, vehicle: Vehicle, extensions: List[str] | None) -> StrDict:
         connection_msg: StrDict = {'type': 'StartVehicleConnection'}
         connection_msg['vid'] = vehicle.vid
@@ -50,7 +53,7 @@ class VehiclesApi(Api):
         data['rot'] = rot_quat
         for color in ('color', 'color2', 'color3'):
             if data[color] is not None:
-                data[color] = coerce_vehicle_color(data[color])
+                data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
 
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success'] and connect:
@@ -223,162 +226,3 @@ class VehiclesApi(Api):
         vehicles = self.get_current_info(include_config=include_config)
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
-
-
-class GEVehiclesApi(Api):
-    def __init__(self, beamng: BeamNGpy, vehicle: Vehicle):
-        super().__init__(beamng)
-        self.vehicle = vehicle
-
-    def get_bbox(self) -> Dict[str, Float3]:
-        """
-        Returns a vehicle's current bounding box as a dictionary containing
-        eight points. The bounding box
-        corresponds to the vehicle's location/rotation in world space, i.e. if
-        the vehicle moves/turns, the bounding box moves acoordingly. Note that
-        the bounding box contains the min/max coordinates of the entire
-        vehicle. This means that the vehicle losing a part like a mirror will
-        cause the bounding box to "expand" while the vehicle moves as the
-        mirror is left behind, but still counts as part of the box containing
-        the vehicle.
-
-        Returns:
-            The vehicle's current bounding box as a dictionary of eight points.
-            Points are named following the convention that the cuboid has a
-            "near" rectangle towards the rear of the vehicle and "far"
-            rectangle towards the front. The points are then named like this:
-
-            * `front_bottom_left`: Bottom left point of the front rectangle as
-                                   an (x, y ,z) triplet
-            * `front_bottom_right`: Bottom right point of the front rectangle
-                                    as an (x, y, z) triplet
-            * `front_top_left`: Top left point of the front rectangle as an
-                               (x, y, z) triplet
-            * `front_top_right`: Top right point of the front rectangle as an
-                                (x, y, z) triplet
-            * `rear_bottom_left`: Bottom left point of the rear rectangle as an
-                                 (x, y, z) triplet
-            * `rear_bottom_right`: Bottom right point of the rear rectangle as
-                                   an (x, y, z) triplet
-            * `rear_top_left`: Top left point of the rear rectangle as an
-                              (x, y, z) triplet
-            * `rear_top_right`: Top right point of the rear rectangle as an
-                               (x, y, z) triplet
-        """
-        data = dict(type='GetBBoxCorners')
-        data['vid'] = self.vehicle.vid
-        resp = self._send(data).recv('BBoxCorners')
-        points = resp['points']
-        bbox = {
-            'front_bottom_left': points[3],
-            'front_bottom_right': points[0],
-            'front_top_left': points[2],
-            'front_top_right': points[1],
-            'rear_bottom_left': points[7],
-            'rear_bottom_right': points[4],
-            'rear_top_left': points[6],
-            'rear_top_right': points[5],
-        }
-        return bbox
-
-    def annotate_parts(self) -> None:
-        """
-        Triggers the process to have individual parts of a vehicle have unique
-        annotation colors.
-        """
-        data = dict(type='AnnotateParts')
-        data['vid'] = self.vehicle.vid
-        self._send(data).ack('PartsAnnotated')
-
-    def revert_annotations(self) -> None:
-        """
-        Reverts the given vehicle's annotations back to the object-based mode,
-        removing the per-part annotations.
-        """
-        data = dict(type='RevertAnnotations')
-        data['vid'] = self.vehicle.vid
-        self._send(data).ack('AnnotationsReverted')
-
-    def switch(self):
-        """
-        Switches the simulator to this vehicle. This means that the simulator's main camera,
-        inputs by the user, and so on will all focus on this vehicle from now on.
-        """
-        return self._beamng.switch_vehicle(self.vehicle)
-
-    def teleport(self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True) -> bool:
-        """
-        Teleports the vehicle to the given position with the given
-        rotation.
-
-        Args:
-            pos: The target position as an (x,y,z) tuple containing world-space coordinates.
-            rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion
-            reset: Specifies if the vehicle will be reset to its initial state during teleport (including its velocity).
-
-        Notes:
-            The ``reset=False`` option is incompatible with setting rotation of
-            the vehicle. With the current implementation, it is not possible to
-            set the rotation of the vehicle and to keep its velocity during teleport.
-        """
-        return self._beamng.teleport_vehicle(self.vehicle.vid, pos, rot_quat, reset)
-
-    def get_part_options(self) -> StrDict:
-        """
-        Retrieves a mapping of part slots for the given vehicle and their
-        possible parts.
-
-        Returns:
-            A mapping of part configuration options for the given.
-        """
-        data = dict(type='GetPartOptions')
-        data['vid'] = self.vehicle.vid
-        resp = self._send(data).recv('PartOptions')
-        return resp['options']
-
-    def get_part_config(self) -> StrDict:
-        """
-        Retrieves the current part configuration of the given vehicle. The
-        configuration contains both the current values of adjustable vehicle
-        parameters and a mapping of part types to their currently-selected
-        part.
-
-        Returns:
-            The current vehicle configuration as a dictionary.
-        """
-        data = dict(type='GetPartConfig')
-        data['vid'] = self.vehicle.vid
-        resp = self._send(data).recv('PartConfig')
-        resp = resp['config']
-        if 'parts' not in resp or not resp['parts']:
-            resp['parts'] = dict()
-        if 'vars' not in resp or not resp['vars']:
-            resp['vars'] = dict()
-        return resp
-
-    def set_part_config(self, cfg: StrDict) -> None:
-        """
-        Sets the current part configuration of the given vehicle. The
-        configuration is given as a dictionary containing both adjustable
-        vehicle parameters and a mapping of part types to their selected parts.
-
-        Args:
-            cfg: The new vehicle configuration as a dictionary.
-
-        Notes:
-            Changing parts causes the vehicle to respawn, which repairs it as
-            a side-effect.
-        """
-        data: StrDict = dict(type='SetPartConfig')
-        data['vid'] = self.vehicle.vid
-        data['config'] = cfg
-        self._send(data)
-        self._beamng.await_vehicle_spawn(self.vehicle.vid)
-        self.vehicle.close()
-        self.vehicle.connect(self._beamng)
-
-    def set_license_plate(self, text: str) -> None:
-        data: StrDict = dict(type='SetLicensePlate')
-        data['vid'] = self.vehicle.vid
-        data['text'] = text
-        self._send(data)

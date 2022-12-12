@@ -6,6 +6,13 @@ from .base import Api
 
 
 class SystemApi(Api):
+    """
+    An API for getting info about the host system running the simulator.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def get_info(self, os: bool = True, cpu: bool = False, gpu: bool = False, power: bool = False) -> StrDict:
         """
         Returns the information about the host's system.

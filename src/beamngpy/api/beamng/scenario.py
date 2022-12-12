@@ -11,6 +11,13 @@ from .base import Api
 
 
 class ScenarioApi(Api):
+    """
+    An API gathering function for working with scenarios, levels and scenario objects.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def get_levels(self) -> Dict[str, Level]:
         """
         Queries the available levels in the simulator and returns them as a

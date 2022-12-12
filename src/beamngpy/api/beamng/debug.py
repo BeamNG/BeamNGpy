@@ -8,6 +8,13 @@ from .base import Api
 
 
 class DebugApi(Api):
+    """
+    An API for drawing debug objects in the simulator.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def add_spheres(self, coordinates: List[Float3], radii: List[float],
                     rgba_colors: List[Float4], cling: bool = False, offset: float = 0):
         data: StrDict = dict(type='AddDebugSpheres')
@@ -27,7 +34,7 @@ class DebugApi(Api):
         self._send(data).ack('DebugObjectsRemoved')
 
     def add_polyline(self, coordinates: List[Float3], rgba_color: List[Float4],
-                    cling: bool = False, offset: float = 0):
+                     cling: bool = False, offset: float = 0):
         data: StrDict = dict(type='AddDebugPolyline')
         data['coordinates'] = coordinates
         data['color'] = rgba_color

@@ -4,6 +4,13 @@ from .base import Api
 
 
 class UiApi(Api):
+    """
+    An API allowing the control of the simulator's GUI - displaying messages and hiding/showing the UI.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def display_message(self, msg: str) -> None:
         """
         Displays a toast message in the user interface of the simulator.

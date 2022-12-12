@@ -9,7 +9,7 @@ def rgba_to_str(color: Float4) -> str:
     return ' '.join(map(str, color))
 
 
-def coerce_vehicle_color(color: Color) -> str:
+def coerce_vehicle_color(color: Color) -> Float4:
     """
     Tries to coerce a vehicle color to a format parsable by BeamNG.
 
@@ -23,7 +23,7 @@ def coerce_vehicle_color(color: Color) -> str:
             pass
     if isinstance(color, tuple):
         if len(color) == 3:
-            return rgba_to_str((*color, 0.0))
-        return rgba_to_str(color)
+            return (*color, 0.0)
+        return color
 
-    return rgba_to_str(colors.to_rgba(color, alpha=0.0))
+    return colors.to_rgba(color, alpha=0.0)

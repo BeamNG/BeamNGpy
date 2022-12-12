@@ -20,8 +20,7 @@ def main():
     scenario.add_vehicle(vehicle, pos=orig, rot_quat=(0, 0, 1, 0))
     scenario.make(beamng)
 
-    beamng.set_deterministic()
-    beamng.set_steps_per_second(60)
+    beamng.settings.set_deterministic(60)
 
     script = []
 

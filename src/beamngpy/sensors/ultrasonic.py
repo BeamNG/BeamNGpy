@@ -1,9 +1,3 @@
-"""
-An interactive, automated ultrasonic sensor, which produces regular distance measurements, ready for further processing.
-This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
-A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
-will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
-"""
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
@@ -18,10 +12,15 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
+__all__ = ['Ultrasonic']
+
 
 class Ultrasonic:
     """
-    Creates an ultrasonic sensor.
+    An interactive, automated ultrasonic sensor, which produces regular distance measurements, ready for further processing.
+    This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
+    A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
+    will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
 
     Args:
         name: A unique name for this ultrasonic sensor.

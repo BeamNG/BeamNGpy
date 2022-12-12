@@ -30,7 +30,6 @@ author = 'BeamNG GmbH'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    # 'sphinx.ext.autodoc.typehints',
     'sphinx_rtd_theme',
     'm2r2'
 ]
@@ -62,10 +61,9 @@ source_suffix = ['.rst', '.md']
 
 # -- Napoleon options --------------------------------------------------------
 napoleon_google_docstring = True
-# napoleon_use_param = True
 
 # -- Autodoc options ---------------------------------------------------------
-autodoc_mock_imports = ['msgpack', 'numpy', 'OpenGL', 'PIL']
+autodoc_mock_imports = ['msgpack', 'OpenGL', 'PIL', 'matplotlib']
 autodoc_typehints = 'both'
 autodoc_type_aliases = {
     'StrDict': 'StrDict',
@@ -75,5 +73,6 @@ autodoc_type_aliases = {
     'Float5': 'Float5',
     'Int2': 'Int2',
     'Int3': 'Int3',
-    'Quat': 'Quat'
+    'Quat': 'Quat',
+    'Color': 'Color'
 }

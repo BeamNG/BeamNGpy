@@ -63,7 +63,7 @@ class Road:
         Adds a list of nodes to this decal road.
 
         Args:
-            nodes: List of (x, y, z) or (x, y, z, width) tuples of the
+            nodes: List of ``(x, y, z)`` or ``(x, y, z, width)`` tuples of the
                           road's nodes.
         """
         for node in nodes:
@@ -124,8 +124,8 @@ class MeshRoad:
         Adds a list of nodes to this decal road.
 
         Args:
-            nodes: List of (x, y, z), (x, y, z, width) or (x, y, z, width, depth)
-                          tuples of the road's nodes.
+            nodes: List of ``(x, y, z)``, ``(x, y, z, width)`` or ``(x, y, z, width, depth)``
+                   tuples of the road's nodes.
         """
         for node in nodes:
             if len(node) == 3:

@@ -14,8 +14,7 @@ from OpenGL.GLUT import *
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Lidar
-from beamngpy.sensors.lidar import MAX_LIDAR_POINTS
-from beamngpy.sensors.visualiser import LidarVisualiser
+from beamngpy.sensors.lidar import MAX_LIDAR_POINTS, LidarVisualiser
 
 SIZE = 1024
 
@@ -58,8 +57,9 @@ def main():
         bng.ui.hide_hud()
         bng.scenario.start()
 
-        lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True)     # Send data via shared memory.
-        #lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)   # Send data through lua socket instead.
+        # Send data via shared memory.
+        lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True)
+        # lidar = Lidar('lidar', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)   # Send data through lua socket instead.
 
         bng.control.pause()
         vehicle.ai.set_mode('span')

@@ -6,12 +6,19 @@ from .base import Api
 
 
 class SettingsApi(Api):
+    """
+    An API for changing the simulator settings.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def change(self, key: str, value: str) -> None:
         """
         Changes a setting in the game. Examples of the key and value pairs
         given to this method can be found in your game's settings ini files.
-        These are usually in <userpath>/settings/game-settings.ini or
-        <userpath>/settings/cloud/game-settings-cloud.ini.
+        These are usually in ``<userpath>/settings/game-settings.ini`` or
+        ``<userpath>/settings/cloud/game-settings-cloud.ini``.
 
         Args:
             key: The key of the setting that is to be changed

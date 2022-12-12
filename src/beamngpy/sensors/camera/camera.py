@@ -1,10 +1,3 @@
-"""
-An interactive, automated camera sensor, which can produce regular colour images, depth images, or annotation images.
-This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
-A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
-will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
-"""
-
 from __future__ import annotations
 
 import math
@@ -30,7 +23,10 @@ if TYPE_CHECKING:
 
 class Camera:
     """
-    Creates a camera sensor.
+    An interactive, automated camera sensor, which can produce regular colour images, depth images, or annotation images.
+    This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
+    A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
+    will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
 
     Args:
         name: A unique name for this camera sensor.
@@ -342,8 +338,6 @@ class Camera:
         self._close_camera()
         self.logger.debug('Camera - sensor removed: 'f'{self.name}')
 
-
-
     def poll(self) -> StrDict:
         """
         Gets the most-recent readings for this sensor.
@@ -369,17 +363,20 @@ class Camera:
                 if 'colour' in raw_readings.keys():
                     raw_readings['colour'] = shmem.read(self.colour_shmem, buffer_size)
                 else:
-                    self.logger.error('Camera - Colour buffer failed to render. Check that you are not running on low settings.')
+                    self.logger.error(
+                        'Camera - Colour buffer failed to render. Check that you are not running on low settings.')
             if self.annotation_shmem:
                 if 'annotation' in raw_readings.keys():
                     raw_readings['annotation'] = shmem.read(self.annotation_shmem, buffer_size)
                 else:
-                    self.logger.error('Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
+                    self.logger.error(
+                        'Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
             if self.depth_shmem:
                 if 'depth' in raw_readings.keys():
                     raw_readings['depth'] = shmem.read(self.depth_shmem, buffer_size)
                 else:
-                    self.logger.error('Camera - Depth buffer failed to render. Check that you are not running on low settings.')
+                    self.logger.error(
+                        'Camera - Depth buffer failed to render. Check that you are not running on low settings.')
             self.logger.debug('Camera - sensor readings read from shared memory and processed: 'f'{self.name}')
 
         images = self._binary_to_image(raw_readings)

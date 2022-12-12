@@ -1,16 +1,3 @@
-"""
-An interactive, automated IMU sensor, which produces regular acceleration and gyroscopic measurements in a local coordinate space.
-This sensor must be attached to a vehicle; it cannot be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
-A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
-will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
-We can set this sensor to poll the send data back in two modes:
-i) immediate mode: data is sent back as soon as it is available (single readings arrive instantly) - this method is suitable when working with
-tightly-coupled systems requiring fast feedback, or
-ii) post-processing mode: we can set it to send the data back in bulk on the simulations graphics step - this method is appropriate for the case when the
-user wishes simply to post-process the data (such as for plotting graphs etc) and is also more efficient. In this case, the returned data will contain all
-the individual samples which were measured in the simulations physics step, so the data is the same as in mode i); it just arrives later, in bulk.
-"""
-
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
@@ -25,10 +12,21 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
+__all__ = ['AdvancedIMU']
+
 
 class AdvancedIMU:
     """
-    Creates an advanced IMU sensor.
+    An interactive, automated IMU sensor, which produces regular acceleration and gyroscopic measurements in a local coordinate space.
+    This sensor must be attached to a vehicle; it cannot be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
+    A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
+    will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
+    We can set this sensor to poll the send data back in two modes:
+    i) immediate mode: data is sent back as soon as it is available (single readings arrive instantly) - this method is suitable when working with
+    tightly-coupled systems requiring fast feedback, or
+    ii) post-processing mode: we can set it to send the data back in bulk on the simulations graphics step - this method is appropriate for the case when the
+    user wishes simply to post-process the data (such as for plotting graphs etc) and is also more efficient. In this case, the returned data will contain all
+    the individual samples which were measured in the simulations physics step, so the data is the same as in mode i); it just arrives later, in bulk.
 
     Args:
         name: A unique name for this advanced IMU sensor.

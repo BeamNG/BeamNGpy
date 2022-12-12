@@ -18,7 +18,7 @@ bngpy_handlers = list()
 
 class BNGError(Exception):
     """
-    Generic BeamNG error
+    Generic BeamNG error.
     """
     pass
 
@@ -38,7 +38,8 @@ class BNGDisconnectedError(ValueError):
 
 
 def create_warning(msg: str, category: Any = None) -> None:
-    """Helper function for BeamNGpy modules to create warnings.
+    """
+    Helper function for BeamNGpy modules to create warnings.
 
     Args:
         msg: message to be displayed
@@ -54,10 +55,11 @@ def config_logging(handlers: List[logging.Handler],
                    log_communication: bool = False) -> None:
     """
     Function to configure logging.
+
     Args:
         handlers: list of already configured logging.Handler objects
         replace: whether to replace existing list of handlers with new ones or whether to add them, optional
-        level: log level of the beamngpy logger object, optional
+        level: log level of the beamngpy logger object, optional. Defaults to ``logging.DEBUG``.
         redirect_warnings: whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
         log_communication: whether to log the BeamNGpy protocol messages between BeamNGpy and BeamNG.tech, optional
     """
@@ -93,17 +95,17 @@ def set_up_simple_logging(log_file: str | None = None,
     """
     Helper function that provides high-level control
     over beamng logging. For low-level control over the
-    logging system use `beamngcommon.config_logging`.
-    Sets up logging to `sys.stderr` and optionally to a given file.
-    Existing log files are moved to `<log_file>.1`.
-    By default beamngpy logs warnings and errors to `sys.stderr`,
+    logging system use :func:`config_logging`.
+    Sets up logging to ``sys.stderr`` and optionally to a given file.
+    Existing log files are moved to ``<log_file>.1``.
+    By default beamngpy logs warnings and errors to ``sys.stderr``,
     so this function is only of use, if the log output should additionaly
     be written to a file, or if the log level needs to be adjusted.
 
     Args:
         log_file: log filename, optional
         redirect_warnings: Whether to redirect warnings to the logger. Beware that this modifies the warnings settings.
-        level: log level of handler that is created for the log file
+        level: log level of handler that is created for the log file. Defaults to ``logging.INFO``.
         log_communication: whether to log the BeamNGpy protocol messages between BeamNGpy and BeamNG.tech, optional
     """
     sh = logging.StreamHandler()
@@ -128,7 +130,7 @@ def set_up_simple_logging(log_file: str | None = None,
         module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
 
 
-def generate_docstring(obj: Any) -> str:
+def _generate_docstring(obj: Any) -> str:
     try:
         buffer = io.StringIO()
         pydoc.doc(obj, output=buffer)

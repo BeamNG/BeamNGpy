@@ -6,6 +6,13 @@ from .base import Api
 
 
 class EnvironmentApi(Api):
+    """
+    An API allowing control of the in-game environment variables, such as time, weather or gravity.
+
+    Args:
+        beamng: An instance of the simulator.
+    """
+
     def set_tod(self, tod: float) -> None:
         """
         Sets the current time of day. The time of day value is given as a float

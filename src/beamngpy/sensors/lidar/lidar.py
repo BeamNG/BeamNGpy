@@ -1,9 +1,3 @@
-"""
-An interactive, automated LiDAR sensor, which produces regular LiDAR point clouds, ready for further processing.
-This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
-A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
-will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
-"""
 from __future__ import annotations
 
 import os
@@ -15,9 +9,9 @@ import numpy as np
 
 import beamngpy.sensors.shmem as shmem
 from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.sensors.communication_utils import (send_sensor_request,
+                                                  set_sensor)
 from beamngpy.types import Float3, StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -30,7 +24,10 @@ MAX_LIDAR_POINTS = 2000000
 
 class Lidar:
     """
-    Creates a LiDAR sensor.
+    An interactive, automated LiDAR sensor, which produces regular LiDAR point clouds, ready for further processing.
+    This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
+    A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
+    will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
 
     Args:
         name: A unique name for this LiDAR sensor.
