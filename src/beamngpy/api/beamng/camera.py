@@ -54,7 +54,7 @@ class CameraApi(Api):
         Sets the camera mode of the vehicle identified by the given vehicle ID.
         The mode is given as a string that identifies one of the valid modes
         offered by the simulator. These modes can be queried using the
-        (:meth:`~BeamNGpy.get_player_camera_mode`) method.
+        :meth:`.get_player_modes` method.
 
         The camera can be further configured with some common parameters,
         but it is not guaranteed the camera mode will respect all of them.

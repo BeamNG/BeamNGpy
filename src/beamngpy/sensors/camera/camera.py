@@ -88,7 +88,7 @@ class Camera:
             font_size: The font size used when drawing labels.
 
         Returns:
-            A `:class:`.Image` that is a copy of the given image with bounding boxes drawn onto it.
+            An :class:`Image` that is a copy of the given image with bounding boxes drawn onto it.
         """
         return utils.draw_bounding_boxes(bounding_boxes, colour, width, font, font_size)
 
@@ -191,7 +191,7 @@ class Camera:
             raise BNGError('The simulator is not connected!')
         set_sensor(self.bng.connection, type, ack, **kwargs)
 
-    def _convert_to_image(self, raw_data: bytes | str, width: int, height: int) -> Image.Image | None:
+    def _convert_to_image(self, raw_data: bytes | str | None, width: int, height: int) -> Image.Image | None:
         """
         Converts raw image data from the simulator into image format.
 
@@ -203,7 +203,7 @@ class Camera:
         Returns:
             The processed image.
         """
-        if len(raw_data) == 0:
+        if raw_data is None or len(raw_data) == 0:
             return None
         data = raw_data if isinstance(raw_data, bytes) else raw_data.encode()
 
@@ -286,16 +286,16 @@ class Camera:
 
         processed_readings: StrDict = dict(type='Camera')
         if self.is_render_colours:
-            processed_readings['colour'] = self._convert_to_image(binary['colour'], width, height)
+            processed_readings['colour'] = self._convert_to_image(binary.get('colour'), width, height)
 
         if self.is_render_annotations:
-            processed_readings['annotation'] = self._convert_to_image(binary['annotation'], width, height)
+            processed_readings['annotation'] = self._convert_to_image(binary.get('annotation'), width, height)
 
         if self.is_render_instance:
-            processed_readings['instance'] = self._convert_to_image(binary['instance'], width, height)
+            processed_readings['instance'] = self._convert_to_image(binary.get('instance'), width, height)
 
         if self.is_render_depth:
-            if len(binary['depth']) == 0:
+            if binary.get('depth') is None or len(binary['depth']) == 0:
                 processed_readings['depth'] = None
             else:
                 depth = np.frombuffer(binary['depth'], dtype=np.float32)

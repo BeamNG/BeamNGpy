@@ -274,12 +274,15 @@ class Scenario:
 
     def add_vehicle(self, vehicle: Vehicle, pos: Float3 = (0, 0, 0), rot_quat: Quat = (0, 0, 0, 1), cling: bool = True) -> None:
         """
-        Adds a vehicle to this scenario at the given position with the given
+        Adds a :class:`.Vehicle`: to this scenario at the given position with the given
         orientation.
 
         Args:
-            pos: (x, y, z) tuple specifying the position of the vehicle.
-            rot_quat: (x, y, z, w) tuple specifying the rotation as quaternion.
+            vehicle: The vehicle to spawn.
+            pos: ``(x, y, z)`` tuple specifying the position of the vehicle.
+            rot_quat: ``(x, y, z, w)`` tuple specifying the rotation as quaternion.
+            cling: If True, the z-coordinate of the vehicle's position will be set to the ground level at the given
+                   position to avoid spawning the vehicle below ground or in the air.
         """
         if self.name == vehicle.vid:
             error = 'Cannot have vehicle with the same name as the scenario:' \
@@ -343,7 +346,8 @@ class Scenario:
         return None
 
     def set_initial_focus(self, vehicle_id: str) -> None:
-        """Defines which vehicle has the initial focus.
+        """
+        Defines which vehicle has the initial focus.
 
         Args:
             vehicle_id: Vehicle id of focused vehicle
@@ -351,18 +355,20 @@ class Scenario:
         self._focus_vehicle = vehicle_id
 
     def add_road(self, road: Road) -> None:
-        """Adds a road to this scenario.
+        """
+        Adds a :class:`.Road` to this scenario.
 
         Args:
-            road: road to be added to the scenario.
+            road: Road to be added to the scenario.
         """
         self.roads.append(road)
 
     def add_mesh_road(self, road: MeshRoad) -> None:
-        """Adds a mesh road to this scenario.
+        """
+        Adds a :class:`.MeshRoad` to this scenario.
 
         Args:
-            road: mesh road to be added to the scenario.
+            road: Mesh road to be added to the scenario.
         """
         self.mesh_roads.append(road)
 
@@ -382,12 +388,12 @@ class Scenario:
         Adds checkpoints to the scenario.
 
         Args:
-            positions: positions (tuple of length 3) of individual points
-            scales: scale (tuple of length 3) of individual points
-            ids: optional, names of the individual points
+            positions: Positions (tuple of length 3) of the individual points.
+            scales: Scales (tuple of length 3) of the individual points
+            ids: Optional, names of the individual points.
         """
         if ids is None:
-            ids = [f"wp{i}" for i in range(len(positions))]
+            ids = [f'wp{i}' for i in range(len(positions))]
         assert(len(positions) == len(scales) == len(ids))
         options = dict(rot_quat=(0, 0, 0, 1),
                        drawDebug='0',
@@ -464,8 +470,7 @@ class Scenario:
         and outputs them to the simulator.
 
         Args:
-            bng: The BeamNGpy instance to generate the
-                                      scenario for.
+            bng: The BeamNGpy instance to generate the scenario for.
 
         Raises:
             BNGError: If the scenario already has set its info .json file included.
@@ -492,7 +497,7 @@ class Scenario:
 
         Returns:
             The path to the information file of his scenario found in the
-            simulator as a string, None if it could not be found.
+            simulator as a string. None if it could not be found.
         """
         scenarios = bng.scenario.get_level_scenarios(self.level)
         for path, scenario in scenarios.items():
@@ -538,6 +543,9 @@ class Scenario:
     def close(self) -> None:
         """
         Closes open connections and allocations of the scenario.
+
+        Raises:
+            BNGError: If the scenario has not been loaded.
         """
         if not self.bng:
             raise BNGError('Scenario needs to be loaded into a BeamNGpy '
