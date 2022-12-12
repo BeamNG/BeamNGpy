@@ -33,7 +33,9 @@ Each vehicle can be controlled individually and independently during the
 simulation. This includes basic steering inputs, but also controls over
 various lights (headlights, indicators, etc.) or gear shifting.
 
-![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/master/media/throttle.gif) ![Steering control](https://github.com/BeamNG/BeamNGpy/raw/master/media/steering.gif)
+[Throttle Control.webm](https://user-images.githubusercontent.com/93574498/207164528-2415691f-3aee-478e-91ae-a1a53f733ee6.webm)
+
+[Steering Control.webm](https://user-images.githubusercontent.com/93574498/207164554-3f3d9478-3970-4c08-b1e3-2b656313ae33.webm)
 
 ### AI-controlled Vehicles
 
