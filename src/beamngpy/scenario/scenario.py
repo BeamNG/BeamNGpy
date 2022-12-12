@@ -556,7 +556,7 @@ class Scenario:
 
         return self.bng.scenario.find_objects_class(clazz)
 
-    def find_waypoints(self) -> Dict[str, ScenarioObject]:
+    def find_waypoints(self) -> List[ScenarioObject]:
         """
         Finds waypoints placed in the world right now.
 
@@ -568,9 +568,9 @@ class Scenario:
             BNGError: If the scenario is not currently loaded.
         """
         waypoints = self._find_objects_class('BeamNGWaypoint')
-        return {str(w.name): w for w in waypoints}
+        return waypoints
 
-    def find_procedural_meshes(self) -> Dict[str, ScenarioObject]:
+    def find_procedural_meshes(self) -> List[ScenarioObject]:
         """
         Finds procedural meshes placed in the world right now.
 
@@ -582,7 +582,7 @@ class Scenario:
             BNGError: If the scenario is not currently loaded.
         """
         meshes = self._find_objects_class('ProceduralMesh')
-        return {str(m.name): m for m in meshes}
+        return meshes
 
     def find_static_objects(self) -> List[ScenarioObject]:
         """
