@@ -2,6 +2,78 @@
 Changelog
 =========
 
+Version 1.25
+============
+- Added type hints to the whole BeamNGpy codebase
+- Updated `documentation <https://beamngpy.readthedocs.io/en/latest/>`_ to be more readable
+
+- Modularized BeamNGpy API
+
+  - The functions on the BeamNGpy object are now split into modules for easier navigation:
+
+    - ``BeamNGpy.camera`` - configuring the in-game camera
+    - ``BeamNGpy.control`` - controlling the simulator state (pausing, stepping, quitting the simulator)
+    - ``BeamNGpy.debug`` - drawing debug objects
+    - ``BeamNGpy.env`` - controlling the environment state (time of day, gravity)
+    - ``BeamNGpy.scenario`` - loading/starting/stopping a BeamNG scenario
+    - ``BeamNGpy.settings`` - changing the simulator's settings
+    - ``BeamNGpy.system`` - info about the host system
+    - ``BeamNGpy.traffic`` - controlling the traffic
+    - ``BeamNGpy.ui`` - controlling the GUI elements of the simulator
+    - ``BeamNGpy.vehicles`` - controlling vehicles
+  - Some of the functions on the ``Vehicle`` object are also moved into modules for easier navigation:
+
+    - ``Vehicle.ai`` - controlling the AI of the vehicle
+    - ``Vehicle.logging`` - controlling the in-game logging
+  - the previous, not modularized API is still available for backwards compatibility reasons
+  - see more in the `documentation <https://beamngpy.readthedocs.io/en/latest/>`_
+
+- Advanced IMU sensor
+
+  - replaces the accelerometer sensor from last release
+  - improves upon the existing IMU sensor by using a more advanced algorithm, and provides readings at up to 2000 Hz
+- Powertrain sensor
+
+  - new sensor for analysing powertrain properties at high frequency (up to 2000 Hz)
+  - new test/demo scripts are available to show execution of this sensor
+
+- New BeamNGpy functionality
+
+  - added support for a custom binary name in BeamNGpy constructor
+  - ``BeamNGpy.traffic.spawn`` to spawn traffic without a set of predefined vehicles
+  - ``BeamNGpy.traffic.reset`` to reset all traffic vehicles from the player (teleport them away).
+  - ``Vehicle.teleport`` now supports changing rotation without resetting the vehicle
+  - ``BeamNGpy.open`` now always tries to connect to already running simulator no matter the value of the launch argument
+  - ``Vehicle.switch``, ``Vehicle.focus`` to switch the simulator's focus to the selected vehicle
+  - ``BeamNGpy.vehicles.spawn`` now has a new argument ``connect`` to allow for not connecting the newly spawned vehicle to BeamNGpy
+  - ``Vehicle.recover`` to repair a vehicle and teleport it to a drivable position
+  - ``BeamNGpy.vehicles.replace`` to replace a vehicle with another one at the same position
+  - ``beamngpy.quat.quat_multiply`` utility function to multiply two quaternions
+  - optimized the ``Camera`` sensor decoding to be faster
+  - updated the required Python packages to newer versions
+  - ``Vehicle.set_license_plate`` to set a license plate text for a vehicle
+  - ``Vehicle.sensors.poll`` now allows also polling only a specified list of sensor names
+  - ``BeamNGpy.disconnect`` to disconnect from the simulator without closing it
+  - changed ``Camera`` sensor default parameters to not include annotation and depth data (for faster polling)
+  - added the optional ``steps_per_second`` parameter to ``BeamNGpy.settings.set_deterministic``
+  - ``BeamNGpy.control.return_to_main_menu`` to exit the currently loaded scenario
+  - added the parameter ``quit_on_close`` to the BeamNGpy constructor. If set to ``False``, ``BeamNGpy.close`` will keep the simulator running.
+
+- Bugfixes
+
+    - ``Vehicle.state['rotation']`` now returns vehicle rotation consistent with the rest of the simulator. Previously, this rotation was rotated 180° around the Y axis.
+
+      - ⚠️ if you are using ``Vehicle.state['rotation']`` in your existing scripts, you may need to flip it back for your intended use. You can use ``beamngpy.quat.quat_multiply((0, 0, 1, 0), <your_rotation>)`` for that purpose.
+    - fixed the issue with BeamNGpy scenarios sometimes resetting and not working properly after loading
+    - fixed ``Camera.extract_bounding_boxes`` not to crash on non-Windows systems
+    - fixed ``beamng.scenario.start()`` not working when the simulator was paused with ``beamng.control.pause()`` before
+    - fixed vehicle color and license plate text not being applied to dynamically spawned vehicles
+
+- BeamNGpy protocol: added support for out-of-order protocol messages
+- Deprecations
+
+    - the ``remote`` argument of the ``BeamNGpy`` class is not used anymore
+
 Version 1.24
 ============
 - Major changes to the protocol communicating between BeamNG.tech and BeamNGpy
@@ -20,7 +92,7 @@ Version 1.24
 - ``BeamNGpy.open`` now tries to (re)connect to already running local instance
 - Removed deprecated BeamNGpy functionality
 
-  - ``setup_logging`` (superseded by ``set_up_simple_logging`` and ``config_logging``
+  - ``setup_logging`` (superseded by ``set_up_simple_logging`` and ``config_logging``)
   - ``rot`` argument used for setting rotation of objects and vehicles in Euler angles, use ``rot_quat`` which expects quaternions
     (you can use the helper function ``angle_to_quat`` to convert Euler angles to quaternions)
   - ``update_vehicle`` function is removed

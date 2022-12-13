@@ -13,7 +13,7 @@ def main():
 
     scenario = Scenario('west_coast_usa', 'ai_sine')
 
-    vehicle = Vehicle('ego_vehicle', model='etk800', licence='AI')
+    vehicle = Vehicle('ego_vehicle', model='etk800', license='AI')
 
     orig = (-769.1, 400.8, 142.8)
 
