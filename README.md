@@ -1,7 +1,7 @@
 # BeamNGpy
 <a href="https://beamngpy.readthedocs.io/en/latest/"><img src="https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png" /></a>
 
-**BeamNGpy** is an official library providing a Python API to BeamNG.tech,
+**BeamNGpy** is an official library providing a Python API to [BeamNG.tech][11],
 the academia- and industry-oriented fork of the video game [BeamNG.drive][4].
 BeamNGpy and BeamNG.tech are designed to go hand in hand, both being kept up
 to date to support each other's functions, meaning using the latest versions
@@ -33,7 +33,9 @@ Each vehicle can be controlled individually and independently during the
 simulation. This includes basic steering inputs, but also controls over
 various lights (headlights, indicators, etc.) or gear shifting.
 
-![Throttle control](https://github.com/BeamNG/BeamNGpy/raw/master/media/throttle.gif) ![Steering control](https://github.com/BeamNG/BeamNGpy/raw/master/media/steering.gif)
+[Throttle Control.webm](https://user-images.githubusercontent.com/93574498/207164528-2415691f-3aee-478e-91ae-a1a53f733ee6.webm)
+
+[Steering Control.webm](https://user-images.githubusercontent.com/93574498/207164554-3f3d9478-3970-4c08-b1e3-2b656313ae33.webm)
 
 ### AI-controlled Vehicles
 
@@ -148,17 +150,17 @@ bng.open()
 # Create a scenario in west_coast_usa called 'example'
 scenario = Scenario('west_coast_usa', 'example')
 # Create an ETK800 with the licence plate 'PYTHON'
-vehicle = Vehicle('ego_vehicle', model='etk800', licence='PYTHON')
+vehicle = Vehicle('ego_vehicle', model='etk800', license='PYTHON')
 # Add it to our scenario at this position and rotation
 scenario.add_vehicle(vehicle, pos=(-717, 101, 118), rot_quat=(0, 0, 0.3826834, 0.9238795))
 # Place files defining our scenario for the simulator to read
 scenario.make(bng)
 
 # Load and start our scenario
-bng.load_scenario(scenario)
-bng.start_scenario()
+bng.scenario.load(scenario)
+bng.scenario.start()
 # Make the vehicle's AI span the map
-vehicle.ai_set_mode('span')
+vehicle.ai.set_mode('span')
 input('Hit enter when done...')
 ```
 
@@ -175,6 +177,7 @@ However we do not maintain minor versions: bug fixes and new features will only 
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
+| 0.27                | [1.25](https://github.com/BeamNG/BeamNGpy/tree/v1.25)     |
 | 0.26                | [1.24](https://github.com/BeamNG/BeamNGpy/tree/v1.24)     |
 | 0.25                | [1.23.1](https://github.com/BeamNG/BeamNGpy/tree/v1.23.1) |
 | 0.24                | [1.22](https://github.com/BeamNG/BeamNGpy/tree/v1.22)     |
@@ -218,3 +221,4 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
 [10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb
+[11]: https://beamng.tech/

@@ -9,9 +9,10 @@
 """
 import random
 
+from matplotlib import pyplot as plt
+
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Camera, Damage, Electrics, GForces, Timer
-from matplotlib import pyplot as plt
 
 
 def main():
@@ -36,13 +37,11 @@ def main():
     bng = beamng.open(launch=True)
 
     # Create a scenario in east_coast_usa
-    scenario = Scenario('east_coast_usa', 'tech_test',
-                        description='Random driving for research')
+    scenario = Scenario('east_coast_usa', 'tech_test', description='Random driving for research')
 
     # Set up first vehicle, with two cameras, gforces sensor, lidar, electrical
     # sensors, and damage sensors
-    vehicle = Vehicle('ego_vehicle', model='etk800',
-                      licence='RED', color='Red')
+    vehicle = Vehicle('ego_vehicle', model='etk800', license='RED', color='Red')
 
     # Set up sensors
     gforces = GForces()
@@ -63,15 +62,14 @@ def main():
 
     # Start BeamNG and enter the main loop
     try:
-        bng.hide_hud()
-        bng.set_deterministic()  # Set simulator to be deterministic
-        bng.set_steps_per_second(60)  # With 60hz temporal resolution
+        bng.ui.hide_hud()
+        bng.settings.set_deterministic(60)  # Set simulator to be deterministic, with 60 Hz temporal resolution
 
         # Load and start the scenario
-        bng.load_scenario(scenario)
-        bng.start_scenario()
+        bng.scenario.load(scenario)
+        bng.scenario.start()
         # Put simulator in pause awaiting further inputs
-        bng.pause()
+        bng.control.pause()
 
         assert vehicle.is_connected()
 
@@ -98,10 +96,10 @@ def main():
             brake = random.choice([0, 0, 0, 1])
             vehicle.control(throttle=throttle, steering=steering, brake=brake)
 
-            bng.step(20)
+            bng.control.step(20)
 
             # Retrieve sensor data and show the camera data.
-            vehicle.poll_sensors()
+            vehicle.sensors.poll()
             sensors = vehicle.sensors
 
             print('{} seconds passed.'.format(sensors['timer']['time']))
