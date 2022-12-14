@@ -23,7 +23,7 @@ you must have the following softwares/packages installed:
 The `BeamNG-MATLAB-integration bridge <https://github.com/BeamNG/BeamNG-MATLAB-integration>`_ is depending on `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_ and `BeamNGpy <https://documentation.beamng.com/beamng_tech/beamngpy/>`_. Make sure that you have the license for BeamNG.Tech. The Github repository of the BeamNG-MATLAB has some basic examples of scripts that run a vehicle with some sensors ex. Lidar, Camera, and state sensor. 
 
 Compatibility  
-^^^^^^^^^^^^^
+====
 
 
 Running the BeamNG ROS integration requires three individual software components, here is a list of compatible versions.
@@ -56,7 +56,7 @@ Run the `test_python.m <https://github.com/BeamNG/BeamNG-MATLAB-integration/blob
 
 
 Vehicle State Plotting
-====
+^^^^^^^^^^^^^
 
 Use the state sensor to plot some graphs of the vehicle position, wheel speed and direction, throttle, and brake. 
 
@@ -66,7 +66,7 @@ Use the state sensor to plot some graphs of the vehicle position, wheel speed an
 
 
 Running Lidar sensor, and AI control. 
-====
+^^^^^^^^^^^^^
 
 1. Create a simple scenario
 2. Use the simulator's AI with BeamNGpy
@@ -76,7 +76,7 @@ Running Lidar sensor, and AI control.
   :alt: Lidar sensor and AI control mode
 
 Multi-shot Camera    
-====
+^^^^^^^^^^^^^
 
 Change the position and rotation of a camera
 
@@ -86,7 +86,7 @@ Change the position and rotation of a camera
 
 
 Object Placement    
-====
+^^^^^^^^^^^^^
 
 1. Define a custom scenario for a given map
 2. Generate procedural content, i.e. simple meshes
@@ -98,7 +98,7 @@ Object Placement
 
 
 Annotation and Bounding Boxes
-====
+^^^^^^^^^^^^^
 
 1. Get semantic annotations
 2. Get instance annotations
