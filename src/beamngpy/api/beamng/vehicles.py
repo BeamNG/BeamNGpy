@@ -88,11 +88,14 @@ class VehiclesApi(Api):
             old_vehicle.disconnect()
 
         data: StrDict = dict(type='SpawnVehicle')
+        data.update(new_vehicle.options)
         data['name'] = new_vehicle.vid
         data['model'] = new_vehicle.options['model']
         data['replace'] = True
         data['replace_vid'] = old_vehicle.vid if isinstance(old_vehicle, Vehicle) else old_vehicle
-        data.update(new_vehicle.options)
+        for color in ('color', 'color2', 'color3'):
+            if data[color] is not None:
+                data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
 
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success'] and connect:
