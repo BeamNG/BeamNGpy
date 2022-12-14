@@ -1,5 +1,5 @@
 
-BeamNG-MATLAB integration
+BeamNG MATLAB integration
 **********************
 
 
