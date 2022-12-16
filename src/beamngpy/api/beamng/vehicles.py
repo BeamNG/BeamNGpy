@@ -54,10 +54,17 @@ class VehiclesApi(Api):
         for color in ('color', 'color2', 'color3'):
             if data[color] is not None:
                 data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
+        license = None
+        if data.get('licenseText'):
+            license = data['licenseText']
+            del data['licenseText']
 
         resp = self._send(data).recv('VehicleSpawned')
-        if resp['success'] and connect:
-            vehicle.connect(self._beamng)
+        if resp['success']:
+            if connect:
+                vehicle.connect(self._beamng)
+            if license:
+                self._beamng.vehicles.set_license_plate(vehicle.vid, license)
         return resp['success']
 
     def despawn(self, vehicle: Vehicle) -> None:
@@ -229,3 +236,16 @@ class VehiclesApi(Api):
         vehicles = self.get_current_info(include_config=include_config)
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
+
+    def set_license_plate(self, vehicle: str | Vehicle, text: str) -> None:
+        """
+        Sets the text of a vehicle's license plate.
+
+        Args:
+            vehicle: The id/name of the vehicle to teleport or the vehicle's object.
+            text: The vehicle plate text to be set.
+        """
+        data: StrDict = dict(type='SetLicensePlate')
+        data['vid'] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
+        data['text'] = text
+        self._send(data)

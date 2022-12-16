@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.25.1
+==============
+- fixed in BeamNG.tech v0.27.1.0: converted all vehicle rotations sent to BeamNGpy to be consistent with each other
+  - if the rotation you are using is 180° rotated across the Y axis, you can use the ``beamngpy.quat.flip_y_axis`` function to flip it
+- fixed ``BeamNGpy.vehicles.replace`` to respect vehicle color and license plate text
+
 Version 1.25
 ============
 - Added type hints to the whole BeamNGpy codebase

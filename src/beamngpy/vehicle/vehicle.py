@@ -92,7 +92,7 @@ class Vehicle:
         self.sensors = Sensors(self)
 
         options['model'] = model
-        options['licenseText'] = license or options.get('licence')
+        options['licenseText'] = license or options.get('licence') or options.get('licenseText')
         options['color'] = color or options.get('colour')
         options['color2'] = color2 or options.get('colour2')
         options['color3'] = color3 or options.get('colour3')

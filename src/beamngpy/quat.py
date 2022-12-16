@@ -90,3 +90,16 @@ def quat_multiply(a: Quat, b: Quat) -> Quat:
             a[3] * b[1] + a[1] * b[3] + a[2] * b[0] - a[0] * b[2],
             a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0],
             a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2])
+
+
+def flip_y_axis(q: Quat) -> Quat:
+    """
+    Returns a rotation with a flipped y-axis.
+
+    Args:
+        q: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
+
+    Returns:
+        The flipped quaternion.
+    """
+    return quat_multiply((0, 0, 1, 0), q)
