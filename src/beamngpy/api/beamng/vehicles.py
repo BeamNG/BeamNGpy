@@ -236,7 +236,22 @@ class VehiclesApi(Api):
         vehicles = self.get_current_info(include_config=include_config)
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
+    
+    def get_player_vehicle_id_info(self, include_config: bool = True) -> Dict[str, StrDict]:
+        """
+        Queries the currently active vehicles in the simulator.
 
+        Args:
+            include_config: Whether to include info about possible configurations of the vehicles.
+
+        Returns:
+            A mapping of vehicle IDs to dictionaries of data needed to represent
+            a :class:`.Vehicle`.
+        """
+        info = self._message('GetPlayerVehicleID', include_config=include_config)
+        for vid, vehicle in info.items():
+            vehicle['id'] = int(vehicle['id'])
+        return info
     def get_player_vehicle_id(self, include_config: bool = True) -> Dict[str, Vehicle]:
         """
         Queries the currently active vehicles in the simulator.
@@ -249,7 +264,7 @@ class VehiclesApi(Api):
             class for each active vehicle. These vehicles are not connected to
             by this function.
         """
-        vehicles = self.get_current_info(include_config=include_config)
+        vehicles = self.get_player_vehicle_id_info(include_config=include_config)
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
     
