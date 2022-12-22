@@ -237,7 +237,7 @@ class VehiclesApi(Api):
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
 
-    def get_player_id(self, include_config: bool = True) -> Dict[str, Vehicle]:
+    def get_player_vehicle_id(self, include_config: bool = True) -> Dict[str, Vehicle]:
         """
         Queries the currently active vehicles in the simulator.
 
