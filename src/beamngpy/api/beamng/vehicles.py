@@ -248,7 +248,7 @@ class VehiclesApi(Api):
             A mapping of vehicle IDs to dictionaries of data needed to represent
             a :class:`.Vehicle`.
         """
-        info = self._message('GetPlayerVehicleID', include_config=include_config)
+        info = self._message('GetCurrentVehicles', include_config=include_config)
         for vid, vehicle in info.items():
             vehicle['id'] = int(vehicle['id'])
         return info
