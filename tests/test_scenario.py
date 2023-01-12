@@ -1,45 +1,53 @@
+from __future__ import annotations
+
 import socket
+from typing import TYPE_CHECKING
 
 import pytest
+
 from beamngpy import BeamNGpy, Level, Scenario, Vehicle
-from beamngpy.beamngcommon import BNGValueError
+from beamngpy.logging import BNGValueError
 from beamngpy.sensors import Electrics
+
+if TYPE_CHECKING:
+    from beamngpy.scenario.scenario_object import SceneObject
 
 
 @pytest.fixture
 def beamng():
-    beamng = BeamNGpy('localhost', 64256)
+    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
     return beamng
 
 
-def test_new_scenario(beamng):
+def test_new_scenario(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'test_scenario')
         vehicle = Vehicle('test_car', model='etk800')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
-        bng.load_scenario(scenario)
-        assert bng.get_scenario_name() == 'test_scenario'
+        bng.scenario.load(scenario)
+        assert bng.scenario.get_name() == 'test_scenario'
         try:
-            bng.start_scenario()
+            bng.scenario.start()
         except socket.timeout:
             assert False
 
         scenario.delete(beamng)
 
         with pytest.raises(BNGValueError):
-            bng.load_scenario(scenario)
+            bng.scenario.load(scenario)
 
 
-def test_no_scenario(beamng):
+def test_no_scenario(beamng: BeamNGpy):
     with beamng as bng:
+        bng.control.return_to_main_menu()  # if a scenario was running previously
         with pytest.raises(BNGValueError):
-            bng.get_current_scenario()
+            bng.scenario.get_current()
 
 
-def test_find_scenario(beamng):
+def test_find_scenario(beamng: BeamNGpy):
     with beamng as bng:
-        scenarios = bng.get_scenarios()
+        scenarios = bng.scenario.get_scenarios()
         target = None
         for scenario in scenarios.values():
             if scenario.name == 'scenarios.west_coast_usa.derby_asphalt.title':
@@ -48,10 +56,10 @@ def test_find_scenario(beamng):
 
         assert target is not None
 
-        bng.load_scenario(target)
+        bng.scenario.load(target)
 
-        loaded = bng.get_current_scenario()
-        assert loaded.path == scenario.path
+        loaded = bng.scenario.get_current()
+        assert loaded.path == target.path
 
 
 def test_scenario_vehicle_name():
@@ -61,12 +69,12 @@ def test_scenario_vehicle_name():
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
 
 
-def test_get_scenarios(beamng):
+def test_get_scenarios(beamng: BeamNGpy):
     with beamng as bng:
-        scenarios = bng.get_scenarios()
+        scenarios = bng.scenario.get_scenarios()
         assert len(scenarios) > 0
 
-        gridmap_scenarios = bng.get_level_scenarios('gridmap_v2')
+        gridmap_scenarios = bng.scenario.get_level_scenarios('gridmap_v2')
         assert len(gridmap_scenarios.values()) > 0
 
         for scenario in gridmap_scenarios.values():
@@ -74,11 +82,11 @@ def test_get_scenarios(beamng):
             assert isinstance(scenario.level, str)
             assert scenario.level == 'gridmap_v2'
 
-        levels = bng.get_levels()
+        levels = bng.scenario.get_levels()
         gridmap = levels['gridmap_v2']
 
         ref = gridmap_scenarios
-        gridmap_scenarios = bng.get_level_scenarios(gridmap)
+        gridmap_scenarios = bng.scenario.get_level_scenarios(gridmap)
 
         assert len(gridmap_scenarios.values()) == len(ref.values())
 
@@ -88,9 +96,9 @@ def test_get_scenarios(beamng):
             assert scenario.level == gridmap
 
 
-def test_get_level_and_scenarios(beamng):
+def test_get_level_and_scenarios(beamng: BeamNGpy):
     with beamng as bng:
-        levels, scenarios = bng.get_levels_and_scenarios()
+        levels, scenarios = bng.scenario.get_levels_and_scenarios()
         assert len(levels) > 0
         assert len(scenarios) > 0
         for scenario in scenarios.values():
@@ -99,9 +107,9 @@ def test_get_level_and_scenarios(beamng):
             assert scenario.path in scenario_level.scenarios
 
 
-def test_get_current_vehicles(beamng):
+def test_get_current_vehicles(beamng: BeamNGpy):
     with beamng as bng:
-        scenarios = bng.get_scenarios()
+        scenarios = bng.scenario.get_scenarios()
         target = None
         for scenario in scenarios.values():
             if scenario.name == 'scenarios.west_coast_usa.derby_asphalt.title':
@@ -110,9 +118,9 @@ def test_get_current_vehicles(beamng):
 
         assert target is not None
 
-        bng.load_scenario(target)
+        bng.scenario.load(target)
 
-        vehicles = bng.get_current_vehicles()
+        vehicles = bng.vehicles.get_current()
         player = None
         for vid, vehicle in vehicles.items():
             if vid == 'scenario_player0':
@@ -122,20 +130,20 @@ def test_get_current_vehicles(beamng):
         assert player is not None
 
         sensor = Electrics()
-        player.attach_sensor('electrics', sensor)
+        player.sensors.attach('electrics', sensor)
         player.connect(bng)
 
         assert player.is_connected()
 
-        bng.start_scenario()
+        bng.scenario.start()
 
         player.control(throttle=1.0)
-        bng.step(600)
-        player.poll_sensors()
-        assert sensor.data['wheelspeed'] > 0
+        bng.control.step(600)
+        player.sensors.poll()
+        assert sensor['wheelspeed'] > 0
 
 
-def find_object_name(scene, name):
+def find_object_name(scene: SceneObject, name: str):
     if scene.name == name:
         return scene
 
@@ -147,14 +155,14 @@ def find_object_name(scene, name):
     return None
 
 
-def test_get_scenetree(beamng):
+def test_get_scenetree(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario('gridmap_v2', 'test_scenario')
         vehicle = Vehicle('egoVehicle', model='etk800')
         scenario.add_vehicle(vehicle, pos=(0, 0, 100), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
-        bng.load_scenario(scenario)
-        bng.start_scenario()
+        bng.scenario.load(scenario)
+        bng.scenario.start()
 
         scenario.sync_scene()
 

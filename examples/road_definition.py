@@ -39,8 +39,8 @@ def main():
     scenario.make(beamng)
 
     try:
-        beamng.load_scenario(scenario)
-        beamng.start_scenario()
+        beamng.scenario.load(scenario)
+        beamng.scenario.start()
         input('Press enter when done...')
     finally:
         beamng.close()

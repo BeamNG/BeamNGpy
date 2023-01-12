@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from beamngpy.types import StrDict
+
 from .sensor import Sensor
 
 
@@ -14,7 +18,7 @@ class Damage(Sensor):
         super().__init__()
 
     def encode_vehicle_request(self):
-        req = dict(type='Damage')
+        req: StrDict = dict(type='Damage')
         if 'part_damage' in req.keys():
             req['part_damage'] = req['part_damage'] if req['part_damage'] else {}
         return req

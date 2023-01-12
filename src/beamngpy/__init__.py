@@ -7,15 +7,16 @@ BeamNGPy API module.
 
 import os
 
-from . import beamngcommon, sensors
-from .beamng import *
-from .beamngcommon import angle_to_quat, config_logging, set_up_simple_logging
-from .level import *
-from .procedural import *
-from .road import *
-from .scenario import *
-from .vehicle import *
-from .visualiser import *
+from beamngpy.beamng import BeamNGpy
+from beamngpy.logging import config_logging, set_up_simple_logging
+from beamngpy.quat import angle_to_quat
+from beamngpy.scenario import Scenario, ScenarioObject, StaticObject
+from beamngpy.scenario.level import Level
+from beamngpy.scenario.procedural import (ProceduralBump, ProceduralCone,
+                                          ProceduralCube, ProceduralCylinder,
+                                          ProceduralMesh, ProceduralRing)
+from beamngpy.scenario.road import MeshRoad, Road
+from beamngpy.vehicle import Vehicle
 
 
 def read(fil):

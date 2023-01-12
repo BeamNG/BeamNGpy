@@ -1,4 +1,5 @@
 import numpy as np
+
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 
 SIZE = 1024
@@ -12,12 +13,14 @@ def main():
 
     scenario = Scenario('west_coast_usa', 'ai_sine')
 
-    vehicle = Vehicle('ego_vehicle', model='etk800', licence='AI')
+    vehicle = Vehicle('ego_vehicle', model='etk800', license='AI')
 
     orig = (-769.1, 400.8, 142.8)
 
     scenario.add_vehicle(vehicle, pos=orig, rot_quat=(0, 0, 1, 0))
     scenario.make(beamng)
+
+    beamng.settings.set_deterministic(60)
 
     script = []
 
@@ -42,24 +45,23 @@ def main():
             't': (2 * i + (np.abs(np.sin(np.radians(i)))) * 64) / 64,
         }
         script.append(node)
-        points.append([node['x'], node['y'], node['z']])
+        points.append((node['x'], node['y'], node['z']))
 
         if i % 10 == 0:
-            sphere_coordinates.append([node['x'], node['y'], node['z']])
+            sphere_coordinates.append((node['x'], node['y'], node['z']))
             sphere_radii.append(np.abs(np.sin(np.radians(i))) * 0.25)
-            sphere_colors.append([np.sin(np.radians(i)), 0, 0, 0.8])
+            sphere_colors.append((np.sin(np.radians(i)), 0, 0, 0.8))
 
     try:
-        beamng.load_scenario(scenario)
+        beamng.scenario.load(scenario)
 
-        beamng.start_scenario()
-        beamng.add_debug_spheres(sphere_coordinates, sphere_radii,
-                              sphere_colors, cling=True, offset=0.1)
-        beamng.add_debug_polyline(points, point_color, cling=True, offset=0.1)
-        vehicle.ai_set_script(script)
+        beamng.scenario.start()
+        beamng.debug.add_spheres(sphere_coordinates, sphere_radii, sphere_colors, cling=True, offset=0.1)
+        beamng.debug.add_polyline(points, point_color, cling=True, offset=0.1)
+        vehicle.ai.set_script(script)
 
         while True:
-            beamng.step(60)
+            beamng.control.step(60)
     finally:
         beamng.close()
 

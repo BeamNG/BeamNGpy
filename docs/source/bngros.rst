@@ -1,5 +1,5 @@
 BeamNG ROS Integration
-======================
+**********************
 
 To support the interoperability between BeamNG.tech and ROS we published the BeamNG ROS Integration.
 It is an independent ROS package that translates a range of BeamNGpy features to the ROS framework. `beamng-ros-integration <https://github.com/BeamNG/beamng-ros-integration>`_ is an repository contains packages to support the interoperability between BeamNG.tech and ROS 1 distributions Melodic Morenia and Noetic Ninjemys.
@@ -17,11 +17,11 @@ ROS packages
 
 - beamng_agent: for the control of a driving agent used for Teloep movement of the beamng_teleop_keyboard package, also used for enable/disable keyboard remote control to the BeamNG.Tech simulation platform.
 
-- beamng_control: loading the ROS-BeamNG.Tech bridge and the scenario details (vehicle, environment, sensors, location, etc.). 
+- beamng_control: loading the ROS-BeamNG.Tech bridge and the scenario details (vehicle, environment, sensors, location, etc.).
 
-- beamng_msgs: Defind the custom messages of the BeamNG.Tech simulator to be readable by ROS-standards. 
+- beamng_msgs: Defind the custom messages of the BeamNG.Tech simulator to be readable by ROS-standards.
 
-- beamng_teleop_keyboard: keyboard remote control of the BeamNG.Tech simulation platform through ROS bridge. 
+- beamng_teleop_keyboard: keyboard remote control of the BeamNG.Tech simulation platform through ROS bridge.
 
 Compatibility
 ^^^^^^^^^^^^^
@@ -31,16 +31,16 @@ Running the BeamNG ROS integration requires three individual software components
 +-------------+----------+------------------------+
 | BeamNG.tech | BeamNGpy | BeamNG ROS Integration |
 +=============+==========+========================+
-| 0.25        | 1.23     | 0.1                    |
+| 0.27        | 1.25     | 0.1.2                  |
 +-------------+----------+------------------------+
 | 0.26        | 1.24     | 0.1.1                  |
 +-------------+----------+------------------------+
-
- 
+| 0.25        | 1.23.1   | 0.1.0                  |
++-------------+----------+------------------------+
 
 WSL2 setup
 ^^^^^^^^^^
-ROS1 integration is built on top of Windows Subsystem for Linux (WSL2). The recommended linux version is `ubuntu focal 20.04 <http://old-releases.ubuntu.com/releases/focal/>`_, and The recommended ROS 1 distribution is `Noetic <http://wiki.ros.org/noetic/Installation/Ubuntu>`_. The ROS bridge is made through python API support from `BeamNGpy <https://github.com/BeamNG/BeamNGpy>`_. 
+ROS1 integration is built on top of Windows Subsystem for Linux (WSL2). The recommended linux version is `ubuntu focal 20.04 <http://old-releases.ubuntu.com/releases/focal/>`_, and The recommended ROS 1 distribution is `Noetic <http://wiki.ros.org/noetic/Installation/Ubuntu>`_. The ROS bridge is made through python API support from `BeamNGpy <https://github.com/BeamNG/BeamNGpy>`_.
 
 
 ROS setup
@@ -100,9 +100,9 @@ Using it will start up a node that connects to the simulation and starts up a sc
 |``"weather_presets"`` |String            | Weather presets are level specific, **ToDo**                                        | Optional   |
 +----------------------+------------------+-------------------------------------------------------------------------------------+------------+
 
- 
- 
- 
+
+
+
 - Vehicles are also defined as JSON objectsin `beamng_control/config/vehicles/{vehicle}.json`.
 
 +----------------------+------------------+-------------------------------------------------------------------------------------+------------+
@@ -119,7 +119,7 @@ Using it will start up a node that connects to the simulation and starts up a sc
 |``"sensors"``         |Array             |Array of JSON objects, specifying the vehicles sensor parameters.                    | Optional   |
 +----------------------+------------------+-------------------------------------------------------------------------------------+------------+
 
- 
+
 Running BeamNG.Tech
 ^^^^^^^^^^^^^^^^^^^
 
@@ -142,15 +142,15 @@ Running beamng_agent
 * Loading beamng_agent node for enabling the control from ROS side:
     ``roslaunch beamng_agent example.launch``
 
-The folloing topics for move/stop the vehicle in simulation and enable/disable keybard control from the simulation side: 
+The folloing topics for move/stop the vehicle in simulation and enable/disable keybard control from the simulation side:
 
 * Driving:
-    ``rostopic pub --once control beamng_msgs/VehicleControl 0 1 0 0 0 1``  
- 
+    ``rostopic pub --once control beamng_msgs/VehicleControl 0 1 0 0 0 1``
+
 
 - Stopping:
-    ``rostopic pub --once control beamng_msgs/VehicleControl 0 0 1 0 0 1``    
-    
+    ``rostopic pub --once control beamng_msgs/VehicleControl 0 0 1 0 0 1``
+
 
 * Release:
     ``rostopic pub --once control beamng_msgs/VehicleControl 0 0 0 0 0 1``
@@ -232,7 +232,7 @@ Various services to control the state of the simulation are available.
 Note
 ^^^^^
 
-  - if you got a feedback `success: False` for `resume` or `pause` services, that means your `beamng_agent` node isn't active, and you will getting the following error message in the terminal of `beamng_control` node: 
+  - if you got a feedback `success: False` for `resume` or `pause` services, that means your `beamng_agent` node isn't active, and you will getting the following error message in the terminal of `beamng_control` node:
 
 
 
@@ -258,13 +258,13 @@ List of ROS-topics
 Contrary to other sensors, the Camera sensor may publish to multiple topics.
 If the camera sensor is configured to collect color, depth, annotation, and instance data, it is published to the respective topics:
 
-      `/beamng_control/<vehicle_id>/<camera_id>/color` 
+      `/beamng_control/<vehicle_id>/<camera_id>/color`
 
-      `/beamng_control/<vehicle_id>/<camera_id>/depth` 
+      `/beamng_control/<vehicle_id>/<camera_id>/depth`
 
-      `/beamng_control/<vehicle_id>/<camera_id>/annotation`    
+      `/beamng_control/<vehicle_id>/<camera_id>/annotation`
 
-      `/beamng_control/<vehicle_id>/<camera_id>/instance` 
+      `/beamng_control/<vehicle_id>/<camera_id>/instance`
 
 The message type for all topics is `sensor_msgs.msg.Image`.
 Note that although the bounding_box option is given, this feature is still under development and will automatically be disabled.
@@ -338,7 +338,7 @@ Message type: `sensor_msgs.msg.PointCloud2`
   :width: 800
   :alt: 3D-LiDAR sensor reading
 .. ![3D-LiDAR sensor reading](https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png)
- 
+
 
 * Damage:
 
@@ -391,7 +391,7 @@ Message type: `beamng_msgs.msg.GForceSensor`
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 
 
-* Electrics: 
+* Electrics:
 
 Message type: `beamng_msgs.msg.ElectricsSensor`
     ``/beamng_control/<vehicle_id>/electrics0``
@@ -464,20 +464,20 @@ Teleop_control
 ^^^^^^^^^^^^^^
 
 
-`beamng_teleop_keyboard <https://github.com/BeamNG/beamng-ros-integration/tree/master/beamng_teleop_keyboard>`_ is a generic Keyboard Packages is built for teleoperating ROS robots using Twist message from `geometry_messages <https://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/Twist.html>`_. 
+`beamng_teleop_keyboard <https://github.com/BeamNG/beamng-ros-integration/tree/master/beamng_teleop_keyboard>`_ is a generic Keyboard Packages is built for teleoperating ROS robots using Twist message from `geometry_messages <https://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/Twist.html>`_.
 
 Running beamng_teleop_keyboard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Loading BeamNG-ROS bridge:
     ``roslaunch beamng_control example.launch``
- 
+
 - Calling Twist_message converter node:
     ``rosrun beamng_teleop_keyboard converter``
- 
+
 - Calling Teleop node:
     ``rosrun beamng_teleop_keyboard teleop_key``
- 
+
 - Loading beamng_agent node:
     ``roslaunch beamng_agent example.launch``
 

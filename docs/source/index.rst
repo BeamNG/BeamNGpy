@@ -9,12 +9,13 @@ Welcome to BeamNGpy's documentation!
 .. mdinclude:: ../../README.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
    :caption: Contents:
 
    readme.rst
    beamngpy.rst
    bngros.rst
+   MATLAB.rst
    changelog.rst
 
 

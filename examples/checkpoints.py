@@ -1,12 +1,10 @@
-"""
+'''
 .. module:: checkpoints
     :platform: Windows
     :synopsis: Simple demo on how to use checkpoints in a scenario.
 
 .. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
-
-"""
-
+'''
 from beamngpy import BeamNGpy, Scenario, Vehicle
 
 if __name__ == '__main__':
@@ -16,10 +14,10 @@ if __name__ == '__main__':
         scenario.add_vehicle(vehicle)
 
         positions = [(0, -10, 0), (0, -20, 0), (0, -30, 0)]
-        scales = [(1, 1, 1)] * 3
+        scales = [(1.0, 1.0, 1.0)] * 3
         scenario.add_checkpoints(positions, scales)
         scenario.make(bng)
 
-        bng.load_scenario(scenario)
-        bng.start_scenario()
-        input("press 'Enter' to exit demo")
+        bng.scenario.load(scenario)
+        bng.scenario.start()
+        input('press \'Enter\' to exit demo')

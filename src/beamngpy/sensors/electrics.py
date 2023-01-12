@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import List
+
+from beamngpy.types import StrDict
+
 from .sensor import Sensor
+
 
 class Electrics(Sensor):
     """
@@ -60,7 +67,7 @@ class Electrics(Sensor):
     - running (bool): Engine running state
     - signal_l (int): Left signal state. 0.5 = halfway to full blink
     - signal_r (int): Right signal state. 0.5 = halfway to full blink
-    - steering (int): Steering state
+    - steering (float): Angle of the steering wheel in degrees.
     - steering_input (int): Steering input state
     - tcs (int): TCS state. 0 = not present/inactive, 1 = disabled, Blink = active
     - tcs_active (bool):
@@ -108,20 +115,20 @@ class Electrics(Sensor):
     def __init__(self):
         super().__init__()
 
-    def _rename_values(self, vals):
+    @staticmethod
+    def _rename_values(vals: StrDict) -> StrDict:
         """
         The values returned from the game often don't follow any naming
         convention and especially don't follow this library's, so we rename
         some of them here to be more consistent.
         """
-
         for k, v in Electrics.name_map.items():
             if k in vals:
                 vals[v] = vals[k]
                 del vals[k]
         return vals
 
-    def _reassign_values(self, vals):
+    def _reassign_values(self, vals: StrDict) -> StrDict:
         if 'left_signal' in vals:
             vals['left_signal'] = vals['left_signal'] == 1
         if 'right_signal' in vals:
