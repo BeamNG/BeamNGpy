@@ -122,6 +122,7 @@ class VehiclesApi(Api):
             BNGError: If the game is not running to accept a request.
         """
         data = dict(type='GetAvailableVehicles')
+        print("data:", data)
         return self._send(data).recv('AvailableVehicles')
 
     def await_spawn(self, vid: str | Vehicle) -> None:
@@ -237,37 +238,33 @@ class VehiclesApi(Api):
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
     
-    def get_player_vehicle_id_info(self, include_config: bool = True) -> Dict[str, StrDict]:
+   
+    def get_player_vehicle_id(self):
         """
-        Queries the currently active vehicles in the simulator.
-
+        Queries the currently player vehicles in the simulator.
+        
         Args:
-            include_config: Whether to include info about possible configurations of the vehicles.
-
+            No arguments required 
+            
         Returns:
-            A mapping of vehicle IDs to dictionaries of data needed to represent
-            a :class:`.Vehicle`.
+            A dictionary of the active vehicle in simulator from lua. 
+            {'type': 'getPlayerVehicleID', 'id': 10455.0, 'vid': 'vehicleA'}
+            then in python, the return will be only an int value of the 'id' and vehicle's name
+            {'id': 10455, 'vid': 'vehicleA'}
+            data = bng.vehicles.get_player_vehicle_id()
+            for testing you can use the following: 
+            id_value = data['id']
+            vid_value = data['vid']
         """
-        info = self._message('GetCurrentVehicles', include_config=include_config)
-        for vid, vehicle in info.items():
-            vehicle['id'] = int(vehicle['id'])
-        return info
-    def get_player_vehicle_id(self, include_config: bool = True) -> Dict[str, Vehicle]:
-        """
-        Queries the currently active vehicles in the simulator.
-
-        Args:
-            include_config: Whether to include info about possible configurations of the vehicles.
-
-        Returns:
-            A mapping of vehicle IDs to instances of the :class:`.Vehicle`
-            class for each active vehicle. These vehicles are not connected to
-            by this function.
-        """
-        vehicles = self.get_player_vehicle_id_info(include_config=include_config)
-        vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
-        return vehicles
-    
+        data = dict(type='GetPlayerVehicleID')
+        resp = self._send(data).recv('getPlayerVehicleID')
+        print(resp)
+        id_value = int(resp['id'])
+        vid_value = resp['vid']
+        resp = {'id': id_value, 'vid': vid_value}
+        return resp
+            
+            
     def set_license_plate(self, vehicle: str | Vehicle, text: str) -> None:
         """
         Sets the text of a vehicle's license plate.
