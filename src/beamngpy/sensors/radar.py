@@ -12,18 +12,18 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['Ultrasonic']
+__all__ = ['Radar']
 
 
-class Ultrasonic:
+class Radar:
     """
-    An interactive, automated ultrasonic sensor, which produces regular distance measurements, ready for further processing.
+    An interactive, automated RADAR sensor, which produces regular RADAR measurements.
     This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
     A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
     will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
 
     Args:
-        name: A unique name for this ultrasonic sensor.
+        name: A unique name for this RADAR sensor.
         bng: The BeamNGpy instance, with which to communicate to the simulation.
         vehicle: The vehicle to which this sensor should be attached, if any.
         requested_update_time: The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
@@ -34,16 +34,14 @@ class Ultrasonic:
         size: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
         field_of_view_y: The sensor vertical field of view parameters.
         near_far_planes: (X, Y) The sensor near and far plane distances.
-        range_roundness: the general roudness of the ultrasonic sensor range-shape. Can be negative.
-        range_cutoff_sensitivity: a cutoff sensitivity parameter for the ultrasonic sensor range-shape.
-        range_shape: the shape of the ultrasonic sensor range-shape in [0, 1], from conical to circular.
-        range_focus: the focus parameter for the ultrasonic sensor range-shape.
-        range_min_cutoff: the minimum cut-off distance for the ultrasonic sensor range-shape. Nothing closer than this will be detected.
-        range_direct_max_cutoff: the maximum cut-off distance for the ultrasonic sensor range-shape. This parameter is a hard cutoff - nothing
+        range_roundness: the general roudness of the RADAR sensor range-shape. Can be negative.
+        range_cutoff_sensitivity: a cutoff sensitivity parameter for the RADAR sensor range-shape.
+        range_shape: the shape of the RADAR sensor range-shape in [0, 1], from conical to circular.
+        range_focus: the focus parameter for the RADAR sensor range-shape.
+        range_min_cutoff: the minimum cut-off distance for the RADAR sensor range-shape. Nothing closer than this will be detected.
+        range_direct_max_cutoff: the maximum cut-off distance for the RADAR sensor range-shape. This parameter is a hard cutoff - nothing
             further than this will be detected, although other parameters can also control the max distance.
-        sensitivity: an ultrasonic sensor sensitivity parameter.
-        fixed_window_size: an ultrasonic sensor sensitivity parameter.
-        is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
+        is_visualised: Whether or not to render the RADAR sensor points in the simulator.
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
@@ -52,12 +50,11 @@ class Ultrasonic:
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
                  update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
                  dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (200, 200),
-                 field_of_view_y: float = 5.7, near_far_planes: Float2 = (0.1, 5.1),
-                 range_roundess: float = -1.15, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.3,
-                 range_focus: float = 0.376, range_min_cutoff: float = 0.1, range_direct_max_cutoff: float = 5.0,
-                 sensitivity: float = 3.0, fixed_window_size: float = 10, is_visualised: bool = True, is_static: bool = False,
-                 is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
-        self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
+                 field_of_view_y: float = 5.7, near_far_planes: Float2 = (0.1, 150.0),
+                 range_roundess: float = -2.0, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.23,
+                 range_focus: float = 0.12, range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0,
+                 is_visualised: bool = True, is_static: bool = False, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+        self.logger = getLogger(f'{LOGGER_ID}.RADAR')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -65,12 +62,11 @@ class Ultrasonic:
         self.name = name
 
         # Create and initialise this sensor in the simulation.
-        self._open_ultrasonic(
+        self._open_radar(
             name, vehicle, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
             near_far_planes, range_roundess, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
-            range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
-            is_force_inside_triangle)
-        self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')
+            range_direct_max_cutoff, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
+        self.logger.debug('RADAR - sensor created: 'f'{self.name}')
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs):
         if not self.bng.connection:
@@ -87,8 +83,8 @@ class Ultrasonic:
         Removes this sensor from the simulation.
         """
         # Remove this sensor from the simulation.
-        self._close_ultrasonic()
-        self.logger.debug('Ultrasonic - sensor removed: 'f'{self.name}')
+        self._close_radar()
+        self.logger.debug('RADAR - sensor removed: 'f'{self.name}')
 
     def poll(self) -> StrDict:
         """
@@ -96,14 +92,13 @@ class Ultrasonic:
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary containing the distance measurement and the window (min and mix values) in which it was computed.
+            A dictionary containing the RADAR data.
         """
         # Send and receive a request for readings data from this sensor.
-        distance_measurement = self._send_sensor_request(
-            'PollUltrasonic', ack='PolledUltrasonic', name=self.name)['data']
-        self.logger.debug('Ultrasonic - sensor readings received from simulation: 'f'{self.name}')
+        radar_data = self._send_sensor_request('PollRadar', ack='PolledRadar', name=self.name)['data']
+        self.logger.debug('RADAR - sensor readings received from simulation: 'f'{self.name}')
 
-        return distance_measurement
+        return radar_data
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -114,9 +109,8 @@ class Ultrasonic:
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('Ultrasonic - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request(
-            'SendAdHocRequestUltrasonic', ack='CompletedSendAdHocRequestUltrasonic', name=self.name)['data'])
+        self.logger.debug('RADAR - ad-hoc polling request sent: 'f'{self.name}')
+        return int(self._send_sensor_request('SendAdHocRequestRadar', ack='CompletedSendAdHocRequestRadar', name=self.name)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -128,9 +122,8 @@ class Ultrasonic:
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('Ultrasonic - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyUltrasonic',
-                                         ack='CompletedIsAdHocPollRequestReadyUltrasonic', requestId=request_id)['data']
+        self.logger.debug('RADAR - ad-hoc polling request checked for completion: 'f'{self.name}')
+        return self._send_sensor_request('IsAdHocPollRequestReadyRadar', ack='CompletedIsAdHocPollRequestReadyRadar', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -142,9 +135,8 @@ class Ultrasonic:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestUltrasonic',
-                                             ack='CompletedCollectAdHocPollRequestUltrasonic', requestId=request_id)['data']
-        self.logger.debug('Ultrasonic - ad-hoc polling request returned and processed: 'f'{self.name}')
+        readings = self._send_sensor_request('CollectAdHocPollRequestRadar', ack='CompletedCollectAdHocPollRequestRadar', requestId=request_id)['data']
+        self.logger.debug('RADAR - ad-hoc polling request returned and processed: 'f'{self.name}')
 
         return readings
 
@@ -155,8 +147,7 @@ class Ultrasonic:
         Returns:
             (float): The requested update time.
         """
-        return self._send_sensor_request('GetUltrasonicRequestedUpdateTime',
-                                         ack='CompletedGetUltrasonicRequestedUpdateTime', name=self.name)['data']
+        return self._send_sensor_request('GetRadarRequestedUpdateTime', ack='CompletedGetRadarRequestedUpdateTime', name=self.name)['data']
 
     def get_update_priority(self) -> float:
         """
@@ -165,8 +156,7 @@ class Ultrasonic:
         Returns:
             The update priority value.
         """
-        return self._send_sensor_request(
-            'GetUltrasonicUpdatePriority', ack='CompletedGetUltrasonicUpdatePriority', name=self.name)['data']
+        return self._send_sensor_request('GetRadarUpdatePriority', ack='CompletedGetRadarUpdatePriority', name=self.name)['data']
 
     def get_position(self) -> Float3:
         """
@@ -175,8 +165,7 @@ class Ultrasonic:
         Returns:
             The sensor position.
         """
-        table = self._send_sensor_request('GetUltrasonicSensorPosition',
-                                          ack='CompletedGetUltrasonicSensorPosition', name=self.name)['data']
+        table = self._send_sensor_request('GetRadarSensorPosition', ack='CompletedGetRadarSensorPosition', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_direction(self) -> Float3:
@@ -186,8 +175,7 @@ class Ultrasonic:
         Returns:
             The sensor direction.
         """
-        table = self._send_sensor_request('GetUltrasonicSensorDirection',
-                                          ack='CompletedGetUltrasonicSensorDirection', name=self.name)['data']
+        table = self._send_sensor_request('GetRadarSensorDirection', ack='CompletedGetRadarSensorDirection', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_max_pending_requests(self) -> int:
@@ -197,18 +185,7 @@ class Ultrasonic:
         Returns:
             The max pending requests value.
         """
-        return int(self._send_sensor_request('GetUltrasonicMaxPendingGpuRequests',
-                                             ack='CompletedGetUltrasonicMaxPendingGpuRequests', name=self.name)['data'])
-
-    def get_is_visualised(self) -> bool:
-        """
-        Gets a flag which indicates if this ultrasonic sensor is visualised or not.
-
-        Returns:
-            A flag which indicates if this ultrasonic sensor is visualised or not.
-        """
-        return self._send_sensor_request(
-            'GetUltrasonicIsVisualised', ack='CompletedGetUltrasonicIsVisualised', name=self.name)['data']
+        return int(self._send_sensor_request('GetRadarMaxPendingGpuRequests', ack='CompletedGetRadarMaxPendingGpuRequests', name=self.name)['data'])
 
     def set_requested_update_time(self, requested_update_time: float):
         """
@@ -217,9 +194,7 @@ class Ultrasonic:
         Args:
             requested_update_time: The new requested update time.
         """
-        return self._set_sensor(
-            'SetUltrasonicRequestedUpdateTime', ack='CompletedSetUltrasonicRequestedUpdateTime', name=self.name,
-            updateTime=requested_update_time)
+        return self._set_sensor('SetRadarRequestedUpdateTime', ack='CompletedSetRadarRequestedUpdateTime', name=self.name, updateTime=requested_update_time)
 
     def set_update_priority(self, update_priority: float) -> None:
         """
@@ -228,9 +203,7 @@ class Ultrasonic:
         Args:
             update_priority: The new update priority
         """
-        return self._set_sensor(
-            'SetUltrasonicUpdatePriority', ack='CompletedSetUltrasonicUpdatePriority', name=self.name,
-            updatePriority=update_priority)
+        return self._set_sensor('SetRadarUpdatePriority', ack='CompletedSetRadarUpdatePriority', name=self.name, updatePriority=update_priority)
 
     def set_max_pending_requests(self, max_pending_requests: int) -> None:
         """
@@ -239,27 +212,15 @@ class Ultrasonic:
         Args:
             max_pending_requests: The new max pending requests value.
         """
-        self._set_sensor(
-            'SetUltrasonicMaxPendingGpuRequests', ack='CompletedSetUltrasonicMaxPendingGpuRequests', name=self.name,
-            maxPendingGpuRequests=max_pending_requests)
+        self._set_sensor('SetRadarMaxPendingGpuRequests', ack='CompletedSetRadarMaxPendingGpuRequests', name=self.name, maxPendingGpuRequests=max_pending_requests)
 
-    def set_is_visualised(self, is_visualised: bool) -> None:
-        """
-        Sets whether this ultrasonic sensor is to be visualised or not.
-
-        Args:
-            is_visualised: A flag which indicates if this ultrasonic sensor is to be visualised or not.
-        """
-        self._set_sensor('SetUltrasonicIsVisualised', ack='CompletedSetUltrasonicIsVisualised',
-                         name=self.name, isVisualised=is_visualised)
-
-    def _open_ultrasonic(
+    def _open_radar(
             self, name: str, vehicle: Vehicle | None, requested_update_time: float, update_priority: float, pos: Float3,
             dir: Float3, up: Float3, size: Int2, field_of_view_y: float, near_far_planes: Float2,
             range_roundness: float, range_cutoff_sensitivity: float, range_shape: float, range_focus: float,
-            range_min_cutoff: float, range_direct_max_cutoff: float, sensitivity: float, fixed_window_size: float,
-            is_visualised: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
-        data: StrDict = dict(type='OpenUltrasonic')
+            range_min_cutoff: float, range_direct_max_cutoff: float, is_visualised: bool, is_static: bool,
+            is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+        data: StrDict = dict(type='OpenRadar')
         data['name'] = name
         data['vid'] = 0
         if vehicle is not None:
@@ -278,18 +239,16 @@ class Ultrasonic:
         data['range_focus'] = range_focus
         data['range_min_cutoff'] = range_min_cutoff
         data['range_direct_max_cutoff'] = range_direct_max_cutoff
-        data['sensitivity'] = sensitivity
-        data['fixed_window_size'] = fixed_window_size
         data['isVisualised'] = is_visualised
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
-        self.bng._send(data).ack('OpenedUltrasonic')
-        self.logger.info(f'Opened ultrasonic sensor: "{name}"')
+        self.bng._send(data).ack('OpenedRadar')
+        self.logger.info(f'Opened RADAR sensor: "{name}"')
 
-    def _close_ultrasonic(self) -> None:
-        data = dict(type='CloseUltrasonic')
+    def _close_radar(self) -> None:
+        data = dict(type='CloseRadar')
         data['name'] = self.name
-        self.bng._send(data).ack('ClosedUltrasonic')
-        self.logger.info(f'Closed ultrasonic sensor: "{self.name}"')
+        self.bng._send(data).ack('ClosedRadar')
+        self.logger.info(f'Closed RADAR sensor: "{self.name}"')
