@@ -3,6 +3,9 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
 
+import numpy as np
+import struct
+
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import Float2, Float3, Int2, StrDict
 
@@ -50,7 +53,7 @@ class Radar:
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
                  update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
                  dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (200, 200),
-                 field_of_view_y: float = 5.7, near_far_planes: Float2 = (0.1, 150.0),
+                 field_of_view_y: float = 70, near_far_planes: Float2 = (0.1, 150.0),
                  range_roundess: float = -2.0, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.23,
                  range_focus: float = 0.12, range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0,
                  is_visualised: bool = True, is_static: bool = False, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
@@ -78,6 +81,21 @@ class Radar:
             raise BNGError('The simulator is not connected!')
         return set_sensor(self.bng.connection, type, ack, **kwargs)
 
+    def _decode_binary_string(self, binary):
+        # Convert the given binary string into an 1D array of floats.
+        floats = np.zeros(int(len(binary) / 4))
+        ctr = 0
+        for i in range(0, int(len(binary)), 4):
+            floats[ctr] = struct.unpack('f', binary[i:i + 4])[0]
+            ctr = ctr + 1
+
+        # Re-format the float array into a 6D point cloud of raw RADAR data.
+        decoded_data = []
+        for i in range(0, int(len(floats) / 6), 6):
+            decoded_data.append([floats[i], floats[i + 1], floats[i + 2], floats[i + 3], floats[i + 4], floats[i + 5]])
+
+        return decoded_data
+
     def remove(self):
         """
         Removes this sensor from the simulation.
@@ -86,16 +104,20 @@ class Radar:
         self._close_radar()
         self.logger.debug('RADAR - sensor removed: 'f'{self.name}')
 
-    def poll(self) -> StrDict:
+    def poll(self):
         """
-        Gets the most-recent readings for this sensor.
+        Gets the most-recent raw readings for this RADAR sensor.
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary containing the RADAR data.
+            A 6D point cloud of raw RADAR data, where each entry is (range, doppler velocity, azimuth angle, elevation angle, radar cross section, signal to noise ratio).
         """
         # Send and receive a request for readings data from this sensor.
-        radar_data = self._send_sensor_request('PollRadar', ack='PolledRadar', name=self.name)['data']
+        binary = self._send_sensor_request('PollRadar', ack='PolledRadar', name=self.name)['data']
+
+        # Convert the binary string into an array of floats.
+        radar_data = self._decode_binary_string(binary)
+
         self.logger.debug('RADAR - sensor readings received from simulation: 'f'{self.name}')
 
         return radar_data
@@ -125,7 +147,7 @@ class Radar:
         self.logger.debug('RADAR - ad-hoc polling request checked for completion: 'f'{self.name}')
         return self._send_sensor_request('IsAdHocPollRequestReadyRadar', ack='CompletedIsAdHocPollRequestReadyRadar', requestId=request_id)['data']
 
-    def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
+    def collect_ad_hoc_poll_request(self, request_id: int):
         """
         Collects a previously-issued ad-hoc polling request, if it has been processed.
 
@@ -135,10 +157,13 @@ class Radar:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestRadar', ack='CompletedCollectAdHocPollRequestRadar', requestId=request_id)['data']
+        binary = self._send_sensor_request('CollectAdHocPollRequestRadar', ack='CompletedCollectAdHocPollRequestRadar', requestId=request_id)['data']['radarData']
+
+        radar_data = self._decode_binary_string(binary)
+
         self.logger.debug('RADAR - ad-hoc polling request returned and processed: 'f'{self.name}')
 
-        return readings
+        return radar_data
 
     def get_requested_update_time(self) -> float:
         """
