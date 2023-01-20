@@ -91,7 +91,7 @@ class Radar:
 
         # Re-format the float array into a 6D point cloud of raw RADAR data.
         decoded_data = []
-        for i in range(0, int(len(floats) / 6), 6):
+        for i in range(0, int(len(floats)), 6):
             decoded_data.append([floats[i], floats[i + 1], floats[i + 2], floats[i + 3], floats[i + 4], floats[i + 5]])
 
         return decoded_data
