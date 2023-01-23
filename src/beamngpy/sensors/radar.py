@@ -305,9 +305,10 @@ class Radar:
         for i in range(len(readings_data)):
 
             # Find the appropriate 2D bin index (distance, azimuth) for this reading.
-            d = int(math.floor((readings_data[i][0] / range_max) * range_bins))
+            d = int(math.floor(((readings_data[i][0] - range_min) / (range_max - range_min)) * range_bins))
             a = int(math.floor(((-readings_data[i][2] + max_az_rad) / fov_rad) * azimuth_bins))
-
+            d = min(range_bins, d)
+            d = max(0, d)
             # If this Doppler velocity is the largest found for this bin, store its value in the bin. Note that we compare abs, since velocity can be +ve or -ve.
             raw_v = readings_data[i][1]
             if abs(raw_v) > abs(v_bins[d, a]):
@@ -355,17 +356,17 @@ class Radar:
 
         # Create the RCS (Radar Cross Section) Plot.
         mesh = ax[1, 1].pcolormesh(grid_x, grid_y, RCS_bins)
-        ax[1, 1].set_title("RCS (Radar Cross Section)")
+        ax[1, 1].set_title("RCS (Radar Cross Section) dB")
         ax[1, 1].set_xlabel("Cross-range (m)")
-        ax[1, 1].set_ylabel("RCS (dB)")
+        ax[1, 1].set_ylabel("Down-range (m)")
         ax[1, 1].set_aspect("equal")
         fig.colorbar(mesh, ax=ax[1, 1])
 
         # Create the SNR (Signal-to-Noise Ratio) Plot.
         mesh = ax[0, 1].pcolormesh(grid_x, grid_y, SNR_bins)
-        ax[0, 1].set_title("SNR (Signal-to-Noise Ratio)")
+        ax[0, 1].set_title("SNR (Signal-to-Noise Ratio) dB")
         ax[0, 1].set_xlabel("Cross-range (m)")
-        ax[0, 1].set_ylabel("SNR (dB)")
+        ax[0, 1].set_ylabel("Down-range (m)")
         ax[0, 1].set_aspect("equal")
         fig.colorbar(mesh, ax=ax[0, 1])
         plt.show()

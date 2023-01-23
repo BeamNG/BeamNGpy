@@ -119,8 +119,8 @@ class Camera:
             update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
             dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512),
             field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
-            is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = False,
-            is_render_instance: bool = False, is_render_depth: bool = False, is_depth_inverted: bool = False,
+            is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True,
+            is_render_instance: bool = False, is_render_depth: bool = True, is_depth_inverted: bool = False,
             is_visualised: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
             is_force_inside_triangle: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
@@ -350,7 +350,6 @@ class Camera:
         # Send and receive a request for readings data from this sensor.
         raw_readings = self._send_sensor_request(
             'PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
-
         self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
 
         # Decode the raw sensor readings into image data. This is handled differently, depending on whether shared memory is used or not.
