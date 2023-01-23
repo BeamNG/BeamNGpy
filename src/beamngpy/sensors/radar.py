@@ -308,8 +308,10 @@ class Radar:
             d = int(math.floor((readings_data[i][0] / range_max) * range_bins))
             a = int(math.floor(((-readings_data[i][2] + max_az_rad) / fov_rad) * azimuth_bins))
 
-            # If this Doppler velocity is the largest found for this bin, store its value in the bin.
-            v_bins[d, a] = max(v_bins[d, a], readings_data[i][1])
+            # If this Doppler velocity is the largest found for this bin, store its value in the bin. Note that we compare abs, since velocity can be +ve or -ve.
+            raw_v = readings_data[i][1]
+            if abs(raw_v) > abs(v_bins[d, a]):
+                v_bins[d, a] = raw_v
 
             # If this RCS (Radar Cross Section) is the largest found for this bin, store its value in the bin. This is converted to dBsm (decibels square metres).
             raw_rcs = readings_data[i][4]
