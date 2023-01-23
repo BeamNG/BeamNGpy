@@ -3,11 +3,6 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
 
-import math
-import numpy as np
-import struct
-import matplotlib.pyplot as plt
-
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import Float2, Float3, Int2, StrDict
 
@@ -16,6 +11,12 @@ from .communication_utils import send_sensor_request, set_sensor
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
+
+import math
+import numpy as np
+import struct
+
+import matplotlib.pyplot as plt
 
 __all__ = ['Radar']
 

@@ -29,7 +29,7 @@ def main():
     print('Driving around, polling the RADAR sensor every 5 seconds...')
     for i in range(1000):
         sleep(5)
-        readings_data = radar.poll() # Fetch the latest readings from the sensor, over either shared memory or the lua socket.
+        readings_data = radar.poll()
         print('Current RADAR readings (range, doppler velocity, azimuth (rad), elevation (rad), Radar Cross Section, Signal-to-Noise Ratio):')
         for j in range(20):
             print(readings_data[j])
