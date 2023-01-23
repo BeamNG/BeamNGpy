@@ -13,8 +13,9 @@ if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)
     bng.open(launch=True)
     vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')                       # Create a vehicle.
-    scenario = Scenario('smallgrid', 'radar_test', description='Testing the RADAR sensor')              # Create a scenario.
-    scenario.add_vehicle(vehicle)                                                                       # Add the vehicle to the scenario.
+    scenario = Scenario('italy', 'radar_test', description='Testing the RADAR sensor')                  # Create a scenario.
+    #scenario.add_vehicle(vehicle)                                                                       # Add the vehicle to the scenario.
+    scenario.add_vehicle(vehicle, pos=(237.90, -894.42, 246.10), rot_quat=(0.0173, -0.0019, -0.6354, 0.7720))
     scenario.make(bng)
     bng.settings.set_deterministic(60)                                                                  # Set simulator to 60hz temporal resolution
     bng.scenario.load(scenario)
@@ -23,13 +24,22 @@ if __name__ == '__main__':
 
     print('RADAR test start.')
 
-    # Create a default RADAR sensor.
-    radar1 = Radar('radar1', bng, vehicle)
+    # Create a RADAR sensor.
+    RANGE_MIN = 0.1
+    RANGE_MAX = 100.0
+    RESOLUTION = (200, 200)
+    FOV = 70
+    radar1 = Radar('radar1', bng, vehicle,
+        requested_update_time=0.01,
+        pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
+        resolution=RESOLUTION, field_of_view_y=FOV, near_far_planes=(RANGE_MIN, RANGE_MAX),
+        range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12, range_min_cutoff=0.5, range_direct_max_cutoff=RANGE_MAX)
 
     # Test the automatic polling functionality of the RADAR sensor, to make sure we retrieve the readings.
     sleep(2)
     sensor_readings = radar1.poll()
-    print('RADAR readings (automatic polling): ', sensor_readings)
+    print('RADAR readings (automatic polling): ', sensor_readings[0:10])
+    radar1.plot_data(sensor_readings, RESOLUTION, FOV, RANGE_MIN, RANGE_MAX, 200, 200)                      # Plot the data.
 
     # Test the ad-hoc polling functionality of the RADAR sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
     sleep(1)
@@ -39,7 +49,7 @@ if __name__ == '__main__':
     sleep(3)
     print('Is ad-hoc request complete? ', radar1.is_ad_hoc_poll_request_ready(request_id))                  # Ensure that the data has been processed before collecting.
     sensor_readings_ad_hoc = radar1.collect_ad_hoc_poll_request(request_id)                                 # Collect the data now that it has been computed.
-    print('RADAR readings (ad-hoc polling): ', sensor_readings_ad_hoc)
+    print('RADAR readings (ad-hoc polling): ', sensor_readings_ad_hoc[0:10])
     radar1.remove()
     print('RADAR sensor removed.')
 
@@ -51,7 +61,7 @@ if __name__ == '__main__':
     print('RADAR readings (should be zeros): ', sensor_readings)
     radar2.remove()
 
-    # Recreate the first RADAR sensor.
+    # Recreate the first RADAR sensor, with default parameters.
     radar1 = Radar('radar1', bng, vehicle)
 
     # Test that the property getter function return the correct data which was set.

@@ -3,8 +3,10 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
 
+import math
 import numpy as np
 import struct
+import matplotlib.pyplot as plt
 
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import Float2, Float3, Int2, StrDict
@@ -35,7 +37,7 @@ class Radar:
         dir: (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
         up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
         size: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
-        field_of_view_y: The sensor vertical field of view parameters.
+        field_of_view_y: The sensor vertical field of view parameter.
         near_far_planes: (X, Y) The sensor near and far plane distances.
         range_roundness: the general roudness of the RADAR sensor range-shape. Can be negative.
         range_cutoff_sensitivity: a cutoff sensitivity parameter for the RADAR sensor range-shape.
@@ -277,3 +279,90 @@ class Radar:
         data['name'] = self.name
         self.bng._send(data).ack('ClosedRadar')
         self.logger.info(f'Closed RADAR sensor: "{self.name}"')
+
+    def plot_data(self, readings_data, resolution, field_of_view_y, range_min, range_max, range_bins : int=200, azimuth_bins : int=200):
+        """
+        Plot the radar readings data. The data plots are: B-Scope, PPI (Plan Position Indicator), RCS (Radar Cross Section), and SNR (Signal-to-Noise Ratio).
+
+        Args:
+            readings_data: The readings data structure obtained from polling the RADAR sensor.
+            resolution: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
+            field_of_view_y: The vertical field of view of the RADAR, in degrees.
+            range_min: The minimum range of the sensor, in metres.
+            range_max: The maximum range of the sensor, in metres.
+            range_bins: The number of bins to use for the range dimension, in the data plots.
+            azimuth_bins: The number of bins to use for the azimuth dimension, in the data plots.
+        """
+
+        fov_azimuth = (resolution[0] / float(resolution[1])) * field_of_view_y
+        fov_rad = np.deg2rad(fov_azimuth)
+        min_az_rad = np.deg2rad(-fov_azimuth / 2)
+        max_az_rad = np.deg2rad(fov_azimuth / 2)
+        v_bins = np.zeros([range_bins + 1, azimuth_bins + 1])
+        RCS_bins = np.zeros([range_bins + 1, azimuth_bins + 1])
+        SNR_bins = np.zeros([range_bins + 1, azimuth_bins + 1])
+        for i in range(len(readings_data)):
+
+            # Find the appropriate 2D bin index (distance, azimuth) for this reading.
+            d = int(math.floor((readings_data[i][0] / range_max) * range_bins))
+            a = int(math.floor(((-readings_data[i][2] + max_az_rad) / fov_rad) * azimuth_bins))
+
+            # If this Doppler velocity is the largest found for this bin, store its value in the bin.
+            v_bins[d, a] = max(v_bins[d, a], readings_data[i][1])
+
+            # If this RCS (Radar Cross Section) is the largest found for this bin, store its value in the bin. This is converted to dBsm (decibels square metres).
+            raw_rcs = readings_data[i][4]
+            if raw_rcs != 0.0:
+                rcs = 10.0 * math.log10(raw_rcs)
+                if abs(rcs) > abs(RCS_bins[d, a]):
+                    RCS_bins[d, a] = rcs
+
+            # If this SNR (Signal-to-Noise Ratio) is the largest found for this bin, store its value in the bin. This is converted to dB.
+            raw_snr = readings_data[i][5]
+            if raw_snr != 0.0:
+                snr = 10.0 * math.log10(raw_snr)
+                if abs(snr) > abs(SNR_bins[d, a]):
+                    SNR_bins[d, a] = snr
+
+        # Create the B-Scope Plot.
+        fig, ax = plt.subplots(2, 2, figsize=(15, 15))
+        half_fov_azimuth = fov_azimuth / 2
+        im = ax[0, 0].imshow(v_bins, aspect="auto", origin="lower", extent=(-half_fov_azimuth, half_fov_azimuth, range_min, range_max))
+        ax[0, 0].set_title("B-Scope")
+        ax[0, 0].set_xlabel("Azimuth (degrees)")
+        ax[0, 0].set_ylabel("Range (m)")
+        ax[0, 0].set_aspect(0.75)
+        fig.colorbar(im, ax=ax[0, 0])
+
+        # Create a grid of vertices that approximate the bounds of each radar cell (in polar coordinates), then convert from polar to Cartesian coordinates.
+        r, az = np.mgrid[
+            0.0:range_max:(range_max / (range_bins + 1)),
+            max_az_rad:min_az_rad:-((max_az_rad - min_az_rad) / (azimuth_bins + 1))]
+        az_plus_half_pi = az + (np.pi / 2)
+        grid_x = r * np.cos(az_plus_half_pi)
+        grid_y = r * np.sin(az_plus_half_pi)
+
+        # Create the PPI (Plan Position Indicator) Plot.
+        mesh = ax[1, 0].pcolormesh(grid_x, grid_y, v_bins)
+        ax[1, 0].set_title("PPI (Plan Position Indicator)")
+        ax[1, 0].set_xlabel("Cross-range (m)")
+        ax[1, 0].set_ylabel("Down-range (m)")
+        ax[1, 0].set_aspect("equal")
+        fig.colorbar(mesh, ax=ax[1, 0])
+
+        # Create the RCS (Radar Cross Section) Plot.
+        mesh = ax[1, 1].pcolormesh(grid_x, grid_y, RCS_bins)
+        ax[1, 1].set_title("RCS (Radar Cross Section)")
+        ax[1, 1].set_xlabel("Cross-range (m)")
+        ax[1, 1].set_ylabel("RCS (dB)")
+        ax[1, 1].set_aspect("equal")
+        fig.colorbar(mesh, ax=ax[1, 1])
+
+        # Create the SNR (Signal-to-Noise Ratio) Plot.
+        mesh = ax[0, 1].pcolormesh(grid_x, grid_y, SNR_bins)
+        ax[0, 1].set_title("SNR (Signal-to-Noise Ratio)")
+        ax[0, 1].set_xlabel("Cross-range (m)")
+        ax[0, 1].set_ylabel("SNR (dB)")
+        ax[0, 1].set_aspect("equal")
+        fig.colorbar(mesh, ax=ax[0, 1])
+        plt.show()
