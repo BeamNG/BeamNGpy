@@ -121,7 +121,7 @@ class Lidar:
             ctr = ctr + 1
         points = []
         # Convert the floats to points by collecting each triplet.
-        for i in range(0, int(len(floats) / 3), 3):
+        for i in range(0, int(len(floats)), 3):
             points.append([floats[i], floats[i + 1], floats[i + 2]])
         processed_readings['pointCloud'] = np.array(points, dtype=np.float32)
 
