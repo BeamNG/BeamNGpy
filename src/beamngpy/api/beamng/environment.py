@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from beamngpy.types import StrDict
+from beamngpy.types import StrDict, Time
 
 from .base import Api
 
@@ -13,17 +13,41 @@ class EnvironmentApi(Api):
         beamng: An instance of the simulator.
     """
 
-    def set_tod(self, tod: float) -> None:
+    def get_tod(self) -> StrDict:
+        """
+        Gets the current 'time of day' object. That includes a TODO
+
+        Returns:
+            A dictionary with the following keys:
+            TODO
+        """
+        data: StrDict = dict(type='GetTimeOfDay')
+        resp = self._send(data).recv('TimeOfDay')
+        return resp['data']
+
+    def set_tod(self, tod: Time | None = None, play: bool | None = None, day_scale: float | None = None,
+                night_scale: float | None = None, day_length: float | None = None, azimuth_override: float | None = None) -> None:
         """
         Sets the current time of day. The time of day value is given as a float
         between 0 and 1. How this value affects the lighting of the scene is
         dependant on the map's TimeOfDay object.
 
-        Args:
-            tod: Time of day beteen 0 and 1.
+        Args (TODO better docs):
+            tod: Time of day. Can be provided as a float between 0.0 and 1.0, or as a string in the format 'HH:MM:SS'.
+            play: False by default.
+            day_scale: How fast should the day be.
+            night_scale: How fast should the night be.
+            day_length: Length of the day (24 hours).
+            azimuth_override: TODO
         """
-        data: StrDict = dict(type='TimeOfDayChange')
-        data['tod'] = tod
+        data: StrDict = dict(
+            type='TimeOfDayChange',
+            time=tod,
+            play=play,
+            dayScale=day_scale,
+            nightScale=night_scale,
+            dayLength=day_length,
+            azimuthOverride=azimuth_override)
         self._send(data).ack('TimeOfDayChanged')
 
     def set_weather_preset(self, preset: str, time: float = 1) -> None:
@@ -45,12 +69,23 @@ class EnvironmentApi(Api):
         data['time'] = time
         self._send(data).ack('WeatherPresetChanged')
 
+    def get_gravity(self) -> float:
+        """
+        Gets the strength of gravity in the simulator.
+
+        Returns:
+            The gravity value of the simulator.
+        """
+        data: StrDict = dict(type='GetGravity')
+        resp = self._send(data).recv('Gravity')
+        return resp['gravity']
+
     def set_gravity(self, gravity: float = -9.807) -> None:
         """
         Sets the strength of gravity in the simulator.
 
         Args:
-            gravity: The gravity value to set. The default one is that of earth (-9.807)
+            gravity: The gravity value to set. The default one is that of earth (-9.807).
         """
         data: StrDict = dict(type='SetGravity')
         data['gravity'] = gravity

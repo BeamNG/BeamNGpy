@@ -224,46 +224,37 @@ class Camera:
         Returns:
             The processed intensity values in the range [0, 255].
         """
-
         # Sort the depth values, and cache the sorting map.
         sort_index = np.argsort(raw_depth_values)
-        s_data = []
-        for i in range(len(raw_depth_values)):
-            s_data.append(raw_depth_values[sort_index[i]])
+        s_data = raw_depth_values[sort_index]
 
         # Compute an array of unique depth values, sensitive to some epsilon.
-        size = len(s_data)
-        unique = []
-        unique.append(s_data[0])
-        current = s_data[0]
-        for i in range(1, size):
-            if abs(s_data[i] - current) > 0.01:
-                unique.append(s_data[i])
-                current = s_data[i]
+        eps = 0.01
+        rounded_depth = (s_data * (1 // eps)).astype(np.int32)
+        _, indices = np.unique(rounded_depth, return_index=True)
+        unique = s_data[indices]
 
         # Distribute (mark) the individual intensity values throughout the sorted unique distance array.
-        intensity_marks = []
-        intensity_marks.append(0)
-        i_reciprocal = 1.0 / 255.0
-        for i in range(254):
-            intensity_marks.append(unique[math.floor(len(unique) * i * i_reciprocal)])
-        intensity_marks.append(1e12)
+        intensity_marks = np.empty((256, ))
+        intensity_marks[0] = 0
+        intensity_marks[-1] = 1e12
+        quantiles = np.arange(254) * (len(unique) / 255.0)
+        quantiles = quantiles.astype(np.int32)
+        intensity_marks[1:255] = unique[quantiles]
 
         # In the sorted depth values array, convert the depth value array into intensity values.
-        depth_intensity_sorted = np.zeros((size))
-        im_index = 0
-        for i in range(size):
-            depth_intensity_sorted[i] = im_index
-            if s_data[i] >= intensity_marks[im_index + 1]:
-                im_index = im_index + 1
+        depth_intensity_sorted = np.zeros_like(s_data)
+        last_idx = 0
+        for i in range(1, 256):
+            idx = np.searchsorted(s_data[last_idx:], intensity_marks[i], 'left') + 1 + last_idx
+            depth_intensity_sorted[last_idx:idx] = i - 1
+            last_idx = idx
 
         # Re-map the depth values back to their original order.
-        depth_intensity = np.zeros((size))
-        for i in range(len(raw_depth_values)):
-            if self.is_depth_inverted:
-                depth_intensity[sort_index[i]] = 255 - depth_intensity_sorted[i]
-            else:
-                depth_intensity[sort_index[i]] = depth_intensity_sorted[i]
+        depth_intensity = np.empty_like(s_data)
+        depth_intensity[sort_index] = depth_intensity_sorted
+        if self.is_depth_inverted:
+            depth_intensity = 255 - depth_intensity
 
         return depth_intensity
 
