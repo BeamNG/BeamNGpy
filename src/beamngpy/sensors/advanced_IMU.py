@@ -47,9 +47,7 @@ class AdvancedIMU:
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0,
-                 physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
-                 dir: Float3 = (0, -1, 0),
-                 up: Float3 = (0, 0, 1),
+                 physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (-0, 0, 1),
                  window_width: float | None = None, frequency_cutoff: float | None = None, is_send_immediately: bool = False,
                  is_using_gravity: bool = False, is_visualised: bool = True, is_snapping_desired: bool = False,
                  is_force_inside_triangle: bool = False):

@@ -6,12 +6,11 @@ from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, List
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 import beamngpy.sensors.shmem as shmem
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.sensors.communication_utils import (send_sensor_request,
-                                                  set_sensor)
+from beamngpy.sensors.communication_utils import (send_sensor_request, set_sensor)
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 
 from . import utils
@@ -117,7 +116,7 @@ class Camera:
     def __init__(
             self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
             update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
-            dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512),
+            dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, -1), resolution: Int2 = (512, 512),
             field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
             is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True,
             is_render_instance: bool = False, is_render_depth: bool = True, is_depth_inverted: bool = False,
@@ -212,11 +211,7 @@ class Camera:
         decoded = decoded.reshape(height, width, 4)
 
         # Convert to image format.
-        image = Image.fromarray(decoded)
-        if self.is_static:
-            return image
-        else:
-            return ImageOps.mirror(ImageOps.flip(image))
+        return Image.fromarray(decoded)
 
     def _depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
         """
@@ -302,10 +297,7 @@ class Camera:
                 processed_values = self._depth_buffer_processing(depth)
                 reshaped_data = processed_values.reshape(height, width)
                 image = Image.fromarray(reshaped_data)
-                if self.is_static:
-                    processed_readings['depth'] = image
-                else:
-                    processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(image))
+                processed_readings['depth'] = image
 
         return processed_readings
 

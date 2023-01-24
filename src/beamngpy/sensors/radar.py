@@ -55,7 +55,7 @@ class Radar:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
                  update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
-                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (200, 200),
+                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, -1), resolution: Int2 = (200, 200),
                  field_of_view_y: float = 70, near_far_planes: Float2 = (0.1, 150.0),
                  range_roundess: float = -2.0, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.23,
                  range_focus: float = 0.12, range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0,
@@ -306,7 +306,7 @@ class Radar:
 
             # Find the appropriate 2D bin index (distance, azimuth) for this reading.
             d = int(math.floor(((readings_data[i][0] - range_min) / (range_max - range_min)) * range_bins))
-            a = int(math.floor(((-readings_data[i][2] + max_az_rad) / fov_rad) * azimuth_bins))
+            a = int(math.floor(((readings_data[i][2] - min_az_rad) / fov_rad) * azimuth_bins))
             d = min(range_bins, d)
             d = max(0, d)
             # If this Doppler velocity is the largest found for this bin, store its value in the bin. Note that we compare abs, since velocity can be +ve or -ve.

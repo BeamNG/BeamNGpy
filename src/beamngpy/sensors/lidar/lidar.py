@@ -53,7 +53,7 @@ class Lidar:
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
-                 update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1),
+                 update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, -1),
                  vertical_resolution: int = 64, vertical_angle: float = 26.9, rays_per_second: float = 2200000,
                  frequency: float = 20, horizontal_angle: float = 360, max_distance: float = 120,
                  is_using_shared_memory: bool = True, is_visualised: bool = True, is_annotated: bool = False,
