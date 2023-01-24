@@ -30,3 +30,4 @@ Vehicle color. Can be either:
     - string of format ``'R G B A'``,
     - a common color name (parsable by ``matplotlib.colors``).
 '''
+Time = Union[float, str]
