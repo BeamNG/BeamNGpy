@@ -94,8 +94,8 @@ class Radar:
 
         # Re-format the float array into a 6D point cloud of raw RADAR data.
         decoded_data = []
-        for i in range(0, int(len(floats)), 6):
-            decoded_data.append([floats[i], floats[i + 1], floats[i + 2], floats[i + 3], floats[i + 4], floats[i + 5]])
+        for i in range(0, int(len(floats)), 7):
+            decoded_data.append([floats[i], floats[i + 1], floats[i + 2], floats[i + 3], floats[i + 4], floats[i + 5], floats[i + 6]])
 
         return decoded_data
 
@@ -284,6 +284,10 @@ class Radar:
     def plot_data(self, readings_data, resolution, field_of_view_y, range_min, range_max, range_bins : int=200, azimuth_bins : int=200):
         """
         Plot the radar readings data. The data plots are: B-Scope, PPI (Plan Position Indicator), RCS (Radar Cross Section), and SNR (Signal-to-Noise Ratio).
+        The data is used to populate bins, where each bin represents one pixel on the images, and contains a weighted average of the data at
+        that location.
+        If data exists outside of the given distance/angle ranges, it will be snapped to the nearest bin, so this should be avoided by providing
+        accurate limits for these.
 
         Args:
             readings_data: The readings data structure obtained from polling the RADAR sensor.
@@ -295,43 +299,47 @@ class Radar:
             azimuth_bins: The number of bins to use for the azimuth dimension, in the data plots.
         """
 
+        # Iterate over all RADAR readings, and populate the data into bins.
+        rows = range_bins + 1
+        cols = azimuth_bins + 1
+        velocity_bins = np.zeros([rows, cols])  # Stores the sum of the Doppler velocities for each bin.
+        RCS_bins = np.zeros([rows, cols])       # Stores the sum of RCS for each bin.
+        SNR_bins = np.zeros([rows, cols])       # Stores the sum of SNR for each bin.
+        tally_bins = np.zeros([rows, cols])     # Counts the number of entries for each bin.
         fov_azimuth = (resolution[0] / float(resolution[1])) * field_of_view_y
         fov_rad = np.deg2rad(fov_azimuth)
-        min_az_rad = np.deg2rad(-fov_azimuth / 2)
-        max_az_rad = np.deg2rad(fov_azimuth / 2)
-        v_bins = np.zeros([range_bins + 1, azimuth_bins + 1])
-        RCS_bins = np.zeros([range_bins + 1, azimuth_bins + 1])
-        SNR_bins = np.zeros([range_bins + 1, azimuth_bins + 1])
+        max_az_rad = fov_rad / 2
+        min_az_rad = -max_az_rad
+        range_size = range_max - range_min
         for i in range(len(readings_data)):
 
             # Find the appropriate 2D bin index (distance, azimuth) for this reading.
-            d = int(math.floor(((readings_data[i][0] - range_min) / (range_max - range_min)) * range_bins))
             a = int(math.floor(((readings_data[i][2] - min_az_rad) / fov_rad) * azimuth_bins))
-            d = min(range_bins, d)
-            d = max(0, d)
-            # If this Doppler velocity is the largest found for this bin, store its value in the bin. Note that we compare abs, since velocity can be +ve or -ve.
-            raw_v = readings_data[i][1]
-            if abs(raw_v) > abs(v_bins[d, a]):
-                v_bins[d, a] = raw_v
+            d = int(math.floor(((readings_data[i][0] - range_min) / range_size) * range_bins))
+            d = max(0, min(range_bins, d))  # Safety: if any data is outside the range of the bins, snap it to the nearest edge bin.
 
-            # If this RCS (Radar Cross Section) is the largest found for this bin, store its value in the bin. This is converted to dBsm (decibels square metres).
-            raw_rcs = readings_data[i][4]
-            if raw_rcs != 0.0:
-                rcs = 10.0 * math.log10(raw_rcs)
-                if abs(rcs) > abs(RCS_bins[d, a]):
-                    RCS_bins[d, a] = rcs
+            # For the appropriate bin, increment its number of entries for later averaging purposes.
+            tally_bins[d, a] = tally_bins[d, a] + 1
 
-            # If this SNR (Signal-to-Noise Ratio) is the largest found for this bin, store its value in the bin. This is converted to dB.
-            raw_snr = readings_data[i][5]
-            if raw_snr != 0.0:
-                snr = 10.0 * math.log10(raw_snr)
-                if abs(snr) > abs(SNR_bins[d, a]):
-                    SNR_bins[d, a] = snr
+            # Add the weighted doppler velocity, weighted RCS, and weighted SNR values to the appropriate bins.
+            weight = readings_data[i][6]
+            velocity_bins[d, a] = velocity_bins[d, a] + readings_data[i][1] * weight
+            RCS_bins[d, a] = RCS_bins[d, a] + (10.0 * math.log10(readings_data[i][4])) * weight     # We convert to dB scale.
+            SNR_bins[d, a] = SNR_bins[d, a] + (10.0 * math.log10(readings_data[i][5])) * weight     # We convert to dB scale.
+
+        # Iterate over all bins and perform the averaging.
+        for r in range(rows):
+            for c in range(cols):
+                if tally_bins[r, c] > 0.0:
+                    tally_reciprocal = 1.0 / tally_bins[r, c]
+                    velocity_bins[r, c] = velocity_bins[r, c] * tally_reciprocal
+                    RCS_bins[r, c] = RCS_bins[r, c] * tally_reciprocal
+                    SNR_bins[r, c] = SNR_bins[r, c] * tally_reciprocal
 
         # Create the B-Scope Plot.
         fig, ax = plt.subplots(2, 2, figsize=(15, 15))
         half_fov_azimuth = fov_azimuth / 2
-        im = ax[0, 0].imshow(v_bins, aspect="auto", origin="lower", extent=(-half_fov_azimuth, half_fov_azimuth, range_min, range_max))
+        im = ax[0, 0].imshow(velocity_bins, aspect="auto", origin="lower", extent=(-half_fov_azimuth, half_fov_azimuth, range_min, range_max))
         ax[0, 0].set_title("B-Scope")
         ax[0, 0].set_xlabel("Azimuth (degrees)")
         ax[0, 0].set_ylabel("Range (m)")
@@ -347,20 +355,12 @@ class Radar:
         grid_y = r * np.sin(az_plus_half_pi)
 
         # Create the PPI (Plan Position Indicator) Plot.
-        mesh = ax[1, 0].pcolormesh(grid_x, grid_y, v_bins)
+        mesh = ax[1, 0].pcolormesh(grid_x, grid_y, velocity_bins)
         ax[1, 0].set_title("PPI (Plan Position Indicator)")
         ax[1, 0].set_xlabel("Cross-range (m)")
         ax[1, 0].set_ylabel("Down-range (m)")
         ax[1, 0].set_aspect("equal")
         fig.colorbar(mesh, ax=ax[1, 0])
-
-        # Create the RCS (Radar Cross Section) Plot.
-        mesh = ax[1, 1].pcolormesh(grid_x, grid_y, RCS_bins)
-        ax[1, 1].set_title("RCS (Radar Cross Section) dB")
-        ax[1, 1].set_xlabel("Cross-range (m)")
-        ax[1, 1].set_ylabel("Down-range (m)")
-        ax[1, 1].set_aspect("equal")
-        fig.colorbar(mesh, ax=ax[1, 1])
 
         # Create the SNR (Signal-to-Noise Ratio) Plot.
         mesh = ax[0, 1].pcolormesh(grid_x, grid_y, SNR_bins)
@@ -369,4 +369,12 @@ class Radar:
         ax[0, 1].set_ylabel("Down-range (m)")
         ax[0, 1].set_aspect("equal")
         fig.colorbar(mesh, ax=ax[0, 1])
+
+        # Create the RCS (Radar Cross Section) Plot.
+        mesh = ax[1, 1].pcolormesh(grid_x, grid_y, RCS_bins)
+        ax[1, 1].set_title("RCS (Radar Cross Section) dB")
+        ax[1, 1].set_xlabel("Cross-range (m)")
+        ax[1, 1].set_ylabel("Down-range (m)")
+        ax[1, 1].set_aspect("equal")
+        fig.colorbar(mesh, ax=ax[1, 1])
         plt.show()
