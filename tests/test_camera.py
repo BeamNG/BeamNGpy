@@ -97,8 +97,6 @@ if __name__ == '__main__':
     print('Newly-set Position: ', cam3.get_position())
     cam3.set_direction((-1, 0, 0))
     print('Newly-set Direction: ', cam3.get_direction())
-    cam3.set_up((0, 1, 0))
-    print('Newly-set Direction: ', cam3.get_up())
 
     print('Camera 3 images (after altering position, direction, and up vectors)...')
     sleep(1)

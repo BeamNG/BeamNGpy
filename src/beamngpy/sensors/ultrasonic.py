@@ -51,7 +51,7 @@ class Ultrasonic:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
                  update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
-                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, -1), resolution: Int2 = (200, 200),
+                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (200, 200),
                  field_of_view_y: float = 5.7, near_far_planes: Float2 = (0.1, 5.1),
                  range_roundess: float = -1.15, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.3,
                  range_focus: float = 0.376, range_min_cutoff: float = 0.1, range_direct_max_cutoff: float = 5.0,

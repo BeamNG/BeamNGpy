@@ -116,7 +116,7 @@ class Camera:
     def __init__(
             self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
             update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
-            dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, -1), resolution: Int2 = (512, 512),
+            dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512),
             field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
             is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True,
             is_render_instance: bool = False, is_render_depth: bool = True, is_depth_inverted: bool = False,
@@ -473,16 +473,6 @@ class Camera:
         """
         table = self._send_sensor_request('GetCameraSensorDirection',
                                           ack='CompletedGetCameraSensorDirection', name=self.name)['data']
-        return (table['x'], table['y'], table['z'])
-
-    def get_up(self) -> Float3:
-        """
-        Gets the current up direction vector of this sensor.
-
-        Returns:
-            The sensor direction.
-        """
-        table = self._send_sensor_request('GetCameraSensorUp', ack='CompletedGetCameraSensorUp', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_requested_update_time(self) -> float:
