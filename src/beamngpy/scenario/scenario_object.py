@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from beamngpy.types import Float3, Quat, StrDict
+
+if TYPE_CHECKING:
+    from beamngpy import BeamNGpy
 
 
 class ScenarioObject:
@@ -82,6 +85,10 @@ class ScenarioObject:
 
     def __repr__(self) -> str:
         return str(self)
+
+    def remove(self, bng: BeamNGpy) -> None:
+        data: StrDict = dict(type='RemoveObject', name=self.name)
+        bng._send(data).ack('RemovedObject')
 
 
 class SceneObject:

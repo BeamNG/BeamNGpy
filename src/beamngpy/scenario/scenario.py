@@ -97,7 +97,7 @@ class Scenario:
         self.roads: List[Road] = list()
         self.mesh_roads: List[MeshRoad] = list()
         self.checkpoints: List[str] = list()
-        self.proc_meshes: List[ProceduralMesh] = list()
+        self.proc_meshes: Dict[str, ProceduralMesh] = {}
         self.objects: List[ScenarioObject] = list()
 
         self.scene = None
@@ -379,9 +379,29 @@ class Scenario:
         Args:
             mesh: The mesh to place.
         """
-        self.proc_meshes.append(mesh)
+        self.proc_meshes[mesh.name] = mesh
         if self.bng:
             mesh.place(self.bng)
+
+    def remove_procedural_mesh(self, mesh: ProceduralMesh) -> None:
+        """
+        Removes a :class:`.ProceduralMesh` that was placed in the world.
+
+        Args:
+            mesh: The mesh to remove.
+
+        Raises:
+            BNGError: If the mesh to remove was not found.
+        """
+        deleted = False
+        if mesh.name in self.proc_meshes:
+            del self.proc_meshes[mesh.name]
+            deleted = True
+        if self.bng:
+            mesh.remove(self.bng)
+            deleted = True
+        if not deleted:
+            raise BNGError(f'The mesh \'{mesh.name}\' was not found in the scenario.')
 
     def add_checkpoints(self, positions: List[Float3], scales: List[Float3], ids: List[str] | None = None) -> None:
         """
@@ -452,7 +472,7 @@ class Scenario:
         self.bng = bng
 
         self.logger.debug(f'{len(self.proc_meshes)} procedural meshes.')
-        for mesh in self.proc_meshes:
+        for mesh in self.proc_meshes.values():
             mesh.place(self.bng)
 
         if connect_existing:
