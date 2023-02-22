@@ -118,7 +118,7 @@ class BeamNGpy:
         return self._tech_enabled
 
     def open(self, extensions: List[str] | None = None, *args: str,
-             launch: bool = True, **opts: str) -> BeamNGpy:
+             launch: bool = True, crash_lua_on_error: bool | None = None, **opts: str) -> BeamNGpy:
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the spawned BeamNG.* process to connect.
         This method blocks until the process started and is ready.
@@ -127,6 +127,10 @@ class BeamNGpy:
             extensions: A list of non-default BeamNG Lua extensions to be loaded on start.
             launch: Whether to launch a new process or connect to a running one on the configured host/port.
                     Defaults to True.
+            crash_lua_on_error: If True, then sets BeamNG to not respond to BeamNGpy requests when a Lua error
+                                happens and prints the stacktrace instead.
+                                Is applicable only when the process is launched by this instance of BeamNGpy,
+                                as it sets a launch argument of the process. Defaults to False.
         """
         self.connection = Connection(self.host, self.port)
 
@@ -136,7 +140,12 @@ class BeamNGpy:
             self.logger.info('BeamNGpy successfully connected to existing BeamNG instance.')
         elif launch:
             self.logger.info('Opening BeamNGpy instance.')
-            self._start_beamng(extensions, *args, **opts)
+            arg_list = list(args)
+            if crash_lua_on_error == True:
+                arg_list.append('-tcom-debug')
+            elif crash_lua_on_error == False:
+                arg_list.append('-no-tcom-debug')
+            self._start_beamng(extensions, *arg_list, **opts)
             sleep(10)
             self.connection.connect_to_beamng()
         self._load_system_info()
