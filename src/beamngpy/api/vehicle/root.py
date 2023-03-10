@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from beamngpy.logging import BNGValueError
-from beamngpy.types import Color, StrDict
+from beamngpy.types import Color, Float3, StrDict
 from beamngpy.vehicle.colors import coerce_vehicle_color
 
 from .base import VehicleApi
@@ -126,3 +126,7 @@ class RootApi(VehicleApi):
     def recover(self) -> None:
         data = dict(type='Recover')
         self._send(data).ack('Recovered')
+
+    def get_center_of_gravity(self, without_wheels) -> Float3:
+        data = dict(type='GetCenterOfGravity', withoutWheels=without_wheels)
+        return self._send(data).recv()['data']

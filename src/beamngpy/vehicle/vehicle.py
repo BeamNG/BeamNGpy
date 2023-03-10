@@ -413,6 +413,19 @@ class Vehicle:
         """
         return self._ge_api.get_bbox()
 
+    def get_center_of_gravity(self, without_wheels=False) -> Float3:
+        """
+        Returns the vehicle's center of gravity.
+
+        Args:
+            without_wheels: If True, the center of gravity is calculated without the wheels.
+                            Defaults to False.
+
+        Returns:
+            The center of gravity as a ``(x, y, z)`` triplet.
+        """
+        return self._root.get_center_of_gravity(without_wheels)
+
     def annotate_parts(self) -> None:
         """
         Triggers the process to have individual parts of a vehicle have unique
