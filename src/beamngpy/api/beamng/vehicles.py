@@ -54,17 +54,11 @@ class VehiclesApi(Api):
         for color in ('color', 'color2', 'color3'):
             if data[color] is not None:
                 data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
-        license = None
-        if data.get('licenseText'):
-            license = data['licenseText']
-            del data['licenseText']
 
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success']:
             if connect:
                 vehicle.connect(self._beamng)
-            if license:
-                self._beamng.vehicles.set_license_plate(vehicle.vid, license)
         return resp['success']
 
     def despawn(self, vehicle: Vehicle) -> None:
@@ -237,34 +231,26 @@ class VehiclesApi(Api):
         vehicles = self.get_current_info(include_config=include_config)
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
-    
-   
-    def get_player_vehicle_id(self):
+
+    def get_player_vehicle_id(self) -> StrDict:
         """
         Queries the currently player vehicles in the simulator.
-        
-        Args:
-            No arguments required 
-            
+
         Returns:
-            A dictionary of the active vehicle in simulator from lua. 
+            A dictionary of the active vehicle in simulator from lua.
             {'type': 'getPlayerVehicleID', 'id': 10455.0, 'vid': 'vehicleA'}
             then in python, the return will be only an int value of the 'id' and vehicle's name
             {'id': 10455, 'vid': 'vehicleA'}
             data = bng.vehicles.get_player_vehicle_id()
-            for testing you can use the following: 
+            for testing you can use the following:
             id_value = data['id']
             vid_value = data['vid']
         """
         data = dict(type='GetPlayerVehicleID')
         resp = self._send(data).recv('getPlayerVehicleID')
-        print(resp)
-        id_value = int(resp['id'])
-        vid_value = resp['vid']
-        resp = {'id': id_value, 'vid': vid_value}
+        resp = {'id': int(resp['id']), 'vid': resp['vid']}
         return resp
-            
-            
+
     def set_license_plate(self, vehicle: str | Vehicle, text: str) -> None:
         """
         Sets the text of a vehicle's license plate.
