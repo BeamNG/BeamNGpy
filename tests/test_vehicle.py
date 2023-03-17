@@ -215,7 +215,7 @@ def _check_lights(target, data, msg_fmt):
 def test_lights(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'bbox_test')
-        config = 'vehicles/etk800/police.pc'
+        config = 'vehicles/etk800/854_police_A.pc'
         vehicle = Vehicle('vehicle', model='etk800', part_config=config)
         other = Vehicle('other', model='pickup')
 
