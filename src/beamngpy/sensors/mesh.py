@@ -27,6 +27,16 @@ __all__ = ['Mesh']
 
 
 class Mesh:
+    """
+    An automated 'sensor' to retrieve mesh data in real time.
+    Args:
+        name: A unique name for this mesh sensor.
+        bng: The BeamNGpy instance, with which to communicate to the simulation.
+        vehicle: The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the mesh sensor.
+        gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
+        physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
+        is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
+    """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, is_send_immediately: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
@@ -153,6 +163,7 @@ class Mesh:
         return int(self._send_sensor_request('GetMeshId', ack='CompletedGetMeshId', name=self.name)['data'])
 
     def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
+
         data: StrDict = dict(type='OpenMesh')
         data['name'] = name
         data['vid'] = vehicle.vid
@@ -265,6 +276,33 @@ class Mesh:
                 neighbors.append(k)
         return neighbors
 
+    def compute_mesh_lines(self):
+        nodes = self.get_node_positions()
+        lines1 = []
+        lines2 = []
+        lines3 = []
+        c = []
+        for _, v in self.triangles.items():
+            p1 = nodes[v[0]]
+            p2 = nodes[v[1]]
+            p3 = nodes[v[2]]
+            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
+            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
+            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
+            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
+            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
+            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
+            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
+            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
+            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
+            c.append((0.3, 0.3, 0.3, 0.1))
+            c.append((0.3, 0.3, 0.3, 0.1))
+            c.append((0.3, 0.3, 0.3, 0.1))
+        lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
+        lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
+        lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
+        return lns1, lns2, lns3
+
     def mesh_plot(self):
         nodes = self.get_node_positions()
         fig, ax = plt.subplots(2, 2)
@@ -292,29 +330,7 @@ class Mesh:
             ax[1, 0].plot(nodes[i][0], nodes[i][2],'ro')
             ax[1, 1].plot(nodes[i][1], nodes[i][2],'ro')
 
-        lines1 = []
-        lines2 = []
-        lines3 = []
-        c = []
-        for _, v in self.triangles.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            p3 = nodes[v[2]]
-            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
-            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
-            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
-            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
-            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
-            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
-            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
-            c.append((0, 0, 1, 1))
-            c.append((0, 0, 1, 1))
-            c.append((0, 0, 1, 1))
-        lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
-        lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
-        lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
+        lns1, lns2, lns3 = self.compute_mesh_lines()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -360,30 +376,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        nodes = self.get_node_positions()
-        lines1 = []
-        lines2 = []
-        lines3 = []
-        c = []
-        for _, v in self.triangles.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            p3 = nodes[v[2]]
-            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
-            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
-            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
-            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
-            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
-            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
-            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-        lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
-        lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
-        lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
+        lns1, lns2, lns3 = self.compute_mesh_lines()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -432,30 +425,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        nodes = self.get_node_positions()
-        lines1 = []
-        lines2 = []
-        lines3 = []
-        c = []
-        for _, v in self.triangles.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            p3 = nodes[v[2]]
-            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
-            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
-            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
-            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
-            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
-            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
-            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-        lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
-        lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
-        lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
+        lns1, lns2, lns3 = self.compute_mesh_lines()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -509,30 +479,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        nodes = self.get_node_positions()
-        lines1 = []
-        lines2 = []
-        lines3 = []
-        c = []
-        for _, v in self.triangles.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            p3 = nodes[v[2]]
-            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
-            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
-            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
-            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
-            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
-            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
-            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-        lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
-        lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
-        lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
+        lns1, lns2, lns3 = self.compute_mesh_lines()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -581,30 +528,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        nodes = self.get_node_positions()
-        lines1 = []
-        lines2 = []
-        lines3 = []
-        c = []
-        for _, v in self.triangles.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            p3 = nodes[v[2]]
-            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
-            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
-            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
-            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
-            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
-            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
-            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-        lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
-        lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
-        lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
+        lns1, lns2, lns3 = self.compute_mesh_lines()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -658,30 +582,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        nodes = self.get_node_positions()
-        lines1 = []
-        lines2 = []
-        lines3 = []
-        c = []
-        for _, v in self.triangles.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            p3 = nodes[v[2]]
-            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
-            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
-            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
-            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
-            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
-            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
-            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
-        lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
-        lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
-        lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
+        lns1, lns2, lns3 = self.compute_mesh_lines()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
