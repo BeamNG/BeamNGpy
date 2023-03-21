@@ -54,14 +54,25 @@ class Mesh:
         # Fetch the unique Id number (in the simulator) for this mesh sensor.  We will need this later.
         self.sensorId = self._get_mesh_id()
 
+        self.node_positions = []
+
         # Populate the list of triangles for this sensor.
-        d = self._send_sensor_request(
+        triangle_data = self._send_sensor_request(
             'GetFullTriangleData',
             ack='CompletedGetFullTriangleData',
             vid=self.vid)['data']
         self.triangles = {}
-        for key, value in d.items():
+        for key, value in triangle_data.items():
             self.triangles[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
+
+        # Populate the list of beams for this sensor.
+        beam_data = self._send_sensor_request(
+            'GetBeamData',
+            ack='CompletedGetBeamData',
+            vid=self.vid)['data']
+        self.beams = {}
+        for key, value in beam_data.items():
+            self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
 
         self.num_nodes = self.get_num_nodes()
 
@@ -94,16 +105,16 @@ class Mesh:
             A dictionary containing the sensor readings data.
         """
         # Send and receive a request for readings data from this sensor.
-        readings_data = []
+        self.node_positions = []
         if self.is_send_immediately:
             # Get the most-recent single reading from vlua.
-            readings_data = self._poll_mesh_VE()
+            self.node_positions = self._poll_mesh_VE()
         else:
             # Get the bulk data from ge lua.
-            readings_data = self._poll_mesh_GE()
+            self.node_positions = self._poll_mesh_GE()
 
         self.logger.debug('Mesh - sensor readings received from simulation: 'f'{self.name}')
-        return readings_data
+        return self.node_positions
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -203,16 +214,7 @@ class Mesh:
         return mesh
 
     def get_node_positions(self):
-        d = self._send_sensor_request(
-            'GetNodePositions',
-            ack='CompletedGetNodePositions',
-            vid=self.vid)['data']
-        nodes = {}
-        ctr = 0
-        for i in range(0, len(d), 3):
-            nodes[ctr] = [d[i], d[i + 1], d[i + 2]]
-            ctr = ctr + 1
-        return nodes
+        return self.node_positions
 
     def get_closest_mesh_point_to_point(self, point):
         return self._send_sensor_request(
@@ -276,27 +278,25 @@ class Mesh:
                 neighbors.append(k)
         return neighbors
 
-    def compute_mesh_lines(self):
-        nodes = self.get_node_positions()
+    def convert_node_indices_to_int(self):
+        raw = self.node_positions[0]['nodes']
+        nodes = {}
+        for k, v in raw.items():
+            nodes[int(k)] = v
+        return nodes
+
+    def compute_beam_line_segments(self):
+        nodes = self.convert_node_indices_to_int()
         lines1 = []
         lines2 = []
         lines3 = []
         c = []
-        for _, v in self.triangles.items():
+        for _, v in self.beams.items():
             p1 = nodes[v[0]]
             p2 = nodes[v[1]]
-            p3 = nodes[v[2]]
-            lines1.append([(p1[0], p1[1]), (p2[0], p2[1])])
-            lines1.append([(p2[0], p2[1]), (p3[0], p3[1])])
-            lines1.append([(p1[0], p1[1]), (p3[0], p3[1])])
-            lines2.append([(p1[0], p1[2]), (p2[0], p2[2])])
-            lines2.append([(p2[0], p2[2]), (p3[0], p3[2])])
-            lines2.append([(p1[0], p1[2]), (p3[0], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p2[1], p2[2])])
-            lines3.append([(p2[1], p2[2]), (p3[1], p3[2])])
-            lines3.append([(p1[1], p1[2]), (p3[1], p3[2])])
-            c.append((0.3, 0.3, 0.3, 0.1))
-            c.append((0.3, 0.3, 0.3, 0.1))
+            lines1.append([(p1['pos'][0], p1['pos'][1]), (p2['pos'][0], p2['pos'][1])])
+            lines2.append([(p1['pos'][0], p1['pos'][2]), (p2['pos'][0], p2['pos'][2])])
+            lines3.append([(p1['pos'][1], p1['pos'][2]), (p2['pos'][1], p2['pos'][2])])
             c.append((0.3, 0.3, 0.3, 0.1))
         lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
         lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
@@ -304,7 +304,7 @@ class Mesh:
         return lns1, lns2, lns3
 
     def mesh_plot(self):
-        nodes = self.get_node_positions()
+        nodes = self.convert_node_indices_to_int()
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -326,11 +326,11 @@ class Mesh:
         ax[1, 1].set_ylabel("z")
         ax[0, 1].axis('off')
         for i in range(len(nodes)):
-            ax[0, 0].plot(nodes[i][0], nodes[i][1],'ro')
-            ax[1, 0].plot(nodes[i][0], nodes[i][2],'ro')
-            ax[1, 1].plot(nodes[i][1], nodes[i][2],'ro')
+            ax[0, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][1],'ro')
+            ax[1, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][2],'ro')
+            ax[1, 1].plot(nodes[i]['pos'][1], nodes[i]['pos'][2],'ro')
 
-        lns1, lns2, lns3 = self.compute_mesh_lines()
+        lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -376,7 +376,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        lns1, lns2, lns3 = self.compute_mesh_lines()
+        lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -425,7 +425,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        lns1, lns2, lns3 = self.compute_mesh_lines()
+        lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -479,7 +479,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        lns1, lns2, lns3 = self.compute_mesh_lines()
+        lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -528,7 +528,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        lns1, lns2, lns3 = self.compute_mesh_lines()
+        lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
@@ -582,7 +582,7 @@ class Mesh:
         s3 = ax[1, 1].scatter(y, z, s=circle_size, c=colors, cmap=cmap)
         fig.colorbar(s1)
 
-        lns1, lns2, lns3 = self.compute_mesh_lines()
+        lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
         ax[1, 0].add_collection(lns2)
         ax[1, 1].add_collection(lns3)
