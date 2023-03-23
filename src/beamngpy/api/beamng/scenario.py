@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from beamngpy.logging import BNGError, BNGValueError
 from beamngpy.scenario import Scenario, ScenarioObject
@@ -8,6 +8,9 @@ from beamngpy.scenario.level import Level
 from beamngpy.types import Float3, Quat, StrDict
 
 from .base import Api
+
+if TYPE_CHECKING:
+    from beamngpy.vehicle import Vehicle
 
 
 class ScenarioApi(Api):
@@ -304,3 +307,20 @@ class ScenarioApi(Api):
                                   **obj['options'])
             ret.append(sobj)
         return ret
+
+    def get_vehicle(self, vehicle_id: str) -> Vehicle | None:
+        """
+        Retrieves the vehicle with the given ID from the currently loaded scenario.
+
+        Args:
+            vehicle_id: The ID of the vehicle to find.
+
+        Returns:
+            The :class:`.Vehicle` with the given ID. None if it wasn't found.
+        """
+        scenario = self._beamng._scenario
+        if not scenario:
+            scenario = self.get_current()
+            scenario._load_existing_vehicles()
+
+        return scenario.get_vehicle(vehicle_id)
