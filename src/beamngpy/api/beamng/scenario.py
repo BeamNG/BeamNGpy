@@ -144,20 +144,24 @@ class ScenarioApi(Api):
         resp = self._send(data).recv('ScenarioName')
         return resp['name']
 
-    def load(self, scenario: Scenario) -> None:
+    def load(self, scenario: Scenario, precompile_shaders: bool = True) -> None:
         """
         Loads the given scenario in the simulation and returns once loading
         is finished.
 
         Args:
             scenario: The scenario to load.
+            precompile_shaders: Whether the shaders should be compiled before the start of the scenario.
+                                If False, the first load of a map will take a longer time, but disabling
+                                the precompilation can lead to issues with the :class:`Camera` sensor.
+                                Defaults to True.
         """
         # clean up the vehicle connections if the `scenario` object is reused multiple times
         for vehicle in scenario.vehicles.values():
             if vehicle.connection:
                 vehicle.disconnect()
 
-        data = {'type': 'LoadScenario', 'path': scenario.path}
+        data = {'type': 'LoadScenario', 'path': scenario.path, 'precompileShaders': precompile_shaders}
         self._send(data).ack('MapLoaded')
         self._logger.info('Loaded map.')
         self._beamng._scenario = scenario
