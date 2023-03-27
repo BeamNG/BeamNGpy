@@ -8,6 +8,9 @@ from beamngpy.types import StrDict
 
 from .communication_utils import send_sensor_request, set_sensor
 
+import beamngpy.circle as crc
+import beamngpy.cubic as cub
+
 import math
 import numpy as np
 
@@ -18,118 +21,12 @@ import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
 
 import seaborn as sns
-
-sns.set()  # Let seaborn apply better styling to all matplotlib graphs
+sns.set()
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
 __all__ = ['Opendrive_Exporter']
-
-class Circle:
-    def __init__(self, x, y, r, dir):
-        self.x = x                                                      # Center (x, y).
-        self.y = y
-        self.r = r                                                      # Radius.
-        self.dir = dir                                                  # Direction of travel around circle { 1 = clockwise, -1 = anti-clockwise }.
-        self.circumference = 2 * math.pi * self.r                       # Circumference.
-        self.k = dir / max(r, 1e-24)                                    # Curvature.
-
-    def _mag(self, dx, dy) -> float:
-        return math.sqrt(dx * dx + dy * dy)                             # Magnitude.
-
-    def _dot(self, x1, y1, x2, y2) -> float:                            # Dot product.
-        return x1 * x2 + y1 * y2
-
-    def _norm1(self, x1, y1, x2, y2) -> float:
-        dx = x2 - x1
-        dy = y2 - y1
-        return dx * dx + dy * dy                                        # L^1 norm.
-
-    def _norm2(self, x1, y1, x2, y2) -> float:
-        return self._mag(x2 - x1, y2 - y1)                              # L^2 norm.
-
-    def _normalize(self, dx, dy) -> list[float]:                        # Normalize a vector.
-        mag = self._mag(dx, dy)
-        mag_recip = 1.0 / mag
-        return [dx * mag_recip, dy * mag_recip]
-
-    def arc_length(self, x1, y1, x2, y2) -> float:                      # Shortest arc-length between two points on a circle.
-        v1 = self._normalize(x1 - self.x, y1 - self.y)
-        v2 = self._normalize(x2 - self.x, y2 - self.y)
-        short_angle = math.acos(self._dot(v1[0], v1[1], v2[0], v2[1]))
-        return (short_angle / (2.0 * math.pi)) * self.circumference
-
-    def hdg(self, x1, y1, x_next, y_next) -> float:
-        vx = -(y1 - self.y)                                             # Vector perpendicular to radial.
-        vy = x1 - self.x
-        mag = self._mag(vx, vy)
-        nx = vx / mag                                                   # Normalised.
-        ny = vy / mag
-        ex1 = nx * 1e-5                                                 # Epsilon-lengthed vector.
-        ey1 = ny * 1e-5
-        d1 = self._norm1(x1 + ex1, y1 + ey1, x_next, y_next)            # Distances between points along normal from p1, to p2.
-        d2 = self._norm1(x1 - ex1, y1 - ey1, x_next, y_next)
-        if d1 < d2:                                                     # Choose the normal which points closest to next point, p2.
-            return math.atan2(vy, vx)                                   # Compute its heading (in radians).
-        return math.atan2(-vy, -vx)
-
-    def _compute_dir(self, x1, y1, x_next, y_next) -> float:
-        vx = -(y1 - self.y)                                             # Vector perpendicular to radial.
-        vy = x1 - self.x
-        mag = self._mag(vx, vy)
-        nx = vx / mag                                                   # Normalised.
-        ny = vy / mag
-        ex1 = nx * 1e-5                                                 # Epsilon-lengthed vector.
-        ey1 = ny * 1e-5
-        d1 = self._norm1(x1 + ex1, y1 + ey1, x_next, y_next)            # Distances between points along normal from p1, to p2.
-        d2 = self._norm1(x1 - ex1, y1 - ey1, x_next, y_next)
-        if d1 < d2:                                                     # Choose the normal which points closest to next point, p2.
-            return 1.0                                                  # if the next point is further in direction 1, then direction should be flipped.
-        return -1.0
-
-    @staticmethod
-    def circle_from_3_points(x1, y1, x2, y2, x3, y3) -> tuple[Circle, bool]:
-        z1 = complex(x1, y1)
-        z2 = complex(x2, y2)
-        z3 = complex(x3, y3)
-        w = (z3 - z1) / (z2 - z1)
-        if abs(w.imag) <= 1e-12:                                        # If points are collinear, leave early (avoids complex division by zero).
-            return (Circle(0, 0, 0, 1), True)
-        c = (z2 - z1) * (w - abs(w)**2) / (2j * w.imag) + z1
-        radius = abs(z1 - c)
-        temp = Circle(c.real, c.imag, radius, 1.0)                      # A temporary circle which may have the wrong direction.
-        dir = temp._compute_dir(x1, y1, x2, y2)                         # Now determine the direction and return a circle which uses that.
-        return (Circle(c.real, c.imag, radius, dir), False)
-
-class Cubic:
-    def __init__(self, a, b, c, d):
-        self.a = a                                                              # constant term.
-        self.b = b                                                              # linear term.
-        self.c = c                                                              # quadratic term.
-        self.d = d                                                              # cubic term.
-
-    def eval(self, x) -> float:
-        x_sq = x * x
-        return self.a + (x * self.b) + (x_sq * self.c) + (x * x_sq * self.d)
-
-    def eval_upper_only(self, x) -> float:
-        x_sq = x * x
-        return self.a + (x_sq * self.c) + (x * x_sq * self.d)
-
-    def approx_length(self, x_start, x_end) -> float:
-        n = 9000                                                                # Number of subdivisions to use
-        div = (x_end - x_start) / float(n)
-        sum = 0.0
-        last = [x_start, self.eval(x_start)]
-        for i in range(n):                                                      # Evaluate the cubic at n points. Store them.
-            x = x_start + (i * div)
-            y = self.eval(x)
-            dx = x - last[0]
-            dy = y - last[1]
-            sum += math.sqrt((dx * dx) + (dy * dy))
-            last = [x, y]
-        return sum                                                              # Return the L^2 distance (approximation).
 
 class Connection:
     def __init__(self, connection_type, id, contact_point):
@@ -229,7 +126,6 @@ class Opendrive_Exporter:
                                 did_find = True
                                 break
                         if did_find == False:
-                            #print("WARNING!!  BOTH CHILDREN OF NODE ARE IN LIST", self.coords[current_path[-1]])
                             if self._collection_does_not_contain_segment(collection, current_path):
                                 collection[ctr] = current_path
                                 ctr = ctr + 1
@@ -333,7 +229,7 @@ class Opendrive_Exporter:
                     y2 = self.coords[n2][1]
                     x3 = self.coords[n3][0]
                     y3 = self.coords[n3][1]
-                    (circle, is_collinear) = Circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
+                    (circle, is_collinear) = crc.circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
                     if is_collinear == True:
                         roads.append(self.fit_line(j, j + 1, seg, x_start, y_start, x_end, y_end))  # if the circle points are collinear, fit a line instead.
                         continue
@@ -348,7 +244,7 @@ class Opendrive_Exporter:
                     y2 = self.coords[n2][1]
                     x3 = self.coords[n3][0]
                     y3 = self.coords[n3][1]
-                    (circle, is_collinear) = Circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
+                    (circle, is_collinear) = crc.circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
                     if is_collinear == True:
                         roads.append(self.fit_line(j, j + 1, seg, x_start, y_start, x_end, y_end))  # if the circle points are collinear, fit a line instead.
                         continue
@@ -364,7 +260,7 @@ class Opendrive_Exporter:
                     y2 = self.coords[n2][1]
                     x3 = self.coords[n3][0]
                     y3 = self.coords[n3][1]
-                    (pre_circle, is_pre_collinear) = Circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
+                    (pre_circle, is_pre_collinear) = crc.circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
 
                     # Get successor circle curvature (next plan value can be either be 'c0' or 'c1'). A successor value must exist, since plans cannot end on 's'.
                     post_circle = None
@@ -380,7 +276,7 @@ class Opendrive_Exporter:
                             y2 = self.coords[n2][1]
                             x3 = self.coords[n3][0]
                             y3 = self.coords[n3][1]
-                            (post_circle, is_post_collinear) = Circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
+                            (post_circle, is_post_collinear) = crc.circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
                         elif plan[j + 1] == 'c1':
                             n1 = seg[j]
                             n2 = seg[j + 1]
@@ -391,7 +287,7 @@ class Opendrive_Exporter:
                             y2 = self.coords[n2][1]
                             x3 = self.coords[n3][0]
                             y3 = self.coords[n3][1]
-                            (post_circle, is_post_collinear) = Circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
+                            (post_circle, is_post_collinear) = crc.circle.circle_from_3_points(x1, y1, x2, y2, x3, y3)
                         else:
                             print("*** ERROR ***  - successor circle not found in plan")
                     else:
@@ -432,10 +328,10 @@ class Opendrive_Exporter:
 
                     a = (slope0 + slope1 - 2.0 * (y2 / x2)) / (x2 * x2)
                     b = ((slope1 - slope0) / (2.0 * x2)) - (1.5 * a * x2)
-                    cubic = Cubic(0.0, slope0, b, a)
+                    cubic = cub.cubic(0.0, slope0, b, a)
 
                     is_end_fitted = abs(cubic.eval_upper_only(x2) - y2) < 8.0
-                    hdg = pre_circle.hdg(x_start, y_start, x_end, y_end)# - ang  # subtract angle back off the heading for OpenDrive.
+                    hdg = pre_circle.hdg(x_start, y_start, x_end, y_end)
                     length = cubic.approx_length(0.0, x2)
                     dx = x_end - x_start
                     dy = y_end - y_start
@@ -528,8 +424,8 @@ class Opendrive_Exporter:
                 elif r.type == 'spiral':
                     f.write('\t\t\t\t<spiral curvStart="' + str(r.start_k) + '" curvEnd="' + str(r.end_k) + '"/>\n')
                 elif r.type == 'cubic':
-                    aV =  str(0.0)#str(r.aU)
-                    bV = str(0.0)#r.bU)
+                    aV = str(0.0)
+                    bV = str(0.0)
                     cV = str(r.cU)
                     dV = str(r.dU)
                     aU = str(0.0)
