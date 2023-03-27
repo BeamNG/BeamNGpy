@@ -21,7 +21,7 @@ def main():
     graph = Opendrive_Exporter(bng)
     path_segments = graph.compute_path_segments()
     graph.plot_path_segments(path_segments)
-    graph.export_xodr_linear_only('test_od')
+    graph.export_xodr_curved('test_od')
 
     vehicle.ai.set_mode('span')
     for _ in range(100000):
