@@ -17,4 +17,3 @@ from .timer import Timer
 from .ultrasonic import Ultrasonic
 from .radar import Radar
 from .mesh import Mesh
-from .opendrive_exporter import Opendrive_Exporter
