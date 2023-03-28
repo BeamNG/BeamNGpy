@@ -35,8 +35,7 @@ class cubic:
 
     def eval_upper_only(self, x) -> float:
         """
-        Evaluates only the upper two terms (quadratic and cubic terms only) of this cubic polynomial, at the given value.
-        This function is used with the exporting of .xodr files.
+        Evaluates the upper two terms (quadratic and cubic terms only) of this cubic polynomial, at the given value.
 
         Args:
             x: The value at which to evaluate this cubic polynomial.
