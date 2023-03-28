@@ -2,21 +2,18 @@ from __future__ import annotations
 
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any
-
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import StrDict
-
 from beamngpy.sensors.communication_utils import send_sensor_request, set_sensor
-
-import math
+import beamngpy.vec2 as b
 
 from datetime import datetime
-
+import math
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
-
 import seaborn as sns
+
 sns.set()
 
 if TYPE_CHECKING:
@@ -24,59 +21,59 @@ if TYPE_CHECKING:
 
 __all__ = ['Opendrive_Exporter']
 
-class Connection:
-    def __init__(self, connection_type, id, contact_point):
-        self.connection_type = connection_type
-        self.id = id
-        self.contact_point = contact_point
-
 class Road:
-    def __init__(self, start, end, start_x, start_y, length, hdg, start_elevation, linear_elevation, start_width, linear_width, Cu, Du, Cv, Dv, Bu,
+    """
+    A class for road sections, for importing/exporting to OpenDrive .xodr format.
+    """
+    def __init__(self, start, end, p1, length, hdg, start_elevation, linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv,
         predecessor = None, successor = None, junction = None, contact_point = None):
         self.start = start
         self.end = end
-        self.start_x = start_x
-        self.start_y = start_y
+        self.start = p1
         self.hdg = hdg
         self.start_elevation = start_elevation
         self.linear_elevation = linear_elevation
         self.start_width = start_width
         self.linear_width = linear_width
         self.length = length
+        self.Bu = Bu
         self.Cu = Cu
         self.Du = Du
         self.Cv = Cv
         self.Dv = Dv
-        self.Bu = Bu
+        self.predecessor = predecessor
+        self.successor = successor
+        self.junction = junction
+        self.contact_point = contact_point
+
+    def update_connection_data(self, predecessor, successor, junction, contact_point):
         self.predecessor = predecessor
         self.successor = successor
         self.junction = junction
         self.contact_point = contact_point
 
 class Junction:
+    """
+    A class for storing road network junction information.
+    """
     def __init__(self, id, connection_roads, is_end_point):
         self.id = id
         self.connection_roads = connection_roads
         self.is_end_point = is_end_point
 
+class Connection:
+    """
+    A class for storing connectivity information between roads and junctions.
+    """
+    def __init__(self, connection_type, id, contact_point):
+        self.connection_type = connection_type
+        self.id = id
+        self.contact_point = contact_point
+
 class Opendrive_Exporter:
     """
-    A class for retrieving the road graph data from the simulator.
-    Args:
-        bng: The BeamNGpy instance, with which to communicate to the simulation.
+    A class for retrieving and exporting BeamNG road network data.
     """
-
-    def _normalize(self, v) -> list[float]:
-        mag_inv = 1.0 / math.sqrt(v[0] * v[0] + v[1] * v[1])
-        return [v[0] * mag_inv, v[1] * mag_inv]
-
-    def _dot(self, v1, v2) -> float:
-        return v1[0] * v2[0] + v1[1] * v2[1]
-
-    def _L2(self, a, b) -> float:
-        dx = b[0] - a[0]
-        dy = b[1] - a[1]
-        return math.sqrt(dx * dx + dy * dy)
 
     def _collection_does_not_contain_segment(self, collection, segment) -> bool:
         for _, v in collection.items():
@@ -90,27 +87,34 @@ class Opendrive_Exporter:
         return True
 
     def compute_path_segments(self) -> dict:
+        """
+        Populates a dictionary with all individual 'path segments' from the current BeamNG road network.
+        Each 'path segment' contains an ordered list of keys to the road graph, with a junction at each end, and continuing road sections in between.
+
+        Returns:
+            A dictionary of individual 'path segments' from the loaded road network, indexed by a unique Id number.
+        """
         collection = {}
         ctr = 0
         for head_key in self.graph.keys():
-            children = self.graph[head_key].keys()
-            if len(children) != 2:
-                for child_key in children:
+            successors = self.graph[head_key].keys()
+            if len(successors) != 2:
+                for child_key in successors:
                     current_path = []
                     current_path.append(head_key)
                     next_key = child_key
                     while(True):
                         current_path.append(next_key)
-                        next_children = self.graph[next_key].keys()
-                        if len(next_children) != 2:
+                        next_successors = self.graph[next_key].keys()
+                        if len(next_successors) != 2:
                             if self._collection_does_not_contain_segment(collection, current_path):
                                 collection[ctr] = current_path
                                 ctr = ctr + 1
                             break
                         did_find = False
-                        for grandchild_key in next_children:
-                            if grandchild_key not in current_path:
-                                next_key = grandchild_key
+                        for next_successor_key in next_successors:
+                            if next_successor_key not in current_path:
+                                next_key = next_successor_key
                                 did_find = True
                                 break
                         if did_find == False:
@@ -121,6 +125,13 @@ class Opendrive_Exporter:
         return collection
 
     def export_xodr(self, name):
+        """
+        Exports the road network data to OpenDrive (.xodr) format.
+        The export contains all road sections, some basic lane data, and some junction connectivity data.
+
+        Args:
+            name: The path/filename by which to save the .xodr file.
+        """
 
         # Compute all the individual path segments from the loaded map.
         path_segments = self.compute_path_segments()
@@ -135,69 +146,58 @@ class Opendrive_Exporter:
             tangents = []
             for j in range(seg_length):
                 if j == 0:
-                    pk1 = [self.coords[seg[j]][0], self.coords[seg[j]][1]]
-                    pk2 = [self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1]]
-                    numx = 0.5 * (pk2[0] - pk1[0])
-                    numy = 0.5 * (pk2[1] - pk1[1])
-                    inv_denom = 1.0 / (math.sqrt(self._L2(pk2, pk1)))
-                    tan = [numx * inv_denom, numy * inv_denom]
+                    pk1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    pk2 = b.vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
+                    num = pk2.sub(pk1).scmult(0.5)
+                    denom = math.sqrt(pk2.L2(pk1))
                 elif j == seg_length - 1:
-                    pk0 = [self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1]]
-                    pk1 = [self.coords[seg[j]][0], self.coords[seg[j]][1]]
-                    numx = 0.5 * (pk1[0] - pk0[0])
-                    numy = 0.5 * (pk1[1] - pk0[1])
-                    inv_denom = 1.0 / math.sqrt(self._L2(pk1, pk0))
-                    tan = [numx * inv_denom, numy * inv_denom]
+                    pk0 = b.vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
+                    pk1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    num = pk1.sub(pk0).scmult(0.5)
+                    denom = math.sqrt(pk1.L2(pk0))
                 else:
-                    pk0 = [self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1]]
-                    pk1 = [self.coords[seg[j]][0], self.coords[seg[j]][1]]
-                    pk2 = [self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1]]
-                    numx = 0.5 * (pk2[0] - pk0[0])
-                    numy = 0.5 * (pk2[1] - pk0[1])
-                    inv_denom = 1.0 / (math.sqrt(self._L2(pk2, pk1)) + math.sqrt(self._L2(pk1, pk0)))
-                    tan = [numx * inv_denom, numy * inv_denom]
-                tangents.append(tan)
+                    pk0 = b.vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
+                    pk1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    pk2 = b.vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
+                    num = pk2.sub(pk0).scmult(0.5)
+                    denom = math.sqrt(pk2.L2(pk1)) + math.sqrt(pk1.L2(pk0))
+                tangents.append(num.scdiv(denom))
 
             # Iterate over all sections of road in this path segment, in order.
             for j in range(seg_length - 1):
 
                 # Compute the unit (s, t) coordinate system axes for this section.
-                s = self._normalize(tangents[j])
+                s = tangents[j].normalize()
                 t = [-s[1], s[0]]
 
                 # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
                 k = j + 1
-                x1_world = self.coords[seg[j]][0]
-                y1_world = self.coords[seg[j]][1]
-                x2_world = self.coords[seg[k]][0]
-                y2_world = self.coords[seg[k]][1]
-                p1_to_p2 = [x2_world - x1_world, y2_world - y1_world]
-                x2 = self._dot(p1_to_p2, s)
-                y2 = self._dot(p1_to_p2, t)
+                p1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                p2 = b.vec2(self.coords[seg[k]][0], self.coords[seg[k]][1])
+                p2norm = p2.sub(p1)
+                x2 = p2norm.dot(s)
+                y2 = p2norm.dot(t)
 
-                # Compute the end point tangents tan2, in the (s, t) coordinate system.
-                tan2x = self._dot(tangents[k], s)
-                tan2y = self._dot(tangents[k], t)
-                tan1mag = math.sqrt(tangents[j][0] * tangents[j][0] + tangents[j][1] * tangents[j][1])
+                # Compute the end point tangent, in the (s, t) coordinate system.
+                tan = b.vec2(tangents[k].dot(s), tangents[k].dot(t))
 
                 # Compute the parametric cubic polynomial curve coefficients.
-                Cu = 3.0 * x2 - tan2x - 2.0 * tan1mag
-                Du = -2.0 * x2 + tan2x + tan1mag
-                Cv = 3.0 * y2 - tan2y
-                Dv = tan2y - 2.0 * y2
+                tan1mag = tangents[j].mag()
+                Cu = (3.0 * x2) - tan.x - (2.0 * tan1mag)
+                Du = (-2.0 * x2) + tan.x + tan1mag
+                Cv = (3.0 * y2) - tan.y
+                Dv = tan.y - (2.0 * y2)
 
                 # Create the road section.
-                hdg = math.atan2(tangents[j][1], tangents[j][0])
+                hdg = tangents[j].hdg()
                 a = seg[j]
                 b = seg[k]
                 start_width = self.widths[a]
                 end_width = self.widths[b]
-                dx = x2_world - x1_world
-                dy = y2_world - y1_world
-                line_length = math.sqrt(dx * dx + dy * dy)
+                line_length = p1.L2(p2)
                 linear_width = (end_width - start_width) / line_length
                 linear_elevation = (self.coords[b][2] - self.coords[a][2]) / line_length
-                roads.append(Road(a, b, x1_world, y1_world, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, Cu, Du, Cv, Dv, tan1mag))
+                roads.append(Road(a, b, p1, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, tan1mag, Cu, Du, Cv, Dv))
 
         # Create a map between junction key names and unique Id numbers.
         junction_map = {}
@@ -205,11 +205,11 @@ class Opendrive_Exporter:
         for i in range(len(path_segments)):
             seg = path_segments[i]
             a = seg[0]
-            if a not in junction_map:   # The first node in a path segment is a junction node. Store it if we have not already found it.
+            if a not in junction_map:                   # The first node in a path segment is a junction node. Store it if we have not already found it.
                 junction_map[a] = ctr
                 ctr = ctr + 1
             b = seg[-1]
-            if b not in junction_map:   # The last node in a path segment is also a junction node. Store it if we have not already found it.
+            if b not in junction_map:                   # The last node in a path segment is also a junction node. Store it if we have not already found it.
                 junction_map[b] = ctr
                 ctr = ctr + 1
 
@@ -234,10 +234,7 @@ class Opendrive_Exporter:
             elif r.end in junction_map:
                 junction = junction_map[r.end]
                 contact_point = 'end'
-            roads[i].predecessor = predecessor
-            roads[i].successor = successor
-            roads[i].junction = junction
-            roads[i].contact_point = contact_point
+            roads[i].update_connection_data(predecessor, successor, junction, contact_point)
 
         # Create a list of uniquely-identifiable junctions, containing all the connection road data relevant to them.
         junctions = []
@@ -254,7 +251,7 @@ class Opendrive_Exporter:
             is_end_point = len(connection_roads) == 0
             junctions.append(Junction(junction_map[k], connection_roads, is_end_point))
 
-        # Write to .xodr format (xml).
+        # Write the road network data to .xodr format (xml).
         date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         file_name = name + '.xodr'
         with open(file_name, 'w') as f:
@@ -276,16 +273,8 @@ class Opendrive_Exporter:
 
                 f.write('\t\t<type s="0.0000000000000000e+00" type="town" country="DE"/>\n')
                 f.write('\t\t<planView>\n')
-                f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.start_x) + '" y="' + str(r.start_y) + '" hdg="' + str(r.hdg) + '" length="' + str(r.length) + '">\n')
-                aU = str(0.0)
-                bU = str(r.Bu)
-                cU = str(r.Cu)
-                dU = str(r.Du)
-                aV = str(0.0)
-                bV = str(0.0)
-                cV = str(r.Cv)
-                dV = str(r.Dv)
-                f.write('\t\t\t\t<paramPoly3 aU="' + aU + '" bU="' + bU + '" cU="' + cU + '" dU="' + dU + '" aV="' + aV + '" bV="' + bV + '" cV="' + cV + '" dV="' + dV +'"/>\n')
+                f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.p1.x) + '" y="' + str(r.p1.y) + '" hdg="' + str(r.hdg) + '" length="' + str(r.length) + '">\n')
+                f.write('\t\t\t\t<paramPoly3 aU="0.0000000000000000e+00" bU="' + str(r.Bu) + '" cU="' + str(r.Cu) + '" dU="' + str(r.Du) + '" aV="0.0000000000000000e+00" bV="0.0000000000000000e+00" cV="' + str(r.Cv) + '" dV="' +str(r.Dv) +'"/>\n')
                 f.write('\t\t\t</geometry>\n')
                 f.write('\t\t</planView>\n')
 
@@ -354,6 +343,12 @@ class Opendrive_Exporter:
             f.write('</OpenDRIVE>\n')
 
     def __init__(self, bng: BeamNGpy):
+        """
+        Creates an instance of the BeamNGpy OpenDrive exporter.
+
+        Args:
+            bng: The BeamNG instance.
+        """
         self.logger = getLogger(f'{LOGGER_ID}.Road_Graph')
         self.logger.setLevel(DEBUG)
         self.bng = bng
@@ -377,6 +372,13 @@ class Opendrive_Exporter:
         set_sensor(self.bng.connection, type, **kwargs)
 
     def plot_path_segments(self, path_segments):
+        """
+        Displays the individual path segments.
+        Each junction node is highlighted in red.  Each intermediate path node is highlighted in blue.
+
+        Args:
+            path_segments: The collection of individual 'path segments' to plot.
+        """
         fig, ax = plt.subplots(figsize=(15, 15))
         px = []
         py = []
