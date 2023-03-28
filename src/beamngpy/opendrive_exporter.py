@@ -31,7 +31,7 @@ class Connection:
         self.contact_point = contact_point
 
 class Road:
-    def __init__(self, start, end, start_x, start_y, length, hdg, start_elevation, linear_elevation, start_width, linear_width, Cu, Du, Cv, Dv, tan2mag,
+    def __init__(self, start, end, start_x, start_y, length, hdg, start_elevation, linear_elevation, start_width, linear_width, Cu, Du, Cv, Dv, Bu,
         predecessor = None, successor = None, junction = None, contact_point = None):
         self.start = start
         self.end = end
@@ -47,7 +47,7 @@ class Road:
         self.Du = Du
         self.Cv = Cv
         self.Dv = Dv
-        self.tan2mag = tan2mag
+        self.Bu = Bu
         self.predecessor = predecessor
         self.successor = successor
         self.junction = junction
@@ -75,7 +75,7 @@ class Opendrive_Exporter:
 
     def _L2(self, a, b) -> float:
         dx = b[0] - a[0]
-        dy = b[1] = a[1]
+        dy = b[1] - a[1]
         return math.sqrt(dx * dx + dy * dy)
 
     def _collection_does_not_contain_segment(self, collection, segment) -> bool:
@@ -158,18 +158,6 @@ class Opendrive_Exporter:
                     tan = [numx * inv_denom, numy * inv_denom]
                 tangents.append(tan)
 
-            # Path segment/tangents test.
-            #plotx = []
-            #ploty = []
-            #fig, ax = plt.subplots(figsize=(15, 15))
-            #for j in range(seg_length):
-            #    plotx.append(self.coords[seg[j]][0])
-            #    ploty.append(self.coords[seg[j]][1])
-            #    plt.plot(plotx[-1], ploty[-1], 'ro')
-            #    ax.plot([plotx[-1], plotx[-1] + tangents[j][0]], [ploty[-1], ploty[-1] + tangents[j][1]], "-r")
-            #ax.plot(plotx, ploty, "-b")
-            #plt.show()
-
             # Iterate over all sections of road in this path segment, in order.
             for j in range(seg_length - 1):
 
@@ -187,13 +175,14 @@ class Opendrive_Exporter:
                 x2 = self._dot(p1_to_p2, s)
                 y2 = self._dot(p1_to_p2, t)
 
-                # Compute the start/end point tangents tan1, tan2, in the (s, t) coordinate system.
+                # Compute the end point tangents tan2, in the (s, t) coordinate system.
                 tan2x = self._dot(tangents[k], s)
                 tan2y = self._dot(tangents[k], t)
+                tan1mag = math.sqrt(tangents[j][0] * tangents[j][0] + tangents[j][1] * tangents[j][1])
 
                 # Compute the parametric cubic polynomial curve coefficients.
-                Cu = 3.0 * x2 - tan2x - 2.0
-                Du = -2.0 * x2 + tan2x + 1.0
+                Cu = 3.0 * x2 - tan2x - 2.0 * tan1mag
+                Du = -2.0 * x2 + tan2x + tan1mag
                 Cv = 3.0 * y2 - tan2y
                 Dv = tan2y - 2.0 * y2
 
@@ -208,8 +197,7 @@ class Opendrive_Exporter:
                 line_length = math.sqrt(dx * dx + dy * dy)
                 linear_width = (end_width - start_width) / line_length
                 linear_elevation = (self.coords[b][2] - self.coords[a][2]) / line_length
-                tan2mag = math.sqrt(tan2x * tan2x + tan2y * tan2y)
-                roads.append(Road(a, b, x1_world, y1_world, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, Cu, Du, Cv, Dv, tan2mag))
+                roads.append(Road(a, b, x1_world, y1_world, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, Cu, Du, Cv, Dv, tan1mag))
 
         # Create a map between junction key names and unique Id numbers.
         junction_map = {}
@@ -256,6 +244,8 @@ class Opendrive_Exporter:
         for k in junction_map.keys():
             connection_roads = []
             for i in range(len(roads)):
+                if k == i:
+                    continue
                 r = roads[i]
                 if k == r.start:
                     connection_roads.append(Connection('road', i, 'start'))
@@ -288,7 +278,7 @@ class Opendrive_Exporter:
                 f.write('\t\t<planView>\n')
                 f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.start_x) + '" y="' + str(r.start_y) + '" hdg="' + str(r.hdg) + '" length="' + str(r.length) + '">\n')
                 aU = str(0.0)
-                bU = str(1.0)#.tan2mag)
+                bU = str(r.Bu)
                 cU = str(r.Cu)
                 dU = str(r.Du)
                 aV = str(0.0)
