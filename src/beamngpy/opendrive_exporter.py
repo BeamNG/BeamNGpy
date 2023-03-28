@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import StrDict
 from beamngpy.sensors.communication_utils import send_sensor_request, set_sensor
-import beamngpy.vec2 as b
+from beamngpy import vec2
 
 from datetime import datetime
 import math
@@ -29,7 +29,7 @@ class Road:
         predecessor = None, successor = None, junction = None, contact_point = None):
         self.start = start
         self.end = end
-        self.start = p1
+        self.p1 = p1
         self.hdg = hdg
         self.start_elevation = start_elevation
         self.linear_elevation = linear_elevation
@@ -146,19 +146,19 @@ class Opendrive_Exporter:
             tangents = []
             for j in range(seg_length):
                 if j == 0:
-                    pk1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    pk2 = b.vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
+                    pk1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    pk2 = vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
                     num = pk2.sub(pk1).scmult(0.5)
                     denom = math.sqrt(pk2.L2(pk1))
                 elif j == seg_length - 1:
-                    pk0 = b.vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
-                    pk1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    pk0 = vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
+                    pk1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
                     num = pk1.sub(pk0).scmult(0.5)
                     denom = math.sqrt(pk1.L2(pk0))
                 else:
-                    pk0 = b.vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
-                    pk1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    pk2 = b.vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
+                    pk0 = vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
+                    pk1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    pk2 = vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
                     num = pk2.sub(pk0).scmult(0.5)
                     denom = math.sqrt(pk2.L2(pk1)) + math.sqrt(pk1.L2(pk0))
                 tangents.append(num.scdiv(denom))
@@ -168,18 +168,18 @@ class Opendrive_Exporter:
 
                 # Compute the unit (s, t) coordinate system axes for this section.
                 s = tangents[j].normalize()
-                t = [-s[1], s[0]]
+                t = vec2(-s.y, s.x)
 
                 # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
                 k = j + 1
-                p1 = b.vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                p2 = b.vec2(self.coords[seg[k]][0], self.coords[seg[k]][1])
+                p1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                p2 = vec2(self.coords[seg[k]][0], self.coords[seg[k]][1])
                 p2norm = p2.sub(p1)
                 x2 = p2norm.dot(s)
                 y2 = p2norm.dot(t)
 
                 # Compute the end point tangent, in the (s, t) coordinate system.
-                tan = b.vec2(tangents[k].dot(s), tangents[k].dot(t))
+                tan = vec2(tangents[k].dot(s), tangents[k].dot(t))
 
                 # Compute the parametric cubic polynomial curve coefficients.
                 tan1mag = tangents[j].mag()

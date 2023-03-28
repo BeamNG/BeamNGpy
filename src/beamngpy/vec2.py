@@ -6,6 +6,13 @@ class vec2:
     """
 
     def __init__(self, x, y):
+        """
+        Creates a vec2 instance.
+
+        Args:
+            x: The x component.
+            y: The y component.
+        """
         self.x = x
         self.y = y
 
