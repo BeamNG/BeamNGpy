@@ -124,7 +124,7 @@ class Opendrive_Exporter:
                             break
         return collection
 
-    def export_xodr(self, name):
+    def compute_roads(self):
         """
         Exports the road network data to OpenDrive (.xodr) format.
         The export contains all road sections, some basic lane data, and some junction connectivity data.
@@ -251,6 +251,23 @@ class Opendrive_Exporter:
             is_end_point = len(connection_roads) == 0
             junctions.append(Junction(junction_map[k], connection_roads, is_end_point))
 
+        #my_information = {'name': 'Dionysia'
+        return {'roads': roads, 'junctions': junctions}
+
+    def export_xodr(self, name):
+        """
+        Exports the road network data to OpenDrive (.xodr) format.
+        The export contains all road sections, some basic lane data, and some junction connectivity data.
+
+        Args:
+            name: The path/filename by which to save the .xodr file.
+        """
+
+        # Get the road data.
+        road_data = self.compute_roads()
+        roads = road_data['roads']
+        junctions = road_data['junctions']
+
         # Write the road network data to .xodr format (xml).
         date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         file_name = name + '.xodr'
@@ -341,6 +358,68 @@ class Opendrive_Exporter:
                 f.write('\t</junction>\n')
 
             f.write('</OpenDRIVE>\n')
+
+    def export_osm(self, name):
+        """
+        Exports the road network data to OpenStreetMap (.osm) format.
+        The export contains all road sections, some basic lane data, and some junction connectivity data.
+
+        Args:
+            name: The path/filename by which to save the .xodr file.
+        """
+
+        # Compute all the individual path segments from the loaded map.
+        path_segments = self.compute_path_segments()
+
+        # Create the nodes data: A unique list of nodes, a map from graph keys to unique node id, and bounds info.
+        scale_factor = 1.0 / 1e7 # to convert metres into reasonable lattitude/longitude values.
+        nodes = []
+        keys_to_node_map = {}
+        minlat = 1e99
+        minlon = 1e99
+        maxlat = -1e99
+        maxlon = -1e99
+        ctr = 0
+        for k, v in self.coords.items():
+            keys_to_node_map[k] = ctr
+            coord = [v[0] * scale_factor + 45.0, v[1] * scale_factor + 45.0, v[2]]
+            nodes.append(coord)
+            minlat = min(minlat, coord[0])
+            minlon = min(minlon, coord[1])
+            maxlat = max(maxlat, coord[0])
+            maxlon = max(maxlon, coord[1])
+            ctr = ctr + 1
+
+        # Create the unique list of OpenStreetMap 'ways'.
+        ways = []
+        for _, seg in path_segments.items():
+            n = []
+            for i in range(len(seg)):
+                n.append(keys_to_node_map[seg[i]])
+            ways.append(n)
+
+        # Write the road network data to .osm format (xml).
+        file_name = name + '.osm'
+        date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        with open(file_name, 'w') as f:
+            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            f.write('<osm version="0.6" generator="BeamNGPy">\n')
+            f.write('\t<bounds minlat="' + str(minlat) + '" minlon="' + str(minlon) + '" maxlat="' + str(maxlat) + '" maxlon="' + str(maxlon) + '"/>\n')
+            for i in range(len(nodes)):
+                nodeId = i + 1
+                lat = str(nodes[i][0])
+                lon = str(nodes[i][1])
+                ele = str(nodes[i][2])
+                f.write('\t<node id="' + str(nodeId) + '" lat="' + lat + '" lon="' + lon + '" ele="' + ele + '" user="BeamNG" uid="1" visible="true" version="1" changeset="1" timestamp="' + date_time + '"/>\n')
+            for i in range(len(ways)):
+                wayId = i + 1 # the OpenStreetMap Id numbers start at 1 not 0.
+                f.write('\t<way id="' + str(wayId) + '" user="BeamNG" uid="1" visible="true" version="1" changeset="1">\n')
+                seg = ways[i]
+                for j in range(len(seg)):
+                    nodeId = seg[j] + 1
+                    f.write('\t\t<nd ref="' + str(nodeId) + '"/>\n')
+                f.write('\t</way>\n')
+            f.write('</osm>\n')
 
     def __init__(self, bng: BeamNGpy):
         """
