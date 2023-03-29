@@ -365,7 +365,7 @@ class Opendrive_Exporter:
         The export contains all road sections, some basic lane data, and some junction connectivity data.
 
         Args:
-            name: The path/filename by which to save the .xodr file.
+            name: The path/filename by which to save the .osm file.
         """
 
         # Compute all the individual path segments from the loaded map.
