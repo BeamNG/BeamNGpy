@@ -1,20 +1,22 @@
 import math
 
-class vec2:
+class vec3:
     """
-    A class for storing vectors in R^2.
+    A class for storing vectors in R^3.
     """
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, z):
         """
         Creates a vec2 instance.
 
         Args:
             x: The x component.
             y: The y component.
+            z: The z component.
         """
         self.x = x
         self.y = y
+        self.z = z
 
     def add(self, b):
         """
@@ -26,7 +28,7 @@ class vec2:
         Return:
             The addition of the two vectors.
         """
-        return vec2(self.x + b.x, self.y + b.y)
+        return vec3(self.x + b.x, self.y + b.y, self.z + b.z)
 
     def sub(self, b):
         """
@@ -38,7 +40,7 @@ class vec2:
         Return:
             The subtraction of the two vectors.
         """
-        return vec2(self.x - b.x, self.y - b.y)
+        return vec3(self.x - b.x, self.y - b.y, self.z - b.y)
 
     def scmult(self, b):
         """
@@ -50,7 +52,7 @@ class vec2:
         Return:
             The vector * scalar product.
         """
-        return vec2(self.x * b, self.y * b)
+        return vec3(self.x * b, self.y * b, self.z * b)
 
     def scdiv(self, b):
         """
@@ -63,7 +65,7 @@ class vec2:
             The vector / scalar product.
         """
         inv = 1.0 / b
-        return vec2(self.x * inv, self.y * inv)
+        return vec3(self.x * inv, self.y * inv, self.z * inv)
 
     def dot(self, b) -> float:
         """
@@ -75,9 +77,9 @@ class vec2:
         Returns:
             The scalar-valued dot product.
         """
-        return self.x * b.x + self.y * b.y
+        return self.x * b.x + self.y * b.y + self.z * b.z
 
-    def cross(self, b) -> float:
+    def cross(self, b):
         """
         Computes the cross product between this vector and a given vector
 
@@ -85,9 +87,9 @@ class vec2:
             b: the given second vector with which to compute the cross product.
 
         Return:
-            The scalar valued cross product (cross products are scalar in R^2).
+            The cross product vector.
         """
-        return self.x * b.y - self.y * b.x
+        return vec3(self.y * b.z - self.z * b.y, -(self.x * b.z - self.z * b.x), self.x * b.y - self.y * b.x)
 
     def L2(self, b) -> float:
         """
@@ -101,7 +103,8 @@ class vec2:
         """
         dx = b.x - self.x
         dy = b.y - self.y
-        return math.sqrt(dx * dx + dy * dy)
+        dz = b.z - self.z
+        return math.sqrt(dx * dx + dy * dy + dz * dz)
 
     def mag(self) -> float:
         """
@@ -110,7 +113,7 @@ class vec2:
         Return:
             The magnitude (scalar) of this vector.
         """
-        return math.sqrt(self.x * self.x + self.y * self.y)
+        return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
 
     def normalize(self):
         """
@@ -120,13 +123,4 @@ class vec2:
             The normalized, unit vector.
         """
         mag_inv = 1.0 / self.mag()
-        return vec2(self.x * mag_inv, self.y * mag_inv)
-
-    def hdg(self) -> float:
-        """
-        Computes the heading angle of this vector, in radians, in range [-pi, pi].
-
-        Return:
-            The heading angle of this vector.
-        """
-        return math.atan2(self.y, self.x)
+        return vec3(self.x * mag_inv, self.y * mag_inv, self.z * mag_inv)
