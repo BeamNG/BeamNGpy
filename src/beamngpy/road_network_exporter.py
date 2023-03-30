@@ -19,11 +19,11 @@ sns.set()
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
-__all__ = ['Opendrive_Exporter']
+__all__ = ['Road_Network_Exporter']
 
 class Road:
     """
-    A class for road sections, for importing/exporting to OpenDrive .xodr format.
+    A class for road sections, for importing/exporting.
     """
     def __init__(self, start, end, p1, length, hdg, start_elevation, linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv,
         predecessor = None, successor = None, junction = None, contact_point = None):
@@ -70,7 +70,7 @@ class Connection:
         self.id = id
         self.contact_point = contact_point
 
-class Opendrive_Exporter:
+class Road_Network_Exporter:
     """
     A class for retrieving and exporting BeamNG road network data.
     """
@@ -126,11 +126,7 @@ class Opendrive_Exporter:
 
     def compute_roads(self):
         """
-        Exports the road network data to OpenDrive (.xodr) format.
-        The export contains all road sections, some basic lane data, and some junction connectivity data.
-
-        Args:
-            name: The path/filename by which to save the .xodr file.
+        Computes a collection of roads, ready to export.
         """
 
         # Compute all the individual path segments from the loaded map.

@@ -8,7 +8,7 @@ def main():
 
     bng = BeamNGpy('localhost', 64256)
     bng.open(launch=True)
-    scenario = Scenario('west_coast_usa', 'OpenDrive_Exporter_Demo', description='Exports map to OpenDrive .xodr format')
+    scenario = Scenario('west_coast_usa', 'Road Network Exporter Demo', description='Exports map data')
     vehicle = Vehicle('ego_vehicle', model='etk800', license='RED', color='Red')
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
@@ -18,14 +18,15 @@ def main():
     bng.scenario.start()
 
     # Get the road graph data for the map.
-    graph = rne.Opendrive_Exporter(bng)
+    graph = rne.Road_Network_Exporter(bng)
     path_segments = graph.compute_path_segments()
-    graph.plot_path_segments(path_segments)
-    graph.export_xodr('test_od')
+    graph.plot_path_segments(path_segments)             # Plots the road data with Matplotlib.
+    graph.export_xodr('test_od')                        # export to OpenDrive (.xodr) format.
+    #graph.export_osm('test_od')                        # export to OpenStreetMap (.osm) format.
 
     vehicle.ai.set_mode('span')
-    for _ in range(100000):
-        sleep(15)
+    for _ in range(10):
+        sleep(1.0)
 
     bng.close()
 
