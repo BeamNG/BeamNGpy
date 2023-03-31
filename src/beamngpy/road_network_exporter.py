@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import StrDict
 from beamngpy.sensors.communication_utils import send_sensor_request, set_sensor
-from beamngpy import vec2
+from beamngpy import vec3
 
 from datetime import datetime
 import math
@@ -20,6 +20,78 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
 __all__ = ['Road_Network_Exporter']
+
+class cubic:
+    """
+    A class for representing explicit cubic polynomials of the form: [ p(x) := a + b*x + c*x^2 + d*x^3 ].
+    """
+
+    def __init__(self, a, b, c, d):
+        """
+        Creates an explicit cubic polynomial
+
+        Args:
+            a: The coefficient of the constant term.
+            b: The coefficient of the linear term (multiplies x).
+            c: The coefficient of the quadratic term (multiplies x^2).
+            d: The coefficient of the cubic term (multiplies x^3).
+        """
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+
+    def eval(self, x) -> float:
+        """
+        Evaluates this cubic polynomial, at the given value.
+
+        Args:
+            x: The value at which to evaluate this cubic polynomial.
+
+        Returns:
+            The evaluation of the cubic polynomial, p(x).
+        """
+        x_sq = x * x
+        return self.a + (x * self.b) + (x_sq * self.c) + (x * x_sq * self.d)
+
+    def eval_upper_only(self, x) -> float:
+        """
+        Evaluates the upper two terms (quadratic and cubic terms only) of this cubic polynomial, at the given value.
+
+        Args:
+            x: The value at which to evaluate this cubic polynomial.
+
+        Returns:
+            The evaluation of the upper two terms of this cubic polynomial, p(x).
+        """
+        x_sq = x * x
+        return self.a + (x_sq * self.c) + (x * x_sq * self.d)
+
+    def approx_length(self, x0, x1, n=9000) -> float:
+        """
+        Computes a numerical approximation of the arc-length of this cubic polynomial.
+        The polynomial is approximated as a polyline, and the length of each subsection is summed to a total length.
+
+        Args:
+            x0: The start value in x.
+            x1: The end value in x.
+            n (optional): The number of subdivisions to use across the polynomial
+
+        Returns:
+            A numerical approximation of the arc-length of this cubic polynomial.
+        """
+        div = (x1 - x0) / float(n)
+        sum = 0.0
+        last = [x0, self.eval(x0)]
+        for i in range(n):                                                      # Evaluate the cubic at n points. Store them.
+            x = x0 + (i * div)
+            y = self.eval(x)
+            dx = x - last[0]
+            dy = y - last[1]
+            sum += math.sqrt((dx * dx) + (dy * dy))
+            last = [x, y]
+        return sum                                                              # Return the L^2 distance (approximation).
+
 
 class Road:
     """
@@ -141,56 +213,52 @@ class Road_Network_Exporter:
             # Compute the tangent vector at every node in this path segment.
             tangents = []
             for j in range(seg_length):
-                if j == 0:
-                    pk1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    pk2 = vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
-                    num = pk2.sub(pk1).scmult(0.5)
-                    denom = math.sqrt(pk2.L2(pk1))
-                elif j == seg_length - 1:
-                    pk0 = vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
-                    pk1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    num = pk1.sub(pk0).scmult(0.5)
-                    denom = math.sqrt(pk1.L2(pk0))
+                p0 = vec3(self.coords[seg[max(j - 1, 0)]][0], self.coords[seg[max(j - 1, 0)]][1])
+                p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                p2 = vec3(self.coords[seg[min(j + 1, seg_length - 1)]][0], self.coords[seg[min(j + 1, seg_length - 1)]][1])
+                d1 = math.sqrt(p0.distance(p1))
+                d2 = math.sqrt(p1.distance(p2))
+                d1, d2 = max(d1, 1e-30), d2
+                if j > 0 and j < seg_length - 1:
+                    tangents.append((p1 - p0) * (d2 / d1) - (p2 - p0) * (d2 / (d1 + d2)) + (p2 - p1))
+                elif j == 0:
+                    tangents.append(0.5 * (p2 - p1))
                 else:
-                    pk0 = vec2(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
-                    pk1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    pk2 = vec2(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
-                    num = pk2.sub(pk0).scmult(0.5)
-                    denom = math.sqrt(pk2.L2(pk1)) + math.sqrt(pk1.L2(pk0))
-                tangents.append(num.scdiv(denom))
+                    tangents.append(0.5 * (p1 - p0))
+
 
             # Iterate over all sections of road in this path segment, in order.
             for j in range(seg_length - 1):
 
                 # Compute the unit (s, t) coordinate system axes for this section.
                 s = tangents[j].normalize()
-                t = vec2(-s.y, s.x)
+                t = vec3(-s.y, s.x)
 
                 # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
                 k = j + 1
-                p1 = vec2(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                p2 = vec2(self.coords[seg[k]][0], self.coords[seg[k]][1])
-                p2norm = p2.sub(p1)
+                p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                p2 = vec3(self.coords[seg[k]][0], self.coords[seg[k]][1])
+                p2norm = p2 - p1
                 x2 = p2norm.dot(s)
                 y2 = p2norm.dot(t)
 
                 # Compute the end point tangent, in the (s, t) coordinate system.
-                tan = vec2(tangents[k].dot(s), tangents[k].dot(t))
+                tan = vec3(tangents[k].dot(s), tangents[k].dot(t))
 
                 # Compute the parametric cubic polynomial curve coefficients.
-                tan1mag = tangents[j].mag()
+                tan1mag = tangents[j].length()
                 Cu = (3.0 * x2) - tan.x - (2.0 * tan1mag)
                 Du = (-2.0 * x2) + tan.x + tan1mag
                 Cv = (3.0 * y2) - tan.y
                 Dv = tan.y - (2.0 * y2)
 
                 # Create the road section.
-                hdg = tangents[j].hdg()
+                hdg = math.atan2(tangents[j].y, tangents[j].x)
                 a = seg[j]
                 b = seg[k]
                 start_width = self.widths[a]
                 end_width = self.widths[b]
-                line_length = p1.L2(p2)
+                line_length = p1.distance(p2)
                 linear_width = (end_width - start_width) / line_length
                 linear_elevation = (self.coords[b][2] - self.coords[a][2]) / line_length
                 roads.append(Road(a, b, p1, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, tan1mag, Cu, Du, Cv, Dv))

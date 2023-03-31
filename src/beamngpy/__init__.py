@@ -10,9 +10,6 @@ import os
 from beamngpy.beamng import BeamNGpy
 from beamngpy.logging import config_logging, set_up_simple_logging
 from beamngpy.quat import angle_to_quat
-from beamngpy.circle import circle
-from beamngpy.cubic import cubic
-from beamngpy.vec2 import vec2
 from beamngpy.vec3 import vec3
 from beamngpy.scenario import Scenario, ScenarioObject, StaticObject
 from beamngpy.scenario.level import Level
