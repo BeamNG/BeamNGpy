@@ -213,19 +213,21 @@ class Road_Network_Exporter:
             # Compute the tangent vector at every node in this path segment.
             tangents = []
             for j in range(seg_length):
-                p0 = vec3(self.coords[seg[max(j - 1, 0)]][0], self.coords[seg[max(j - 1, 0)]][1])
-                p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                p2 = vec3(self.coords[seg[min(j + 1, seg_length - 1)]][0], self.coords[seg[min(j + 1, seg_length - 1)]][1])
-                d1 = math.sqrt(p0.distance(p1))
-                d2 = math.sqrt(p1.distance(p2))
-                d1, d2 = max(d1, 1e-30), d2
                 if j > 0 and j < seg_length - 1:
+                    p0 = vec3(self.coords[seg[max(j - 1, 0)]][0], self.coords[seg[max(j - 1, 0)]][1])
+                    p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    p2 = vec3(self.coords[seg[min(j + 1, seg_length - 1)]][0], self.coords[seg[min(j + 1, seg_length - 1)]][1])
+                    d1 = max(math.sqrt(p0.distance(p1)), 1e-30)
+                    d2 = math.sqrt(p1.distance(p2))
                     tangents.append((p1 - p0) * (d2 / d1) - (p2 - p0) * (d2 / (d1 + d2)) + (p2 - p1))
                 elif j == 0:
+                    p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
+                    p2 = vec3(self.coords[seg[min(j + 1, seg_length - 1)]][0], self.coords[seg[min(j + 1, seg_length - 1)]][1])
                     tangents.append(0.5 * (p2 - p1))
                 else:
+                    p0 = vec3(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
+                    p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
                     tangents.append(0.5 * (p1 - p0))
-
 
             # Iterate over all sections of road in this path segment, in order.
             for j in range(seg_length - 1):
@@ -235,33 +237,32 @@ class Road_Network_Exporter:
                 t = vec3(-s.y, s.x)
 
                 # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
-                k = j + 1
                 p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                p2 = vec3(self.coords[seg[k]][0], self.coords[seg[k]][1])
+                p2 = vec3(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
                 p2norm = p2 - p1
                 x2 = p2norm.dot(s)
                 y2 = p2norm.dot(t)
 
                 # Compute the end point tangent, in the (s, t) coordinate system.
-                tan = vec3(tangents[k].dot(s), tangents[k].dot(t))
+                tan = vec3(tangents[j + 1].dot(s), tangents[j + 1].dot(t))
 
                 # Compute the parametric cubic polynomial curve coefficients.
-                tan1mag = tangents[j].length()
-                Cu = (3.0 * x2) - tan.x - (2.0 * tan1mag)
-                Du = (-2.0 * x2) + tan.x + tan1mag
+                Bu = tangents[j].length()
+                Cu = (3.0 * x2) - tan.x - (2.0 * Bu)
+                Du = (-2.0 * x2) + tan.x + Bu
                 Cv = (3.0 * y2) - tan.y
                 Dv = tan.y - (2.0 * y2)
 
                 # Create the road section.
                 hdg = math.atan2(tangents[j].y, tangents[j].x)
                 a = seg[j]
-                b = seg[k]
+                b = seg[j + 1]
                 start_width = self.widths[a]
                 end_width = self.widths[b]
                 line_length = p1.distance(p2)
                 linear_width = (end_width - start_width) / line_length
                 linear_elevation = (self.coords[b][2] - self.coords[a][2]) / line_length
-                roads.append(Road(a, b, p1, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, tan1mag, Cu, Du, Cv, Dv))
+                roads.append(Road(a, b, p1, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv))
 
         # Create a map between junction key names and unique Id numbers.
         junction_map = {}
@@ -287,10 +288,9 @@ class Road_Network_Exporter:
             for j in range(len(roads)):                 # Compute the successor and predecessor roads (for this road), if they exist.
                 if i == j:
                     continue
-                tr = roads[j]
-                if r.start == tr.end:
+                if r.start == roads[j].end:
                     predecessor = j
-                if r.end == tr.start:
+                if r.end == roads[j].start:
                     successor = j
             if r.start in junction_map:                 # Compute the junction and contact point data for this road, if they exist.
                 junction = junction_map[r.start]
