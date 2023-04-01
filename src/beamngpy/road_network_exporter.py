@@ -95,7 +95,7 @@ class cubic:
 
 class Road:
     """
-    A class for road sections, for importing/exporting.
+    A container for storing single sections of roads, which can be represented by a single geometric primitive.
     """
     def __init__(self, start, end, p1, length, hdg, start_elevation, linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv,
         predecessor = None, successor = None, junction = None, contact_point = None):
@@ -119,6 +119,9 @@ class Road:
         self.contact_point = contact_point
 
     def update_connection_data(self, predecessor, successor, junction, contact_point):
+        """
+        Updates the road/junction connectivity data associated with this Road.
+        """
         self.predecessor = predecessor
         self.successor = successor
         self.junction = junction
@@ -147,7 +150,33 @@ class Road_Network_Exporter:
     A class for retrieving and exporting BeamNG road network data.
     """
 
+    def _to_vec3(self, d):
+        """
+        Converts a dictionary of 3-element lists to a dictionary of vec3s.
+        Format of input: {'a': [1, 2, 3], 'b': [4, 5, 6], ...}
+
+        Args:
+            d: The given dictionary containing 3-element lists.
+
+        Returns:
+            The dictionary of vec3s.
+        """
+        cast = {}
+        for k, v in d.items():
+            cast[k] = vec3(v[0], v[1], v[2])
+        return cast
+
     def _collection_does_not_contain_segment(self, collection, segment) -> bool:
+        """
+        Determines if a given collection of road segments contains a given road segment.
+
+        Args:
+            collection: The given collection of segments.
+            segment: The singular given segment, to check the collection with.
+
+        Returns:
+            True if the collection contains the given segment, otherwise False.
+        """
         for _, v in collection.items():
             matches = 0
             for i in range(len(v)):
@@ -196,9 +225,63 @@ class Road_Network_Exporter:
                             break
         return collection
 
+    def _compute_tangents(self, seg):
+        """
+        Computes the tangent vector for every node in a given path segment.
+
+        Args:
+            seg: The given path segment.
+
+        Returns:
+            The tangents at every node in the given path segment.
+        """
+        tangents = []
+        seg_length = len(seg)
+        for j in range(seg_length):
+            if j > 0 and j < seg_length - 1:
+                p0 = self.coords[seg[max(j - 1, 0)]]
+                p1 = self.coords[seg[j]]
+                p2 = self.coords[seg[min(j + 1, seg_length - 1)]]
+                d1 = max(math.sqrt(p0.distance(p1)), 1e-30)
+                d2 = math.sqrt(p1.distance(p2))
+                tangents.append((p1 - p0) * (d2 / d1) - (p2 - p0) * (d2 / (d1 + d2)) + (p2 - p1))
+            elif j == 0:
+                p1 = self.coords[seg[j]]
+                p2 = self.coords[seg[min(j + 1, seg_length - 1)]]
+                tangents.append(0.5 * (p2 - p1))
+            else:
+                p0 = self.coords[seg[max(j - 1, 0)]]
+                p1 = self.coords[seg[j]]
+                tangents.append(0.5 * (p1 - p0))
+        return tangents
+
+    def _graph_key_to_junction_map(self, path_segments):
+        """
+        Create a unique map between junction keys (in the road graph data) and unique Id numbers which we attribute to each one found.
+
+        Args:
+            path_segments: The collection of path segments, traced from the road graph data.
+
+        Returns:
+            The map dictionary of unique junction Id numbers, indexed by road graph keys.
+        """
+        junction_map = {}
+        ctr = 0
+        for i in range(len(path_segments)):
+            seg = path_segments[i]
+            key1 = seg[0]
+            if key1 not in junction_map:                   # The first node in a path segment is a junction node. Store it if we have not already found it.
+                junction_map[key1] = ctr
+                ctr = ctr + 1
+            key2 = seg[-1]
+            if key2 not in junction_map:                   # The last node in a path segment is also a junction node. Store it if we have not already found it.
+                junction_map[key2] = ctr
+                ctr = ctr + 1
+        return junction_map
+
     def compute_roads(self):
         """
-        Computes a collection of roads, ready to export.
+        Computes a collection of individual roads, ready for export.
         """
 
         # Compute all the individual path segments from the loaded map.
@@ -208,37 +291,24 @@ class Road_Network_Exporter:
         roads = []
         for i in range(len(path_segments)):
             seg = path_segments[i]
-            seg_length = len(seg)
 
             # Compute the tangent vector at every node in this path segment.
-            tangents = []
-            for j in range(seg_length):
-                if j > 0 and j < seg_length - 1:
-                    p0 = vec3(self.coords[seg[max(j - 1, 0)]][0], self.coords[seg[max(j - 1, 0)]][1])
-                    p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    p2 = vec3(self.coords[seg[min(j + 1, seg_length - 1)]][0], self.coords[seg[min(j + 1, seg_length - 1)]][1])
-                    d1 = max(math.sqrt(p0.distance(p1)), 1e-30)
-                    d2 = math.sqrt(p1.distance(p2))
-                    tangents.append((p1 - p0) * (d2 / d1) - (p2 - p0) * (d2 / (d1 + d2)) + (p2 - p1))
-                elif j == 0:
-                    p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    p2 = vec3(self.coords[seg[min(j + 1, seg_length - 1)]][0], self.coords[seg[min(j + 1, seg_length - 1)]][1])
-                    tangents.append(0.5 * (p2 - p1))
-                else:
-                    p0 = vec3(self.coords[seg[j - 1]][0], self.coords[seg[j - 1]][1])
-                    p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                    tangents.append(0.5 * (p1 - p0))
+            tangents = self._compute_tangents(seg)
 
             # Iterate over all sections of road in this path segment, in order.
-            for j in range(seg_length - 1):
+            for j in range(len(seg) - 1):
+
+                # For the start and end nodes in this section of the path segment, store the keys to the road graph data structure.
+                key1 = seg[j]
+                key2 = seg[j + 1]
 
                 # Compute the unit (s, t) coordinate system axes for this section.
                 s = tangents[j].normalize()
                 t = vec3(-s.y, s.x)
 
                 # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
-                p1 = vec3(self.coords[seg[j]][0], self.coords[seg[j]][1])
-                p2 = vec3(self.coords[seg[j + 1]][0], self.coords[seg[j + 1]][1])
+                p1 = self.coords[key1]
+                p2 = self.coords[key2]
                 p2norm = p2 - p1
                 x2 = p2norm.dot(s)
                 y2 = p2norm.dot(t)
@@ -254,29 +324,17 @@ class Road_Network_Exporter:
                 Dv = tan.y - (2.0 * y2)
 
                 # Create the road section.
-                hdg = math.atan2(tangents[j].y, tangents[j].x)
-                a = seg[j]
-                b = seg[j + 1]
-                start_width = self.widths[a]
-                end_width = self.widths[b]
+                heading_angle = math.atan2(tangents[j].y, tangents[j].x)
+                start_width = self.widths[key1]
+                end_width = self.widths[key2]
                 line_length = p1.distance(p2)
-                linear_width = (end_width - start_width) / line_length
-                linear_elevation = (self.coords[b][2] - self.coords[a][2]) / line_length
-                roads.append(Road(a, b, p1, line_length, hdg, self.coords[a][2], linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv))
+                line_length_inv = 1.0 / line_length
+                linear_width = (end_width - start_width) * line_length_inv
+                linear_elevation = (p2.z - p1.z) * line_length_inv
+                roads.append(Road(key1, key2, p1, line_length, heading_angle, self.coords[key1].z, linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv))
 
         # Create a map between junction key names and unique Id numbers.
-        junction_map = {}
-        ctr = 0
-        for i in range(len(path_segments)):
-            seg = path_segments[i]
-            a = seg[0]
-            if a not in junction_map:                   # The first node in a path segment is a junction node. Store it if we have not already found it.
-                junction_map[a] = ctr
-                ctr = ctr + 1
-            b = seg[-1]
-            if b not in junction_map:                   # The last node in a path segment is also a junction node. Store it if we have not already found it.
-                junction_map[b] = ctr
-                ctr = ctr + 1
+        junction_map = self._graph_key_to_junction_map(path_segments)
 
         # Populate the remaining properties in the roads collection (successor road, predecessor road, junction, and contact point).
         for i in range(len(roads)):
@@ -285,7 +343,7 @@ class Road_Network_Exporter:
             successor = "none"
             junction = -1
             contact_point = "none"
-            for j in range(len(roads)):                 # Compute the successor and predecessor roads (for this road), if they exist.
+            for j in range(len(roads)):                 # Compute the successor and predecessor roads for this road, if they exist.
                 if i == j:
                     continue
                 if r.start == roads[j].end:
@@ -315,7 +373,6 @@ class Road_Network_Exporter:
             is_end_point = len(connection_roads) == 0
             junctions.append(Junction(junction_map[k], connection_roads, is_end_point))
 
-        #my_information = {'name': 'Dionysia'
         return {'roads': roads, 'junctions': junctions}
 
     def export_xodr(self, name):
@@ -336,15 +393,21 @@ class Road_Network_Exporter:
         date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         file_name = name + '.xodr'
         with open(file_name, 'w') as f:
+
+            # .xodr file pre-amble.
             f.write('<?xml version="1.0" standalone="yes"?>\n')
             f.write('<OpenDRIVE>\n')
             f.write('\t<header revMajor="1" revMinor="7" name="" version="1.00" date="' + date_time + '" north="0.0000000000000000e+00" south="0.0000000000000000e+00" east="0.0000000000000000e+00" west="0.0000000000000000e+00">\n')
             f.write('\t</header>\n')
 
+            # Write the road data, in order.
             for i in range(len(roads)):
                 r = roads[i]
+
+                # Road header data.
                 f.write('\t<road rule="RHT" length="' + str(r.length) + '" id="' + str(i) + '" junction="' + str(r.junction) + '" >\n')
 
+                # Road connectivity data.
                 f.write('\t\t<link>\n')
                 if r.predecessor != 'none':
                     f.write('\t\t\t<predecessor elementType="' + 'road' + '" elementId="' + str(r.predecessor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
@@ -352,6 +415,7 @@ class Road_Network_Exporter:
                     f.write('\t\t\t<successor elementType="' + 'road' + '" elementId="' + str(r.successor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
                 f.write('\t\t</link>\n')
 
+                # Geometry data.
                 f.write('\t\t<type s="0.0000000000000000e+00" type="town" country="DE"/>\n')
                 f.write('\t\t<planView>\n')
                 f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.p1.x) + '" y="' + str(r.p1.y) + '" hdg="' + str(r.hdg) + '" length="' + str(r.length) + '">\n')
@@ -359,12 +423,14 @@ class Road_Network_Exporter:
                 f.write('\t\t\t</geometry>\n')
                 f.write('\t\t</planView>\n')
 
+                # Elevation data.
                 f.write('\t\t<elevationProfile>\n')
                 f.write('\t\t\t<elevation s="0.0000000000000000e+00" a="' + str(r.start_elevation) + '" b="' + str(r.linear_elevation) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
                 f.write('\t\t</elevationProfile>\n')
                 f.write('\t\t<lateralProfile>\n')
                 f.write('\t\t</lateralProfile>\n')
 
+                # Road lane data.
                 f.write('\t\t<lanes>\n')
                 f.write('\t\t\t<laneSection s="0.0000000000000000e+00">\n')
                 f.write('\t\t\t\t<left>\n')
@@ -395,6 +461,7 @@ class Road_Network_Exporter:
                 f.write('\t\t\t</laneSection>\n')
                 f.write('\t\t</lanes>\n')
 
+                # TODO : WE DO NOT CURRENTLY MAKE USE OF THESE SECTIONS.
                 f.write('\t\t<objects>\n')
                 f.write('\t\t</objects>\n')
                 f.write('\t\t<signals>\n')
@@ -404,6 +471,7 @@ class Road_Network_Exporter:
 
                 f.write('\t</road>\n')
 
+            # Write the junction data, in order.
             for i in range(len(junctions)):
                 jct = junctions[i]
                 f.write('\t<junction name="" id="' + str(jct.id) + '" type="default">\n')
@@ -425,6 +493,7 @@ class Road_Network_Exporter:
 
     def export_osm(self, name):
         """
+        TODO: THIS EXPORTER IS A WORK IN PROGRESS AND MAY EXHIBIT SOME INCORRECT BEHAVIOUR.
         Exports the road network data to OpenStreetMap (.osm) format.
         The export contains all road sections, some basic lane data, and some junction connectivity data.
 
@@ -446,12 +515,12 @@ class Road_Network_Exporter:
         ctr = 0
         for k, v in self.coords.items():
             keys_to_node_map[k] = ctr
-            coord = [v[0] * scale_factor + 45.0, v[1] * scale_factor + 45.0, v[2]]
+            coord = vec3(v.x * scale_factor + 45.0, v.y * scale_factor + 45.0, v.z)
             nodes.append(coord)
-            minlat = min(minlat, coord[0])
-            minlon = min(minlon, coord[1])
-            maxlat = max(maxlat, coord[0])
-            maxlon = max(maxlon, coord[1])
+            minlat = min(minlat, coord.x)
+            minlon = min(minlon, coord.y)
+            maxlat = max(maxlat, coord.x)
+            maxlon = max(maxlon, coord.y)
             ctr = ctr + 1
 
         # Create the unique list of OpenStreetMap 'ways'.
@@ -499,7 +568,7 @@ class Road_Network_Exporter:
         # Get the road graph data for the current map.
         raw_data = self._send_sensor_request('GetRoadGraph', ack='CompletedGetRoadGraph')['data']
         self.graph = raw_data['graph']
-        self.coords = raw_data['coords']
+        self.coords = self._to_vec3(raw_data['coords'])
         self.widths = raw_data['widths']
         self.normals = raw_data['normals']
         self.logger.debug('Road_Graph - data retrieved.')
