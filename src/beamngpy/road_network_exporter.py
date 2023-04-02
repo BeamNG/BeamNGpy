@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 __all__ = ['Road_Network_Exporter']
 
-class cubic:
+class explicit_cubic:
     """
     A class for representing explicit cubic polynomials of the form: [ p(x) := a + b*x + c*x^2 + d*x^3 ].
     """
@@ -92,12 +92,34 @@ class cubic:
             last = [x, y]
         return sum                                                              # Return the L^2 distance (approximation).
 
+class parametric_cubic:
+    """
+    A class for representing parametric cubic polynomials of the form:
+    [ u(x) := Bu*x + Cu^2 + Du^3, v(x) := Bv*x + Cv^2 + Dv^3 ].
+    """
+
+    def __init__(self, Bu, Cu, Du, Cv, Dv):
+        """
+        Creates a parametric cubic polynomial.
+
+        Args:
+            Bu: The linear term of the equation 'u'.
+            Cu: The quadratic term of the equation 'u'.
+            Du: The cubic term of the equation 'u'.
+            Cv: The quadratic term of the equation 'v'.
+            Dv: The cubic term of the equation 'v'.
+        """
+        self.Bu = Bu
+        self.Cu = Cu
+        self.Du = Du
+        self.Cv = Cv
+        self.Dv = Dv
 
 class Road:
     """
     A container for storing single sections of roads, which can be represented by a single geometric primitive.
     """
-    def __init__(self, start, end, p1, length, hdg, start_elevation, linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv,
+    def __init__(self, start, end, p1, length, hdg, start_elevation, linear_elevation, start_width, linear_width, cubic,
         predecessor = None, successor = None, junction = None, contact_point = None):
         self.start = start
         self.end = end
@@ -108,11 +130,11 @@ class Road:
         self.start_width = start_width
         self.linear_width = linear_width
         self.length = length
-        self.Bu = Bu
-        self.Cu = Cu
-        self.Du = Du
-        self.Cv = Cv
-        self.Dv = Dv
+        self.Bu = cubic.Bu
+        self.Cu = cubic.Cu
+        self.Du = cubic.Du
+        self.Cv = cubic.Cv
+        self.Dv = cubic.Dv
         self.predecessor = predecessor
         self.successor = successor
         self.junction = junction
@@ -225,6 +247,30 @@ class Road_Network_Exporter:
                             break
         return collection
 
+    def _graph_key_to_junction_map(self, path_segments):
+        """
+        Create a unique map between junction keys (in the road graph data) and unique Id numbers which we attribute to each one found.
+
+        Args:
+            path_segments: The collection of path segments, traced from the road graph data.
+
+        Returns:
+            The map dictionary of unique junction Id numbers, indexed by road graph keys.
+        """
+        junction_map = {}
+        ctr = 0
+        for i in range(len(path_segments)):
+            seg = path_segments[i]
+            key1 = seg[0]
+            if key1 not in junction_map:                   # The first node in a path segment is a junction node. Store it if we have not already found it.
+                junction_map[key1] = ctr
+                ctr = ctr + 1
+            key2 = seg[-1]
+            if key2 not in junction_map:                   # The last node in a path segment is also a junction node. Store it if we have not already found it.
+                junction_map[key2] = ctr
+                ctr = ctr + 1
+        return junction_map
+
     def _compute_tangents(self, seg):
         """
         Computes the tangent vector for every node in a given path segment.
@@ -255,29 +301,40 @@ class Road_Network_Exporter:
                 tangents.append(0.5 * (p1 - p0))
         return tangents
 
-    def _graph_key_to_junction_map(self, path_segments):
+    def _fit_parametric_cubic(self, p1, p2, t_start, t_end):
         """
-        Create a unique map between junction keys (in the road graph data) and unique Id numbers which we attribute to each one found.
+        Computes a parametric cubic which passes through the two points p1, p2, and matches tangents t_start, t_end.
 
         Args:
-            path_segments: The collection of path segments, traced from the road graph data.
+            p1: The start point.
+            p2: The end point.
+            t_start: The tangent at the start point, to which this cubic should fit itself.
+            t_end: The tangent at the end point, to which this cubic should fit itself.
 
         Returns:
-            The map dictionary of unique junction Id numbers, indexed by road graph keys.
+            The parametric cubic polynomial coefficients.
+            Note: we ignore the two constant terms and the linear term of the 'v' equation.
         """
-        junction_map = {}
-        ctr = 0
-        for i in range(len(path_segments)):
-            seg = path_segments[i]
-            key1 = seg[0]
-            if key1 not in junction_map:                   # The first node in a path segment is a junction node. Store it if we have not already found it.
-                junction_map[key1] = ctr
-                ctr = ctr + 1
-            key2 = seg[-1]
-            if key2 not in junction_map:                   # The last node in a path segment is also a junction node. Store it if we have not already found it.
-                junction_map[key2] = ctr
-                ctr = ctr + 1
-        return junction_map
+        # Compute the unit (s, t) coordinate system axes for this section.
+        s = t_start.normalize()
+        t = vec3(-s.y, s.x)
+
+        # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
+        p2norm = p2 - p1
+        x2 = p2norm.dot(s)
+        y2 = p2norm.dot(t)
+
+        # Compute the end point tangent, in the (s, t) coordinate system.
+        tan = vec3(t_end.dot(s), t_end.dot(t))
+
+        # Compute the parametric cubic polynomial coefficients.
+        Bu = t_start.length()
+        Cu = (3.0 * x2) - tan.x - (2.0 * Bu)
+        Du = (-2.0 * x2) + tan.x + Bu
+        Cv = (3.0 * y2) - tan.y
+        Dv = tan.y - (2.0 * y2)
+
+        return parametric_cubic(Bu, Cu, Du, Cv, Dv)
 
     def compute_roads(self):
         """
@@ -298,30 +355,13 @@ class Road_Network_Exporter:
             # Iterate over all sections of road in this path segment, in order.
             for j in range(len(seg) - 1):
 
-                # For the start and end nodes in this section of the path segment, store the keys to the road graph data structure.
+                # Fetch the start and end points of this road section, and their two keys in the graph data structure.
                 key1 = seg[j]
                 key2 = seg[j + 1]
-
-                # Compute the unit (s, t) coordinate system axes for this section.
-                s = tangents[j].normalize()
-                t = vec3(-s.y, s.x)
-
-                # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
                 p1 = self.coords[key1]
                 p2 = self.coords[key2]
-                p2norm = p2 - p1
-                x2 = p2norm.dot(s)
-                y2 = p2norm.dot(t)
 
-                # Compute the end point tangent, in the (s, t) coordinate system.
-                tan = vec3(tangents[j + 1].dot(s), tangents[j + 1].dot(t))
-
-                # Compute the parametric cubic polynomial curve coefficients.
-                Bu = tangents[j].length()
-                Cu = (3.0 * x2) - tan.x - (2.0 * Bu)
-                Du = (-2.0 * x2) + tan.x + Bu
-                Cv = (3.0 * y2) - tan.y
-                Dv = tan.y - (2.0 * y2)
+                cubic = self._fit_parametric_cubic(p1, p2, tangents[j], tangents[j + 1])
 
                 # Create the road section.
                 heading_angle = math.atan2(tangents[j].y, tangents[j].x)
@@ -331,7 +371,7 @@ class Road_Network_Exporter:
                 line_length_inv = 1.0 / line_length
                 linear_width = (end_width - start_width) * line_length_inv
                 linear_elevation = (p2.z - p1.z) * line_length_inv
-                roads.append(Road(key1, key2, p1, line_length, heading_angle, self.coords[key1].z, linear_elevation, start_width, linear_width, Bu, Cu, Du, Cv, Dv))
+                roads.append(Road(key1, key2, p1, line_length, heading_angle, self.coords[key1].z, linear_elevation, start_width, linear_width, cubic))
 
         # Create a map between junction key names and unique Id numbers.
         junction_map = self._graph_key_to_junction_map(path_segments)
