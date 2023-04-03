@@ -1,25 +1,26 @@
 from __future__ import annotations
 
+import math
+from datetime import datetime
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any
-from beamngpy.logging import LOGGER_ID, BNGError
-from beamngpy.types import StrDict
-from beamngpy.sensors.communication_utils import send_sensor_request, set_sensor
-from beamngpy import vec3
 
-from datetime import datetime
-import math
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib import collections  as mc
 import seaborn as sns
+from matplotlib import collections as mc
 
-sns.set()
+from beamngpy import vec3
+from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.sensors.communication_utils import (send_sensor_request,
+                                                  set_sensor)
+from beamngpy.types import StrDict
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
 __all__ = ['Road_Network_Exporter']
+
 
 class explicit_cubic:
     """
@@ -70,14 +71,16 @@ class explicit_cubic:
         div = (x1 - x0) / float(n)
         sum = 0.0
         last = [x0, self.eval(x0)]
-        for i in range(n):                                                      # Evaluate the cubic at n points. Store them.
+        # Evaluate the cubic at n points. Store them.
+        for i in range(n):
             x = x0 + (i * div)
             y = self.eval(x)
             dx = x - last[0]
             dy = y - last[1]
             sum += math.sqrt((dx * dx) + (dy * dy))
             last = [x, y]
-        return sum                                                              # Return the L^2 distance (approximation).
+        # Return the L^2 distance (approximation).
+        return sum
 
     @staticmethod
     def fit(v_start, v_end, t_start, t_end, length):
@@ -189,7 +192,7 @@ class Road:
     A container for storing single sections of roads, which can be represented by a single geometric primitive.
     """
     def __init__(self, start, end, p1, length, hdg, start_elevation, linear_elevation, start_width, linear_width, ref_line_cubic,
-        predecessor = None, successor = None, junction = None, contact_point = None):
+                 predecessor=None, successor=None, junction=None, contact_point=None):
         self.start = start
         self.end = end
         self.p1 = p1
@@ -220,6 +223,7 @@ class Road:
         self.junction = junction
         self.contact_point = contact_point
 
+
 class Junction:
     """
     A class for storing road network junction information.
@@ -229,6 +233,7 @@ class Junction:
         connection_roads: The collection of roads which connect to this junction.
         is_end_point: A flag which indicates if this is an end-point rather than a junction (only one road connects to it).
     """
+
     def __init__(self, id, connection_roads, is_end_point):
         self.id = id
         self.connection_roads = connection_roads
@@ -245,6 +250,7 @@ class Connection_Road:
     def __init__(self, id, contact_point):
         self.id = id
         self.contact_point = contact_point
+
 
 class Road_Network_Exporter:
     """
@@ -478,7 +484,8 @@ class Road_Network_Exporter:
             successor = "none"
             junction = -1
             contact_point = "none"
-            for j in range(len(roads)):                 # Compute the successor and predecessor roads for this road, if they exist.
+            # Compute the successor and predecessor roads for this road, if they exist.
+            for j in range(len(roads)):
                 if i == j:
                     continue
                 if r.start == roads[j].end:
@@ -533,7 +540,9 @@ class Road_Network_Exporter:
             # .xodr file pre-amble.
             f.write('<?xml version="1.0" standalone="yes"?>\n')
             f.write('<OpenDRIVE>\n')
-            f.write('\t<header revMajor="1" revMinor="7" name="" version="1.00" date="' + date_time + '" north="0.0000000000000000e+00" south="0.0000000000000000e+00" east="0.0000000000000000e+00" west="0.0000000000000000e+00">\n')
+            f.write(
+                '\t<header revMajor="1" revMinor="7" name="" version="1.00" date="' + date_time +
+                '" north="0.0000000000000000e+00" south="0.0000000000000000e+00" east="0.0000000000000000e+00" west="0.0000000000000000e+00">\n')
             f.write('\t</header>\n')
 
             # Write the road data, in order.
@@ -541,28 +550,35 @@ class Road_Network_Exporter:
                 r = roads[i]
 
                 # Road header data.
-                f.write('\t<road rule="RHT" length="' + str(r.length) + '" id="' + str(i) + '" junction="' + str(r.junction) + '" >\n')
+                f.write('\t<road rule="RHT" length="' + str(r.length) + '" id="' +
+                        str(i) + '" junction="' + str(r.junction) + '" >\n')
 
                 # Road connectivity data.
                 f.write('\t\t<link>\n')
                 if r.predecessor != 'none':
-                    f.write('\t\t\t<predecessor elementType="' + 'road' + '" elementId="' + str(r.predecessor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
+                    f.write('\t\t\t<predecessor elementType="' + 'road' + '" elementId="' +
+                            str(r.predecessor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
                 if r.successor != 'none':
-                    f.write('\t\t\t<successor elementType="' + 'road' + '" elementId="' + str(r.successor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
+                    f.write('\t\t\t<successor elementType="' + 'road' + '" elementId="' +
+                            str(r.successor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
                 f.write('\t\t</link>\n')
 
                 # Geometry data.
                 Bu, Cu, Du, Cv, Dv = r.ref_line_cubic.Bu, r.ref_line_cubic.Cu, r.ref_line_cubic.Du, r.ref_line_cubic.Cv, r.ref_line_cubic.Dv
                 f.write('\t\t<type s="0.0000000000000000e+00" type="town" country="DE"/>\n')
                 f.write('\t\t<planView>\n')
-                f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.p1.x) + '" y="' + str(r.p1.y) + '" hdg="' + str(r.hdg) + '" length="' + str(r.length) + '">\n')
-                f.write('\t\t\t\t<paramPoly3 aU="0.0000000000000000e+00" bU="' + str(Bu) + '" cU="' + str(Cu) + '" dU="' + str(Du) + '" aV="0.0000000000000000e+00" bV="0.0000000000000000e+00" cV="' + str(Cv) + '" dV="' +str(Dv) +'"/>\n')
+                f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.p1.x) + '" y="' +
+                        str(r.p1.y) + '" hdg="' + str(r.hdg) + '" length="' + str(r.length) + '">\n')
+                f.write('\t\t\t\t<paramPoly3 aU="0.0000000000000000e+00" bU="' + str(r.Bu) + '" cU="' + str(r.Cu) +
+                        '" dU="' + str(r.Du) + '" aV="0.0000000000000000e+00" bV="0.0000000000000000e+00" cV="' +
+                        str(r.Cv) + '" dV="' + str(r.Dv) + '"/>\n')
                 f.write('\t\t\t</geometry>\n')
                 f.write('\t\t</planView>\n')
 
                 # Elevation data.
                 f.write('\t\t<elevationProfile>\n')
-                f.write('\t\t\t<elevation s="0.0000000000000000e+00" a="' + str(r.start_elevation) + '" b="' + str(r.linear_elevation) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
+                f.write('\t\t\t<elevation s="0.0000000000000000e+00" a="' + str(r.start_elevation) + '" b="' +
+                        str(r.linear_elevation) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
                 f.write('\t\t</elevationProfile>\n')
                 f.write('\t\t<lateralProfile>\n')
                 f.write('\t\t</lateralProfile>\n')
@@ -574,7 +590,8 @@ class Road_Network_Exporter:
                 f.write('\t\t\t\t\t<lane id="1" type="driving" level="false">\n')
                 f.write('\t\t\t\t\t\t<link>\n')
                 f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(r.start_width) + '" b="' + str(r.linear_width) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
+                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(r.start_width) +
+                        '" b="' + str(r.linear_width) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
                 f.write('\t\t\t\t\t</lane>\n')
                 f.write('\t\t\t\t</left>\n')
                 f.write('\t\t\t\t<center>\n')
@@ -592,7 +609,8 @@ class Road_Network_Exporter:
                 f.write('\t\t\t\t\t<lane id="-1" type="driving" level="false">\n')
                 f.write('\t\t\t\t\t\t<link>\n')
                 f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(r.start_width) + '" b="' + str(r.linear_width) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
+                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(r.start_width) +
+                        '" b="' + str(r.linear_width) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
                 f.write('\t\t\t\t\t</lane>\n')
                 f.write('\t\t\t\t</right>\n')
                 f.write('\t\t\t</laneSection>\n')
@@ -617,7 +635,8 @@ class Road_Network_Exporter:
                     a = jct.connection_roads[j]
                     for k in range(len(jct.connection_roads)):
                         b = jct.connection_roads[k]
-                        f.write('\t\t<connection id="' + str(ctr) + '" incomingRoad="' + str(a.id) + '" connectingRoad="' + str(b.id) + '" contactPoint="' + str(a.contact_point) + '">\n')
+                        f.write('\t\t<connection id="' + str(ctr) + '" incomingRoad="' + str(a.id) +
+                                '" connectingRoad="' + str(b.id) + '" contactPoint="' + str(a.contact_point) + '">\n')
                         if a.contact_point == 'start':
                             f.write('\t\t\t<laneLink from="-1" to="1"/>\n')
                         else:
@@ -642,7 +661,7 @@ class Road_Network_Exporter:
         path_segments = self.compute_path_segments()
 
         # Create the nodes data: A unique list of nodes, a map from graph keys to unique node id, and bounds info.
-        scale_factor = 1.0 / 1e7 # to convert metres into reasonable lattitude/longitude values.
+        scale_factor = 1.0 / 1e7  # to convert metres into reasonable lattitude/longitude values.
         nodes = []
         keys_to_node_map = {}
         minlat = 1e99
@@ -674,15 +693,17 @@ class Road_Network_Exporter:
         with open(file_name, 'w') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<osm version="0.6" generator="BeamNGPy">\n')
-            f.write('\t<bounds minlat="' + str(minlat) + '" minlon="' + str(minlon) + '" maxlat="' + str(maxlat) + '" maxlon="' + str(maxlon) + '"/>\n')
+            f.write('\t<bounds minlat="' + str(minlat) + '" minlon="' + str(minlon) +
+                    '" maxlat="' + str(maxlat) + '" maxlon="' + str(maxlon) + '"/>\n')
             for i in range(len(nodes)):
                 nodeId = i + 1
                 lat = str(nodes[i][0])
                 lon = str(nodes[i][1])
                 ele = str(nodes[i][2])
-                f.write('\t<node id="' + str(nodeId) + '" lat="' + lat + '" lon="' + lon + '" ele="' + ele + '" user="BeamNG" uid="1" visible="true" version="1" changeset="1" timestamp="' + date_time + '"/>\n')
+                f.write('\t<node id="' + str(nodeId) + '" lat="' + lat + '" lon="' + lon + '" ele="' + ele +
+                        '" user="BeamNG" uid="1" visible="true" version="1" changeset="1" timestamp="' + date_time + '"/>\n')
             for i in range(len(ways)):
-                wayId = i + 1 # the OpenStreetMap Id numbers start at 1 not 0.
+                wayId = i + 1  # the OpenStreetMap Id numbers start at 1 not 0.
                 f.write('\t<way id="' + str(wayId) + '" user="BeamNG" uid="1" visible="true" version="1" changeset="1">\n')
                 seg = ways[i]
                 for j in range(len(seg)):
@@ -728,6 +749,8 @@ class Road_Network_Exporter:
         Args:
             path_segments: The collection of individual 'path segments' to plot.
         """
+        sns.set()
+
         fig, ax = plt.subplots(figsize=(15, 15))
         px = []
         py = []

@@ -1,11 +1,13 @@
 import math
 
+
 class vec3:
     """
     A class for storing vectors in R^3. Contains functions for operating within that vector space.
     Can also be used as a vec2 class, since the z component is optional.
     """
-    def __init__(self, x, y, z = 0.0):
+
+    def __init__(self, x, y, z=0.0):
         """
         Constructs an instance of vec3.
 
@@ -68,6 +70,24 @@ class vec3:
         """
         inv = 1.0 / b
         return vec3(self.x * inv, self.y * inv, self.z * inv)
+
+    def __getitem__(self, n: int) -> float:
+        """
+        Returns the n-th element of the vector, starting by zero.
+
+        Args:
+            n: The index of the element to return.
+
+        Returns:
+            The vector element at n-th index.
+        """
+        if n == 0:
+            return self.x
+        if n == 1:
+            return self.y
+        if n == 2:
+            return self.z
+        raise IndexError(f'vec3 does not have an element at index {n}.')
 
     def dot(self, b) -> float:
         """
