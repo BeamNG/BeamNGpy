@@ -552,7 +552,7 @@ Running the BeamNG-Simulink generic interface requires three individual software
 +-------------+------------------------------------+--------------------+
 | BeamNG.tech | BeamNG-Simulink generic interface  | MATLAB & Simulink  |
 +=============+====================================+====================+
-| 0.28        | 0.1.0                              | R2023a             | 
+| 0.28        | 0.1.0                              | R2018b & later     | 
 +-------------+------------------------------------+--------------------+
 
 
