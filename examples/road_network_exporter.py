@@ -1,7 +1,8 @@
 from time import sleep
 
+import beamngpy.tools.road_network_exporter as rne
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-import beamngpy.road_network_exporter as rne
+
 
 def main():
     set_up_simple_logging()
@@ -12,7 +13,7 @@ def main():
     vehicle = Vehicle('ego_vehicle', model='etk800', license='RED', color='Red')
     scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
-    bng.settings.set_deterministic(60) # Set simulator to 60hz temporal resolution
+    bng.settings.set_deterministic(60)  # Set simulator to 60hz temporal resolution
     bng.scenario.load(scenario)
     bng.ui.hide_hud()
     bng.scenario.start()
@@ -22,7 +23,7 @@ def main():
     path_segments = graph.compute_path_segments()
     graph.plot_path_segments(path_segments)             # Plots the road data with Matplotlib.
     graph.export_xodr('test_od')                        # export to OpenDrive (.xodr) format.
-    #graph.export_osm('test_od')                        # export to OpenStreetMap (.osm) format.
+    # graph.export_osm('test_od')                        # export to OpenStreetMap (.osm) format.
 
     vehicle.ai.set_mode('span')
     for _ in range(10):
