@@ -475,9 +475,10 @@ We have introduced a memory block as shown in Figure 7.  In Simulink, memory blo
 
 
  
-.. image:: https://github.com/BeamNG/BeamNG-Simulink_generic_interface/blob/main/media/1_BeamNG_Multithreading.png
+.. image:: https://github.com/BeamNG/BeamNG-Simulink_generic_interface/blob/main/media/7_The_Memory_Block.png
   :width: 800
-  :alt: Figure 1: BeamNG Multithreaded Architecture
+  :alt: Figure 7: The Memory Block
+
 
 
 
