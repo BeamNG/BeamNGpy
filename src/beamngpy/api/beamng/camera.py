@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 from beamngpy.types import Float3, Int3, Quat, StrDict
-from beamngpy.vehicle import Vehicle
 
 from .base import Api
+
+if TYPE_CHECKING:
+    from beamngpy.vehicle import Vehicle
 
 
 class CameraApi(Api):

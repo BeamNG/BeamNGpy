@@ -232,7 +232,7 @@ Various services to control the state of the simulation are available.
    ``rosservice call /beamng_control/get_loggers``
 
 Note
-^^^^^
+^^^^
 
   - if you got a feedback `success: False` for `resume` or `pause` services, that means your `beamng_agent` node isn't active, and you will getting the following error message in the terminal of `beamng_control` node:
 

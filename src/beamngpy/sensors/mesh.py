@@ -1,23 +1,18 @@
 from __future__ import annotations
 
+import math
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any
 
-from beamngpy.logging import LOGGER_ID, BNGError
-from beamngpy.types import Float2, Float3, Int2, StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
-
-import math
-
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib import collections  as mc
-
-import numpy as np
 import seaborn as sns
+from matplotlib import collections as mc
 
-sns.set()  # Let seaborn apply better styling to all matplotlib graphs
+from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.types import StrDict
+
+from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -39,6 +34,8 @@ class Mesh:
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, is_send_immediately: bool = False):
+        sns.set()  # Let seaborn apply better styling to all matplotlib graphs
+
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
         self.logger.setLevel(DEBUG)
 
@@ -221,14 +218,14 @@ class Mesh:
             'GetClosestMeshPointToGivenPoint',
             ack='CompletedGetClosestMeshPointToGivenPoint',
             vid=self.vid,
-            point = point)['data']
+            point=point)['data']
 
     def get_closest_vehicle_triangle_to_point(self, point, is_include_wheels):
         d = self._send_sensor_request(
             'GetClosestTriangle',
             ack='CompletedGetClosestTriangle',
             vid=self.vid,
-            point = point,
+            point=point,
             includeWheelNodes=is_include_wheels)['data']
         return [int(d['nodeIndex1']), int(d['nodeIndex2']), int(d['nodeIndex3'])]
 
@@ -326,9 +323,9 @@ class Mesh:
         ax[1, 1].set_ylabel("z")
         ax[0, 1].axis('off')
         for i in range(len(nodes)):
-            ax[0, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][1],'ro')
-            ax[1, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][2],'ro')
-            ax[1, 1].plot(nodes[i]['pos'][1], nodes[i]['pos'][2],'ro')
+            ax[0, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][1], 'ro')
+            ax[1, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][2], 'ro')
+            ax[1, 1].plot(nodes[i]['pos'][1], nodes[i]['pos'][2], 'ro')
 
         lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
@@ -469,9 +466,9 @@ class Mesh:
             mag = math.sqrt(fx * fx + fy * fy + fz * fz)
             colors.append(mag)
             fac = 1/max(1, mag)
-            ax[0, 0].arrow(x[-1], y[-1], fx*fac, fy*fac, width = 0.05, ec = 'red')
-            ax[1, 0].arrow(x[-1], z[-1], fx*fac, fz*fac, width = 0.05, ec = 'red')
-            ax[1, 1].arrow(y[-1], z[-1], fy*fac, fz*fac, width = 0.05, ec = 'red')
+            ax[0, 0].arrow(x[-1], y[-1], fx*fac, fy*fac, width=0.05, ec='red')
+            ax[1, 0].arrow(x[-1], z[-1], fx*fac, fz*fac, width=0.05, ec='red')
+            ax[1, 1].arrow(y[-1], z[-1], fy*fac, fz*fac, width=0.05, ec='red')
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)
@@ -572,9 +569,9 @@ class Mesh:
             mag = math.sqrt(vx * vx + vy * vy + vz * vz)
             colors.append(mag)
             fac = 1/max(1, mag)
-            ax[0, 0].arrow(x[-1], y[-1], vx*fac, vy*fac, width = 0.05, ec = 'red')
-            ax[1, 0].arrow(x[-1], z[-1], vx*fac, vz*fac, width = 0.05, ec = 'red')
-            ax[1, 1].arrow(y[-1], z[-1], vy*fac, vz*fac, width = 0.05, ec = 'red')
+            ax[0, 0].arrow(x[-1], y[-1], vx*fac, vy*fac, width=0.05, ec='red')
+            ax[1, 0].arrow(x[-1], z[-1], vx*fac, vz*fac, width=0.05, ec='red')
+            ax[1, 1].arrow(y[-1], z[-1], vy*fac, vz*fac, width=0.05, ec='red')
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)

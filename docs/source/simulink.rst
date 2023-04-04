@@ -1,17 +1,17 @@
 BeamNG Simulink generic interface
-**********************
+*********************************
 
 
 
 About
-^^^^^^^^^^^^^
+^^^^^
 
 We are excited to announce that the highly requested feature of interfacing `BeamNG.Tech <https://documentation.beamng.com/beamng_tech>`_ in `Simulink <https://www.mathworks.com/products/simulink.html>`_ is here. The purpose of this document is to provide details/instructions on how to use the BeamNG Simulink Vehicle Systems Interface.  The user can connect the BeamNG simulator with a specially designed Simulink S-function, which will allow management of a tightly coupled two-way communication between these two environments.  The major focus here is on allowing native Simulink code to control and query a vehicle in BeamNG.  This includes various powertrain properties, including wheel torques (both drive and brake), or pedal inputs.
 
 
 Table of Contents
-^^^^^^^^^^^^^
-    -  `Features <https://beamngpy.readthedocs.io/en/latest/simulink.html#features>`_ 
+^^^^^^^^^^^^^^^^^
+    -  `Features <https://beamngpy.readthedocs.io/en/latest/simulink.html#features>`_
     -  `Execution <https://beamngpy.readthedocs.io/en/latest/simulink.html#execution>`_
     -  `Setup <https://beamngpy.readthedocs.io/en/latest/simulink.html#setup>`_
     -  `S-Function Block <https://beamngpy.readthedocs.io/en/latest/simulink.html#sfunc>`_
@@ -20,23 +20,23 @@ Table of Contents
     -  `Examples <https://beamngpy.readthedocs.io/en/latest/simulink.html#examples>`_
     -  `Compatibility <https://beamngpy.readthedocs.io/en/latest/simulink.html#compatibility>`_
     -  `License <https://beamngpy.readthedocs.io/en/latest/simulink.html#license>`_
- 
- 
+
+
 
 
 
 
 
 Features
-^^^^^^^^^^^^^
+^^^^^^^^
 
 This document provides details and contains instructions for using the prototype UDP tight-coupling system for Simulink model with the BeamNG simulator. This prototype solution demonstrates typical communication between both ends of the system.
 
 Tight-Coupling:
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 BeamNG Architecture Considerations:
-====
+===================================
 
 BeamNG operates within a multi-threaded architecture.  Graphics rendering, collision detection, UI etc. all run on separate threads.  Also running on its own thread are the physics computations.
 
@@ -44,9 +44,9 @@ Figure 1 shows a simplified overview of this, where the physics steps are shown 
 
 Wall-clock time refers to the time which has passed in the real world.  Simulation time refers to the the amount of time which has been simulated; note that we can simulate ahead in time, so the current simulation time could ahead of the current wall clock time.
 
-BeamNG has both graphics steps (frames) and physics steps:  
+BeamNG has both graphics steps (frames) and physics steps:
 
-Frames describe how often the user receives a visual update on screen, and can be measured in Frames-per-Second (FPS).  Eg for 30 FPS, we update the image on screen 30 times every second.  This quantity varies a lot of time, but is guaranteed not to drop below 20 FPS at any time.  
+Frames describe how often the user receives a visual update on screen, and can be measured in Frames-per-Second (FPS).  Eg for 30 FPS, we update the image on screen 30 times every second.  This quantity varies a lot of time, but is guaranteed not to drop below 20 FPS at any time.
 
 At the start of a frame, predictions are made as to when the next frame is expected in (wall-clock time).  Within each frame, BeamNG computes enough physics steps to take the simulation time up to this predicted wall-clock time, at which time the next frame will start to execute.
 
@@ -75,21 +75,21 @@ However, we can guarantee a fixed number of physics steps being performed on ave
 
 
 Execution:
-^^^^^^^^^^^^^
+^^^^^^^^^^
 
 In order to execute efficient coupling, the user must provide accurate measurements for two things:
 
 i) The Simulink computation time:
-====
+=================================
 
 This is the time required for Simulink to process a message sent to it from BeamNG.  If this varies, then the user could choose either the maximum or the average time and see which provides more optimal results.  if it is regular, more optimal coupling can be made between the two.
 
 The simulinkTime property in the BeamNG controller should be set to this time.
 
 ii) The UDP round-trip time:
-====
+============================
 
-This is the time required for the UDP infrastructure to send a message from the BeamNG machine to the Simulink machine, and back again.  Even if they are on the same machine, this should still be measured.  
+This is the time required for the UDP infrastructure to send a message from the BeamNG machine to the Simulink machine, and back again.  Even if they are on the same machine, this should still be measured.
 
 A standard ping test from a terminal is sufficient for this. For example, on windows:
 
@@ -105,11 +105,11 @@ When this value has been computed, the pingTime property in the BeamNG controlle
 
 
 Setting up Simulink:
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 In order to set the simulation time in Simulink to match the simulation time in BeamNG, the user should use the formula:
 
-``ceil(simulinkDt / physicsDt) * physicsDt ``
+``ceil(simulinkDt / physicsDt) * physicsDt``
 
 where simulinkDt is the Simulink computation time, physicsDt is the BeamNG physics step time (fixed at 0.0005 seconds), and ceil is the ceiling operator.
 
@@ -126,7 +126,7 @@ Figure 2 shows where this is set (highlighted in yellow).
 
 
 Coupling Case #1:
-====
+=================
 
 In Figure 3, we have the case where the Simulink computation time is similar in length to the physics steps in BeamNG.  However, the UDP round-trip time is significantly larger.
 
@@ -142,7 +142,7 @@ For efficient coupling, we need to have multiple messages sent out before any ar
 
 
 Coupling Case #2:
-====
+=================
 
 In Figure 4, we have the opposite case; the Simulink computation time is much slower than the BeamNG physics step time, but the UDP round-trip time is quite fast.
 
@@ -158,7 +158,7 @@ Here, it is optimal to have the coupled system skip sending messages on every se
 
 
 S-Function Block:
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 Let us now look at the Simulink `S-Function <https://www.mathworks.com/help/simulink/sfg/what-is-an-s-function.html>`_ in some detail.  This is the part of Simulink which handles communication with BeamNG and controls execution in SImulink appropriately.  Figure 5 gives an overview of how the S-function has been implemented.
 
@@ -172,23 +172,23 @@ Let us now look at the Simulink `S-Function <https://www.mathworks.com/help/simu
 
 
 Inputs and Outputs:
-====
+===================
 
 The BeamNG S-function block is shown in Figure 6.  The inputs are controlled with a message of fixed format, and the outputs are controlled with another message with a different fixed format.  These are both described below in detail.
 
 The input section is split into a core block (containing the core powertrain/vehicle system properties) and a custom block, which can be used by the user to bring any other desired data from BeamNG to Simulink.
 
-The output section contains eight blocks:  
+The output section contains eight blocks:
 
-The driver controls section has signals for; throttle, brake, clutch, parking brake, and steering.  
+The driver controls section has signals for; throttle, brake, clutch, parking brake, and steering.
 
-The body state section has signals for; position, velocity, acceleration, ground speed, roll, pitch, yaw, and altitude. 
+The body state section has signals for; position, velocity, acceleration, ground speed, roll, pitch, yaw, and altitude.
 
-The status section has signals for; ignition level, gear, fuel, engine load, high beam, low beam, maximum RPM, reverse, RPM, signal L, signal R, and wheel speed. 
+The status section has signals for; ignition level, gear, fuel, engine load, high beam, low beam, maximum RPM, reverse, RPM, signal L, signal R, and wheel speed.
 
-The wheel sections have signals for each wheel of the vehicle; including angular velocity, wheel speed, braking torque, propulsion torque, friction torque, and downforce. 
+The wheel sections have signals for each wheel of the vehicle; including angular velocity, wheel speed, braking torque, propulsion torque, friction torque, and downforce.
 
-Finally, the custom section (on the input and output sides) has up to 50 user-defined signals. 
+Finally, the custom section (on the input and output sides) has up to 50 user-defined signals.
 
 The S-function is designed to transfer data between Simulink and BeamNG using these fixed messaged, where every variable always exists at the same position in the message for every send/receive.  These signals are contiguous arrays of double-precision numbers.
 
@@ -203,7 +203,7 @@ The S-function is designed to transfer data between Simulink and BeamNG using th
 
 
 BeamNG → Simulink Message (Fixed Format):
-====
+=========================================
 
 
 Bank A: Core Driver Control
@@ -408,11 +408,11 @@ Bank H: Custom User Values
 
 
 
-Note: Bank H contains the custom user values.  These are values over which the user can manually choose properties in BeamNG and send them to Simulink.  With some implementation, this could involve readings from sensors, environmental information, or anything else available in BeamNG.  We leave this up to the user to decide on what to add, if required. 
+Note: Bank H contains the custom user values.  These are values over which the user can manually choose properties in BeamNG and send them to Simulink.  With some implementation, this could involve readings from sensors, environmental information, or anything else available in BeamNG.  We leave this up to the user to decide on what to add, if required.
 
 
 Simulink → BeamNG Message (Fixed Format):
-====
+=========================================
 
 Bank A: Core Vehicle Data
 
@@ -459,7 +459,7 @@ Bank B: Custom User Values
 |B50 | 61     |                              |          |
 +----+--------+------------------------------+----------+
 
-Bank B contains space to allow the user to send any properties from Simulink to BeamNG.  Such data could then be processed within BeamNG and used to control some custom code. 
+Bank B contains space to allow the user to send any properties from Simulink to BeamNG.  Such data could then be processed within BeamNG and used to control some custom code.
 
 
 
@@ -469,12 +469,12 @@ Note: for both messages, we expect all values to be double precision (8 bytes). 
 
 
 Simulink Memory Block:
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 
 We have introduced a memory block as shown in Figure 7.  In Simulink, memory blocks are used to store the previous value of a signal or variable, so that it can be accessed in a subsequent iteration of the simulation. They are necessary when modeling systems with delays or feedback loops, where different parts of the model may not process at the same time.  Memory blocks enable the storage and retrieval of values across multiple time steps, allowing for the implementation of feedback loops and the handling of delayed responses.
 
 
- 
+
 .. image:: https://github.com/BeamNG/BeamNG-Simulink_generic_interface/blob/main/media/7_The_Memory_Block.png
   :width: 800
   :alt: Figure 7: The Memory Block
@@ -487,7 +487,7 @@ Instructions:
 
 The Lua controller must be loaded in order to start the tight coupling.  We can do this with the following three steps:
 
-1. First, bring up the Lua console debug window with the ` key.  
+1. First, bring up the Lua console debug window with the ` key.
 2. The vehicle should then be selected at the bottom-left of this screen (usually this will be “BeamNG - Current Vehicle”).
 3. The following command should be typed into the command bar, to load the controller:  “controller.loadControllerExternal('tech/vehicleSystemsCoupling', 'vehicleSystemsCoupling', {})”
 
@@ -508,11 +508,11 @@ When communication has been established over the UDP send and recieve sockets (a
 
 
 Examples:
-^^^^^^^^^^^^^
+^^^^^^^^^
 
-We have provided some Simulink code examples to help the user see the BeamNG-Simulink coupling in action.  If the user wishes to execute these examples, the three control parameters described in this document (window width, send wait, send offset) should be set up appropriately.  The examples can be found in the repository, and are briefly described below: 
+We have provided some Simulink code examples to help the user see the BeamNG-Simulink coupling in action.  If the user wishes to execute these examples, the three control parameters described in this document (window width, send wait, send offset) should be set up appropriately.  The examples can be found in the repository, and are briefly described below:
 
- 
+
 
 .. image:: https://github.com/BeamNG/BeamNG-Simulink_generic_interface/blob/main/media/9_The_controller_function_of_the_Simulink_model.png
   :width: 800
@@ -522,28 +522,28 @@ We have provided some Simulink code examples to help the user see the BeamNG-Sim
 
 
 Example #1:
-====
+===========
 
-The user is able to test a basic controller to maintain the speed limit at using pedals of the vehicle.  The speed limit can be edited speed_input constant as shown in Figure 9.  Switching the vehicle control from torque to pedal by the toggle switch at the bottom of the model. 
+The user is able to test a basic controller to maintain the speed limit at using pedals of the vehicle.  The speed limit can be edited speed_input constant as shown in Figure 9.  Switching the vehicle control from torque to pedal by the toggle switch at the bottom of the model.
 
 
 
 Example #2:
-====
+===========
 
 The user is able to test a basic controller to maintain the speed limit using only the wheel torque. User can switch from the torque control by using the toggle switch at the bottom of the model in Figure 9.
 
 
 
 Example #3:
-====
+===========
 
-The user is able to test a basic controller to maintain an angle of the vehicle in the map using Desired_steering_angle_input constant as shown in Figure 9. switching the vehicle control from torque to pedal by the toggle switch at the bottom of the model. 
+The user is able to test a basic controller to maintain an angle of the vehicle in the map using Desired_steering_angle_input constant as shown in Figure 9. switching the vehicle control from torque to pedal by the toggle switch at the bottom of the model.
 
 
- 
 
-Compatibility  
+
+Compatibility
 ^^^^^^^^^^^^^
 
 Running the BeamNG-Simulink generic interface requires three individual software components, here is a list of compatible versions.
@@ -552,13 +552,13 @@ Running the BeamNG-Simulink generic interface requires three individual software
 +-------------+------------------------------------+--------------------+
 | BeamNG.tech | BeamNG-Simulink generic interface  | MATLAB & Simulink  |
 +=============+====================================+====================+
-| 0.28        | 0.1.0                              | R2018b & later     | 
+| 0.28        | 0.1.0                              | R2018b & later     |
 +-------------+------------------------------------+--------------------+
 
 
 
 License
-^^^^^^^^^^^^^
+^^^^^^^
 
 This project is licensed under the MIT License - see the `LICENSE <https://github.com/BeamNG/BeamNG-Simulink_generic_interface/blob/main/LICENSE.txt>`_ file for details.
 

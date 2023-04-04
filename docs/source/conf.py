@@ -65,7 +65,7 @@ source_suffix = ['.rst', '.md']
 napoleon_google_docstring = True
 
 # -- Autodoc options ---------------------------------------------------------
-autodoc_mock_imports = ['msgpack', 'OpenGL', 'PIL', 'matplotlib', 'numpy']
+autodoc_mock_imports = ['msgpack', 'OpenGL', 'PIL', 'matplotlib', 'numpy', 'seaborn']
 autodoc_typehints = 'both'
 autodoc_type_aliases = {
     'StrDict': 'StrDict',

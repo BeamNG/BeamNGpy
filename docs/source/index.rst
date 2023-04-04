@@ -16,6 +16,7 @@ Welcome to BeamNGpy's documentation!
    beamngpy.rst
    bngros.rst
    MATLAB.rst
+   simulink.rst
    changelog.rst
 
 
