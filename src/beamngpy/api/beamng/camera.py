@@ -80,7 +80,7 @@ class CameraApi(Api):
             custom_data: Custom data used by the specific camera mode. Defaults to None.
         """
         data: StrDict = dict(type='SetPlayerCameraMode')
-        data['vid'] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
+        data['vid'] = vehicle if isinstance(vehicle, str) else vehicle.vid
         data['mode'] = mode
         data['config'] = config
         data['customData'] = custom_data
@@ -98,7 +98,7 @@ class CameraApi(Api):
             A dictionary mapping camera mode names to configuration options.
         """
         data = dict(type='GetPlayerCameraMode')
-        data['vid'] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
+        data['vid'] = vehicle if isinstance(vehicle, str) else vehicle.vid
         resp = self._send(data).recv('PlayerCameraMode')
         return resp['cameraData']
 
