@@ -1,7 +1,7 @@
 from time import sleep
 
-import beamngpy.tools.road_network_exporter as rne
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
+from beamngpy.tools import RoadNetworkExporter
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
     bng.scenario.start()
 
     # Get the road graph data for the map.
-    graph = rne.Road_Network_Exporter(bng)
+    graph = RoadNetworkExporter(bng)
     path_segments = graph.compute_path_segments()
     graph.plot_path_segments(path_segments)             # Plots the road data with Matplotlib.
     graph.export_xodr('test_od')                        # export to OpenDrive (.xodr) format.

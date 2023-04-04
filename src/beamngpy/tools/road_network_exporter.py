@@ -19,10 +19,10 @@ from beamngpy.types import StrDict
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
-__all__ = ['Road_Network_Exporter']
+__all__ = ['RoadNetworkExporter']
 
 
-class explicit_cubic:
+class ExplicitCubic:
     """
     A class for representing explicit cubic polynomials of the form: [ p(x) := a + b*x + c*x^2 + d*x^3 ].
     """
@@ -96,7 +96,7 @@ class explicit_cubic:
         return sum
 
 
-class parametric_cubic:
+class ParametricCubic:
     """
     A class for representing parametric cubic polynomials of the form:
     [ u(x) := Bu*x + Cu^2 + Du^3, v(x) := Bv*x + Cv^2 + Dv^3 ].
@@ -178,7 +178,7 @@ class Connection:
         self.contact_point = contact_point
 
 
-class Road_Network_Exporter:
+class RoadNetworkExporter:
     """
     A class for retrieving and exporting BeamNG road network data.
     """
@@ -347,7 +347,7 @@ class Road_Network_Exporter:
         Cv = (3.0 * y2) - tan.y
         Dv = tan.y - (2.0 * y2)
 
-        return parametric_cubic(Bu, Cu, Du, Cv, Dv)
+        return ParametricCubic(Bu, Cu, Du, Cv, Dv)
 
     def compute_roads(self):
         """
