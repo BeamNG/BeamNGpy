@@ -217,7 +217,7 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [3]: mailto:licensing@beamng.gmbh
 [4]: https://store.steampowered.com/app/284160/BeamNGdrive/
 [5]: https://pypi.org/project/beamngpy/
-[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/guide.md
+[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/README.md
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
