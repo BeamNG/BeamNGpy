@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import numpy as np
 from datetime import datetime
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any
@@ -19,41 +20,47 @@ from beamngpy.types import StrDict
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
-__all__ = ['Road_Network_Exporter']
+__all__ = ['RoadNetworkExporter']
 
 
-class explicit_cubic:
+class ExplicitCubic:
     """
     A class for representing explicit cubic polynomials of the form: [ u(p) := a + b*p + c*p^2 + d*p^3 ].
     """
-
     def __init__(self, a, b, c, d):
-        """
-        Creates an explicit cubic polynomial
-
-        Args:
-            a: The coefficient of the constant term.
-            b: The coefficient of the linear term (multiplies x).
-            c: The coefficient of the quadratic term (multiplies x^2).
-            d: The coefficient of the cubic term (multiplies x^3).
-        """
         self.a = a
         self.b = b
         self.c = c
         self.d = d
 
-    def eval(self, p) -> float:
+<<<<<<< HEAD
+class parametric_cubic:
+=======
+    def eval(self, x) -> float:
         """
         Evaluates this cubic polynomial, at the given value.
 
         Args:
-            p: The value at which to evaluate this cubic polynomial.
+            x: The value at which to evaluate this cubic polynomial.
 
         Returns:
-            The evaluation of the cubic polynomial, u(p).
+            The evaluation of the cubic polynomial, p(x).
         """
-        x_sq = p * p
-        return self.a + (p * self.b) + (x_sq * self.c) + (p * x_sq * self.d)
+        x_sq = x * x
+        return self.a + (x * self.b) + (x_sq * self.c) + (x * x_sq * self.d)
+
+    def eval_upper_only(self, x) -> float:
+        """
+        Evaluates the upper two terms (quadratic and cubic terms only) of this cubic polynomial, at the given value.
+
+        Args:
+            x: The value at which to evaluate this cubic polynomial.
+
+        Returns:
+            The evaluation of the upper two terms of this cubic polynomial, p(x).
+        """
+        x_sq = x * x
+        return self.a + (x_sq * self.c) + (x * x_sq * self.d)
 
     def approx_length(self, x0, x1, n=9000) -> float:
         """
@@ -82,127 +89,37 @@ class explicit_cubic:
         # Return the L^2 distance (approximation).
         return sum
 
-    @staticmethod
-    def fit(v_start, v_end, t_start, t_end, length):
-        """
-        Computes the unique explicit cubic polynomial which passes through the two points p1, p2, and matches tangents t_start, t_end.
 
-        Args:
-            v_start: The starting value (the value at s = 0).
-            v_end: The end value (the value at s = length).
-            t_start: The tangent at the start point, to which this cubic should fit itself.
-            t_end: The tangent at the end point, to which this cubic should fit itself.
-            length: The arc length of the cubic.
-
-        Returns:
-            The explicit cubic polynomial coefficients.
-        """
-        f = v_end - v_start - length
-        g = t_end - t_start
-        return explicit_cubic(v_start, t_start, -f - g, (2.0 * f) + g)
-
-class parametric_cubic:
+class ParametricCubic:
+>>>>>>> 98d977a3fba7c0f39561d87371fecabd039717c6
     """
     A class for representing parametric cubic polynomials of the form:
     [ u(x) := Bu*x + Cu^2 + Du^3; v(x) := Bv*x + Cv^2 + Dv^3 ].
     """
-
-    def __init__(self, Bu, Cu, Du, Cv, Dv):
-        """
-        Creates a parametric cubic polynomial.
-
-        Args:
-            Bu: The linear term of the equation 'u'.
-            Cu: The quadratic term of the equation 'u'.
-            Du: The cubic term of the equation 'u'.
-            Cv: The quadratic term of the equation 'v'.
-            Dv: The cubic term of the equation 'v'.
-        """
+    def __init__(self, Au, Bu, Cu, Du, Av, Bv, Cv, Dv):
+        self.Au = Au
         self.Bu = Bu
         self.Cu = Cu
         self.Du = Du
+        self.Av = Av
+        self.Bv = Bv
         self.Cv = Cv
         self.Dv = Dv
-
-    def eval_u(self, p):
-        """
-        Evaluates the 'u' equation at the given parameter, p.
-
-        Args:
-            p: The parameter, in [0, 1].
-
-        Returns:
-            The evaluated 'u' equation.
-        """
-        p_sq = p * p
-        return (self.Bu * p) + (self.Cu * p_sq) + (self.Du * p * p_sq)
-
-    def eval_v(self, p):
-        """
-        Evaluates the 'v' equation at the given parameter, p.
-
-        Args:
-            p: The parameter, in [0, 1].
-
-        Returns:
-            The evaluated 'v' equation.
-        """
-        p_sq = p * p
-        return (self.Cv * p_sq) + (self.Dv * p * p_sq)
-
-    @staticmethod
-    def fit(p1, p2, t_start, t_end):
-        """
-        Computes the unique parametric cubic which passes through the two points p1, p2, and matches tangents t_start, t_end.
-        The parameter range will be [0, 1], to interpolate from p1 to p2.
-
-        Args:
-            p1: The start point.
-            p2: The end point.
-            t_start: The tangent at the start point, to which this cubic should fit itself.
-            t_end: The tangent at the end point, to which this cubic should fit itself.
-
-        Returns:
-            The parametric cubic polynomial coefficients.
-            Note: we ignore the two constant terms and the linear term of the 'v' equation.
-        """
-        # Compute the unit (s, t) coordinate system axes for this section.
-        s = t_start.normalize()
-        t = vec3(-s.y, s.x)
-
-        # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
-        p2norm = p2 - p1
-        x2 = p2norm.dot(s)
-        y2 = p2norm.dot(t)
-
-        # Compute the end point tangent, in the (s, t) coordinate system.
-        tan = vec3(t_end.dot(s), t_end.dot(t))
-
-        # Compute the parametric cubic polynomial coefficients.
-        Bu = t_start.length()
-        Cu = (3.0 * x2) - tan.x - (2.0 * Bu)
-        Du = (-2.0 * x2) + tan.x + Bu
-        Cv = (3.0 * y2) - tan.y
-        Dv = tan.y - (2.0 * y2)
-
-        return parametric_cubic(Bu, Cu, Du, Cv, Dv)
 
 class Road:
     """
     A container for storing single sections of roads, which can be represented by a single geometric primitive.
     """
-    def __init__(self, start, end, p1, length, hdg, start_elevation, linear_elevation, start_width, linear_width, ref_line_cubic,
+    def __init__(self, start, end, p1, length, ref_line_cubic, elev_cubic, width_cubic, super_elev_cubic,
                  predecessor=None, successor=None, junction=None, contact_point=None):
         self.start = start
         self.end = end
         self.p1 = p1
-        self.hdg = hdg
-        self.start_elevation = start_elevation
-        self.linear_elevation = linear_elevation
-        self.start_width = start_width
-        self.linear_width = linear_width
         self.length = length
         self.ref_line_cubic = ref_line_cubic
+        self.elev_cubic = elev_cubic
+        self.width_cubic = width_cubic
+        self.super_elev_cubic = super_elev_cubic
         self.predecessor = predecessor
         self.successor = successor
         self.junction = junction
@@ -223,7 +140,6 @@ class Road:
         self.junction = junction
         self.contact_point = contact_point
 
-
 class Junction:
     """
     A class for storing road network junction information.
@@ -231,13 +147,11 @@ class Junction:
     Args:
         id: The unique Id of this junction.
         connection_roads: The collection of roads which connect to this junction.
-        is_end_point: A flag which indicates if this is an end-point rather than a junction (only one road connects to it).
     """
 
-    def __init__(self, id, connection_roads, is_end_point):
+    def __init__(self, id, connection_roads):
         self.id = id
         self.connection_roads = connection_roads
-        self.is_end_point = is_end_point
 
 class Connection_Road:
     """
@@ -251,8 +165,12 @@ class Connection_Road:
         self.id = id
         self.contact_point = contact_point
 
-
+<<<<<<< HEAD
 class Road_Network_Exporter:
+=======
+
+class RoadNetworkExporter:
+>>>>>>> 98d977a3fba7c0f39561d87371fecabd039717c6
     """
     A class for retrieving and exporting BeamNG road network data.
     """
@@ -347,132 +265,216 @@ class Road_Network_Exporter:
         for i in range(len(path_segments)):
             seg = path_segments[i]
             key1 = seg[0]
-            if len(self.graph[key1].keys) < 2:              # If this node is a dead-end, we do not include it as a junction.
+            if len(self.graph[key1].keys()) < 2:                # If this node is a dead-end, we do not include it as a junction.
                 continue
-            if key1 not in junction_map:                    # The first node in a path segment is a junction node. Store it if we have not already found it.
+            if key1 not in junction_map:                        # The first node in a path segment is a junction node. Store it if we have not already found it.
                 junction_map[key1] = ctr
                 ctr = ctr + 1
             key2 = seg[-1]
-            if len(self.graph[key2].keys) < 2:              # If this node is a dead-end, we do not include it as a junction.
+            if len(self.graph[key2].keys()) < 2:                # If this node is a dead-end, we do not include it as a junction.
                 continue
-            if key2 not in junction_map:                    # The last node in a path segment is also a junction node. Store it if we have not already found it.
+            if key2 not in junction_map:                        # The last node in a path segment is also a junction node. Store it if we have not already found it.
                 junction_map[key2] = ctr
                 ctr = ctr + 1
         return junction_map
 
-    def _compute_end_point_tangent(self, j, seg, j_key, second_key, is_this_segment_start):
+    def get_2d_coords(self):
+        coords_2d = {}
+        for k, v in self.coords3d.items():
+            coords_2d[k] = vec3(v.x, v.y, 0.0)
+        return coords_2d
 
-        # Compute all the junction->road vectors at this junction, and all the second nodes in the opposing path segment (for later use).
-        j_node = self.coords[j_key]
-        angles = []
-        second_points = []
-        for k in self.graph[j_key].keys():
-            if k == second_key:
-                continue
-            second_node = self.coords[k]
-            j_to_r_vec = (second_node - j_node).normalize()
-            this_vec = (self.coords[second_key] - j_node).normalize()
-            angle = math.acos(max(min(j_to_r_vec.dot(this_vec), 1.0), -1.0))    # safety for acos.
-            angles.append(angle)
-            second_points.append(second_node)
+    def _compute_tangents(self, pn0, pn1, pn2, pn3):
+        d1, d2, d3 = max(math.sqrt(pn0.distance(pn1)), 1e-12), math.sqrt(pn1.distance(pn2)), max(math.sqrt(pn2.distance(pn3)), 1e-12)
+        m = (pn1 - pn0) / d1 + (pn0 - pn2) / (d1 + d2)
+        n = (pn1 - pn3) / (d2 + d3) + (pn3 - pn2) / d3
+        t1 = d2 * m + pn2 - pn1
+        if t1.length() < 1e-5:
+            t1 = (pn2 - pn1) * 0.5
+        t2 = d2 * n + pn2 - pn1
+        if t2.length() < 1e-5:
+            t2 = (pn2 - pn1) * 0.5
+        return [t1, t2]
 
-        # Find the best-fitting opposing path segment (the one requiring least amound of road bend).
-        # We only use this method if the opposing segment is less than 45 degrees away in angle. If no opposing segments satisfy this, we use the default.
-        seg_length = len(seg)
-        best_angle_yet = 1e24
-        best_match = 999999999
-        is_less_than_limit = False
-        for k in range(len(angles)):
-            angle_diff = abs(angles[k] - math.pi)
-            if angle_diff < min(math.pi * 0.25, best_angle_yet):
-                best_match = k
-                best_angle_yet = angle_diff
-                is_less_than_limit = True
-        if is_less_than_limit:
-            if is_this_segment_start == True:                                   # change p0 and p2 depending on which end of the segment this is.
-                p0 = second_points[best_match]
-                p2 = self.coords[seg[min(j + 1, seg_length - 1)]]
+    def _fit_cubic(self, p0, p1, p2, p3, length):
+        [tang1, tang2] = self._compute_tangents(p0 - p1, vec3(0.0, 0.0, 0.0), p2 - p1, p3 - p1)
+        dz = p2.z - p1.z
+        length_sq = length * length
+        return explicit_cubic(
+            p1.z,
+            tang1.z / length,
+            ((-2.0 * tang1.z) - tang2.z + (3.0 * dz)) / length_sq,
+            (tang1.z + tang2.z - (2.0 * dz)) / (length_sq * length))
+
+    def _find_trunk_road_tangent(self, key, std_tangent):
+        length = std_tangent.length()
+        if key in self._cached_tangents:
+            std_tan_norm = std_tangent.normalize()
+            max_so_far = -1.0
+            max_idx = 0
+            best_dot = 0.0
+            is_found = False
+            for t in range(len(self._cached_tangents[key])):
+                test_tan_norm = self._cached_tangents[key][t].normalize()
+                short_angle = std_tan_norm.dot(test_tan_norm)
+                if abs(short_angle) > max(0.707, max_so_far):
+                    max_so_far = abs(short_angle)
+                    max_idx = t
+                    best_dot = short_angle
+                    is_found = True
+            if is_found == True:
+                if best_dot < 0.0:
+                    aaa = -1.0 * self._cached_tangents[key][max_idx]
+                    return aaa.normalize() * length
+                bbb = self._cached_tangents[key][max_idx]
+                return bbb.normalize() * length
             else:
-                p0 = self.coords[seg[max(j - 1, 0)]]
-                p2 = second_points[best_match]
-            p1 = self.coords[seg[j]]
-            d1 = max(math.sqrt(p0.distance(p1)), 1e-30)
-            d2 = math.sqrt(p1.distance(p2))
-            tangent = (p1 - p0) * (d2 / d1) - (p2 - p0) * (d2 / (d1 + d2)) + (p2 - p1)
+                self._cached_tangents[key].append(std_tangent)
         else:
-            if is_this_segment_start == True:
-                p1 = self.coords[seg[j]]
-                p2 = self.coords[seg[min(j + 1, seg_length - 1)]]
-            else:
-                p1 = self.coords[seg[max(j - 1, 0)]]
-                p2 = self.coords[seg[j]]
-            tangent = 0.5 * (p2 - p1)
-        return tangent
+            self._cached_tangents[key] = [std_tangent]
+        return std_tangent
 
-    def _compute_tangents(self, seg):
-        """
-        Computes the tangent vector for every node in a given path segment.
+    def _compute_roll_angles(self, seg, i0, i1, i2, i3):
+        t0n = self.coords3d[seg[i1]] - self.coords3d[seg[i0]]
+        t1n = self.coords3d[seg[i2]] - self.coords3d[seg[i0]]
+        t2n = self.coords3d[seg[i3]] - self.coords3d[seg[i1]]
+        t3n = self.coords3d[seg[i3]] - self.coords3d[seg[i2]]
+        if t0n.length() < 1e-5:
+            t0n = self.coords3d[seg[i2]] - self.coords3d[seg[i1]]
+        if t1n.length() < 1e-5:
+            t1n = self.coords3d[seg[i2]] - self.coords3d[seg[i1]]
+        if t2n.length() < 1e-5:
+            t2n = self.coords3d[seg[i2]] - self.coords3d[seg[i1]]
+        if t3n.length() < 1e-5:
+            t3n = self.coords3d[seg[i2]] - self.coords3d[seg[i1]]
+        t0n = t0n.normalize()
+        t1n = t1n.normalize()
+        t2n = t2n.normalize()
+        t3n = t3n.normalize()
 
-        Args:
-            seg: The given path segment.
+        n0 = self.normals[seg[i0]].normalize()
+        n1 = self.normals[seg[i1]].normalize()
+        n2 = self.normals[seg[i2]].normalize()
+        n3 = self.normals[seg[i3]].normalize()
 
-        Returns:
-            The tangents at every node in the given path segment.
-        """
-        tangents = []
-        seg_length = len(seg)
-        for j in range(seg_length):
-            if j > 0 and j < seg_length - 1:
-                p0 = self.coords[seg[max(j - 1, 0)]]
-                p1 = self.coords[seg[j]]
-                p2 = self.coords[seg[min(j + 1, seg_length - 1)]]
-                d1 = max(math.sqrt(p0.distance(p1)), 1e-30)
-                d2 = math.sqrt(p1.distance(p2))
-                tangents.append((p1 - p0) * (d2 / d1) - (p2 - p0) * (d2 / (d1 + d2)) + (p2 - p1))
-            elif j == 0:
-                tangents.append(self._compute_end_point_tangent(0, seg, seg[0], seg[1], True))
-            else:
-                tangents.append(self._compute_end_point_tangent(seg_length - 1, seg, seg[-1], seg[-2], False))
-        return tangents
+        proj0 = n0 - (n0.dot(t0n)) * t0n
+        proj1 = n1 - (n1.dot(t1n)) * t1n
+        proj2 = n2 - (n2.dot(t2n)) * t2n
+        proj3 = n3 - (n3.dot(t3n)) * t3n
+
+        vertical = vec3(0.0, 0.0, 1.0)
+        ra0 = math.acos(max(min(proj0.dot(vertical), 1.0), -1.0))
+        ra1 = math.acos(max(min(proj1.dot(vertical), 1.0), -1.0))
+        ra2 = math.acos(max(min(proj2.dot(vertical), 1.0), -1.0))
+        ra3 = math.acos(max(min(proj3.dot(vertical), 1.0), -1.0))
+        if proj0.x < 0.0:
+            ra0 = ra0 * -1.0
+        if proj1.x < 0.0:
+            ra1 = ra1 * -1.0
+        if proj2.x < 0.0:
+            ra2 = ra2 * -1.0
+        if proj3.x < 0.0:
+            ra3 = ra3 * -1.0
+
+        return [ra0, ra1, ra2, ra3]
 
     def compute_roads_and_junctions(self):
         """
+<<<<<<< HEAD
         Computes a collection of individual road sections and junctions, both indexed by a unique Id.
         This function produces all the relevant data ready to be exported to OpenDrive (.xodr) format.
+=======
+        Computes a parametric cubic which passes through the two points p1, p2, and matches tangents t_start, t_end.
+
+        Args:
+            p1: The start point.
+            p2: The end point.
+            t_start: The tangent at the start point, to which this cubic should fit itself.
+            t_end: The tangent at the end point, to which this cubic should fit itself.
+
+        Returns:
+            The parametric cubic polynomial coefficients.
+            Note: we ignore the two constant terms and the linear term of the 'v' equation.
+        """
+        # Compute the unit (s, t) coordinate system axes for this section.
+        s = t_start.normalize()
+        t = vec3(-s.y, s.x)
+
+        # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
+        p2norm = p2 - p1
+        x2 = p2norm.dot(s)
+        y2 = p2norm.dot(t)
+
+        # Compute the end point tangent, in the (s, t) coordinate system.
+        tan = vec3(t_end.dot(s), t_end.dot(t))
+
+        # Compute the parametric cubic polynomial coefficients.
+        Bu = t_start.length()
+        Cu = (3.0 * x2) - tan.x - (2.0 * Bu)
+        Du = (-2.0 * x2) + tan.x + Bu
+        Cv = (3.0 * y2) - tan.y
+        Dv = tan.y - (2.0 * y2)
+
+        return ParametricCubic(Bu, Cu, Du, Cv, Dv)
+
+    def compute_roads(self):
+        """
+        Computes a collection of individual roads, ready for export.
+>>>>>>> 98d977a3fba7c0f39561d87371fecabd039717c6
         """
 
-        # Compute all the individual path segments from the loaded map.
+        # Compute all the individual path segments from the loaded map. Sort them in order of widths, descending.
         path_segments = self.compute_path_segments()
+        unsorted_path_segments = []
+        for i in range(len(path_segments)):
+            unsorted_path_segments.append(path_segments[i])
+        widths = []
+        for i in range(len(unsorted_path_segments)):
+            seg = unsorted_path_segments[i]
+            avg_width = 0.0
+            for j in range(len(seg)):
+                avg_width += self.widths[seg[j]]
+            widths.append(avg_width / len(seg))
+        sort_index = np.argsort(widths)[::-1]
 
         # Compute a uniquely-identifiable list of roads (between two nodes).
+        self._cached_tangents = {}
         roads = []
         for i in range(len(path_segments)):
-            seg = path_segments[i]
+            seg = path_segments[sort_index[i]]
+            for i1 in range(len(seg) - 1):
+                # Compute the reference line cubic equations (parametric).
+                i0, i2, i3 = max(i1 - 1, 0), i1 + 1, min(i1 + 2, len(seg) - 1)
+                seg0, seg1, seg2, seg3 = seg[i0], seg[i1], seg[i2], seg[i3]
+                p1_2d = self.coords2d[seg1]
+                pn0_2d, pn1_2d, pn2_2d, pn3_2d = self.coords2d[seg0] - p1_2d, vec3(0.0, 0.0, 0.0), self.coords2d[seg2] - p1_2d, self.coords2d[seg3] - p1_2d
+                geodesic_length_2d = pn1_2d.distance(pn2_2d)
+                [tang1, tang2] = self._compute_tangents(pn0_2d, pn1_2d, pn2_2d, pn3_2d)
+                if i1 == 0:
+                    tang1 = self._find_trunk_road_tangent(seg1, tang1)
+                if i1 == len(seg) - 2:
+                    tang2 = self._find_trunk_road_tangent(seg2, tang2)
+                coeff_C, coeff_D = (-2.0 * tang1) - tang2 + (3.0 * pn2_2d), tang1 + tang2 - (2.0 * pn2_2d)
+                ref_line_cubic = parametric_cubic(pn1_2d.x, tang1.x, coeff_C.x, coeff_D.x, pn1_2d.y, tang1.y, coeff_C.y, coeff_D.y)
 
-            # Compute the tangent vector at every node in this path segment.
-            tangents = self._compute_tangents(seg)
+                # Compute the elevation cubic equation (explicit).
+                p0_3d, p1_3d, p2_3d, p3_3d = self.coords3d[seg0], self.coords3d[seg1], self.coords3d[seg2], self.coords3d[seg3]
+                elev_cubic = self._fit_cubic(p0_3d, p1_3d, p2_3d, p3_3d, geodesic_length_2d)
 
-            # Iterate over all sections of road in this path segment, in order.
-            for j in range(len(seg) - 1):
+                # Compute the width cubic equation (explicit).
+                w0, w1, w2, w3 = self.widths[seg0], self.widths[seg1], self.widths[seg2], self.widths[seg3]
+                width_cubic = self._fit_cubic(vec3(p0_3d.x, p0_3d.y, w0), vec3(p1_3d.x, p1_3d.y, w1), vec3(p2_3d.x, p2_3d.y, w2), vec3(p3_3d.x, p3_3d.y, w3), geodesic_length_2d)
 
-                # Fetch the start and end points of this road section, and their two keys in the graph data structure.
-                key1 = seg[j]
-                key2 = seg[j + 1]
-                p1 = self.coords[key1]
-                p2 = self.coords[key2]
-
-                # Compute the parametric cubic which describes the reference line of this road section.
-                ref_line_cubic = parametric_cubic.fit(p1, p2, tangents[j], tangents[j + 1])
+                # Compute the super-elevation cubic equation (explicit).
+                [roll0, roll1, roll2, roll3] = self._compute_roll_angles(seg, i0, i1, i2, i3)
+                roll0 = math.pi / 4
+                roll1 = math.pi / 4
+                roll2 = math.pi / 4
+                roll3 = math.pi / 4
+                super_elev_cubic = self._fit_cubic(vec3(p0_3d.x, p0_3d.y, roll0), vec3(p1_3d.x, p1_3d.y, roll1), vec3(p2_3d.x, p2_3d.y, roll2), vec3(p3_3d.x, p3_3d.y, roll3), geodesic_length_2d)
 
                 # Create the road section.
-                heading_angle = math.atan2(tangents[j].y, tangents[j].x)
-                start_width = self.widths[key1]
-                end_width = self.widths[key2]
-                line_length = p1.distance(p2)
-                line_length_inv = 1.0 / line_length
-                linear_width = (end_width - start_width) * line_length_inv
-                linear_elevation = (p2.z - p1.z) * line_length_inv
-                roads.append(Road(key1, key2, p1, line_length, heading_angle, self.coords[key1].z, linear_elevation, start_width, linear_width, ref_line_cubic))
+                roads.append(Road(seg1, seg2, self.coords3d[seg1], geodesic_length_2d, ref_line_cubic, elev_cubic, width_cubic, super_elev_cubic))
 
         # Create a map between junction key names and unique Id numbers.
         junction_map = self._graph_key_to_junction_map(path_segments)
@@ -502,18 +504,16 @@ class Road_Network_Exporter:
 
         # Create a list of uniquely-identifiable junctions, containing all the relevant connection data.
         junctions = []
-        for k in junction_map.keys():
+        for key, id in junction_map.items():
             connection_roads = []
             for i in range(len(roads)):
-                if k == i:
-                    continue
                 r = roads[i]
-                if k == r.start:
+                if key == r.start:
                     connection_roads.append(Connection_Road(i, 'start'))
-                elif k == r.end:
+                if key == r.end:
                     connection_roads.append(Connection_Road(i, 'end'))
-            is_end_point = len(connection_roads) == 0
-            junctions.append(Junction(junction_map[k], connection_roads, is_end_point))
+            if len(connection_roads) > 0:
+                junctions.append(Junction(id, connection_roads))
 
         return {'roads': roads, 'junctions': junctions}
 
@@ -529,8 +529,6 @@ class Road_Network_Exporter:
 
         # Get the road data.
         road_data = self.compute_roads_and_junctions()
-        roads = road_data['roads']
-        junctions = road_data['junctions']
 
         # Write the road network data to .xodr format (xml).
         date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -546,8 +544,8 @@ class Road_Network_Exporter:
             f.write('\t</header>\n')
 
             # Write the road data, in order.
-            for i in range(len(roads)):
-                r = roads[i]
+            for i in range(len(road_data['roads'])):
+                r = road_data['roads'][i]
 
                 # Road header data.
                 f.write('\t<road rule="RHT" length="' + str(r.length) + '" id="' +
@@ -564,41 +562,44 @@ class Road_Network_Exporter:
                 f.write('\t\t</link>\n')
 
                 # Geometry data.
-                Bu, Cu, Du, Cv, Dv = r.ref_line_cubic.Bu, r.ref_line_cubic.Cu, r.ref_line_cubic.Du, r.ref_line_cubic.Cv, r.ref_line_cubic.Dv
+                Au, Bu, Cu, Du = r.ref_line_cubic.Au, r.ref_line_cubic.Bu, r.ref_line_cubic.Cu, r.ref_line_cubic.Du
+                Av, Bv, Cv, Dv = r.ref_line_cubic.Av, r.ref_line_cubic.Bv, r.ref_line_cubic.Cv, r.ref_line_cubic.Dv
                 f.write('\t\t<type s="0.0000000000000000e+00" type="town" country="DE"/>\n')
                 f.write('\t\t<planView>\n')
                 f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.p1.x) + '" y="' +
-                        str(r.p1.y) + '" hdg="' + str(r.hdg) + '" length="' + str(r.length) + '">\n')
-                f.write('\t\t\t\t<paramPoly3 aU="0.0000000000000000e+00" bU="' + str(r.Bu) + '" cU="' + str(r.Cu) +
-                        '" dU="' + str(r.Du) + '" aV="0.0000000000000000e+00" bV="0.0000000000000000e+00" cV="' +
-                        str(r.Cv) + '" dV="' + str(r.Dv) + '"/>\n')
+                        str(r.p1.y) + '" hdg="' + str(0.0) + '" length="' + str(r.length) + '">\n')
+                f.write('\t\t\t\t<paramPoly3 aU="' + str(Au) + '" bU="' + str(Bu) + '" cU="' + str(Cu) +
+                        '" dU="' + str(Du) + '" aV="' + str(Av) + '" bV="' + str(Bv) + '" cV="' +
+                        str(Cv) + '" dV="' + str(Dv) + '"/>\n')
                 f.write('\t\t\t</geometry>\n')
                 f.write('\t\t</planView>\n')
 
                 # Elevation data.
+                Ae, Be, Ce, De = r.elev_cubic.a, r.elev_cubic.b, r.elev_cubic.c, r.elev_cubic.d
+                Ase, Bse, Cse, Dse = r.super_elev_cubic.a, r.super_elev_cubic.b, r.super_elev_cubic.c, r.super_elev_cubic.d
                 f.write('\t\t<elevationProfile>\n')
-                f.write('\t\t\t<elevation s="0.0000000000000000e+00" a="' + str(r.start_elevation) + '" b="' +
-                        str(r.linear_elevation) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
+                f.write('\t\t\t<elevation s="0.0" a="' + str(Ae) + '" b="' + str(Be) + '" c="' + str(Ce) + '" d="' + str(De) + '"/>\n')
                 f.write('\t\t</elevationProfile>\n')
                 f.write('\t\t<lateralProfile>\n')
+                #f.write('\t\t\t<superelevation s="0.0" a="' + str(Ase) + '" b="' + str(Bse) + '" c="' + str(Cse) + '" d="' + str(Dse) + '"/>\n')
                 f.write('\t\t</lateralProfile>\n')
 
                 # Road lane data.
+                Aw, Bw, Cw, Dw = r.width_cubic.a, r.width_cubic.b, r.width_cubic.c, r.width_cubic.d
                 f.write('\t\t<lanes>\n')
                 f.write('\t\t\t<laneSection s="0.0000000000000000e+00">\n')
                 f.write('\t\t\t\t<left>\n')
                 f.write('\t\t\t\t\t<lane id="1" type="driving" level="false">\n')
                 f.write('\t\t\t\t\t\t<link>\n')
                 f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(r.start_width) +
-                        '" b="' + str(r.linear_width) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
+                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) + '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
                 f.write('\t\t\t\t\t</lane>\n')
                 f.write('\t\t\t\t</left>\n')
                 f.write('\t\t\t\t<center>\n')
                 f.write('\t\t\t\t\t<lane id="0" type="driving" level="false">\n')
                 f.write('\t\t\t\t\t\t<link>\n')
                 f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<roadMark sOffset="2.0000000000000000e+00" type="broken" weight="standard" color="standard" width="1.2000000000000000e-01" laneChange="both" height="1.9999999552965164e-02">\n')
+                f.write('\t\t\t\t\t\t<roadMark sOffset="0.0000000000000000e+00" type="broken" weight="standard" color="standard" width="1.2000000000000000e-01" laneChange="both" height="1.9999999552965164e-02">\n')
                 f.write('\t\t\t\t\t\t\t<type name="broken" width="1.2000000000000000e-01">\n')
                 f.write('\t\t\t\t\t\t\t\t<line length="3.0000000000000000e+00" space="6.0000000000000000e+00" tOffset="0.0000000000000000e+00" sOffset="0.0000000000000000e+00" rule="caution" width="1.2000000000000000e-01"/>\n')
                 f.write('\t\t\t\t\t\t\t</type>\n')
@@ -609,8 +610,7 @@ class Road_Network_Exporter:
                 f.write('\t\t\t\t\t<lane id="-1" type="driving" level="false">\n')
                 f.write('\t\t\t\t\t\t<link>\n')
                 f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(r.start_width) +
-                        '" b="' + str(r.linear_width) + '" c="0.0000000000000000e+00" d="0.0000000000000000e+00"/>\n')
+                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) + '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
                 f.write('\t\t\t\t\t</lane>\n')
                 f.write('\t\t\t\t</right>\n')
                 f.write('\t\t\t</laneSection>\n')
@@ -627,17 +627,19 @@ class Road_Network_Exporter:
                 f.write('\t</road>\n')
 
             # Write the junction data, in order.
-            for i in range(len(junctions)):
-                jct = junctions[i]
+            for i in range(len(road_data['junctions'])):
+                jct = road_data['junctions'][i]
                 f.write('\t<junction name="" id="' + str(jct.id) + '" type="default">\n')
                 ctr = 0
                 for j in range(len(jct.connection_roads)):
-                    a = jct.connection_roads[j]
+                    ra = jct.connection_roads[j]
                     for k in range(len(jct.connection_roads)):
-                        b = jct.connection_roads[k]
-                        f.write('\t\t<connection id="' + str(ctr) + '" incomingRoad="' + str(a.id) +
-                                '" connectingRoad="' + str(b.id) + '" contactPoint="' + str(a.contact_point) + '">\n')
-                        if a.contact_point == 'start':
+                        if j == k:
+                            continue
+                        rb = jct.connection_roads[k]
+                        f.write('\t\t<connection id="' + str(ctr) + '" incomingRoad="' + str(ra.id) +
+                                '" connectingRoad="' + str(rb.id) + '" contactPoint="' + str(ra.contact_point) + '">\n')
+                        if ra.contact_point == 'start':
                             f.write('\t\t\t<laneLink from="-1" to="1"/>\n')
                         else:
                             f.write('\t\t\t<laneLink from="1" to="-1"/>\n')
@@ -669,7 +671,7 @@ class Road_Network_Exporter:
         maxlat = -1e99
         maxlon = -1e99
         ctr = 0
-        for k, v in self.coords.items():
+        for k, v in self.coords3d.items():
             keys_to_node_map[k] = ctr
             coord = vec3(v.x * scale_factor + 45.0, v.y * scale_factor + 45.0, v.z)
             nodes.append(coord)
@@ -726,9 +728,12 @@ class Road_Network_Exporter:
         # Get the road graph data for the current map.
         raw_data = self._send_sensor_request('GetRoadGraph', ack='CompletedGetRoadGraph')['data']
         self.graph = raw_data['graph']
-        self.coords = self._to_vec3(raw_data['coords'])
+        self.coords3d = self._to_vec3(raw_data['coords'])
+        self.coords2d = self.get_2d_coords()
         self.widths = raw_data['widths']
-        self.normals = raw_data['normals']
+        self.normals = self._to_vec3(raw_data['normals'])
+        self._cached_tangents = {}
+
         self.logger.debug('Road_Graph - data retrieved.')
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
@@ -759,15 +764,15 @@ class Road_Network_Exporter:
         node_colors = []
         for i in range(len(path_segments)):
             seg = path_segments[i]
-            px.append(self.coords[seg[0]][0])
-            py.append(self.coords[seg[0]][1])
+            px.append(self.coords3d[seg[0]][0])
+            py.append(self.coords3d[seg[0]][1])
             node_colors.append((1.0, 0.0, 0.0, 1.0))
             for j in range(1, len(seg)):
-                px.append(self.coords[seg[j]][0])
-                py.append(self.coords[seg[j]][1])
+                px.append(self.coords3d[seg[j]][0])
+                py.append(self.coords3d[seg[j]][1])
                 node_colors.append((.0, 0.0, 1.0, 1.0))
-                p1 = self.coords[seg[j - 1]]
-                p2 = self.coords[seg[j]]
+                p1 = self.coords3d[seg[j - 1]]
+                p2 = self.coords3d[seg[j]]
                 lines.append([(p1[0], p1[1]), (p2[0], p2[1])])
                 line_colors.append((0.3, 0.3, 0.3, 0.5))
             node_colors[-1] = (1.0, 0.0, 0.0, 1.0)

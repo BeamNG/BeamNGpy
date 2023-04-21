@@ -366,6 +366,27 @@ class Camera:
         self.logger.debug('Camera - raw sensor readings converted to image format: 'f'{self.name}')
         return images
 
+    def poll_shmem_colour(self):
+        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        width = self.resolution[0]
+        height = self.resolution[1]
+        img = np.frombuffer(shmem.read(self.colour_shmem, width * height * 4), dtype=np.uint8).reshape(height, width, 4)
+        return [img, width, height]
+
+    def poll_shmem_annotation(self):
+        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        width = self.resolution[0]
+        height = self.resolution[1]
+        img= np.frombuffer(shmem.read(self.annotation_shmem, width * height * 4), dtype=np.uint8).reshape(height, width, 4)
+        return [img, width, height]
+
+    def poll_shmem_depth(self):
+        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        width = self.resolution[0]
+        height = self.resolution[1]
+        img = np.frombuffer(shmem.read(self.depth_shmem, width * height * 4), dtype=np.float32)
+        return [img, width, height]
+
     def send_ad_hoc_poll_request(self) -> int:
         """
         Sends an ad-hoc polling request to the simulator. This will be executed by the simulator immediately, but will take time to process, so the
