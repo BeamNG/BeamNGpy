@@ -177,6 +177,7 @@ However we do not maintain minor versions: bug fixes and new features will only 
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
+| 0.28                | [1.26](https://github.com/BeamNG/BeamNGpy/tree/v1.26)     |
 | 0.27                | [1.25.1](https://github.com/BeamNG/BeamNGpy/tree/v1.25.1) |
 | 0.26                | [1.24](https://github.com/BeamNG/BeamNGpy/tree/v1.24)     |
 | 0.25                | [1.23.1](https://github.com/BeamNG/BeamNGpy/tree/v1.23.1) |
@@ -216,7 +217,7 @@ We always welcome user contributions, be sure to check out our [contribution gui
 [3]: mailto:licensing@beamng.gmbh
 [4]: https://store.steampowered.com/app/284160/BeamNGdrive/
 [5]: https://pypi.org/project/beamngpy/
-[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/guide.md
+[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/README.md
 [7]: https://beamngpy.readthedocs.io/en/latest/
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md

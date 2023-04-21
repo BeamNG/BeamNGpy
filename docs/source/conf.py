@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../../src'))
 # -- Project information -----------------------------------------------------
 
 project = 'BeamNGpy'
-copyright = '2022, BeamNG GmbH'
+copyright = '2023, BeamNG GmbH'
 author = 'BeamNG GmbH'
 
 
@@ -65,7 +65,7 @@ source_suffix = ['.rst', '.md']
 napoleon_google_docstring = True
 
 # -- Autodoc options ---------------------------------------------------------
-autodoc_mock_imports = ['msgpack', 'OpenGL', 'PIL', 'matplotlib', 'numpy']
+autodoc_mock_imports = ['msgpack', 'OpenGL', 'PIL', 'matplotlib', 'numpy', 'seaborn']
 autodoc_typehints = 'both'
 autodoc_type_aliases = {
     'StrDict': 'StrDict',

@@ -144,7 +144,7 @@ Running beamng_agent
 * Loading beamng_agent node for enabling the control from ROS side:
     ``roslaunch beamng_agent example.launch``
 
-The folloing topics for move/stop the vehicle in simulation and enable/disable keybard control from the simulation side:
+The folloing topics for move/stop the vehicle in simulation and enable/disable keybard control from the simulation side; using an array of commands as following [steering throttle brake parkingbrake clutch gear], here's some exmaples of the ```VehicleControl``` :
 
 * Driving:
     ``rostopic pub --once control beamng_msgs/VehicleControl 0 1 0 0 0 1``
@@ -232,7 +232,7 @@ Various services to control the state of the simulation are available.
    ``rosservice call /beamng_control/get_loggers``
 
 Note
-^^^^^
+^^^^
 
   - if you got a feedback `success: False` for `resume` or `pause` services, that means your `beamng_agent` node isn't active, and you will getting the following error message in the terminal of `beamng_control` node:
 
