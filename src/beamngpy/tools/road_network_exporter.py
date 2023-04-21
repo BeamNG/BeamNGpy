@@ -20,10 +20,10 @@ from beamngpy.types import StrDict
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
-__all__ = ['RoadNetworkExporter']
+__all__ = ['Road_Network_Exporter']
 
 
-class ExplicitCubic:
+class explicit_cubic:
     """
     A class for representing explicit cubic polynomials of the form: [ u(p) := a + b*p + c*p^2 + d*p^3 ].
     """
@@ -33,65 +33,7 @@ class ExplicitCubic:
         self.c = c
         self.d = d
 
-<<<<<<< HEAD
 class parametric_cubic:
-=======
-    def eval(self, x) -> float:
-        """
-        Evaluates this cubic polynomial, at the given value.
-
-        Args:
-            x: The value at which to evaluate this cubic polynomial.
-
-        Returns:
-            The evaluation of the cubic polynomial, p(x).
-        """
-        x_sq = x * x
-        return self.a + (x * self.b) + (x_sq * self.c) + (x * x_sq * self.d)
-
-    def eval_upper_only(self, x) -> float:
-        """
-        Evaluates the upper two terms (quadratic and cubic terms only) of this cubic polynomial, at the given value.
-
-        Args:
-            x: The value at which to evaluate this cubic polynomial.
-
-        Returns:
-            The evaluation of the upper two terms of this cubic polynomial, p(x).
-        """
-        x_sq = x * x
-        return self.a + (x_sq * self.c) + (x * x_sq * self.d)
-
-    def approx_length(self, x0, x1, n=9000) -> float:
-        """
-        Computes a numerical approximation of the arc-length of this cubic polynomial.
-        The polynomial is approximated as a polyline, and the length of each subsection is summed to a total length.
-
-        Args:
-            x0: The start value in x.
-            x1: The end value in x.
-            n (optional): The number of subdivisions to use across the polynomial
-
-        Returns:
-            A numerical approximation of the arc-length of this cubic polynomial.
-        """
-        div = (x1 - x0) / float(n)
-        sum = 0.0
-        last = [x0, self.eval(x0)]
-        # Evaluate the cubic at n points. Store them.
-        for i in range(n):
-            x = x0 + (i * div)
-            y = self.eval(x)
-            dx = x - last[0]
-            dy = y - last[1]
-            sum += math.sqrt((dx * dx) + (dy * dy))
-            last = [x, y]
-        # Return the L^2 distance (approximation).
-        return sum
-
-
-class ParametricCubic:
->>>>>>> 98d977a3fba7c0f39561d87371fecabd039717c6
     """
     A class for representing parametric cubic polynomials of the form:
     [ u(x) := Bu*x + Cu^2 + Du^3; v(x) := Bv*x + Cv^2 + Dv^3 ].
@@ -165,12 +107,7 @@ class Connection_Road:
         self.id = id
         self.contact_point = contact_point
 
-<<<<<<< HEAD
 class Road_Network_Exporter:
-=======
-
-class RoadNetworkExporter:
->>>>>>> 98d977a3fba7c0f39561d87371fecabd039717c6
     """
     A class for retrieving and exporting BeamNG road network data.
     """
@@ -380,47 +317,8 @@ class RoadNetworkExporter:
 
     def compute_roads_and_junctions(self):
         """
-<<<<<<< HEAD
         Computes a collection of individual road sections and junctions, both indexed by a unique Id.
         This function produces all the relevant data ready to be exported to OpenDrive (.xodr) format.
-=======
-        Computes a parametric cubic which passes through the two points p1, p2, and matches tangents t_start, t_end.
-
-        Args:
-            p1: The start point.
-            p2: The end point.
-            t_start: The tangent at the start point, to which this cubic should fit itself.
-            t_end: The tangent at the end point, to which this cubic should fit itself.
-
-        Returns:
-            The parametric cubic polynomial coefficients.
-            Note: we ignore the two constant terms and the linear term of the 'v' equation.
-        """
-        # Compute the unit (s, t) coordinate system axes for this section.
-        s = t_start.normalize()
-        t = vec3(-s.y, s.x)
-
-        # Compute points x1 and x2 in the (s, t) coordinate system reference space [0, 1]^2:
-        p2norm = p2 - p1
-        x2 = p2norm.dot(s)
-        y2 = p2norm.dot(t)
-
-        # Compute the end point tangent, in the (s, t) coordinate system.
-        tan = vec3(t_end.dot(s), t_end.dot(t))
-
-        # Compute the parametric cubic polynomial coefficients.
-        Bu = t_start.length()
-        Cu = (3.0 * x2) - tan.x - (2.0 * Bu)
-        Du = (-2.0 * x2) + tan.x + Bu
-        Cv = (3.0 * y2) - tan.y
-        Dv = tan.y - (2.0 * y2)
-
-        return ParametricCubic(Bu, Cu, Du, Cv, Dv)
-
-    def compute_roads(self):
-        """
-        Computes a collection of individual roads, ready for export.
->>>>>>> 98d977a3fba7c0f39561d87371fecabd039717c6
         """
 
         # Compute all the individual path segments from the loaded map. Sort them in order of widths, descending.
