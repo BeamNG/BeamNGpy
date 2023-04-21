@@ -19,10 +19,10 @@ from beamngpy.types import StrDict
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
-__all__ = ['RoadNetworkExporter']
+__all__ = ['Road_Network_Exporter']
 
 
-class ExplicitCubic:
+class explicit_cubic:
     """
     A class for representing explicit cubic polynomials of the form: [ u(p) := a + b*p + c*p^2 + d*p^3 ].
     """
@@ -41,65 +41,6 @@ class ExplicitCubic:
         self.b = b
         self.c = c
         self.d = d
-
-    def eval(self, p) -> float:
-        """
-        Evaluates this cubic polynomial, at the given value.
-
-        Args:
-            p: The value at which to evaluate this cubic polynomial.
-
-        Returns:
-            The evaluation of the cubic polynomial, u(p).
-        """
-        x_sq = p * p
-        return self.a + (p * self.b) + (x_sq * self.c) + (p * x_sq * self.d)
-
-    def approx_length(self, x0, x1, n=9000) -> float:
-        """
-        Computes a numerical approximation of the arc-length of this cubic polynomial.
-        The polynomial is approximated as a polyline, and the length of each subsection is summed to a total length.
-
-        Args:
-            x0: The start value in x.
-            x1: The end value in x.
-            n (optional): The number of subdivisions to use across the polynomial
-
-        Returns:
-            A numerical approximation of the arc-length of this cubic polynomial.
-        """
-        div = (x1 - x0) / float(n)
-        sum = 0.0
-        last = [x0, self.eval(x0)]
-        # Evaluate the cubic at n points. Store them.
-        for i in range(n):
-            x = x0 + (i * div)
-            y = self.eval(x)
-            dx = x - last[0]
-            dy = y - last[1]
-            sum += math.sqrt((dx * dx) + (dy * dy))
-            last = [x, y]
-        # Return the L^2 distance (approximation).
-        return sum
-
-    @staticmethod
-    def fit(v_start, v_end, t_start, t_end, length):
-        """
-        Computes the unique explicit cubic polynomial which passes through the two points p1, p2, and matches tangents t_start, t_end.
-
-        Args:
-            v_start: The starting value (the value at s = 0).
-            v_end: The end value (the value at s = length).
-            t_start: The tangent at the start point, to which this cubic should fit itself.
-            t_end: The tangent at the end point, to which this cubic should fit itself.
-            length: The arc length of the cubic.
-
-        Returns:
-            The explicit cubic polynomial coefficients.
-        """
-        f = v_end - v_start - length
-        g = t_end - t_start
-        return explicit_cubic(v_start, t_start, -f - g, (2.0 * f) + g)
 
 
 class parametric_cubic:
@@ -257,7 +198,7 @@ class Connection_Road:
         self.contact_point = contact_point
 
 
-class RoadNetworkExporter:
+class Road_Network_Exporter:
     """
     A class for retrieving and exporting BeamNG road network data.
     """
