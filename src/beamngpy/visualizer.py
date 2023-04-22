@@ -17,8 +17,7 @@ MAX_DISTANCE = 120 / 3
 MOVE_SPEED = 0.25
 TURN_SPEED = 1
 
-base, texid = 0, 0
-text  = '''Hello World !'''
+base, texid = 0, 0  # for text rendering.
 
 
 def _on_resize(width, height):
@@ -45,6 +44,7 @@ class Visualiser:
         self.window = glutCreateWindow(name)
         if height == 0:
             height = 1
+        #glutFullScreen()                                                       # TODO USE THIS LATER
         glutDisplayFunc(self._on_display)
         glutKeyboardFunc(self.on_key)
         glutMotionFunc(self.on_drag)
@@ -236,48 +236,63 @@ class Visualiser:
         self.grid_y = self.r * np.sin(self.az_plus_half_pi)
 
         # IMU:
+        rpy_img = Image.open('imu_rpy.png')
+        self.rpy_img = np.array(rpy_img)
+        self.rpy_img_size = [rpy_img.size[1], rpy_img.size[0]] # note the size is flipped for PIL images.
         self.imu_acc1_verts, self.imu_acc2_verts, self.imu_acc3_verts = [], [], []
         self.imu_gyro1_verts, self.imu_gyro2_verts, self.imu_gyro3_verts = [], [], []
-        self.imu_acc1_axis_x, self.imu_acc1_axis_y = [190, 650, 1210, 650], [200, 640, 200, 910]  # the axis lines for the accel plots.
-        self.imu_acc2_axis_x, self.imu_acc2_axis_y = [190, 350, 1210, 350], [200, 340, 200, 610]
-        self.imu_acc3_axis_x, self.imu_acc3_axis_y = [190, 50, 1210, 50], [200, 40, 200, 310]
+        self.imu_acc1_axis_x, self.imu_acc1_axis_y = [90, 700, 1110, 700], [100, 690, 100, 960]  # the axis lines for the accel plots.
+        self.imu_acc2_axis_x, self.imu_acc2_axis_y = [90, 400, 1110, 400], [100, 390, 100, 660]
+        self.imu_acc3_axis_x, self.imu_acc3_axis_y = [90, 100, 1110, 100], [100, 90, 100, 360]
         self.imu_acc1_grid = []
-        grid_dx, grid_dy = 10, 5
+        grid_dx, grid_dy = 10, 4
+        col = True
         for i in range(1, grid_dx + 1):
             div = float(1000) / float(grid_dx)
-            gx = 200 + (i * div)
-            self.imu_acc1_grid.append([gx, 650, gx, 900])
+            gx = 100 + (i * div)
+            self.imu_acc1_grid.append([gx, 690, gx, 960, col])
+            col = not col
+        col = True
         for i in range(1, grid_dy + 1):
             div = float(250) / float(grid_dy)
-            gy = 650 + (i * div)
-            self.imu_acc1_grid.append([200, gy, 1200, gy])
+            gy = 700 + (i * div)
+            self.imu_acc1_grid.append([90, gy, 1110, gy, col])
+            col = not col
         self.imu_acc2_grid = []
+        col = True
         for i in range(1, grid_dx + 1):
             div = float(1000) / float(grid_dx)
-            gx = 200 + (i * div)
-            self.imu_acc2_grid.append([gx, 350, gx, 600])
+            gx = 100 + (i * div)
+            self.imu_acc2_grid.append([gx, 390, gx, 660, col])
+            col = not col
+        col = True
         for i in range(1, grid_dy + 1):
             div = float(250) / float(grid_dy)
-            gy = 350 + (i * div)
-            self.imu_acc2_grid.append([200, gy, 1200, gy])
+            gy = 400 + (i * div)
+            self.imu_acc2_grid.append([90, gy, 1110, gy, col])
+            col = not col
         self.imu_acc3_grid = []
+        col = True
         for i in range(1, grid_dx + 1):
             div = float(1000) / float(grid_dx)
-            gx = 200 + (i * div)
-            self.imu_acc3_grid.append([gx, 50, gx, 300])
+            gx = 100 + (i * div)
+            self.imu_acc3_grid.append([gx, 90, gx, 360, col])
+            col = not col
+        col = True
         for i in range(1, grid_dy + 1):
             div = float(250) / float(grid_dy)
-            gy = 50 + (i * div)
-            self.imu_acc3_grid.append([200, gy, 1200, gy])
+            gy = 100 + (i * div)
+            self.imu_acc3_grid.append([90, gy, 1110, gy, col])
+            col = not col
         self.acc1, self.acc2, self.acc3, self.gyro1, self.gyro2, self.gyro3 = deque(), deque(), deque(), deque(), deque(), deque()
-        self.imu_t_start, self.imu_t_end = 200, 1200 # screen limits for all imu readings (in t).
+        self.imu_t_start, self.imu_t_end = 100, 1100 # screen limits for all imu readings (in t).
         self.imu_t_width = self.imu_t_end - self.imu_t_start
-        self.imu_acc_min, self.imu_acc_max, self.imu_gyro_min, self.imu_gyro_max = -15.0, 15.0, -50.0, 50.0 # value limits for imu readings.
+        self.imu_acc_min, self.imu_acc_max, self.imu_gyro_min, self.imu_gyro_max = -50.0, 50.0, -50.0, 50.0 # value limits for imu readings.
         self.imu_acc_height, self.imu_gyro_height = self.imu_acc_max - self.imu_acc_min, self.imu_gyro_max - self.imu_gyro_min
         self.imu_acc_height_inv = 1.0 / self.imu_acc_height
-        self.imu_acc1_y_min, self.imu_acc1_y_max = 650, 900 # screen limits in y for acc1 reading.
-        self.imu_acc2_y_min, self.imu_acc2_y_max = 350, 600 # screen limits in y for acc2 reading.
-        self.imu_acc3_y_min, self.imu_acc3_y_max = 50, 300 # screen limits in y for acc3 reading.
+        self.imu_acc1_y_min, self.imu_acc1_y_max = 700, 950 # screen limits in y for acc1 reading.
+        self.imu_acc2_y_min, self.imu_acc2_y_max = 400, 650 # screen limits in y for acc2 reading.
+        self.imu_acc3_y_min, self.imu_acc3_y_max = 100, 350 # screen limits in y for acc3 reading.
         self.imu_acc1_y_range = self.imu_acc1_y_max - self.imu_acc1_y_min
         self.imu_acc2_y_range = self.imu_acc2_y_max - self.imu_acc2_y_min
         self.imu_acc3_y_range = self.imu_acc3_y_max - self.imu_acc3_y_min
@@ -480,11 +495,11 @@ class Visualiser:
             full_imu_data = self.imu1.poll()
             for new_imu_data in full_imu_data:                 # update queues with latest IMU readings (all readings since last poll).
                 self.acc1.popleft()
-                self.acc1.append(self.imu_acc1_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][0])) - self.imu_acc_min) * self.imu_acc1_f)
+                self.acc1.append(self.imu_acc1_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][2])) - self.imu_acc_min) * self.imu_acc1_f)  # z at top.
                 self.acc2.popleft()
-                self.acc2.append(self.imu_acc2_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][1])) - self.imu_acc_min) * self.imu_acc2_f)
+                self.acc2.append(self.imu_acc2_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][1])) - self.imu_acc_min) * self.imu_acc2_f)  # y in middle.
                 self.acc3.popleft()
-                self.acc3.append(self.imu_acc3_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][2])) - self.imu_acc_min) * self.imu_acc3_f)
+                self.acc3.append(self.imu_acc3_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][0])) - self.imu_acc_min) * self.imu_acc3_f)  # x at bottom.
                 self.gyro1.popleft()
                 self.gyro1.append(new_imu_data['angVelSmooth'][0])
                 self.gyro2.popleft()
@@ -784,6 +799,8 @@ class Visualiser:
 
         elif self.demo == 'imu_A':
             glViewport(0, 0, self.width, self.height)
+             # Draw the roll-pitch-yaw picture.
+            self.render_img(1150, 50, self.rpy_img, self.rpy_img_size[0], self.rpy_img_size[1], 1, 1, 1, 1)  # The roll-pitch-yaw image.
             glEnable(GL_LINE_SMOOTH)
             glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
             glEnable(GL_BLEND)
@@ -798,17 +815,48 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
-            # Draw grid.
-            glColor3f(0.1, 0.1, 0.1)
-            glLineWidth(1.0)
-            for i in range(len(self.imu_acc1_grid)):
-                self.draw_line(self.imu_acc1_grid[i])
-            for i in range(len(self.imu_acc2_grid)):
-                self.draw_line(self.imu_acc2_grid[i])
-            for i in range(len(self.imu_acc3_grid)):
-                self.draw_line(self.imu_acc3_grid[i])
+            # Draw lines from three graphs to the roll-pitch-yaw image.
+            glColor3f(0.15, 0.15, 0.1)
+            glLineWidth(2.0)
+            self.draw_line([1120, 225, 1130, 225])
+            self.draw_line([1130, 225, 1200, 155])
+            self.draw_line([1200, 155, 1200, 135])
 
-            # Draw lines.
+            self.draw_line([1120, 525, 1140, 525])
+            self.draw_line([1140, 525, 1300, 360])
+            self.draw_line([1300, 360, 1300, 290])
+
+            self.draw_line([1120, 825, 1160, 825])
+            self.draw_line([1160, 825, 1505, 470])
+            self.draw_line([1505, 470, 1505, 420])
+
+            # Draw grid.
+            for i in range(len(self.imu_acc1_grid)):
+                if self.imu_acc1_grid[i][4] == True:
+                    glColor3f(0.1, 0.1, 0.1)
+                    glLineWidth(1.0)
+                else:
+                    glColor3f(0.2, 0.2, 0.2)
+                    glLineWidth(2.0)
+                self.draw_line(self.imu_acc1_grid[i][0:4])
+            for i in range(len(self.imu_acc2_grid)):
+                if self.imu_acc2_grid[i][4] == True:
+                    glColor3f(0.1, 0.1, 0.1)
+                    glLineWidth(1.0)
+                else:
+                    glColor3f(0.2, 0.2, 0.2)
+                    glLineWidth(2.0)
+                self.draw_line(self.imu_acc2_grid[i][0:4])
+            for i in range(len(self.imu_acc3_grid)):
+                if self.imu_acc3_grid[i][4] == True:
+                    glColor3f(0.1, 0.1, 0.1)
+                    glLineWidth(1.0)
+                else:
+                    glColor3f(0.2, 0.2, 0.2)
+                    glLineWidth(2.0)
+                self.draw_line(self.imu_acc3_grid[i][0:4])
+
+            # Draw acceleration data.
             glColor3f(1.0, 0.0, 0.0)
             glLineWidth(2.0)
             self.draw_line_strip(self.imu_acc1_verts)
@@ -825,17 +873,174 @@ class Visualiser:
             self.draw_line(self.imu_acc3_axis_x)
             self.draw_line(self.imu_acc3_axis_y)
 
+            # Draw Text.
             glEnable( GL_TEXTURE_2D )
             global texid
             glBindTexture( GL_TEXTURE_2D, texid )
-            glColor3f(1.0, 1.0, 1.0)
+
+            glColor3f(0.65, 0.65, 0.3)
             glPushMatrix( )
-            glTranslate( 700, 500, 0 )
+            glTranslate(1130, 323, 0)
             glPushMatrix( )
             glListBase( base+1 )
-            glCallLists( [ord(c) for c in text] )
+            glCallLists( [ord(c) for c in 'X [roll]'] )
             glPopMatrix( )
             glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(1130, 620, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in 'Y [pitch]'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(1130, 925, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in 'Z [yaw]'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glColor3f(0.85, 0.85, 0.70)
+            glPushMatrix( )
+            glTranslate(450, 985, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in 'IMU - TRI-AXIAL ACCELERATION'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glColor3f(0.85, 0.85, 0.70)
+            glPushMatrix( )
+            glTranslate(526, 45, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in 'time (seconds)'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(44, 231, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(20, 107, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-50.0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(30, 357, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '50.0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(44, 531, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(20, 408, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-50.0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(30, 657, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '50.0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(44, 831, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(20, 708, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-50.0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(30, 957, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '50.0'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(1090, 80, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '0s'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(873, 80, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-0.4s'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(674, 80, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-0.8s'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(473, 80, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-1.2s'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(271, 80, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-1.6s'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
+            glPushMatrix( )
+            glTranslate(73, 80, 0)
+            glPushMatrix( )
+            glListBase( base+1 )
+            glCallLists( [ord(c) for c in '-2.0s'] )
+            glPopMatrix( )
+            glPopMatrix( )
+
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
