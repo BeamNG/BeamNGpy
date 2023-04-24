@@ -220,13 +220,14 @@ class Visualiser:
         self.us_bar_MR = 6
 
         # RADAR initialization.
+        car_radar_img = Image.open('car_radar.png')
+        self.car_radar_img = np.array(car_radar_img)
+        self.car_radar_img_size = [car_radar_img.size[1], car_radar_img.size[0]]
         self.radar_toggle = 0
-        self.radar_image = None
-        self.radar_image_size = None
-        self.radar_second_image = None
-        self.radar_second_image_size = None
-        self.radar_res = [800, 800]
-        self.radar_bins = [800, 800]
+        self.radar_bscope_img, self.radar_ppi_img = [], []
+        self.radar_bscope_size, self.radar_ppi_size = [], []
+        self.radar_res = [950, 950]
+        self.radar_bins = [950, 950]
         self.radar_fov = 70.0
         self.radar_range_min = 0.1
         self.radar_range_max = 100.0
@@ -503,19 +504,19 @@ class Visualiser:
         elif self.demo == 'radar':
             if self.toggle == 0:
                 bscope_data = self.radar.get_bscope_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_image_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_image = bscope_data
+                self.radar_bscope_size = [self.radar_bins[0], self.radar_bins[1]]
+                self.radar_bscope_img = bscope_data
                 ppi_data = self.radar.get_ppi_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_second_image_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_second_image = ppi_data
+                self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
+                self.radar_ppi_img = ppi_data
             elif self.toggle == 1:
                 bscope_data = self.radar.get_bscope_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_image_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_image = bscope_data
+                self.radar_bscope_size = [self.radar_bins[0], self.radar_bins[1]]
+                self.radar_bscope_img = bscope_data
             else:
                 ppi_data = self.radar.get_ppi_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_image_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_image = ppi_data
+                self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
+                self.radar_ppi_img = ppi_data
 
         elif self.demo == 'imu':
             full_imu_data = self.imu1.poll()
@@ -1046,16 +1047,111 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == 'radar':
-            if self.toggle == 0: # both RADAR plots on same screen.
-                if self.radar_image_size != None and self.radar_second_image_size != None:
-                    glViewport(0, 0, int(self.width / 2), self.height)
-                    self.render_img(0, 0, self.radar_image, self.radar_image_size[0], self.radar_image_size[1], 1, 1, 1, 2)
-                    glViewport(int(self.width / 2), 0, self.width, self.height)
-                    self.render_img(0, 0, self.radar_second_image, self.radar_second_image_size[0], self.radar_second_image_size[1], 1, 1, 1, 2)
-            else: # B-scope or PPI plot.
-                glViewport(0, 0, self.width, self.height)
-                if self.radar_image_size != None:
-                    self.render_img(0, 0, self.radar_image, self.radar_image_size[0], self.radar_image_size[1], 1, 1, 1, 2)
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            # Render RADAR images.
+            if self.toggle == 0:                                                                                                       # B-scope and PPI together.
+                if len(self.radar_bscope_size) > 0 and len(self.radar_ppi_size) > 0:
+                    glViewport(0, 0, self.half_width, self.half_height)
+                    self.render_img(0, 25, self.radar_bscope_img, self.radar_bscope_size[0], self.radar_bscope_size[1], 1, 1, 1, 2)
+                    glViewport(self.half_width, 0, self.half_width, self.half_height)
+                    self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 2)
+
+            elif self.toggle == 1:                                                                                                      # B-scope only.
+                if len(self.radar_bscope_size) > 0:
+                    glViewport(0, 0, self.width, self.height)
+                    self.render_img(0, 0, self.radar_bscope_img, self.radar_bscope_size[0], self.radar_bscope_size[1], 1, 1, 1, 2)
+
+            else:                                                                                                                       # PPI only.
+                if len(self.radar_ppi_size) > 0:
+                    glViewport(0, 0, self.width, self.height)
+                    self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From the .png image.
+                    self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 2)
+
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # Draw the PPI scope frame.
+                    glLineWidth(2.0)
+                    glColor3f(0.3, 0.3, 0.3)
+                    self.draw_line([673, 25, 181, 875])                 # left grid line.
+                    self.draw_line([673, 25, 1166, 875])                # right grid line.
+                    self.draw_line([673.0, 25.0, 688.0, 16.0])          # grooves.
+                    self.draw_line([722.3, 110.0, 737.3, 101.0])
+                    self.draw_line([771.6, 195.0, 786.6, 186.0])
+                    self.draw_line([820.9, 280.0, 835.9, 271.0])
+                    self.draw_line([870.2, 365.0, 885.2, 356.0])
+                    self.draw_line([919.5, 450.0, 934.5, 441.0])
+                    self.draw_line([968.8, 535.0, 983.8, 526.0])
+                    self.draw_line([1018.1, 620.0, 1033.1, 611.0])
+                    self.draw_line([1067.4, 705.0, 1082.4, 696.0])
+                    self.draw_line([1116.7, 790.0, 1131.7, 781.0])
+                    self.draw_line([1166.0, 875.0, 1181.0, 866.0])
+
+                    # Color bar.
+                    glLineWidth(3.0)
+                    y_min, y_max = self.screen_center_y + 65, self.screen_center_y + 106
+                    self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
+                    self.draw_line([69, 451, 115, 451])                     # cb frame - top.
+                    self.draw_line([69, 49, 69, 451])                       # cb frame - left.
+                    self.draw_line([101, 49, 101, 451])                     # cb frame - right.
+                    self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
+                    for i in range(401):                                    # colorbar.
+                        col = i * 0.0025
+                        glColor3f(col, col, col)
+                        y = 50 + i
+                        self.draw_line([70, y, 100, y])
+
+                    # Title underline.
+                    glViewport(0, self.height - 40, self.width, self.height)
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([25, 2, 520, 2])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(35, 20, 'RADAR Sensor:  Range-Azimuth-Doppler PPI')
+                    self.draw_text(1250, 20, 'Vehicle: ')
+                    self.draw_text(1550, 20, 'Model: ')
+                    glColor3f(0.85, 0.35, 0.70)
+                    self.draw_text(1255, 20, '         ' + self.vehicle.vid)
+                    self.draw_text(1550, 20, '       ' + self.vehicle.model)
+                    glViewport(0, 0, self.width, self.height)
+                    glColor3f(0.4, 0.4, 0.4)
+                    self.draw_text(700, 21, '0 m')
+                    self.draw_text(745.3, 106.3, '10 m')
+                    self.draw_text(796.6, 191.6, '20 m')
+                    self.draw_text(843.9, 276.9, '30 m')
+                    self.draw_text(893.2, 361.2, '40 m')
+                    self.draw_text(942.5, 446.5, '50 m')
+                    self.draw_text(991.8, 531.8, '60 m')
+                    self.draw_text(1041.1, 616.1, '70 m')
+                    self.draw_text(1090.4, 701.4, '80 m')
+                    self.draw_text(1140.7, 786.7, '90 m')
+                    self.draw_text(1189, 871, '100 m')
+                    self.draw_text(125, 60, '0 m/s')
+                    self.draw_text(125, 260, '25 m/s')
+                    self.draw_text(125, 460, '50 m/s')
+                    glColor3f(0.5, 0.5, 0.5)
+                    self.draw_text(49, 490, 'Doppler')
+                    glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
 
         elif self.demo == 'imu':
             glViewport(0, 0, self.width, self.height)
@@ -1337,7 +1433,7 @@ class Visualiser:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
             ht, wd = w, h
         else:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, h, w, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, data)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, h, w, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data)
 
         # Save and set model view and projection matrix.
         glMatrixMode(GL_PROJECTION)
