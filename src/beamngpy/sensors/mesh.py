@@ -64,17 +64,20 @@ class Mesh:
             self.triangles[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
 
         # Populate the list of beams for this sensor.
-        beam_data = self._send_sensor_request(
-            'GetBeamData',
-            ack='CompletedGetBeamData',
-            vid=self.vid)['data']
-        self.beams = {}
-        for key, value in beam_data.items():
-            self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
+        self.beams = self._update_beams()
 
         self.num_nodes = self.get_num_nodes()
 
         self.logger.debug('Mesh - sensor created: 'f'{self.name}')
+
+    def _update_beams(self):
+        """
+        Gets the latest collection beams and updates the class state with them.
+        """
+        beam_data = self._send_sensor_request('GetBeamData', ack='CompletedGetBeamData', vid=self.vid)['data']
+        self.beams = {}
+        for key, value in beam_data.items():
+            self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
         if not self.bng.connection:
@@ -102,6 +105,10 @@ class Mesh:
         Returns:
             A dictionary containing the sensor readings data.
         """
+
+        # Get the latest beams from the simulator.
+        self._update_beams()
+
         # Send and receive a request for readings data from this sensor.
         self.node_positions = []
         if self.is_send_immediately:
@@ -294,9 +301,9 @@ class Mesh:
         for _, v in self.beams.items():
             p1 = nodes[v[0]]
             p2 = nodes[v[1]]
-            lines1.append([(p1['pos'][0], p1['pos'][1]), (p2['pos'][0], p2['pos'][1])])
-            lines2.append([(p1['pos'][0], p1['pos'][2]), (p2['pos'][0], p2['pos'][2])])
-            lines3.append([(p1['pos'][1], p1['pos'][2]), (p2['pos'][1], p2['pos'][2])])
+            lines1.append([(p1['posX'], p1['posY']), (p2['posX'], p2['posY'])])
+            lines2.append([(p1['posX'], p1['posZ']), (p2['posX'], p2['posZ'])])
+            lines3.append([(p1['posY'], p1['posZ']), (p2['posY'], p2['posZ'])])
             c.append((0.3, 0.3, 0.3, 0.1))
         lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
         lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
@@ -310,8 +317,9 @@ class Mesh:
             return []
         proj_points = []
         for i in range(num_nodes):
-            node = nodes[i]['pos']
-            p = vec3(node[0], node[1], node[2])
+            node = nodes[i]
+            print(node)
+            p = vec3(node['posX'], node['posY'], node['posZ'])
             p2o = p - orig
             x = p2o.dot(unit_x)
             y = p2o.dot(unit_n.cross(unit_x))
@@ -346,9 +354,9 @@ class Mesh:
         ax[1, 1].set_ylabel("z")
         ax[0, 1].axis('off')
         for i in range(len(nodes)):
-            ax[0, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][1], 'ro')
-            ax[1, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][2], 'ro')
-            ax[1, 1].plot(nodes[i]['pos'][1], nodes[i]['pos'][2], 'ro')
+            ax[0, 0].plot(nodes[i]['posX'], nodes[i]['posY'], 'ro')
+            ax[1, 0].plot(nodes[i]['posX'], nodes[i]['posZ'], 'ro')
+            ax[1, 1].plot(nodes[i]['posY'], nodes[i]['posZ'], 'ro')
 
         lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
@@ -385,9 +393,9 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
+            x.append(data[i]['posX'])
+            y.append(data[i]['posY'])
+            z.append(data[i]['posZ'])
             colors.append(data[i]['mass'])
 
         cmap = matplotlib.cm.viridis
@@ -431,12 +439,12 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            fx = data[i]['force'][0]
-            fy = data[i]['force'][1]
-            fz = data[i]['force'][2]
+            x.append(data[i]['posX'])
+            y.append(data[i]['posY'])
+            z.append(data[i]['posZ'])
+            fx = data[i]['forceX']
+            fy = data[i]['forceY']
+            fz = data[i]['forceZ']
             colors.append(math.sqrt(fx * fx + fy * fy + fz * fz))
 
         cmap = matplotlib.cm.viridis
@@ -480,12 +488,12 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            fx = data[i]['force'][0]
-            fy = data[i]['force'][1]
-            fz = data[i]['force'][2]
+            x.append(data[i]['posX'])
+            y.append(data[i]['posY'])
+            z.append(data[i]['posZ'])
+            fx = data[i]['forceX']
+            fy = data[i]['forceY']
+            fz = data[i]['forceZ']
             mag = math.sqrt(fx * fx + fy * fy + fz * fz)
             colors.append(mag)
             fac = 1/max(1, mag)
@@ -534,12 +542,12 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            vx = data[i]['vel'][0]
-            vy = data[i]['vel'][1]
-            vz = data[i]['vel'][2]
+            x.append(data[i]['posX'])
+            y.append(data[i]['posY'])
+            z.append(data[i]['posZ'])
+            vx = data[i]['velX']
+            vy = data[i]['velY']
+            vz = data[i]['velZ']
             colors.append(math.sqrt(vx * vx + vy * vy + vz * vz))
 
         cmap = matplotlib.cm.viridis
@@ -583,12 +591,12 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            vx = data[i]['vel'][0]
-            vy = data[i]['vel'][1]
-            vz = data[i]['vel'][2]
+            x.append(data[i]['posX'])
+            y.append(data[i]['posY'])
+            z.append(data[i]['posZ'])
+            vx = data[i]['velX']
+            vy = data[i]['velY']
+            vz = data[i]['velZ']
             mag = math.sqrt(vx * vx + vy * vy + vz * vz)
             colors.append(mag)
             fac = 1/max(1, mag)

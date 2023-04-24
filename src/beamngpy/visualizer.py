@@ -359,7 +359,7 @@ class Visualiser:
                 is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
 
         elif demo == 'mesh':
-            self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.05, physics_update_time=0.025)
+            self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.05, physics_update_time=0.05)
 
         elif demo == 'multi':
             self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.01, is_using_shared_memory=True, is_visualised=False)
@@ -1218,9 +1218,9 @@ class Visualiser:
                     num_lines = len(lines)
                     for i in range(num_lines):
                         node1, node2 = lines[i][2][0], lines[i][2][1]
-                        f1, f2 = mesh_data[node1]['force'], mesh_data[node2]['force']
-                        f_mag_1 = vec3(f1[0], f1[1], f1[2]).length()
-                        f_mag_2 = vec3(f2[0], f2[1], f2[2]).length()
+                        md1, md2 = mesh_data[node1], mesh_data[node2]
+                        f_mag_1 = vec3(md1['forceX'], md1['forceY'], md1['forceZ']).length()
+                        f_mag_2 = vec3(md2['forceX'], md2['forceY'], md2['forceZ']).length()
                         avg_f = (f_mag_1 + f_mag_2) * 0.5
                         self.set_mesh_color(avg_f, self.imu_force_min, self.imu_force_max)
                         p1, p2 = lines[i][0], lines[i][1]
@@ -1231,9 +1231,9 @@ class Visualiser:
                     num_lines = len(lines)
                     for i in range(num_lines):
                         node1, node2 = lines[i][2][0], lines[i][2][1]
-                        v1, v2 = mesh_data[node1]['vel'], mesh_data[node2]['vel']
-                        v_mag_1 = vec3(v1[0], v1[1], v1[2]).length()
-                        v_mag_2 = vec3(v2[0], v2[1], v2[2]).length()
+                        md1, md2 = mesh_data[node1], mesh_data[node2]
+                        v_mag_1 = vec3(md1['velX'], md1['velY'], md1['velZ']).length()
+                        v_mag_2 = vec3(md2['velX'], md2['velY'], md2['velZ']).length()
                         avg_v = (v_mag_1 + v_mag_2) * 0.5
                         self.set_mesh_color(avg_v, self.imu_vel_min, self.imu_vel_max)
                         p1, p2 = lines[i][0], lines[i][1]
