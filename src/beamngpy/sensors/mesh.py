@@ -11,6 +11,7 @@ from matplotlib import collections as mc
 
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import StrDict
+from beamngpy.vec3 import vec3
 
 from .communication_utils import send_sensor_request, set_sensor
 
@@ -276,6 +277,8 @@ class Mesh:
         return neighbors
 
     def convert_node_indices_to_int(self):
+        if len(self.node_positions) == 0:
+            return {}
         raw = self.node_positions[0]['nodes']
         nodes = {}
         for k, v in raw.items():
@@ -299,6 +302,26 @@ class Mesh:
         lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
         lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
         return lns1, lns2, lns3
+
+    def project_nodes_to_plane(self, orig, unit_n, unit_x, screen_center, screen_scale):
+        nodes = self.convert_node_indices_to_int()
+        num_nodes = len(nodes)
+        if num_nodes == 0:
+            return []
+        proj_points = []
+        for i in range(num_nodes):
+            node = nodes[i]['pos']
+            p = vec3(node[0], node[1], node[2])
+            p2o = p - orig
+            x = p2o.dot(unit_x)
+            y = p2o.dot(unit_n.cross(unit_x))
+            proj_points.append([(x * screen_scale.x) + screen_center.x, (y * screen_scale.y) + screen_center.y])
+        lines = []
+        for _, v in self.beams.items():
+            p1 = proj_points[v[0]]
+            p2 = proj_points[v[1]]
+            lines.append([[p1[0], p1[1]], [p2[0], p2[1]], [v[0], v[1]]])
+        return [proj_points, lines]
 
     def mesh_plot(self):
         nodes = self.convert_node_indices_to_int()

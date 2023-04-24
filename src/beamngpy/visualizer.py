@@ -9,7 +9,8 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar, AdvancedIMU
+from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar, AdvancedIMU, Mesh
+from beamngpy import vec3
 
 
 CLEAR_COLOUR = (0.1, 0.1, 0.1, 1.0)
@@ -19,36 +20,40 @@ TURN_SPEED = 1
 
 base, texid = 0, 0  # for text rendering.
 
-
-def _on_resize(width, height):
-    if height == 0:
-        height = 1
-    glViewport(0, 0, width, height)
-
 class Visualiser:
-    def __init__(self, bng, vehicle, name, width, height, demo, toggle):
+    def __init__(self, bng, vehicle, name, width, height, demo, toggle, map_name):
 
         # BeamNG state.
         self.bng = bng
         self.vehicle = vehicle
 
-        # Demonstration state.
+        # Demonstration state (from BeamNGpy script).
         self.demo = demo
         self.toggle = toggle
+        self.map_name = 'west_coast_usa'
+
+        # General initialization.
+        self.width, self.height = width, height
+        self.half_width, self.half_height = int(width * 0.5), int(height * 0.5)
+        self.annot_width, self.annot_height = int(width * 0.7), int(height * 0.7)
+
+        # Cached constants.
+        self.bitmap_tex = None
+        half_pi = math.pi * 0.5
+        self.rgb2f = 1.0 / 255.0
 
         # Initialize OpenGL.
-        self.width, self.height = width, height
         glutInit(sys.argv)
         glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
         glutInitWindowSize(width, height)
         self.window = glutCreateWindow(name)
         if height == 0:
             height = 1
-        #glutFullScreen()                                                       # TODO USE THIS LATER
+        #glutFullScreen()                           # TODO MAYBE USE THIS LATER ?
         glutDisplayFunc(self._on_display)
         glutKeyboardFunc(self.on_key)
         glutMotionFunc(self.on_drag)
-        glutReshapeFunc(_on_resize)
+        glutReshapeFunc(self._on_resize)
         glClearColor(*CLEAR_COLOUR)
         glDepthFunc(GL_LESS)
         glDisable(GL_DEPTH_TEST)
@@ -63,37 +68,40 @@ class Visualiser:
         glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE )
 
         # Load font.
-        self.makefont( 'SourceCodePro-Regular.ttf', 16 )  # nicest
-        #self.makefont( 'AnonymousPro-Regular.ttf', 16 )
-        #self.makefont( 'UbuntuMono-B.ttf', 16 )
+        self.makefont( 'SourceCodePro-Regular.ttf', 16 )
 
         # LiDAR initialization.
         self.points_count = 0
         self.points = []
         self.colours = np.zeros(6000000, dtype=np.float32)
-        self.dirty = False
-        self.focus = [0, 0, 0]
-        self.pos = [0, 0, 0]
+        self.focus = [0.0, 0.0, 0.0]
+        self.pos = [0.0, 0.0, 0.0]
         self.pitch = 90
         self.yaw = 0
         self.mouse_x = -1
         self.mouse_y = -1
         self.vertex_buf = 0
         self.colour_buf = 0
-        self.follow = True
         self.frame = 1
-
-        self.bitmap_tex = None
+        self.dirty = False
+        self.follow = True
 
         # Camera initialization.
-        self.camera_image = None
-        self.camera_image_size = None
+        self.camera_color_img, self.camera_color_size = [], []
+        self.camera_annot_img, self.camera_annot_size = [], []
+        self.camera_depth_img, self.camera_depth_size = [], []
+        raw_annot_map = bng.camera.get_annotations()                                                                                # annotation colors indexed by name strings.
+        self.annot_map = {}
+        for key, val in raw_annot_map.items():
+            if key == '':                                                                                                           # change the key of the 'empty space' entry.
+                self.annot_map['EMPTY_SPACE'] = val
+            else:
+                self.annot_map[key] = val
 
         # Ultrasonic initialization.
         car_img = Image.open('car.png')
         self.car_img = np.array(car_img)
-        self.car_img_size = [car_img.size[1], car_img.size[0]] # note the size is flipped for PIL images.
-        half_pi = math.pi * 0.5
+        self.car_img_size = [car_img.size[1], car_img.size[0]]                                                                      # NOTE: size vec is flipped for PIL images.
         gap = 10.0
         ML_x_offset = 500.0                                                                                                         # Top side-bar.
         ML_y_offset = 665.0
@@ -120,15 +128,15 @@ class Visualiser:
         self.loc_MR_5 = [MR_x_offset, MR_y_offset - (5.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (5.0 * MR_h_gap) - MR_h]
         self.loc_MR_6 = [MR_x_offset, MR_y_offset - (6.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (6.0 * MR_h_gap) - MR_h]
         self.div = 100
-        div_f = float(self.div)
+        div_f = half_pi / float(self.div)
         self.wid = 15
         cx, cy = 800, 475
         wid_gap = self.wid + gap
-        r0, r1, r2, r3, r4, r5, r6 = 190, 190 + wid_gap , 190 + (2 * wid_gap ), 190 + (3 * wid_gap ), 190 + (4 * wid_gap ), 190 + (5 * wid_gap ), 190 + (6 * wid_gap )
+        r0, r1, r2, r3, r4, r5, r6 = 190, 190 + wid_gap, 190 + (2 * wid_gap), 190 + (3 * wid_gap), 190 + (4 * wid_gap), 190 + (5 * wid_gap), 190 + (6 * wid_gap)
         self.TR_tx0, self.TR_tx1, self.TR_tx2, self.TR_tx3, self.TR_tx4, self.TR_tx5, self.TR_tx6 = [], [], [], [], [], [], []      # Top-right arc.
         self.TR_ty0, self.TR_ty1, self.TR_ty2, self.TR_ty3, self.TR_ty4, self.TR_ty5, self.TR_ty6 = [], [], [], [], [], [], []
         for i in range(self.div):
-            ang = (i / div_f) * half_pi
+            ang = i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             self.TR_tx0.append((r0 * ca) + cx)
             self.TR_tx1.append((r1 * ca) + cx)
@@ -148,7 +156,7 @@ class Visualiser:
         self.BR_tx0, self.BR_tx1, self.BR_tx2, self.BR_tx3, self.BR_tx4, self.BR_tx5, self.BR_tx6 = [], [], [], [], [], [], []     # Bottom-right arc.
         self.BR_ty0, self.BR_ty1, self.BR_ty2, self.BR_ty3, self.BR_ty4, self.BR_ty5, self.BR_ty6 = [], [], [], [], [], [], []
         for i in range(self.div):
-            ang = -(i / div_f) * half_pi
+            ang = -i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             self.BR_tx0.append((r0 * ca) + cx)
             self.BR_tx1.append((r1 * ca) + cx)
@@ -168,7 +176,7 @@ class Visualiser:
         self.TL_tx0, self.TL_tx1, self.TL_tx2, self.TL_tx3, self.TL_tx4, self.TL_tx5, self.TL_tx6 = [], [], [], [], [], [], []      # Top-left arc.
         self.TL_ty0, self.TL_ty1, self.TL_ty2, self.TL_ty3, self.TL_ty4, self.TL_ty5, self.TL_ty6 = [], [], [], [], [], [], []
         for i in range(self.div):
-            ang = (i / div_f) * half_pi
+            ang = i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             self.TL_tx0.append(cx - (r0 * ca))
             self.TL_tx1.append(cx - (r1 * ca))
@@ -188,7 +196,7 @@ class Visualiser:
         self.BL_tx0, self.BL_tx1, self.BL_tx2, self.BL_tx3, self.BL_tx4, self.BL_tx5, self.BL_tx6 = [], [], [], [], [], [], []      # Bottom-left arc.
         self.BL_ty0, self.BL_ty1, self.BL_ty2, self.BL_ty3, self.BL_ty4, self.BL_ty5, self.BL_ty6 = [], [], [], [], [], [], []
         for i in range(self.div):
-            ang = -(i / div_f) * half_pi
+            ang = -i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             self.BL_tx0.append(cx - (r0 * ca))
             self.BL_tx1.append(cx - (r1 * ca))
@@ -222,18 +230,15 @@ class Visualiser:
         self.radar_fov = 70.0
         self.radar_range_min = 0.1
         self.radar_range_max = 100.0
-        self.fov_azimuth = (self.radar_res[0] / float(self.radar_res[1])) * self.radar_fov
-        self.half_fov_azimuth = self.fov_azimuth * 0.5
-        self.fov_rad = np.deg2rad(self.fov_azimuth)
-        self.max_az_rad = self.fov_rad * 0.5
+        fov_azimuth = (self.radar_res[0] / float(self.radar_res[1])) * self.radar_fov
+        self.half_fov_azimuth = fov_azimuth * 0.5
+        self.max_az_rad = np.deg2rad(fov_azimuth) * 0.5
         self.min_az_rad = -self.max_az_rad
-        self.radar_f1 = self.radar_range_max / (self.radar_bins[0] + 1)
-        self.radar_f2 = -((self.max_az_rad - self.min_az_rad) / (self.radar_bins[1] + 1))
-        self.radar_extent = (-self.half_fov_azimuth, self.half_fov_azimuth, self.radar_range_min, self.radar_range_max)
-        self.r, self.az = np.mgrid[0.0:self.radar_range_max:self.radar_f1, self.max_az_rad:self.min_az_rad:self.radar_f2]
-        self.az_plus_half_pi = self.az + (np.pi * 0.5)
-        self.grid_x = self.r * np.cos(self.az_plus_half_pi)
-        self.grid_y = self.r * np.sin(self.az_plus_half_pi)
+        radar_f1 = self.radar_range_max / (self.radar_bins[0] + 1)
+        radar_f2 = -((self.max_az_rad - self.min_az_rad) / (self.radar_bins[1] + 1))
+        radius, azimuth = np.mgrid[0.0:self.radar_range_max:radar_f1, self.max_az_rad:self.min_az_rad:radar_f2]
+        az_plus_half_pi = azimuth + half_pi
+        self.grid_x, self.grid_y = radius * np.cos(az_plus_half_pi), radius * np.sin(az_plus_half_pi)
 
         # IMU:
         rpy_img = Image.open('imu_rpy.png')
@@ -241,78 +246,95 @@ class Visualiser:
         self.rpy_img_size = [rpy_img.size[1], rpy_img.size[0]] # note the size is flipped for PIL images.
         self.imu_acc1_verts, self.imu_acc2_verts, self.imu_acc3_verts = [], [], []
         self.imu_gyro1_verts, self.imu_gyro2_verts, self.imu_gyro3_verts = [], [], []
-        self.imu_acc1_axis_x, self.imu_acc1_axis_y = [90, 700, 1110, 700], [100, 690, 100, 960]  # the axis lines for the accel plots.
-        self.imu_acc2_axis_x, self.imu_acc2_axis_y = [90, 400, 1110, 400], [100, 390, 100, 660]
-        self.imu_acc3_axis_x, self.imu_acc3_axis_y = [90, 100, 1110, 100], [100, 90, 100, 360]
-        self.imu_acc1_grid = []
+        self.imu_1_axis_x, self.imu_1_axis_y = [90, 700, 1110, 700], [100, 690, 100, 960]  # the axis lines for the accel plots.
+        self.imu_2_axis_x, self.imu_2_axis_y = [90, 400, 1110, 400], [100, 390, 100, 660]
+        self.imu_3_axis_x, self.imu_3_axis_y = [90, 100, 1110, 100], [100, 90, 100, 360]
+        self.imu_1_grid = []
         grid_dx, grid_dy = 10, 4
-        col = True
+        col_flag = True
+        div = float(1000) / float(grid_dx)
         for i in range(1, grid_dx + 1):
-            div = float(1000) / float(grid_dx)
             gx = 100 + (i * div)
-            self.imu_acc1_grid.append([gx, 690, gx, 960, col])
-            col = not col
-        col = True
+            self.imu_1_grid.append([gx, 690, gx, 960, col_flag])
+            col_flag = not col_flag
+        col_flag = True
+        div = float(250) / float(grid_dy)
         for i in range(1, grid_dy + 1):
-            div = float(250) / float(grid_dy)
             gy = 700 + (i * div)
-            self.imu_acc1_grid.append([90, gy, 1110, gy, col])
-            col = not col
-        self.imu_acc2_grid = []
-        col = True
+            self.imu_1_grid.append([90, gy, 1110, gy, col_flag])
+            col_flag = not col_flag
+        self.imu_2_grid = []
+        col_flag = True
+        div = float(1000) / float(grid_dx)
         for i in range(1, grid_dx + 1):
-            div = float(1000) / float(grid_dx)
             gx = 100 + (i * div)
-            self.imu_acc2_grid.append([gx, 390, gx, 660, col])
-            col = not col
-        col = True
+            self.imu_2_grid.append([gx, 390, gx, 660, col_flag])
+            col_flag = not col_flag
+        col_flag = True
+        div = float(250) / float(grid_dy)
         for i in range(1, grid_dy + 1):
-            div = float(250) / float(grid_dy)
             gy = 400 + (i * div)
-            self.imu_acc2_grid.append([90, gy, 1110, gy, col])
-            col = not col
-        self.imu_acc3_grid = []
-        col = True
+            self.imu_2_grid.append([90, gy, 1110, gy, col_flag])
+            col_flag = not col_flag
+        self.imu_3_grid = []
+        col_flag = True
+        div = float(1000) / float(grid_dx)
         for i in range(1, grid_dx + 1):
-            div = float(1000) / float(grid_dx)
             gx = 100 + (i * div)
-            self.imu_acc3_grid.append([gx, 90, gx, 360, col])
-            col = not col
-        col = True
+            self.imu_3_grid.append([gx, 90, gx, 360, col_flag])
+            col_flag = not col_flag
+        col_flag = True
+        div = float(250) / float(grid_dy)
         for i in range(1, grid_dy + 1):
-            div = float(250) / float(grid_dy)
             gy = 100 + (i * div)
-            self.imu_acc3_grid.append([90, gy, 1110, gy, col])
-            col = not col
+            self.imu_3_grid.append([90, gy, 1110, gy, col_flag])
+            col_flag = not col_flag
         self.acc1, self.acc2, self.acc3, self.gyro1, self.gyro2, self.gyro3 = deque(), deque(), deque(), deque(), deque(), deque()
-        self.imu_t_start, self.imu_t_end = 100, 1100 # screen limits for all imu readings (in t).
-        self.imu_t_width = self.imu_t_end - self.imu_t_start
-        self.imu_acc_min, self.imu_acc_max, self.imu_gyro_min, self.imu_gyro_max = -50.0, 50.0, -50.0, 50.0 # value limits for imu readings.
+        imu_t_start, imu_t_end = 100, 1100                                                                          # screen limits for all imu readings (in t).
+        imu_t_width = imu_t_end - imu_t_start
+        self.imu_acc_min, self.imu_acc_max, self.imu_gyro_min, self.imu_gyro_max = -50.0, 50.0, -5.0, 5.0           # value limits for imu readings.
+        self.imu_acc_neg, self.imu_acc_pos, self.imu_gyro_neg, self.imu_gyro_pos = '-50.0', '50.0', '-5.0', '5.0'
         self.imu_acc_height, self.imu_gyro_height = self.imu_acc_max - self.imu_acc_min, self.imu_gyro_max - self.imu_gyro_min
-        self.imu_acc_height_inv = 1.0 / self.imu_acc_height
-        self.imu_acc1_y_min, self.imu_acc1_y_max = 700, 950 # screen limits in y for acc1 reading.
-        self.imu_acc2_y_min, self.imu_acc2_y_max = 400, 650 # screen limits in y for acc2 reading.
-        self.imu_acc3_y_min, self.imu_acc3_y_max = 100, 350 # screen limits in y for acc3 reading.
-        self.imu_acc1_y_range = self.imu_acc1_y_max - self.imu_acc1_y_min
-        self.imu_acc2_y_range = self.imu_acc2_y_max - self.imu_acc2_y_min
-        self.imu_acc3_y_range = self.imu_acc3_y_max - self.imu_acc3_y_min
-        self.imu_acc1_f, self.imu_acc2_f, self.imu_acc3_f = self.imu_acc_height_inv * self.imu_acc1_y_range, self.imu_acc_height_inv * self.imu_acc2_y_range, self.imu_acc_height_inv * self.imu_acc3_y_range
-        self.imu_t = [] # pre-compute the time axis.
-        num_imu_entries = 2000
-        for i in range(num_imu_entries):   # populate a queue with 2000 dummy entries (rep. 2 seconds of data) to get us started.
+        self.imu_acc_height_inv, self.imu_gyro_height_inv = 1.0 / self.imu_acc_height, 1.0 / self.imu_gyro_height
+        self.imu_1_y_min, self.imu_1_y_max = 700, 950                                                               # screen limits in y for acc1/gyro1 reading.
+        self.imu_2_y_min, self.imu_2_y_max = 400, 650                                                               # screen limits in y for acc2/gyro2 reading.
+        self.imu_3_y_min, self.imu_3_y_max = 100, 350                                                               # screen limits in y for acc3/gyro3 reading.
+        self.imu_1_y_range, self.imu_2_y_range, self.imu_3_y_range = self.imu_1_y_max - self.imu_1_y_min, self.imu_2_y_max - self.imu_2_y_min, self.imu_3_y_max - self.imu_3_y_min
+        self.imu_acc1_f, self.imu_acc2_f, self.imu_acc3_f = self.imu_acc_height_inv * self.imu_1_y_range, self.imu_acc_height_inv * self.imu_2_y_range, self.imu_acc_height_inv * self.imu_3_y_range
+        self.imu_gyro1_f, self.imu_gyro2_f, self.imu_gyro3_f = self.imu_gyro_height_inv * self.imu_1_y_range, self.imu_gyro_height_inv * self.imu_2_y_range, self.imu_gyro_height_inv * self.imu_3_y_range
+        self.imu_t = []                                                                                             # pre-compute the time axis.
+        num_imu_entries, num_imu_entries_inv = 2000, 1.0 / 2000.0
+        for i in range(num_imu_entries):                                                                            # init a queue with 2000 dummy entries (rep. 2s of data).
             self.acc1.append(0.0)
             self.acc2.append(0.0)
             self.acc3.append(0.0)
             self.gyro1.append(0.0)
             self.gyro2.append(0.0)
             self.gyro3.append(0.0)
-            self.imu_t.append(self.imu_t_start + (float(i)/float(num_imu_entries)) * self.imu_t_width)
+            self.imu_t.append(imu_t_start + (float(i) * num_imu_entries_inv) * imu_t_width)
+
+        # Mesh sensor:
+        self.mesh_data = {}
+        self.imu_mass_min, self.imu_mass_max = 0.0, 10.0
+        self.mesh_mass_cbar_label0, self.mesh_mass_cbar_label1, self.mesh_mass_cbar_label2 = '0 kg', '5 kg', '10 kg'
+        self.imu_force_min, self.imu_force_max = 0.0, 300.0
+        self.mesh_force_cbar_label0, self.mesh_force_cbar_label1, self.mesh_force_cbar_label2 = '0 N', '150 N', '300 N'
+        self.imu_vel_min, self.imu_vel_max = 0.0, 50.0
+        self.mesh_vel_cbar_label0, self.mesh_vel_cbar_label1, self.mesh_vel_cbar_label2 = '0 m/s', '25 m/s', '50 m/s'
+        self.screen_center_x, self.screen_center_y = self.half_width, self.half_height
+        self.plan_data, self.elevation_data, self.end_elevation_data = [], [], []
+        self.mesh_node_size = 1                                                                                     # The size of node rects on render.
+        self.mesh_plan_screen_center, self.mesh_plan_screen_scale = vec3(495, 720), vec3(150, 150)                  # scale/translation for each of the 3 views.
+        self.mesh_elev_screen_center, self.mesh_elev_screen_scale = vec3(495, 180), vec3(150, 150)
+        self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale = vec3(1295, 180), vec3(150, 150)
 
         # Set up the chosen demonstration.
         if self.demo == 'camera':
-            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1000, 1000), near_far_planes=(0.01, 1000))
+            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000))
+
         elif demo == 'lidar':
             self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40)
+
         elif demo == 'ultrasonic':
             self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
@@ -326,23 +348,33 @@ class Visualiser:
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
             self.us_MR = Ultrasonic('us_MR', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+
         elif demo == 'radar':
             self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max)
-        elif demo == 'imu_A':
+
+        elif demo == 'imu':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
-        elif demo == 'imu_B':
-            pass
+
+        elif demo == 'mesh':
+            self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.05, physics_update_time=0.025)
+
         elif demo == 'multi':
             self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.01, is_using_shared_memory=True, is_visualised=False)
+
         else:
             print("*** WARNING: MAIN SEQUENCE - DEMONSTRATION TITLE NOT FOUND ***")
 
     def run(self):
         glutIdleFunc(self._update)
         glutMainLoop()
+
+    def _on_resize(self, width, height):
+        if height == 0:
+            height = 1
+        glViewport(0, 0, width, height)
 
     def on_key(self, name, *args):
         if name == b'f':
@@ -378,101 +410,95 @@ class Visualiser:
         self.mouse_x = x
         self.mouse_y = y
 
-    def update_lidar(self, points, vehicle_state):
-        assert not self.dirty
-        if len(points) == 0:
-            return
-        self.points = points
-        self.points_count = len(points)
-        verts = np.array(self.points, dtype=np.float32)
-        if self.vertex_buf:
-            glDeleteBuffers(1, self.vertex_buf)
-        self.vertex_buf = np.uint64(glGenBuffers(1))
-        glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
-        glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, verts, GL_STATIC_DRAW)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        min_height = points[2::3].min()
-        max_height = np.absolute(points[2::3].max() - min_height)
-        self.colours[0:self.points_count:3] = points[2::3]
-        self.colours[0:self.points_count:3] -= min_height
-        self.colours[0:self.points_count:3] /= max_height
-        self.colours[1:self.points_count:3] = 0.25
-        self.colours[2:self.points_count:3] = 1.0 - self.colours[0:self.points_count:3]
-        glDeleteBuffers(1, self.colour_buf)
-        self.colour_buf = np.uint64(glGenBuffers(1))
-        glBindBuffer(GL_ARRAY_BUFFER, self.colour_buf)
-        glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, self.colours, GL_STATIC_DRAW)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        if self.follow and vehicle_state:
-            self.focus = vehicle_state['pos']
-            self.pos[0] = self.focus[0] + vehicle_state['dir'][0] * -30
-            self.pos[1] = self.focus[1] + vehicle_state['dir'][1] * -30
-            self.pos[2] = self.focus[2] + vehicle_state['dir'][2] + 10
-
-    def update_ultrasonic(self, d_FL, d_FR, d_BL, d_BR, d_ML, d_MR):
-        if d_FL > 5.0:
-            self.us_bar_FL = 6
-        elif d_FL < 0.5:
-            self.us_bar_FL = 0
-        else:
-            self.us_bar_FL = int(np.floor(d_FL)) + 1
-        if d_FR > 5.0:
-            self.us_bar_FR = 6
-        elif d_FR < 0.5:
-            self.us_bar_FR = 0
-        else:
-            self.us_bar_FR = int(np.floor(d_FR)) + 1
-        if d_BL > 5.0:
-            self.us_bar_BL = 6
-        elif d_BL < 0.5:
-            self.us_bar_BL = 0
-        else:
-            self.us_bar_BL = int(np.floor(d_BL)) + 1
-        if d_BR > 5.0:
-            self.us_bar_BR = 6
-        elif d_BR < 0.5:
-            self.us_bar_BR = 0
-        else:
-            self.us_bar_BR = int(np.floor(d_BR)) + 1
-        if d_ML > 5.0:
-            self.us_bar_ML = 6
-        elif d_ML < 0.5:
-            self.us_bar_ML = 0
-        else:
-            self.us_bar_ML = int(np.floor(d_ML)) + 1
-        if d_MR > 5.0:
-            self.us_bar_MR = 6
-        elif d_MR < 0.5:
-            self.us_bar_MR = 0
-        else:
-            self.us_bar_MR = int(np.floor(d_MR)) + 1
-
     def _update(self):
         # Handle the update for the chosen demonstration.
         if self.demo == 'camera':
-            if self.toggle == 0:
-                camera_data = self.camera.poll_shmem_annotation()
-                self.camera_image_size = [camera_data[1], camera_data[2]]
-                self.camera_image = camera_data[0]
-            elif self.toggle == 1:
-                camera_data = self.camera.poll_shmem_colour()
-                self.camera_image_size = [camera_data[1], camera_data[2]]
-                self.camera_image = camera_data[0]
-            else:
-                camera_data = self.camera.poll_shmem_depth()
-                self.camera_image_size = [camera_data[1], camera_data[2]]
-                self.camera_image = camera_data[0]
+            if self.toggle == 0 or self.toggle == 3:
+                camera_data1 = self.camera.poll_shmem_colour()
+                self.camera_color_size = [camera_data1[1], camera_data1[2]]
+                self.camera_color_img = camera_data1[0]
+            if self.toggle == 1 or self.toggle == 3:
+                camera_data2 = self.camera.poll_shmem_annotation()
+                self.camera_annot_size = [camera_data2[1], camera_data2[2]]
+                self.camera_annot_img = camera_data2[0]
+            if self.toggle > 1:
+                camera_data3 = self.camera.poll_shmem_depth()
+                self.camera_depth_size = [camera_data3[1], camera_data3[2]]
+                self.camera_depth_img = camera_data3[0]
 
         elif self.demo == 'lidar':
             self.vehicle.sensors.poll()
             points = self.lidar.poll()['pointCloud']
-            self.update_lidar(points, self.vehicle.state)
+            assert not self.dirty
+            if len(points) == 0:
+                return
+            self.points = points
+            self.points_count = len(points)
+            verts = np.array(self.points, dtype=np.float32)
+            if self.vertex_buf:
+                glDeleteBuffers(1, self.vertex_buf)
+            self.vertex_buf = np.uint64(glGenBuffers(1))
+            glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
+            glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, verts, GL_STATIC_DRAW)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            min_height = points[2::3].min()
+            max_height = np.absolute(points[2::3].max() - min_height)
+            self.colours[0:self.points_count:3] = points[2::3]
+            self.colours[0:self.points_count:3] -= min_height
+            self.colours[0:self.points_count:3] /= max_height
+            self.colours[1:self.points_count:3] = 0.25
+            self.colours[2:self.points_count:3] = 1.0 - self.colours[0:self.points_count:3]
+            glDeleteBuffers(1, self.colour_buf)
+            self.colour_buf = np.uint64(glGenBuffers(1))
+            glBindBuffer(GL_ARRAY_BUFFER, self.colour_buf)
+            glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, self.colours, GL_STATIC_DRAW)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            if self.follow and self.vehicle.state:
+                self.focus = self.vehicle.state['pos']
+                self.pos[0] = self.focus[0] + self.vehicle.state['dir'][0] * -30
+                self.pos[1] = self.focus[1] + self.vehicle.state['dir'][1] * -30
+                self.pos[2] = self.focus[2] + self.vehicle.state['dir'][2] + 10
 
         elif self.demo == 'ultrasonic':
             d_FL, d_FR = self.us_FL.poll()['distance'], self.us_FR.poll()['distance']
             d_BL, d_BR = self.us_BL.poll()['distance'], self.us_BR.poll()['distance']
             d_ML, d_MR = self.us_ML.poll()['distance'], self.us_MR.poll()['distance']
-            self.update_ultrasonic(d_FL, d_FR, d_BL, d_BR, d_ML, d_MR)
+            if d_FL > 5.0:
+                self.us_bar_FL = 6
+            elif d_FL < 0.5:
+                self.us_bar_FL = 0
+            else:
+                self.us_bar_FL = int(np.floor(d_FL)) + 1
+            if d_FR > 5.0:
+                self.us_bar_FR = 6
+            elif d_FR < 0.5:
+                self.us_bar_FR = 0
+            else:
+                self.us_bar_FR = int(np.floor(d_FR)) + 1
+            if d_BL > 5.0:
+                self.us_bar_BL = 6
+            elif d_BL < 0.5:
+                self.us_bar_BL = 0
+            else:
+                self.us_bar_BL = int(np.floor(d_BL)) + 1
+            if d_BR > 5.0:
+                self.us_bar_BR = 6
+            elif d_BR < 0.5:
+                self.us_bar_BR = 0
+            else:
+                self.us_bar_BR = int(np.floor(d_BR)) + 1
+            if d_ML > 5.0:
+                self.us_bar_ML = 6
+            elif d_ML < 0.5:
+                self.us_bar_ML = 0
+            else:
+                self.us_bar_ML = int(np.floor(d_ML)) + 1
+            if d_MR > 5.0:
+                self.us_bar_MR = 6
+            elif d_MR < 0.5:
+                self.us_bar_MR = 0
+            else:
+                self.us_bar_MR = int(np.floor(d_MR)) + 1
 
         elif self.demo == 'radar':
             if self.toggle == 0:
@@ -491,37 +517,61 @@ class Visualiser:
                 self.radar_image_size = [self.radar_bins[0], self.radar_bins[1]]
                 self.radar_image = ppi_data
 
-        elif self.demo == 'imu_A':
+        elif self.demo == 'imu':
             full_imu_data = self.imu1.poll()
-            for new_imu_data in full_imu_data:                 # update queues with latest IMU readings (all readings since last poll).
+            for new_imu_data in full_imu_data:                                              # update queues with latest IMU readings (all readings since last poll).
+                acc, gyro = new_imu_data['accSmooth'], new_imu_data['angVelSmooth']
                 self.acc1.popleft()
-                self.acc1.append(self.imu_acc1_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][2])) - self.imu_acc_min) * self.imu_acc1_f)  # z at top.
+                self.acc1.append(self.imu_1_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, acc[2])) - self.imu_acc_min) * self.imu_acc1_f)            # z (top plot).
                 self.acc2.popleft()
-                self.acc2.append(self.imu_acc2_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][1])) - self.imu_acc_min) * self.imu_acc2_f)  # y in middle.
+                self.acc2.append(self.imu_2_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, acc[1])) - self.imu_acc_min) * self.imu_acc2_f)            # y (middle plot).
                 self.acc3.popleft()
-                self.acc3.append(self.imu_acc3_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, new_imu_data['accSmooth'][0])) - self.imu_acc_min) * self.imu_acc3_f)  # x at bottom.
+                self.acc3.append(self.imu_3_y_min + (max(self.imu_acc_min, min(self.imu_acc_max, acc[0])) - self.imu_acc_min) * self.imu_acc3_f)            # x (bottom plot).
                 self.gyro1.popleft()
-                self.gyro1.append(new_imu_data['angVelSmooth'][0])
+                self.gyro1.append(self.imu_1_y_min + (max(self.imu_gyro_min, min(self.imu_gyro_max, gyro[2])) - self.imu_gyro_min) * self.imu_gyro1_f)      # z (top plot).
                 self.gyro2.popleft()
-                self.gyro2.append(new_imu_data['angVelSmooth'][1])
+                self.gyro2.append(self.imu_2_y_min + (max(self.imu_gyro_min, min(self.imu_gyro_max, gyro[1])) - self.imu_gyro_min) * self.imu_gyro2_f)      # y (middle plot).
                 self.gyro3.popleft()
-                self.gyro3.append(new_imu_data['angVelSmooth'][2])
-            self.imu_acc1_verts, self.imu_acc2_verts, self.imu_acc3_verts = [], [], [] # reset the vert lists.
+                self.gyro3.append(self.imu_3_y_min + (max(self.imu_gyro_min, min(self.imu_gyro_max, gyro[0])) - self.imu_gyro_min) * self.imu_gyro3_f)      # x (bottom plot).
+            self.imu_acc1_verts, self.imu_acc2_verts, self.imu_acc3_verts = [], [], []      # reset the acc vert lists.
+            self.imu_gyro1_verts, self.imu_gyro2_verts, self.imu_gyro3_verts = [], [], []   # reset the gyro vert lists.
             ctr = 0
-            for acc1_idx in self.acc1:                                           # create verts from acc1 data.
+            for acc1_idx in self.acc1:                                                      # create verts from acc1 data.
                 self.imu_acc1_verts.append([self.imu_t[ctr], acc1_idx])
                 ctr = ctr + 1
             ctr = 0
-            for acc2_idx in self.acc2:                                           # create verts from acc2 data.
+            for acc2_idx in self.acc2:                                                      # create verts from acc2 data.
                 self.imu_acc2_verts.append([self.imu_t[ctr], acc2_idx])
                 ctr = ctr + 1
             ctr = 0
-            for acc3_idx in self.acc3:                                           # create verts from acc3 data.
+            for acc3_idx in self.acc3:                                                      # create verts from acc3 data.
                 self.imu_acc3_verts.append([self.imu_t[ctr], acc3_idx])
                 ctr = ctr + 1
+            ctr = 0
+            for gyro1_idx in self.gyro1:                                                    # create verts from gyro1 data.
+                self.imu_gyro1_verts.append([self.imu_t[ctr], gyro1_idx])
+                ctr = ctr + 1
+            ctr = 0
+            for gyro2_idx in self.gyro2:                                                    # create verts from gyro2 data.
+                self.imu_gyro2_verts.append([self.imu_t[ctr], gyro2_idx])
+                ctr = ctr + 1
+            ctr = 0
+            for gyro3_idx in self.gyro3:                                                    # create verts from gyro3 data.
+                self.imu_gyro3_verts.append([self.imu_t[ctr], gyro3_idx])
+                ctr = ctr + 1
 
-        elif self.demo == 'imu_B':
-            pass
+        elif self.demo == 'mesh':
+            self.vehicle.sensors.poll()
+            state = self.vehicle.state
+            if state:
+                v_origin = vec3(0.0, 0.0, 0.0)
+                v_forward = vec3(state['dir'][0], state['dir'][1], state['dir'][2]).normalize()
+                v_up = vec3(state['up'][0], state['up'][1], state['up'][2]).normalize()
+                v_right = v_forward.cross(v_up)
+                self.mesh_data = self.mesh.poll()                                           # update the mesh in the mesh class state.
+                self.plan_data = self.mesh.project_nodes_to_plane(v_origin, v_up, v_forward, self.mesh_plan_screen_center, self.mesh_plan_screen_scale)
+                self.elevation_data = self.mesh.project_nodes_to_plane(v_origin, v_right, v_forward, self.mesh_elev_screen_center, self.mesh_elev_screen_scale)
+                self.end_elevation_data = self.mesh.project_nodes_to_plane(v_origin, v_forward, v_right * -1.0, self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale)
 
         elif self.demo == 'multi':
             pass
@@ -529,7 +579,7 @@ class Visualiser:
         else:
             print("*** WARNING: UPDATE - DEMONSTRATION TITLE NOT FOUND ***")
 
-        # Finish the OpenGL flush.
+        # OpenGL - goes to display function.
         glutPostRedisplay()
 
     def _on_display(self):
@@ -544,15 +594,190 @@ class Visualiser:
 
         # Individual render data for each demonstration.
         if self.demo == 'camera':
-            glViewport(0, 0, self.width, self.height)
-            if self.camera_image_size != None:
-                if self.toggle == 2:
-                    self.render_img(0, 0, self.camera_image, self.camera_image_size[0], self.camera_image_size[1], 1, 1, 1, 2)
-                else:
-                    self.render_img(0, 0, self.camera_image, self.camera_image_size[0], self.camera_image_size[1], 1, 1, 1, 0)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            if self.toggle == 0:                                                                                                                # colour image only.
+                if len(self.camera_color_size) > 0:
+                    glViewport(0, 0, self.width, self.height - 40)
+                    self.render_img(50, 50, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+                    # Now deal with the 2D top bar (title etc).
+                    glViewport(0, self.height - 40, self.width, self.height)
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # Title underline.
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([75, 1, 400, 1])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(85, 21, 'Camera Sensor - Color Image')
+                    self.draw_text(1250, 21, 'Vehicle: ')
+                    self.draw_text(1550, 21, 'Model: ')
+                    glColor3f(0.85, 0.35, 0.70)
+                    self.draw_text(1255, 21, '         ' + self.vehicle.vid)
+                    self.draw_text(1550, 21, '       ' + self.vehicle.model)
+                    glDisable( GL_TEXTURE_2D )
+
+            elif self.toggle == 1:                                                                                                              # annotation image only.
+                if len(self.camera_annot_size) > 0:
+                    glViewport(0, 0, self.annot_width, self.annot_height)
+                    self.render_img(50, 50, self.camera_annot_img, self.camera_annot_size[0], self.camera_annot_size[1], 1, 1, 1, 0)
+
+                    # Now deal with the 2D top bar (title etc).
+                    glViewport(0, 0, self.width, self.height)
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # Title underline.
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([75, 950, 460, 950])
+
+                    # View-division lines.
+                    glLineWidth(3.0)
+                    self.draw_line([0, self.annot_height, self.annot_width, self.annot_height])
+                    self.draw_line([self.annot_width, 0, self.annot_width, self.height])
+
+                    # Draw the colour rectangles for each class key.
+                    glLineWidth(1.0)
+                    box_x0, box_x1 = 1400, 1420
+                    ctr = 0
+                    for _, val in self.annot_map.items():
+                        y_pos = 881 - (ctr * 26)
+                        ctr = ctr + 1
+                        box_y0, box_y1 = y_pos - 2, y_pos + 18
+                        glColor3f(val[0] * self.rgb2f, val[1] * self.rgb2f, val[2] * self.rgb2f)
+                        glRectf(box_x0, box_y0, box_x0 + 20, box_y0 + 20)
+                        glColor3f(0.5, 0.5, 0.5)
+                        self.draw_line([box_x0, box_y0, box_x1, box_y0])
+                        self.draw_line([box_x0, box_y1, box_x1, box_y1])
+                        self.draw_line([box_x0, box_y0, box_x0, box_y1])
+                        self.draw_line([box_x1, box_y0, box_x1, box_y1])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(85, 971, 'Camera Sensor - Class Annotations')
+                    self.draw_text(85, 875, 'Vehicle: ')
+                    self.draw_text(85, 835, 'Model: ')
+                    self.draw_text(85, 795, 'Map: ')
+                    self.draw_text(1400, 971, 'Color -> Class Map:')
+                    glColor3f(0.85, 0.35, 0.70)
+                    self.draw_text(85, 875, '         ' + self.vehicle.vid)
+                    self.draw_text(85, 835, '       ' + self.vehicle.model)
+                    self.draw_text(85, 795, '     ' + self.map_name)
+                    ctr = 0
+                    for k in self.annot_map.keys():
+                        y_pos = 895 - (ctr * 26)
+                        ctr = ctr + 1
+                        self.draw_text(1450, y_pos, k)
+                    glDisable( GL_TEXTURE_2D )
+
+            elif self.toggle == 2:                                                                                                              # depth image only.
+                if len(self.camera_depth_size) > 0:
+                    glViewport(0, 0, self.width, self.height)
+                    self.render_img(50, 50, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
+
+                    # Now deal with the 2D top bar (title etc).
+                    glViewport(0, self.height - 40, self.width, self.height)
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # Title underline.
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([75, 1, 400, 1])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(85, 21, 'Camera Sensor - Depth Image')
+                    self.draw_text(1250, 21, 'Vehicle: ')
+                    self.draw_text(1550, 21, 'Model: ')
+                    glColor3f(0.85, 0.35, 0.70)
+                    self.draw_text(1255, 21, '         ' + self.vehicle.vid)
+                    self.draw_text(1550, 21, '       ' + self.vehicle.model)
+                    glDisable( GL_TEXTURE_2D )
+
+            else:                                                                                                                               # all images.
+                if len(self.camera_color_size) > 0:
+                    glViewport(0, 0, self.half_width, self.half_height)
+                    self.render_img(50, 80, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+                if len(self.camera_annot_size) > 0:
+                    glViewport(self.half_width, 0, self.half_width, self.half_height)
+                    self.render_img(50, 80, self.camera_annot_img, self.camera_annot_size[0], self.camera_annot_size[1], 1, 1, 1, 0)
+                if len(self.camera_depth_size) > 0:
+                    glViewport(0, self.half_height, self.half_width, self.half_height)
+                    self.render_img(50, 80, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
+
+                    glViewport(0, 0, self.width, self.height)
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # View-division lines.
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(3.0)
+                    self.draw_line([0, self.screen_center_y, self.width, self.screen_center_y])
+                    self.draw_line([self.screen_center_x, 0, self.screen_center_x, self.height])
+
+                    # Title underline.
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([940, 932, 1105, 932])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(377, 525, ' Depth Camera')
+                    self.draw_text(1230, 25, '  Semantic Annotations')
+                    self.draw_text(386, 25, 'Color Camera')
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(950, 950, 'Camera Sensor')
+                    self.draw_text(950, 850, 'Vehicle: ')
+                    self.draw_text(950, 800, 'Model: ')
+                    glColor3f(0.85, 0.35, 0.70)
+                    self.draw_text(950, 850, '         ' + self.vehicle.vid)
+                    self.draw_text(950, 800, '       ' + self.vehicle.model)
+                    glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
 
         elif self.demo == 'lidar':
-            glViewport(0, 0, self.width, self.height)
+            glViewport(0, 0, self.width, self.height - 40)
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
             if self.points_count > 0:
                 glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
                 glVertexPointer(3, GL_FLOAT, 0, ctypes.c_void_p(0))
@@ -564,6 +789,41 @@ class Visualiser:
                 glDisableClientState(GL_VERTEX_ARRAY)
                 glDisableClientState(GL_COLOR_ARRAY)
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+            # Now deal with the 2D top bar (title etc).
+            glViewport(0, self.height - 40, self.width, self.height)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            # Title underline.
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(2.0)
+            self.draw_line([75, 2, 285, 2])
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(85, 20, 'LiDAR Sensor: Point Cloud')
+            self.draw_text(1250, 20, 'Vehicle: ')
+            self.draw_text(1550, 20, 'Model: ')
+            glColor3f(0.85, 0.35, 0.70)
+            self.draw_text(1255, 20, '         ' + self.vehicle.vid)
+            self.draw_text(1550, 20, '       ' + self.vehicle.model)
+            glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
 
         elif self.demo == 'ultrasonic':
             glViewport(0, 0, self.width, self.height)
@@ -797,7 +1057,7 @@ class Visualiser:
                 if self.radar_image_size != None:
                     self.render_img(0, 0, self.radar_image, self.radar_image_size[0], self.radar_image_size[1], 1, 1, 1, 2)
 
-        elif self.demo == 'imu_A':
+        elif self.demo == 'imu':
             glViewport(0, 0, self.width, self.height)
              # Draw the roll-pitch-yaw picture.
             self.render_img(1150, 50, self.rpy_img, self.rpy_img_size[0], self.rpy_img_size[1], 1, 1, 1, 1)  # The roll-pitch-yaw image.
@@ -831,216 +1091,88 @@ class Visualiser:
             self.draw_line([1505, 470, 1505, 420])
 
             # Draw grid.
-            for i in range(len(self.imu_acc1_grid)):
-                if self.imu_acc1_grid[i][4] == True:
+            for i in range(len(self.imu_1_grid)):
+                if self.imu_1_grid[i][4] == True:
                     glColor3f(0.1, 0.1, 0.1)
                     glLineWidth(1.0)
                 else:
                     glColor3f(0.2, 0.2, 0.2)
                     glLineWidth(2.0)
-                self.draw_line(self.imu_acc1_grid[i][0:4])
-            for i in range(len(self.imu_acc2_grid)):
-                if self.imu_acc2_grid[i][4] == True:
+                self.draw_line(self.imu_1_grid[i][0:4])
+            for i in range(len(self.imu_2_grid)):
+                if self.imu_2_grid[i][4] == True:
                     glColor3f(0.1, 0.1, 0.1)
                     glLineWidth(1.0)
                 else:
                     glColor3f(0.2, 0.2, 0.2)
                     glLineWidth(2.0)
-                self.draw_line(self.imu_acc2_grid[i][0:4])
-            for i in range(len(self.imu_acc3_grid)):
-                if self.imu_acc3_grid[i][4] == True:
+                self.draw_line(self.imu_2_grid[i][0:4])
+            for i in range(len(self.imu_3_grid)):
+                if self.imu_3_grid[i][4] == True:
                     glColor3f(0.1, 0.1, 0.1)
                     glLineWidth(1.0)
                 else:
                     glColor3f(0.2, 0.2, 0.2)
                     glLineWidth(2.0)
-                self.draw_line(self.imu_acc3_grid[i][0:4])
+                self.draw_line(self.imu_3_grid[i][0:4])
 
-            # Draw acceleration data.
+            # Draw acc/gyro data.
             glColor3f(1.0, 0.0, 0.0)
             glLineWidth(2.0)
-            self.draw_line_strip(self.imu_acc1_verts)
-            self.draw_line_strip(self.imu_acc2_verts)
-            self.draw_line_strip(self.imu_acc3_verts)
+            if self.toggle == 0:
+                self.draw_line_strip(self.imu_acc1_verts)
+                self.draw_line_strip(self.imu_acc2_verts)
+                self.draw_line_strip(self.imu_acc3_verts)
+            else:
+                self.draw_line_strip(self.imu_gyro1_verts)
+                self.draw_line_strip(self.imu_gyro2_verts)
+                self.draw_line_strip(self.imu_gyro3_verts)
 
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            self.draw_line(self.imu_acc1_axis_x)
-            self.draw_line(self.imu_acc1_axis_y)
-            self.draw_line(self.imu_acc2_axis_x)
-            self.draw_line(self.imu_acc2_axis_y)
-            self.draw_line(self.imu_acc3_axis_x)
-            self.draw_line(self.imu_acc3_axis_y)
+            self.draw_line(self.imu_1_axis_x)
+            self.draw_line(self.imu_1_axis_y)
+            self.draw_line(self.imu_2_axis_x)
+            self.draw_line(self.imu_2_axis_y)
+            self.draw_line(self.imu_3_axis_x)
+            self.draw_line(self.imu_3_axis_y)
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
-            global texid
+            #global texid
             glBindTexture( GL_TEXTURE_2D, texid )
-
             glColor3f(0.65, 0.65, 0.3)
-            glPushMatrix( )
-            glTranslate(1130, 323, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in 'X [roll]'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(1130, 620, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in 'Y [pitch]'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(1130, 925, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in 'Z [yaw]'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
+            self.draw_text(1130, 323, 'X [roll]')
+            self.draw_text(1130, 620, 'Y [pitch]')
+            self.draw_text(1130, 925, 'Z [yaw]')
             glColor3f(0.85, 0.85, 0.70)
-            glPushMatrix( )
-            glTranslate(450, 985, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in 'IMU - TRI-AXIAL ACCELERATION'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glColor3f(0.85, 0.85, 0.70)
-            glPushMatrix( )
-            glTranslate(526, 45, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in 'time (seconds)'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(44, 231, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(20, 107, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-50.0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(30, 357, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '50.0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(44, 531, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(20, 408, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-50.0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(30, 657, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '50.0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(44, 831, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(20, 708, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-50.0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(30, 957, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '50.0'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(1090, 80, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '0s'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(873, 80, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-0.4s'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(674, 80, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-0.8s'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(473, 80, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-1.2s'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(271, 80, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-1.6s'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
-            glPushMatrix( )
-            glTranslate(73, 80, 0)
-            glPushMatrix( )
-            glListBase( base+1 )
-            glCallLists( [ord(c) for c in '-2.0s'] )
-            glPopMatrix( )
-            glPopMatrix( )
-
+            self.draw_text(526, 45, 'time (seconds)')
+            self.draw_text(1090, 80, '0s')
+            self.draw_text(873, 80, '-0.4s')
+            self.draw_text(674, 80, '-0.8s')
+            self.draw_text(473, 80, '-1.2s')
+            self.draw_text(271, 80, '-1.6s')
+            self.draw_text(73, 80, '-2.0s')
+            self.draw_text(44, 231, '0')
+            self.draw_text(44, 531, '0')
+            self.draw_text(44, 831, '0')
+            if self.toggle == 0:
+                self.draw_text(450, 985, 'IMU - TRI-AXIAL ACCELERATION')
+                self.draw_text(20, 107, self.imu_acc_neg)
+                self.draw_text(30, 357, self.imu_acc_pos)
+                self.draw_text(20, 408, self.imu_acc_neg)
+                self.draw_text(30, 657, self.imu_acc_pos)
+                self.draw_text(20, 708, self.imu_acc_neg)
+                self.draw_text(30, 957, self.imu_acc_pos)
+            else:
+                self.draw_text(450, 985, ' IMU - TRI-AXIAL GYROSCOPIC')
+                self.draw_text(20, 107, self.imu_gyro_neg)
+                self.draw_text(30, 357, self.imu_gyro_pos)
+                self.draw_text(20, 408, self.imu_gyro_neg)
+                self.draw_text(30, 657, self.imu_gyro_pos)
+                self.draw_text(20, 708, self.imu_gyro_neg)
+                self.draw_text(30, 957, self.imu_gyro_pos)
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1049,8 +1181,136 @@ class Visualiser:
             glMatrixMode(GL_MODELVIEW)
             glPopMatrix()
 
-        elif self.demo == 'imu_B':
-            pass
+        elif self.demo == 'mesh':
+            if len(self.plan_data) > 0:
+                glViewport(0, 0, self.width, self.height)
+
+                glEnable(GL_LINE_SMOOTH)
+                glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                glEnable(GL_BLEND)
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                # Save and set model view and projection matrix.
+                glMatrixMode(GL_PROJECTION)
+                glPushMatrix()
+                glLoadIdentity()
+                glOrtho(0, self.width, 0, self.height, -1, 1)
+                glMatrixMode(GL_MODELVIEW)
+                glPushMatrix()
+                glLoadIdentity()
+
+                # Draw beams (1 viewport with different sections for each projection of mesh).
+                glLineWidth(1.0)
+                mesh_data = self.mesh_data[0]['nodes']
+                if self.toggle == 0:                                                                                # mass distribution.
+                    lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
+                    num_lines = len(lines)
+                    for i in range(num_lines):
+                        node1, node2 = lines[i][2][0], lines[i][2][1]
+                        mass1, mass2 = mesh_data[node1]['mass'], mesh_data[node2]['mass']
+                        avg_mass = (mass1 + mass2) * 0.5
+                        self.set_mesh_color(avg_mass, self.imu_mass_min, self.imu_mass_max)
+                        p1, p2 = lines[i][0], lines[i][1]
+                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+
+                elif self.toggle == 1:                                                                              # force distribution.
+                    lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
+                    num_lines = len(lines)
+                    for i in range(num_lines):
+                        node1, node2 = lines[i][2][0], lines[i][2][1]
+                        f1, f2 = mesh_data[node1]['force'], mesh_data[node2]['force']
+                        f_mag_1 = vec3(f1[0], f1[1], f1[2]).length()
+                        f_mag_2 = vec3(f2[0], f2[1], f2[2]).length()
+                        avg_f = (f_mag_1 + f_mag_2) * 0.5
+                        self.set_mesh_color(avg_f, self.imu_force_min, self.imu_force_max)
+                        p1, p2 = lines[i][0], lines[i][1]
+                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+
+                else:                                                                                               # velocity distribution.
+                    lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
+                    num_lines = len(lines)
+                    for i in range(num_lines):
+                        node1, node2 = lines[i][2][0], lines[i][2][1]
+                        v1, v2 = mesh_data[node1]['vel'], mesh_data[node2]['vel']
+                        v_mag_1 = vec3(v1[0], v1[1], v1[2]).length()
+                        v_mag_2 = vec3(v2[0], v2[1], v2[2]).length()
+                        avg_v = (v_mag_1 + v_mag_2) * 0.5
+                        self.set_mesh_color(avg_v, self.imu_vel_min, self.imu_vel_max)
+                        p1, p2 = lines[i][0], lines[i][1]
+                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+
+                # Draw nodes.
+                lines = self.elevation_data[1]
+                nodes = self.plan_data[0] + self.elevation_data[0] + self.end_elevation_data[0]
+                num_nodes = len(nodes)
+                node_size = self.mesh_node_size
+                glColor3f(0.75, 0.75, 0.60)
+                for i in range(num_nodes):
+                    node = nodes[i]
+                    x, y = node[0], node[1]
+                    glRectf(x - node_size, y - node_size, x + node_size, y + node_size)
+
+                # View-division lines.
+                glColor3f(0.25, 0.25, 0.15)
+                glLineWidth(3.0)
+                self.draw_line([0, self.screen_center_y, self.width, self.screen_center_y])
+                self.draw_line([self.screen_center_x, 0, self.screen_center_x, self.height])
+
+                # Screen title underline.
+                glLineWidth(2.0)
+                self.draw_line([940, 928, 1289, 930])
+
+                # Color bar.
+                glLineWidth(3.0)
+                y_min, y_max = self.screen_center_y + 65, self.screen_center_y + 106
+                self.draw_line([999, y_min - 1, 1701, y_min - 1])       # cb frame - bottom.
+                self.draw_line([999, y_max + 1, 1701, y_max + 1])       # cb frame - top.
+                self.draw_line([999, y_min - 15, 999, y_max + 1])       # cb frame - left.
+                self.draw_line([1701, y_min - 15, 1701, y_max + 1])     # cb frame - right.
+                self.draw_line([1350, y_min - 15, 1350, y_max + 1])     # centreline of colorbar.
+                for x in range(1000, 1700):                             # colorbar.
+                    self.set_mesh_color(x, 1000, 1700)
+                    self.draw_line([x, y_min, x, y_max])
+
+                # Draw Text.
+                glEnable( GL_TEXTURE_2D )
+                #global texid
+                glBindTexture( GL_TEXTURE_2D, texid )
+                glColor3f(0.85, 0.85, 0.70)
+                if self.toggle == 0:
+                    self.draw_text(950, 950, 'VEHICLE MASS DISTRIBUTION')
+                    self.draw_text(983, y_min - 32, self.mesh_mass_cbar_label0)
+                    self.draw_text(1332, y_min - 32, self.mesh_mass_cbar_label1)
+                    self.draw_text(1677, y_min - 32, self.mesh_mass_cbar_label2)
+
+                elif self.toggle == 1:
+                    self.draw_text(950, 950, 'VEHICLE FORCE DISTRIBUTION')
+                    self.draw_text(983, y_min - 32, self.mesh_force_cbar_label0)
+                    self.draw_text(1332, y_min - 32, self.mesh_force_cbar_label1)
+                    self.draw_text(1677, y_min - 32, self.mesh_force_cbar_label2)
+
+                else:
+                    self.draw_text(950, 950, 'VEHICLE VELOCITY DISTRIBUTION')
+                    self.draw_text(980, y_min - 32, self.mesh_vel_cbar_label0)
+                    self.draw_text(1327, y_min - 32, self.mesh_vel_cbar_label1)
+                    self.draw_text(1670, y_min - 32, self.mesh_vel_cbar_label2)
+
+                glColor3f(0.85, 0.85, 0.70)
+                self.draw_text(422, 530, ' Top')
+                self.draw_text(392, 30, '  Right')
+                self.draw_text(1280, 30, '    Front')
+                self.draw_text(950, 880, 'Vehicle: ')
+                self.draw_text(950, 845, 'Model: ')
+                glColor3f(0.85, 0.35, 0.70)
+                self.draw_text(950, 880, '         ' + self.vehicle.vid)
+                self.draw_text(950, 845, '       ' + self.vehicle.model)
+                glDisable( GL_TEXTURE_2D )
+
+                # Restore matrices.
+                glMatrixMode(GL_PROJECTION)
+                glPopMatrix()
+                glMatrixMode(GL_MODELVIEW)
+                glPopMatrix()
 
         elif self.demo == 'multi':
            pass
@@ -1061,7 +1321,7 @@ class Visualiser:
         # Flush display - OpenGL.
         glutSwapBuffers()
 
-    def render_img(self, x, y, data, w, h, r, g, b, d_type):
+    def render_img(self, x, y, data, h, w, r, g, b, d_type):
         global bitmap_tex
 
         # Create texture object.
@@ -1070,8 +1330,12 @@ class Visualiser:
         glBindTexture(GL_TEXTURE_2D, self.bitmap_tex)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        if d_type < 2:
+        ht, wd = h, w
+        if d_type == 0:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, h, w, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+        elif d_type == 1:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+            ht, wd = w, h
         else:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, h, w, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, data)
 
@@ -1089,22 +1353,18 @@ class Visualiser:
         glEnable(GL_BLEND)
 
         # Draw textured quad.
-        glColor3f(r,g,b)
-
-        width, height = w, h
-        if d_type == 1:
-            width, height = h, w
+        glColor3f(r, g, b)
 
         glEnable(GL_TEXTURE_2D)
         glBegin(GL_QUADS)
         glTexCoord2f(0, 1)
         glVertex2f(x, y)
         glTexCoord2f(1, 1)
-        glVertex2f(x + width, y)
+        glVertex2f(x + ht, y)
         glTexCoord2f(1, 0)
-        glVertex2f(x + width, y + height)
+        glVertex2f(x + ht, y + wd)
         glTexCoord2f(0, 0)
-        glVertex2f(x, y + height)
+        glVertex2f(x, y + wd)
         glEnd()
         glDisable(GL_TEXTURE_2D)
 
@@ -1128,6 +1388,19 @@ class Visualiser:
         glVertex2f(v[0], v[1])
         glVertex2f(v[2], v[3])
         glEnd()
+
+    def draw_text(self, x, y, txt):
+        glPushMatrix()
+        glTranslate(x, y, 0)
+        glPushMatrix( )
+        glListBase(base + 1)
+        glCallLists([ord(c) for c in txt])
+        glPopMatrix()
+        glPopMatrix()
+
+    def set_mesh_color(self, val, min, max):
+        ratio = (val - min) / (max - min)
+        glColor3f(ratio, 0.0, 1.0 - ratio)
 
     def makefont(self, filename, size):
         global texid
