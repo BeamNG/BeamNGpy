@@ -318,7 +318,6 @@ class Mesh:
         proj_points = []
         for i in range(num_nodes):
             node = nodes[i]
-            print(node)
             p = vec3(node['posX'], node['posY'], node['posZ'])
             p2o = p - orig
             x = p2o.dot(unit_x)
