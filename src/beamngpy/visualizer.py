@@ -509,20 +509,13 @@ class Visualiser:
 
         elif self.demo == 'radar':
             if self.toggle == 0:
-                bscope_data = self.radar.get_bscope_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_bscope_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_bscope_img = bscope_data
                 ppi_data = self.radar.get_ppi_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
                 self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
                 self.radar_ppi_img = ppi_data
-            elif self.toggle == 1:
-                bscope_data = self.radar.get_bscope_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_bscope_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_bscope_img = bscope_data
             else:
-                ppi_data = self.radar.get_ppi_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_ppi_img = ppi_data
+                bscope_data = self.radar.get_bscope_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
+                self.radar_bscope_size = [self.radar_bins[0], self.radar_bins[1]]
+                self.radar_bscope_img = bscope_data
 
         elif self.demo == 'imu':
             full_imu_data = self.imu1.poll()
@@ -1059,19 +1052,7 @@ class Visualiser:
             glLoadIdentity()
 
             # Render RADAR images.
-            if self.toggle == 0:                                                                                                       # B-scope and PPI together.
-                if len(self.radar_bscope_size) > 0 and len(self.radar_ppi_size) > 0:
-                    glViewport(0, 0, self.half_width, self.half_height)
-                    self.render_img(0, 25, self.radar_bscope_img, self.radar_bscope_size[0], self.radar_bscope_size[1], 1, 1, 1, 2)
-                    glViewport(self.half_width, 0, self.half_width, self.half_height)
-                    self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 2)
-
-            elif self.toggle == 1:                                                                                                      # B-scope only.
-                if len(self.radar_bscope_size) > 0:
-                    glViewport(0, 0, self.width, self.height)
-                    self.render_img(0, 0, self.radar_bscope_img, self.radar_bscope_size[0], self.radar_bscope_size[1], 1, 1, 1, 2)
-
-            else:                                                                                                                       # PPI only.
+            if self.toggle == 0:                                                                                                       # PPI.
                 if len(self.radar_ppi_size) > 0:
                     glViewport(0, 0, self.width, self.height)
                     self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From the .png image.
@@ -1085,9 +1066,9 @@ class Visualiser:
                     # Draw the PPI scope frame.
                     glLineWidth(2.0)
                     glColor3f(0.3, 0.3, 0.3)
-                    self.draw_line([673, 25, 181, 875])                 # left grid line.
-                    self.draw_line([673, 25, 1166, 875])                # right grid line.
-                    self.draw_line([673.0, 25.0, 688.0, 16.0])          # grooves.
+                    self.draw_line([673, 25, 181, 875])                     # left grid line.
+                    self.draw_line([673, 25, 1166, 875])                    # right grid line.
+                    self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
                     self.draw_line([722.3, 110.0, 737.3, 101.0])
                     self.draw_line([771.6, 195.0, 786.6, 186.0])
                     self.draw_line([820.9, 280.0, 835.9, 271.0])
@@ -1143,6 +1124,76 @@ class Visualiser:
                     self.draw_text(1140.7, 786.7, '90 m')
                     self.draw_text(1189, 871, '100 m')
                     self.draw_text(125, 60, '0 m/s')
+                    self.draw_text(125, 260, '25 m/s')
+                    self.draw_text(125, 460, '50 m/s')
+                    glColor3f(0.5, 0.5, 0.5)
+                    self.draw_text(49, 490, 'Doppler')
+                    glDisable( GL_TEXTURE_2D )
+
+            else:                                                                                                                       # B-scope.
+                if len(self.radar_bscope_size) > 0:
+                    glViewport(0, 0, self.width, self.height)
+                    self.render_img(350, 45, self.radar_bscope_img, self.radar_bscope_size[0], self.radar_bscope_size[1], 1, 1, 1, 2)
+
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # Draw the PPI scope frame.
+                    glLineWidth(2.0)
+                    glColor3f(0.3, 0.3, 0.3)
+                    self.draw_line([350, 45, 1300, 45])                     # bottom frame line.
+                    self.draw_line([350, 995, 1300, 995])                   # bottom frame line.
+                    self.draw_line([350, 45, 350, 995])                     # left frame line.
+                    self.draw_line([1300, 45, 1300, 995])                   # right frame line.
+                    div = 95
+                    for i in range(11):
+                        dv = i * div
+                        y = 45 + dv
+                        self.draw_line([1300, y, 1310, y])                  # vertical grooves.
+                        x = 350 + dv
+                        self.draw_line([x, 45, x, 35])                      # horizontal grooves.
+
+                    # Color bar.
+                    glLineWidth(3.0)
+                    y_min, y_max = self.screen_center_y + 65, self.screen_center_y + 106
+                    self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
+                    self.draw_line([69, 451, 115, 451])                     # cb frame - top.
+                    self.draw_line([69, 49, 69, 451])                       # cb frame - left.
+                    self.draw_line([101, 49, 101, 451])                     # cb frame - right.
+                    self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
+                    for i in range(401):                                    # colorbar.
+                        col = i * 0.0025
+                        glColor3f(col, col, col)
+                        y = 50 + i
+                        self.draw_line([70, y, 100, y])
+
+                    # Title underline.
+                    glViewport(0, self.height - 40, self.width, self.height)
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([25, 2, 290, 2])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(35, 20, 'RADAR Sensor: B-Scope')
+                    self.draw_text(1460, 20, 'Vehicle: ')
+                    glColor3f(0.85, 0.35, 0.70)
+                    self.draw_text(1465, 20, '         ' + self.vehicle.vid)
+                    glViewport(0, 0, self.width, self.height)
+                    glColor3f(0.4, 0.4, 0.4)
+                    txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
+                    for i in range(11):
+                        tx = txt[i]
+                        dv = i * div
+                        y = 52 + dv
+                        self.draw_text(1320, y, tx)                     # vertical text.
+                        x = 332 + dv
+                        self.draw_text(x, 22, tx)                       # horizontal text.
+                    self.draw_text(125, 60, '0 m/s')                    # colorbar markers.
                     self.draw_text(125, 260, '25 m/s')
                     self.draw_text(125, 460, '50 m/s')
                     glColor3f(0.5, 0.5, 0.5)
