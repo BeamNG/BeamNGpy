@@ -1156,9 +1156,11 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == 'imu':
-            glViewport(0, 0, self.width, self.height)
-             # Draw the roll-pitch-yaw picture.
-            self.render_img(1150, 50, self.rpy_img, self.rpy_img_size[0], self.rpy_img_size[1], 1, 1, 1, 1)  # The roll-pitch-yaw image.
+            if self.toggle < 2:
+                # Draw the roll-pitch-yaw picture.
+                glViewport(0, 0, self.width, self.height)
+                self.render_img(1150, 50, self.rpy_img, self.rpy_img_size[0], self.rpy_img_size[1], 1, 1, 1, 1)  # The roll-pitch-yaw image.
+
             glEnable(GL_LINE_SMOOTH)
             glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
             glEnable(GL_BLEND)
@@ -1174,88 +1176,201 @@ class Visualiser:
             glLoadIdentity()
 
             # Draw lines from three graphs to the roll-pitch-yaw image.
-            glColor3f(0.15, 0.15, 0.1)
-            glLineWidth(2.0)
-            self.draw_line([1120, 225, 1130, 225])
-            self.draw_line([1130, 225, 1200, 155])
-            self.draw_line([1200, 155, 1200, 135])
+            if self.toggle < 2:
+                glColor3f(0.15, 0.15, 0.1)
+                glLineWidth(2.0)
+                self.draw_line([1120, 225, 1130, 225])
+                self.draw_line([1130, 225, 1200, 155])
+                self.draw_line([1200, 155, 1200, 135])
 
-            self.draw_line([1120, 525, 1140, 525])
-            self.draw_line([1140, 525, 1300, 360])
-            self.draw_line([1300, 360, 1300, 290])
+                self.draw_line([1120, 525, 1140, 525])
+                self.draw_line([1140, 525, 1300, 360])
+                self.draw_line([1300, 360, 1300, 290])
 
-            self.draw_line([1120, 825, 1160, 825])
-            self.draw_line([1160, 825, 1505, 470])
-            self.draw_line([1505, 470, 1505, 420])
+                self.draw_line([1120, 825, 1160, 825])
+                self.draw_line([1160, 825, 1505, 470])
+                self.draw_line([1505, 470, 1505, 420])
 
             # Draw grid.
-            for i in range(len(self.imu_1_grid)):
-                if self.imu_1_grid[i][4] == True:
-                    glColor3f(0.1, 0.1, 0.1)
-                    glLineWidth(1.0)
-                else:
-                    glColor3f(0.2, 0.2, 0.2)
-                    glLineWidth(2.0)
-                self.draw_line(self.imu_1_grid[i][0:4])
-            for i in range(len(self.imu_2_grid)):
-                if self.imu_2_grid[i][4] == True:
-                    glColor3f(0.1, 0.1, 0.1)
-                    glLineWidth(1.0)
-                else:
-                    glColor3f(0.2, 0.2, 0.2)
-                    glLineWidth(2.0)
-                self.draw_line(self.imu_2_grid[i][0:4])
-            for i in range(len(self.imu_3_grid)):
-                if self.imu_3_grid[i][4] == True:
-                    glColor3f(0.1, 0.1, 0.1)
-                    glLineWidth(1.0)
-                else:
-                    glColor3f(0.2, 0.2, 0.2)
-                    glLineWidth(2.0)
-                self.draw_line(self.imu_3_grid[i][0:4])
+            if self.toggle < 2:
+                for i in range(len(self.imu_1_grid)):
+                    if self.imu_1_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_1_grid[i][0:4])
+                for i in range(len(self.imu_2_grid)):
+                    if self.imu_2_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_2_grid[i][0:4])
+                for i in range(len(self.imu_3_grid)):
+                    if self.imu_3_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_3_grid[i][0:4])
+            else:
+                glViewport(0, 0, self.half_width, self.height)      # left half (acc).
+                for i in range(len(self.imu_1_grid)):
+                    if self.imu_1_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_1_grid[i][0:4])
+                for i in range(len(self.imu_2_grid)):
+                    if self.imu_2_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_2_grid[i][0:4])
+                for i in range(len(self.imu_3_grid)):
+                    if self.imu_3_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_3_grid[i][0:4])
+                glViewport(self.half_width, 0, self.half_width, self.height)      # right half (gyro).
+                for i in range(len(self.imu_1_grid)):
+                    if self.imu_1_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_1_grid[i][0:4])
+                for i in range(len(self.imu_2_grid)):
+                    if self.imu_2_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_2_grid[i][0:4])
+                for i in range(len(self.imu_3_grid)):
+                    if self.imu_3_grid[i][4] == True:
+                        glColor3f(0.1, 0.1, 0.1)
+                        glLineWidth(1.0)
+                    else:
+                        glColor3f(0.2, 0.2, 0.2)
+                        glLineWidth(2.0)
+                    self.draw_line(self.imu_3_grid[i][0:4])
 
             # Draw acc/gyro data.
-            glColor3f(1.0, 0.0, 0.0)
-            glLineWidth(2.0)
-            if self.toggle == 0:
+            if self.toggle < 2:
+                glLineWidth(2.0)
+                glColor3f(1.0, 0.0, 0.0)
+                if self.toggle == 0:
+                    self.draw_line_strip(self.imu_acc1_verts)
+                    self.draw_line_strip(self.imu_acc2_verts)
+                    self.draw_line_strip(self.imu_acc3_verts)
+                else:
+                    self.draw_line_strip(self.imu_gyro1_verts)
+                    self.draw_line_strip(self.imu_gyro2_verts)
+                    self.draw_line_strip(self.imu_gyro3_verts)
+                # Draw axes.
+                glColor3f(1.0, 1.0, 1.0)
+                glLineWidth(3.0)
+                self.draw_line(self.imu_1_axis_x)
+                self.draw_line(self.imu_1_axis_y)
+                self.draw_line(self.imu_2_axis_x)
+                self.draw_line(self.imu_2_axis_y)
+                self.draw_line(self.imu_3_axis_x)
+                self.draw_line(self.imu_3_axis_y)
+            else:
+                glViewport(0, 0, self.half_width, self.height)                          # Left (acc).
+                glLineWidth(2.0)
+                glColor3f(1.0, 0.0, 0.0)                                                # Draw acc data.
                 self.draw_line_strip(self.imu_acc1_verts)
                 self.draw_line_strip(self.imu_acc2_verts)
                 self.draw_line_strip(self.imu_acc3_verts)
-            else:
+                glColor3f(1.0, 1.0, 1.0)                                                # Draw axes.
+                glLineWidth(3.0)
+                self.draw_line(self.imu_1_axis_x)
+                self.draw_line(self.imu_1_axis_y)
+                self.draw_line(self.imu_2_axis_x)
+                self.draw_line(self.imu_2_axis_y)
+                self.draw_line(self.imu_3_axis_x)
+                self.draw_line(self.imu_3_axis_y)
+                glViewport(self.half_width, 0, self.half_width, self.height)            # Right (gyro).
+                glLineWidth(2.0)
+                glColor3f(0.0, 0.0, 1.0)                                                # Draw gyro data.
                 self.draw_line_strip(self.imu_gyro1_verts)
                 self.draw_line_strip(self.imu_gyro2_verts)
                 self.draw_line_strip(self.imu_gyro3_verts)
-
-            # Draw axes.
-            glColor3f(1.0, 1.0, 1.0)
-            glLineWidth(3.0)
-            self.draw_line(self.imu_1_axis_x)
-            self.draw_line(self.imu_1_axis_y)
-            self.draw_line(self.imu_2_axis_x)
-            self.draw_line(self.imu_2_axis_y)
-            self.draw_line(self.imu_3_axis_x)
-            self.draw_line(self.imu_3_axis_y)
+                glColor3f(1.0, 1.0, 1.0)                                                # Draw axes.
+                self.draw_line(self.imu_1_axis_x)
+                self.draw_line(self.imu_1_axis_y)
+                self.draw_line(self.imu_2_axis_x)
+                self.draw_line(self.imu_2_axis_y)
+                self.draw_line(self.imu_3_axis_x)
+                self.draw_line(self.imu_3_axis_y)
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
-            #global texid
             glBindTexture( GL_TEXTURE_2D, texid )
-            glColor3f(0.65, 0.65, 0.3)
-            self.draw_text(1130, 323, 'X [roll]')
-            self.draw_text(1130, 620, 'Y [pitch]')
-            self.draw_text(1130, 925, 'Z [yaw]')
-            glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(526, 45, 'time (seconds)')
-            self.draw_text(1090, 80, '0s')
-            self.draw_text(873, 80, '-0.4s')
-            self.draw_text(674, 80, '-0.8s')
-            self.draw_text(473, 80, '-1.2s')
-            self.draw_text(271, 80, '-1.6s')
-            self.draw_text(73, 80, '-2.0s')
-            self.draw_text(44, 231, '0')
-            self.draw_text(44, 531, '0')
-            self.draw_text(44, 831, '0')
-            if self.toggle == 0:
+            if self.toggle < 2:
+                glColor3f(0.65, 0.65, 0.3)
+                self.draw_text(1130, 323, 'X [roll]')
+                self.draw_text(1130, 620, 'Y [pitch]')
+                self.draw_text(1130, 925, 'Z [yaw]')
+                glColor3f(0.85, 0.85, 0.70)
+                self.draw_text(526, 45, 'time (seconds)')
+                self.draw_text(1090, 80, '0s')
+                self.draw_text(873, 80, '-0.4s')
+                self.draw_text(674, 80, '-0.8s')
+                self.draw_text(473, 80, '-1.2s')
+                self.draw_text(271, 80, '-1.6s')
+                self.draw_text(73, 80, '-2.0s')
+                self.draw_text(44, 231, '0')
+                self.draw_text(44, 531, '0')
+                self.draw_text(44, 831, '0')
+                if self.toggle == 0:
+                    self.draw_text(450, 985, 'IMU - TRI-AXIAL ACCELERATION')
+                    self.draw_text(20, 107, self.imu_acc_neg)
+                    self.draw_text(30, 357, self.imu_acc_pos)
+                    self.draw_text(20, 408, self.imu_acc_neg)
+                    self.draw_text(30, 657, self.imu_acc_pos)
+                    self.draw_text(20, 708, self.imu_acc_neg)
+                    self.draw_text(30, 957, self.imu_acc_pos)
+                else:
+                    self.draw_text(450, 985, ' IMU - TRI-AXIAL GYROSCOPIC')
+                    self.draw_text(20, 107, self.imu_gyro_neg)
+                    self.draw_text(30, 357, self.imu_gyro_pos)
+                    self.draw_text(20, 408, self.imu_gyro_neg)
+                    self.draw_text(30, 657, self.imu_gyro_pos)
+                    self.draw_text(20, 708, self.imu_gyro_neg)
+                    self.draw_text(30, 957, self.imu_gyro_pos)
+            else:
+                glViewport(0, 0, self.half_width, self.height)                      # left (acc).
+                glColor3f(0.65, 0.65, 0.3)
+                self.draw_text(1130, 323, 'X [roll]')
+                self.draw_text(1130, 620, 'Y [pitch]')
+                self.draw_text(1130, 925, 'Z [yaw]')
+                glColor3f(0.85, 0.85, 0.70)
+                self.draw_text(526, 45, 'time (seconds)')
+                self.draw_text(1090, 80, '0s')
+                self.draw_text(873, 80, '-0.4s')
+                self.draw_text(674, 80, '-0.8s')
+                self.draw_text(473, 80, '-1.2s')
+                self.draw_text(271, 80, '-1.6s')
+                self.draw_text(73, 80, '-2.0s')
+                self.draw_text(44, 231, '0')
+                self.draw_text(44, 531, '0')
+                self.draw_text(44, 831, '0')
                 self.draw_text(450, 985, 'IMU - TRI-AXIAL ACCELERATION')
                 self.draw_text(20, 107, self.imu_acc_neg)
                 self.draw_text(30, 357, self.imu_acc_pos)
@@ -1263,7 +1378,22 @@ class Visualiser:
                 self.draw_text(30, 657, self.imu_acc_pos)
                 self.draw_text(20, 708, self.imu_acc_neg)
                 self.draw_text(30, 957, self.imu_acc_pos)
-            else:
+                glViewport(self.half_width, 0, self.half_width, self.height)        # right (gyro).
+                glColor3f(0.65, 0.65, 0.3)
+                self.draw_text(1130, 323, 'X [roll]')
+                self.draw_text(1130, 620, 'Y [pitch]')
+                self.draw_text(1130, 925, 'Z [yaw]')
+                glColor3f(0.85, 0.85, 0.70)
+                self.draw_text(526, 45, 'time (seconds)')
+                self.draw_text(1090, 80, '0s')
+                self.draw_text(873, 80, '-0.4s')
+                self.draw_text(674, 80, '-0.8s')
+                self.draw_text(473, 80, '-1.2s')
+                self.draw_text(271, 80, '-1.6s')
+                self.draw_text(73, 80, '-2.0s')
+                self.draw_text(44, 231, '0')
+                self.draw_text(44, 531, '0')
+                self.draw_text(44, 831, '0')
                 self.draw_text(450, 985, ' IMU - TRI-AXIAL GYROSCOPIC')
                 self.draw_text(20, 107, self.imu_gyro_neg)
                 self.draw_text(30, 357, self.imu_gyro_pos)
@@ -1271,6 +1401,7 @@ class Visualiser:
                 self.draw_text(30, 657, self.imu_gyro_pos)
                 self.draw_text(20, 708, self.imu_gyro_neg)
                 self.draw_text(30, 957, self.imu_gyro_pos)
+
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
