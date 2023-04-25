@@ -74,6 +74,12 @@ class Visualiser:
         # Load font.
         self.makefont( 'SourceCodePro-Regular.ttf', 16 )
 
+        # Trajectory initialization.
+        self.traj = deque()
+        self.traj_memory = 10000
+        self.traj_x_min, self.traj_x_max, self.traj_y_min, self.traj_y_max = -1000, 1000, -1000, 1000
+        self.pos = []
+
         # LiDAR initialization.
         self.points_count = 0
         self.points = []
@@ -328,7 +334,6 @@ class Visualiser:
         self.mesh_vel_cbar_label0, self.mesh_vel_cbar_label1, self.mesh_vel_cbar_label2 = '0 m/s', '25 m/s', '50 m/s'
         self.imu_stress_min, self.imu_stress_max = -200.0, 200.0
         self.mesh_stress_cbar_label0, self.mesh_stress_cbar_label1, self.mesh_stress_cbar_label2 = '-200 Nm-2', '0 Nm-2', '200 Nm-2'
-        self.screen_center_x, self.screen_center_y = self.half_width, self.half_height
         self.plan_data, self.elevation_data, self.end_elevation_data = [], [], []
         self.mesh_node_size = 1                                                                                     # The size of node rects on render.
         self.mesh_plan_screen_center, self.mesh_plan_screen_scale = vec3(495, 820), vec3(150, 150)                  # scale/translation for each of the 3 views.
@@ -370,9 +375,6 @@ class Visualiser:
 
         elif demo == 'multi':
             pass
-
-        else:
-            print("*** WARNING: MAIN SEQUENCE - DEMONSTRATION TITLE NOT FOUND ***")
 
     def run(self):
         glutIdleFunc(self._update)
@@ -418,6 +420,14 @@ class Visualiser:
         self.mouse_y = y
 
     def _update(self):
+
+        # Trajectory and state sensor.
+        self.vehicle.sensors.poll()                                                         # poll the state sensor. also used for lidar.
+        self.pos = self.vehicle.state['pos']
+        self.traj.append(self.pos)                                                          # update the trajectory queue.
+        if len(self.traj) > self.traj_memory:
+            self.traj.popleft()
+
         # Handle the update for the chosen demonstration.
         if self.demo == 'camera':
             if self.toggle == 0 or self.toggle == 3:
@@ -434,7 +444,6 @@ class Visualiser:
                 self.camera_depth_img = camera_data3[0]
 
         elif self.demo == 'lidar':
-            self.vehicle.sensors.poll()
             points = self.lidar.poll()['pointCloud']
             assert not self.dirty
             if len(points) == 0:
@@ -572,9 +581,6 @@ class Visualiser:
         elif self.demo == 'multi':
             pass
 
-        else:
-            print("*** WARNING: UPDATE - DEMONSTRATION TITLE NOT FOUND ***")
-
         # OpenGL - goes to display function.
         glutPostRedisplay()
 
@@ -589,7 +595,54 @@ class Visualiser:
             gluLookAt(self.pos[0], self.pos[1], self.pos[2], self.pos[0] + self.focus[0], self.pos[1] + self.focus[1], self.pos[2] + self.focus[2], 0.0, 0.0, 1.0)
 
         # Individual render data for each demonstration.
-        if self.demo == 'camera':
+        if self.demo == 'trajectory':
+            if len(self.traj) > 0:
+                glViewport(0, 0, self.width, self.height)
+
+                # Save and set model view and projection matrix.
+                glMatrixMode(GL_PROJECTION)
+                glPushMatrix()
+                glLoadIdentity()
+                glOrtho(0, self.width, 0, self.height, -1, 1)
+                glMatrixMode(GL_MODELVIEW)
+                glPushMatrix()
+                glLoadIdentity()
+
+                # Plot the trajectory.
+                glColor3f(0.7, 0.35, 0.7)
+                glLineWidth(2.0)
+                x_off, y_off = self.traj[-1][0] - self.half_width, self.traj[-1][1] - self.half_height    # offset to put trajectory starting at center of image.
+                traj_lines = len(self.traj) - 1
+                for i in range(traj_lines):
+                    p0, p1 = self.traj[i], self.traj[i + 1]
+                    x0, y0 = p0[0] - x_off, p0[1] - y_off
+                    x1, y1 = p1[0] - x_off, p1[1] - y_off
+                    self.draw_line([x0, y0, x1, y1])
+
+                glEnable(GL_LINE_SMOOTH)
+                glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                glEnable(GL_BLEND)
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                # Screen title underline.
+                glViewport(0, self.height - 40, self.width, self.height)
+                glLineWidth(2.0)
+                self.draw_line([40, 928, 300, 930])
+
+                # Draw Text.
+                glEnable( GL_TEXTURE_2D )
+                glBindTexture( GL_TEXTURE_2D, texid )
+                glColor3f(0.85, 0.85, 0.70)
+                self.draw_text(50, 950, 'Trajectory')
+                glDisable( GL_TEXTURE_2D )
+
+                # Restore matrices.
+                glMatrixMode(GL_PROJECTION)
+                glPopMatrix()
+                glMatrixMode(GL_MODELVIEW)
+                glPopMatrix()
+
+        elif self.demo == 'camera':
 
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
@@ -736,8 +789,8 @@ class Visualiser:
                     # View-division lines.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(3.0)
-                    self.draw_line([0, self.screen_center_y, self.width, self.screen_center_y])
-                    self.draw_line([self.screen_center_x, 0, self.screen_center_x, self.height])
+                    self.draw_line([0, self.half_height, self.width, self.half_height])
+                    self.draw_line([self.half_width, 0, self.half_width, self.height])
 
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
@@ -1082,7 +1135,7 @@ class Visualiser:
 
                     # Color bar.
                     glLineWidth(3.0)
-                    y_min, y_max = self.screen_center_y + 65, self.screen_center_y + 106
+                    y_min, y_max = self.half_height + 65, self.half_height + 106
                     self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
                     self.draw_line([69, 451, 115, 451])                     # cb frame - top.
                     self.draw_line([69, 49, 69, 451])                       # cb frame - left.
@@ -1157,7 +1210,7 @@ class Visualiser:
 
                     # Color bar.
                     glLineWidth(3.0)
-                    y_min, y_max = self.screen_center_y + 65, self.screen_center_y + 106
+                    y_min, y_max = self.half_height + 65, self.half_height + 106
                     self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
                     self.draw_line([69, 451, 115, 451])                     # cb frame - top.
                     self.draw_line([69, 49, 69, 451])                       # cb frame - left.
@@ -1554,8 +1607,8 @@ class Visualiser:
                 # View-division lines.
                 glColor3f(0.25, 0.25, 0.15)
                 glLineWidth(3.0)
-                self.draw_line([0, self.screen_center_y, self.width, self.screen_center_y])
-                self.draw_line([self.screen_center_x, 0, self.screen_center_x, self.height])
+                self.draw_line([0, self.half_height, self.width, self.half_height])
+                self.draw_line([self.half_width, 0, self.half_width, self.height])
 
                 # Screen title underline.
                 glLineWidth(2.0)
@@ -1563,7 +1616,7 @@ class Visualiser:
 
                 # Color bar.
                 glLineWidth(3.0)
-                y_min, y_max = self.screen_center_y + 65, self.screen_center_y + 106
+                y_min, y_max = self.half_height + 65, self.half_height + 106
                 self.draw_line([999, y_min - 1, 1701, y_min - 1])       # cb frame - bottom.
                 self.draw_line([999, y_max + 1, 1701, y_max + 1])       # cb frame - top.
                 self.draw_line([999, y_min - 15, 999, y_max + 1])       # cb frame - left.
@@ -1621,9 +1674,6 @@ class Visualiser:
 
         elif self.demo == 'multi':
            pass
-
-        else:
-            print("*** WARNING: MAIN SEQUENCE - DEMONSTRATION TITLE NOT FOUND ***")
 
         # Flush display - OpenGL.
         glutSwapBuffers()
@@ -1748,12 +1798,12 @@ class Visualiser:
 
         # Generate display lists
         dx, dy = width/float(Z.shape[1]), height/float(Z.shape[0])
-        base = glGenLists(8*16)
-        for i in range(8*16):
+        base = glGenLists(8 * 16)
+        for i in range(8 * 16):
             c = chr(i)
-            x = i%16
-            y = i//16-2
-            glNewList(base+i, GL_COMPILE)
+            x = i % 16
+            y = i // 16-2
+            glNewList(base + i, GL_COMPILE)
             if (c == '\n'):
                 glPopMatrix( )
                 glTranslatef( 0, -height, 0 )
