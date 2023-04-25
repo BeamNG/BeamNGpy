@@ -34,7 +34,7 @@ class Mesh:
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, is_send_immediately: bool = False):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0):
         sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
@@ -44,10 +44,9 @@ class Mesh:
         self.vehicle = vehicle
         self.vid = vehicle.vid
         self.bng = bng
-        self.is_send_immediately = is_send_immediately
 
         # Create and initialise this sensor in the simulation.
-        self._open_mesh(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
+        self._open_mesh(name, vehicle, gfx_update_time)
 
         # Fetch the unique Id number (in the simulator) for this mesh sensor.  We will need this later.
         self.sensorId = self._get_mesh_id()
@@ -64,20 +63,21 @@ class Mesh:
             self.triangles[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
 
         # Populate the list of beams for this sensor.
-        self.beams = self._update_beams()
+        self.beams = self._get_active_beams()
 
         self.num_nodes = self.get_num_nodes()
 
         self.logger.debug('Mesh - sensor created: 'f'{self.name}')
 
-    def _update_beams(self):
+    def _get_active_beams(self):
         """
         Gets the latest collection beams and updates the class state with them.
         """
         beam_data = self._send_sensor_request('GetBeamData', ack='CompletedGetBeamData', vid=self.vid)['data']
         self.beams = {}
         for key, value in beam_data.items():
-            self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
+            if int(value[3]) != 5:                                                          # do not include any broken beams.
+                self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
         if not self.bng.connection:
@@ -107,16 +107,10 @@ class Mesh:
         """
 
         # Get the latest beams from the simulator.
-        self._update_beams()
+        self._get_active_beams()
 
         # Send and receive a request for readings data from this sensor.
-        self.node_positions = []
-        if self.is_send_immediately:
-            # Get the most-recent single reading from vlua.
-            self.node_positions = self._poll_mesh_VE()
-        else:
-            # Get the bulk data from ge lua.
-            self.node_positions = self._poll_mesh_GE()
+        self.node_positions = self._poll_mesh_VE()
 
         self.logger.debug('Mesh - sensor readings received from simulation: 'f'{self.name}')
         return self.node_positions
@@ -178,14 +172,12 @@ class Mesh:
     def _get_mesh_id(self) -> int:
         return int(self._send_sensor_request('GetMeshId', ack='CompletedGetMeshId', name=self.name)['data'])
 
-    def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
+    def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float) -> None:
 
         data: StrDict = dict(type='OpenMesh')
         data['name'] = name
         data['vid'] = vehicle.vid
         data['GFXUpdateTime'] = gfx_update_time
-        data['physicsUpdateTime'] = physics_update_time
-        data['isSendImmediately'] = is_send_immediately
         self.bng._send(data).ack('OpenedMesh')
         self.logger.info(f'Opened Mesh sensor: "{name}"')
 
@@ -195,9 +187,6 @@ class Mesh:
         data['vid'] = self.vehicle.vid
         self.bng._send(data).ack('ClosedMesh')
         self.logger.info(f'Closed Mesh sensor: "{self.name}"')
-
-    def _poll_mesh_GE(self) -> StrDict:
-        return self._send_sensor_request('PollMeshGE', ack='PolledMeshGECompleted', name=self.name)['data']
 
     def _poll_mesh_VE(self) -> StrDict:
         if not self.vehicle.connection:
@@ -286,7 +275,7 @@ class Mesh:
     def convert_node_indices_to_int(self):
         if len(self.node_positions) == 0:
             return {}
-        raw = self.node_positions[0]['nodes']
+        raw = self.node_positions['nodes']
         nodes = {}
         for k, v in raw.items():
             nodes[int(k)] = v
@@ -299,11 +288,11 @@ class Mesh:
         lines3 = []
         c = []
         for _, v in self.beams.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            lines1.append([(p1['posX'], p1['posY']), (p2['posX'], p2['posY'])])
-            lines2.append([(p1['posX'], p1['posZ']), (p2['posX'], p2['posZ'])])
-            lines3.append([(p1['posY'], p1['posZ']), (p2['posY'], p2['posZ'])])
+            p1 = nodes[v[0]]['pos']
+            p2 = nodes[v[1]]['pos']
+            lines1.append([(p1['x'], p1['y']), (p2['x'], p2['y'])])
+            lines2.append([(p1['x'], p1['z']), (p2['x'], p2['z'])])
+            lines3.append([(p1['y'], p1['z']), (p2['y'], p2['z'])])
             c.append((0.3, 0.3, 0.3, 0.1))
         lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
         lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
@@ -317,8 +306,8 @@ class Mesh:
             return []
         proj_points = []
         for i in range(num_nodes):
-            node = nodes[i]
-            p = vec3(node['posX'], node['posY'], node['posZ'])
+            node = nodes[i]['pos']
+            p = vec3(node['x'], node['y'], node['z'])
             p2o = p - orig
             x = p2o.dot(unit_x)
             y = p2o.dot(unit_n.cross(unit_x))
@@ -353,9 +342,10 @@ class Mesh:
         ax[1, 1].set_ylabel("z")
         ax[0, 1].axis('off')
         for i in range(len(nodes)):
-            ax[0, 0].plot(nodes[i]['posX'], nodes[i]['posY'], 'ro')
-            ax[1, 0].plot(nodes[i]['posX'], nodes[i]['posZ'], 'ro')
-            ax[1, 1].plot(nodes[i]['posY'], nodes[i]['posZ'], 'ro')
+            node = nodes[i]['pos']
+            ax[0, 0].plot(node['x'], node['y'], 'ro')
+            ax[1, 0].plot(node['x'], node['z'], 'ro')
+            ax[1, 1].plot(node['y'], node['z'], 'ro')
 
         lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
@@ -392,9 +382,10 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['posX'])
-            y.append(data[i]['posY'])
-            z.append(data[i]['posZ'])
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
             colors.append(data[i]['mass'])
 
         cmap = matplotlib.cm.viridis
@@ -438,12 +429,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['posX'])
-            y.append(data[i]['posY'])
-            z.append(data[i]['posZ'])
-            fx = data[i]['forceX']
-            fy = data[i]['forceY']
-            fz = data[i]['forceZ']
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            force = data[i]['force']
+            fx = force['x']
+            fy = force['y']
+            fz = force['z']
             colors.append(math.sqrt(fx * fx + fy * fy + fz * fz))
 
         cmap = matplotlib.cm.viridis
@@ -487,12 +480,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['posX'])
-            y.append(data[i]['posY'])
-            z.append(data[i]['posZ'])
-            fx = data[i]['forceX']
-            fy = data[i]['forceY']
-            fz = data[i]['forceZ']
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            force = data[i]['force']
+            fx = force['x']
+            fy = force['y']
+            fz = force['z']
             mag = math.sqrt(fx * fx + fy * fy + fz * fz)
             colors.append(mag)
             fac = 1/max(1, mag)
@@ -541,12 +536,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['posX'])
-            y.append(data[i]['posY'])
-            z.append(data[i]['posZ'])
-            vx = data[i]['velX']
-            vy = data[i]['velY']
-            vz = data[i]['velZ']
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            vel = data[i]['vel']
+            vx = vel['x']
+            vy = vel['y']
+            vz = vel['z']
             colors.append(math.sqrt(vx * vx + vy * vy + vz * vz))
 
         cmap = matplotlib.cm.viridis
@@ -590,12 +587,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['posX'])
-            y.append(data[i]['posY'])
-            z.append(data[i]['posZ'])
-            vx = data[i]['velX']
-            vy = data[i]['velY']
-            vz = data[i]['velZ']
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            vel = data[i]['vel']
+            vx = vel['x']
+            vy = vel['y']
+            vz = vel['z']
             mag = math.sqrt(vx * vx + vy * vy + vz * vz)
             colors.append(mag)
             fac = 1/max(1, mag)

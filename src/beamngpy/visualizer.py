@@ -41,6 +41,10 @@ class Visualiser:
         self.bitmap_tex = None
         half_pi = math.pi * 0.5
         self.rgb2f = 1.0 / 255.0
+        self.v_origin = vec3(0.0, 0.0, 0.0)
+        self.v_forward = vec3(0.0, -1.0, 0.0)
+        self.v_up = vec3(0.0, 0.0, -1.0)
+        self.v_right = vec3(-1.0, 0.0, 0.0)
 
         # Initialize OpenGL.
         glutInit(sys.argv)
@@ -322,10 +326,12 @@ class Visualiser:
         self.mesh_force_cbar_label0, self.mesh_force_cbar_label1, self.mesh_force_cbar_label2 = '0 N', '150 N', '300 N'
         self.imu_vel_min, self.imu_vel_max = 0.0, 50.0
         self.mesh_vel_cbar_label0, self.mesh_vel_cbar_label1, self.mesh_vel_cbar_label2 = '0 m/s', '25 m/s', '50 m/s'
+        self.imu_stress_min, self.imu_stress_max = -200.0, 200.0
+        self.mesh_stress_cbar_label0, self.mesh_stress_cbar_label1, self.mesh_stress_cbar_label2 = '-200 Nm-2', '0 Nm-2', '200 Nm-2'
         self.screen_center_x, self.screen_center_y = self.half_width, self.half_height
         self.plan_data, self.elevation_data, self.end_elevation_data = [], [], []
         self.mesh_node_size = 1                                                                                     # The size of node rects on render.
-        self.mesh_plan_screen_center, self.mesh_plan_screen_scale = vec3(495, 720), vec3(150, 150)                  # scale/translation for each of the 3 views.
+        self.mesh_plan_screen_center, self.mesh_plan_screen_scale = vec3(495, 820), vec3(150, 150)                  # scale/translation for each of the 3 views.
         self.mesh_elev_screen_center, self.mesh_elev_screen_scale = vec3(495, 180), vec3(150, 150)
         self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale = vec3(1295, 180), vec3(150, 150)
 
@@ -360,10 +366,10 @@ class Visualiser:
                 is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
 
         elif demo == 'mesh':
-            self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.05, physics_update_time=0.05)
+            self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.001)
 
         elif demo == 'multi':
-            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.01, is_using_shared_memory=True, is_visualised=False)
+            pass
 
         else:
             print("*** WARNING: MAIN SEQUENCE - DEMONSTRATION TITLE NOT FOUND ***")
@@ -565,14 +571,10 @@ class Visualiser:
             self.vehicle.sensors.poll()
             state = self.vehicle.state
             if state:
-                v_origin = vec3(0.0, 0.0, 0.0)
-                v_forward = vec3(state['dir'][0], state['dir'][1], state['dir'][2]).normalize()
-                v_up = vec3(state['up'][0], state['up'][1], state['up'][2]).normalize()
-                v_right = v_forward.cross(v_up)
                 self.mesh_data = self.mesh.poll()                                           # update the mesh in the mesh class state.
-                self.plan_data = self.mesh.project_nodes_to_plane(v_origin, v_up, v_forward, self.mesh_plan_screen_center, self.mesh_plan_screen_scale)
-                self.elevation_data = self.mesh.project_nodes_to_plane(v_origin, v_right, v_forward, self.mesh_elev_screen_center, self.mesh_elev_screen_scale)
-                self.end_elevation_data = self.mesh.project_nodes_to_plane(v_origin, v_forward, v_right * -1.0, self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale)
+                self.plan_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_up, self.v_forward, self.mesh_plan_screen_center, self.mesh_plan_screen_scale)
+                self.elevation_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_right, self.v_forward, self.mesh_elev_screen_center, self.mesh_elev_screen_scale)
+                self.end_elevation_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_forward, self.v_right * -1.0, self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale)
 
         elif self.demo == 'multi':
             pass
@@ -1297,8 +1299,8 @@ class Visualiser:
 
                 # Draw beams (1 viewport with different sections for each projection of mesh).
                 glLineWidth(1.0)
-                mesh_data = self.mesh_data[0]['nodes']
                 if self.toggle == 0:                                                                                # mass distribution.
+                    mesh_data = self.mesh_data['nodes']
                     lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
                     num_lines = len(lines)
                     for i in range(num_lines):
@@ -1310,28 +1312,49 @@ class Visualiser:
                         self.draw_line([p1[0], p1[1], p2[0], p2[1]])
 
                 elif self.toggle == 1:                                                                              # force distribution.
+                    mesh_data = self.mesh_data['nodes']
                     lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
                     num_lines = len(lines)
                     for i in range(num_lines):
                         node1, node2 = lines[i][2][0], lines[i][2][1]
-                        md1, md2 = mesh_data[node1], mesh_data[node2]
-                        f_mag_1 = vec3(md1['forceX'], md1['forceY'], md1['forceZ']).length()
-                        f_mag_2 = vec3(md2['forceX'], md2['forceY'], md2['forceZ']).length()
+                        md1, md2 = mesh_data[node1]['force'], mesh_data[node2]['force']
+                        f_mag_1 = vec3(md1['x'], md1['y'], md1['z']).length()
+                        f_mag_2 = vec3(md2['x'], md2['y'], md2['z']).length()
                         avg_f = (f_mag_1 + f_mag_2) * 0.5
                         self.set_mesh_color(avg_f, self.imu_force_min, self.imu_force_max)
                         p1, p2 = lines[i][0], lines[i][1]
                         self.draw_line([p1[0], p1[1], p2[0], p2[1]])
 
-                else:                                                                                               # velocity distribution.
+                elif self.toggle == 2:                                                                              # velocity distribution.
+                    mesh_data = self.mesh_data['nodes']
                     lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
                     num_lines = len(lines)
                     for i in range(num_lines):
                         node1, node2 = lines[i][2][0], lines[i][2][1]
-                        md1, md2 = mesh_data[node1], mesh_data[node2]
-                        v_mag_1 = vec3(md1['velX'], md1['velY'], md1['velZ']).length()
-                        v_mag_2 = vec3(md2['velX'], md2['velY'], md2['velZ']).length()
+                        md1, md2 = mesh_data[node1]['vel'], mesh_data[node2]['vel']
+                        v_mag_1 = vec3(md1['x'], md1['y'], md1['z']).length()
+                        v_mag_2 = vec3(md2['x'], md2['y'], md2['z']).length()
                         avg_v = (v_mag_1 + v_mag_2) * 0.5
                         self.set_mesh_color(avg_v, self.imu_vel_min, self.imu_vel_max)
+                        p1, p2 = lines[i][0], lines[i][1]
+                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+
+                else:                                                                                               # beam stresses.
+                    stresses = self.mesh_data['beams']
+                    lines = self.plan_data[1]
+                    num_lines = len(lines)
+                    for i in range(num_lines):
+                        self.set_mesh_color(stresses[i]['stress'], self.imu_stress_min, self.imu_stress_max)
+                        p1, p2 = lines[i][0], lines[i][1]
+                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+                    lines = self.elevation_data[1]
+                    for i in range(num_lines):
+                        self.set_mesh_color(stresses[i]['stress'], self.imu_stress_min, self.imu_stress_max)
+                        p1, p2 = lines[i][0], lines[i][1]
+                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+                    lines = self.end_elevation_data[1]
+                    for i in range(num_lines):
+                        self.set_mesh_color(stresses[i]['stress'], self.imu_stress_min, self.imu_stress_max)
                         p1, p2 = lines[i][0], lines[i][1]
                         self.draw_line([p1[0], p1[1], p2[0], p2[1]])
 
@@ -1385,11 +1408,17 @@ class Visualiser:
                     self.draw_text(1332, y_min - 32, self.mesh_force_cbar_label1)
                     self.draw_text(1677, y_min - 32, self.mesh_force_cbar_label2)
 
-                else:
+                elif self.toggle == 2:
                     self.draw_text(950, 950, 'VEHICLE VELOCITY DISTRIBUTION')
                     self.draw_text(980, y_min - 32, self.mesh_vel_cbar_label0)
                     self.draw_text(1327, y_min - 32, self.mesh_vel_cbar_label1)
                     self.draw_text(1670, y_min - 32, self.mesh_vel_cbar_label2)
+
+                else:
+                    self.draw_text(950, 950, 'VEHICLE STRESS DISTRIBUTION')
+                    self.draw_text(980, y_min - 32, self.mesh_stress_cbar_label0)
+                    self.draw_text(1327, y_min - 32, self.mesh_stress_cbar_label1)
+                    self.draw_text(1670, y_min - 32, self.mesh_stress_cbar_label2)
 
                 glColor3f(0.85, 0.85, 0.70)
                 self.draw_text(422, 530, ' Top')
