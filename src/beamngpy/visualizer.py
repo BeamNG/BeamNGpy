@@ -30,7 +30,7 @@ class Visualiser:
         # Demonstration state (from BeamNGpy script).
         self.demo = demo
         self.toggle = toggle
-        self.map_name = 'west_coast_usa'
+        self.map_name = map_name
 
         # General initialization.
         self.width, self.height = width, height
@@ -73,6 +73,29 @@ class Visualiser:
 
         # Load font.
         self.makefont( 'SourceCodePro-Regular.ttf', 16 )
+
+        # Initialize storage for all possible sensors.
+        self.camera = None
+        self.lidar = None
+        self.radar = None
+        self.us_FL = None
+        self.us_FR = None
+        self.us_BL = None
+        self.us_BR = None
+        self.us_ML = None
+        self.us_MR = None
+        self.imu = None
+        self.mesh = None
+
+        # Keys to use.
+        self.camera_key = b'c'
+        self.lidar_key = b'l'
+        self.radar_key = b'r'
+        self.ultrasonic_key = b'u'
+        self.imu_key = b'i'
+        self.mesh_key = b'm'
+        self.traj_key = b't'
+        self.multi_key = b'a'
 
         # Trajectory initialization.
         self.traj = deque()
@@ -234,13 +257,13 @@ class Visualiser:
         self.car_radar_img = np.array(car_radar_img)
         self.car_radar_img_size = [car_radar_img.size[1], car_radar_img.size[0]]
         self.radar_toggle = 0
-        self.radar_bscope_img, self.radar_ppi_img = [], []
-        self.radar_bscope_size, self.radar_ppi_size = [], []
+        self.radar_bscope_img, self.radar_ppi_img, self.radar_rvv_img = [], [], []
+        self.radar_bscope_size, self.radar_ppi_size, self.radar_rvv_size = [], [], []
         self.radar_res = [950, 950]
         self.radar_bins = [950, 950]
         self.radar_fov = 70.0
-        self.radar_range_min = 0.1
-        self.radar_range_max = 100.0
+        self.radar_range_min, self.radar_range_max = 0.1, 100.0
+        self.radar_vel_min, self.radar_vel_max = -40.0, 40.0
         fov_azimuth = (self.radar_res[0] / float(self.radar_res[1])) * self.radar_fov
         self.half_fov_azimuth = fov_azimuth * 0.5
         self.max_az_rad = np.deg2rad(fov_azimuth) * 0.5
@@ -340,6 +363,128 @@ class Visualiser:
         self.mesh_elev_screen_center, self.mesh_elev_screen_scale = vec3(495, 180), vec3(150, 150)
         self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale = vec3(1295, 180), vec3(150, 150)
 
+        # Set up the sensor configuration as chosen by the demo.
+        self._set_up_sensors(demo)
+
+    def run(self):
+        glutIdleFunc(self._update)
+        glutMainLoop()
+
+    def _on_resize(self, width, height):
+        if height == 0:
+            height = 1
+        glViewport(0, 0, width, height)
+
+    def on_key(self, name, *args):
+
+        if name == b'p':                                            # TODO:  REMOVE.  THIS IS FOR GETTING WEYPOINTS.
+            self.vehicle.sensors.poll()
+            self.pos = self.vehicle.state['pos']
+            print(self.pos[0], self.pos[1], self.pos[2])
+        if name == self.camera_key:
+            if self.demo == 'camera':
+                self.toggle = self.toggle + 1
+                if self.toggle > 3:
+                    self.toggle = 0
+            else:
+               self.toggle = 3
+               self.demo = 'camera'
+               self._set_up_sensors(self.demo)
+        elif name == self.lidar_key:
+            if self.demo != 'lidar':
+                self.demo = 'lidar'
+                self._set_up_sensors(self.demo)
+        elif name == self.radar_key:
+            if self.demo == 'radar':
+                self.toggle = self.toggle + 1
+                if self.toggle > 3:
+                    self.toggle = 0
+            else:
+                self.toggle = 2
+                self.demo = 'radar'
+                self._set_up_sensors(self.demo)
+        elif name == self.ultrasonic_key:
+            if self.demo != 'ultrasonic':
+                self.demo = 'ultrasonic'
+                self._set_up_sensors(self.demo)
+        elif name == self.imu_key:
+            if self.demo == 'imu':
+                self.toggle = self.toggle + 1
+                if self.toggle > 2:
+                    self.toggle = 0
+            else:
+                self.toggle = 2
+                self.demo = 'imu'
+                self._set_up_sensors(self.demo)
+        elif name == self.mesh_key:
+            if self.demo == 'mesh':
+                self.toggle = self.toggle + 1
+                if self.toggle > 3:
+                    self.toggle = 0
+            else:
+                self.toggle = 0
+                self.demo = 'mesh'
+                self._set_up_sensors(self.demo)
+        elif name == self.traj_key:
+            if self.demo != 'trajectory':
+                self.demo = 'trajectory'
+                self._set_up_sensors(self.demo)
+        elif name == self.multi_key:
+            if self.demo != 'multi':
+                self.demo = 'multi'
+                self._set_up_sensors(self.demo)
+
+        # Lidar-specific functionality (for using mouse to move image when not in 'follow' mode).
+        if self.demo == 'lidar':
+            if name == b'f':
+                self.follow = not self.follow
+            if self.follow:
+                return
+            if name == b'w':
+                self.pos[0] += self.focus[0]
+                self.pos[1] += self.focus[1]
+                self.pos[2] += self.focus[2]
+            if name == b's':
+                self.pos[0] -= self.focus[0]
+                self.pos[1] -= self.focus[1]
+                self.pos[2] -= self.focus[2]
+
+    def _set_up_sensors(self, demo):
+        # Remove any existing sensors from vehicle.
+        if self.camera is not None:
+            self.camera.remove()
+            self.camera = None
+        if self.lidar is not None:
+            self.lidar.remove()
+            self.lidar = None
+        if self.us_FL is not None:
+            self.us_FL.remove()
+            self.us_FL = None
+        if self.us_FR is not None:
+            self.us_FR.remove()
+            self.us_FR = None
+        if self.us_BL is not None:
+            self.us_BL.remove()
+            self.us_BL = None
+        if self.us_BR is not None:
+            self.us_BR.remove()
+            self.us_BR = None
+        if self.us_ML is not None:
+            self.us_ML.remove()
+            self.us_ML = None
+        if self.us_MR is not None:
+            self.us_MR.remove()
+            self.us_MR = None
+        if self.radar is not None:
+            self.radar.remove()
+            self.radar = None
+        if self.imu is not None:
+            self.imu.remove()
+            self.imu = None
+        if self.mesh is not None:
+            self.mesh.remove()
+            self.mesh = None
+
         # Set up the chosen demonstration.
         if self.demo == 'camera':
             self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000))
@@ -373,31 +518,24 @@ class Visualiser:
         elif demo == 'mesh':
             self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.001)
 
-        elif demo == 'multi':
-            pass
-
-    def run(self):
-        glutIdleFunc(self._update)
-        glutMainLoop()
-
-    def _on_resize(self, width, height):
-        if height == 0:
-            height = 1
-        glViewport(0, 0, width, height)
-
-    def on_key(self, name, *args):
-        if name == b'f':
-            self.follow = not self.follow
-        if self.follow:
-            return
-        if name == b'w':
-            self.pos[0] += self.focus[0]
-            self.pos[1] += self.focus[1]
-            self.pos[2] += self.focus[2]
-        if name == b's':
-            self.pos[0] -= self.focus[0]
-            self.pos[1] -= self.focus[1]
-            self.pos[2] -= self.focus[2]
+        elif demo == 'multi':    # Camera, LiDAR, RADAR, and Ultrasonic together in one view (four viewports).
+            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000))
+            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40)
+            self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
+                field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
+                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max)
+            self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_FR = Ultrasonic('us_FR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_BL = Ultrasonic('us_BL', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_BR = Ultrasonic('us_BR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_ML = Ultrasonic('us_ML', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_MR = Ultrasonic('us_MR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
 
     def on_drag(self, x, y):
         if self.follow:
@@ -444,6 +582,7 @@ class Visualiser:
                 self.camera_depth_img = camera_data3[0]
 
         elif self.demo == 'lidar':
+            self.vehicle.sensors.poll()
             points = self.lidar.poll()['pointCloud']
             assert not self.dirty
             if len(points) == 0:
@@ -461,7 +600,7 @@ class Visualiser:
             max_height = np.absolute(points[2::3].max() - min_height)
             self.colours[0:self.points_count:3] = points[2::3]
             self.colours[0:self.points_count:3] -= min_height
-            self.colours[0:self.points_count:3] /= max_height
+            self.colours[0:self.points_count:3] /= max(1e-12, max_height)
             self.colours[1:self.points_count:3] = 0.25
             self.colours[2:self.points_count:3] = 1.0 - self.colours[0:self.points_count:3]
             glDeleteBuffers(1, self.colour_buf)
@@ -521,10 +660,19 @@ class Visualiser:
                 ppi_data = self.radar.get_ppi_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
                 self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
                 self.radar_ppi_img = ppi_data
-            else:
+            elif self.toggle == 1:
                 bscope_data = self.radar.get_bscope_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
                 self.radar_bscope_size = [self.radar_bins[0], self.radar_bins[1]]
                 self.radar_bscope_img = bscope_data
+            elif self.toggle == 2:
+                ppi_data = self.radar.get_ppi_rgba(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
+                self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
+                self.radar_ppi_img = ppi_data
+            else:
+                rvv_data = self.radar.get_range_vs_velocity(range_min=self.radar_range_min, range_max=self.radar_range_max, vel_min = self.radar_vel_min, vel_max = self.radar_vel_max,
+                    range_bins=100, vel_bins=100)
+                self.radar_rvv_size = [100, 100]
+                self.radar_rvv_img = rvv_data
 
         elif self.demo == 'imu':
             full_imu_data = self.imu1.poll()
@@ -579,7 +727,89 @@ class Visualiser:
                 self.end_elevation_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_forward, self.v_right * -1.0, self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale)
 
         elif self.demo == 'multi':
-            pass
+            # Multi: Camera update.
+            camera_data1 = self.camera.poll_shmem_colour()
+            self.camera_color_size = [camera_data1[1], camera_data1[2]]
+            self.camera_color_img = camera_data1[0]
+
+            # Multi: LiDAR update.
+            self.vehicle.sensors.poll()
+            points = self.lidar.poll()['pointCloud']
+            assert not self.dirty
+            if len(points) == 0:
+                return
+            self.points = points
+            self.points_count = len(points)
+            verts = np.array(self.points, dtype=np.float32)
+            if self.vertex_buf:
+                glDeleteBuffers(1, self.vertex_buf)
+            self.vertex_buf = np.uint64(glGenBuffers(1))
+            glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
+            glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, verts, GL_STATIC_DRAW)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            min_height = points[2::3].min()
+            max_height = np.absolute(points[2::3].max() - min_height)
+            self.colours[0:self.points_count:3] = points[2::3]
+            self.colours[0:self.points_count:3] -= min_height
+            self.colours[0:self.points_count:3] /= max_height
+            self.colours[1:self.points_count:3] = 0.25
+            self.colours[2:self.points_count:3] = 1.0 - self.colours[0:self.points_count:3]
+            glDeleteBuffers(1, self.colour_buf)
+            self.colour_buf = np.uint64(glGenBuffers(1))
+            glBindBuffer(GL_ARRAY_BUFFER, self.colour_buf)
+            glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, self.colours, GL_STATIC_DRAW)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            if self.follow and self.vehicle.state:
+                self.focus = self.vehicle.state['pos']
+                self.pos[0] = self.focus[0] + self.vehicle.state['dir'][0] * -30
+                self.pos[1] = self.focus[1] + self.vehicle.state['dir'][1] * -30
+                self.pos[2] = self.focus[2] + self.vehicle.state['dir'][2] + 10
+
+            # Multi: RADAR update.
+            ppi_data = self.radar.get_ppi_rgba(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
+            self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
+            self.radar_ppi_img = ppi_data
+
+            # Multi: Ultrasonic update.
+            d_FL, d_FR = self.us_FL.poll()['distance'], self.us_FR.poll()['distance']
+            d_BL, d_BR = self.us_BL.poll()['distance'], self.us_BR.poll()['distance']
+            d_ML, d_MR = self.us_ML.poll()['distance'], self.us_MR.poll()['distance']
+            if d_FL > 5.0:
+                self.us_bar_FL = 6
+            elif d_FL < 0.5:
+                self.us_bar_FL = 0
+            else:
+                self.us_bar_FL = int(np.floor(d_FL)) + 1
+            if d_FR > 5.0:
+                self.us_bar_FR = 6
+            elif d_FR < 0.5:
+                self.us_bar_FR = 0
+            else:
+                self.us_bar_FR = int(np.floor(d_FR)) + 1
+            if d_BL > 5.0:
+                self.us_bar_BL = 6
+            elif d_BL < 0.5:
+                self.us_bar_BL = 0
+            else:
+                self.us_bar_BL = int(np.floor(d_BL)) + 1
+            if d_BR > 5.0:
+                self.us_bar_BR = 6
+            elif d_BR < 0.5:
+                self.us_bar_BR = 0
+            else:
+                self.us_bar_BR = int(np.floor(d_BR)) + 1
+            if d_ML > 5.0:
+                self.us_bar_ML = 6
+            elif d_ML < 0.5:
+                self.us_bar_ML = 0
+            else:
+                self.us_bar_ML = int(np.floor(d_ML)) + 1
+            if d_MR > 5.0:
+                self.us_bar_MR = 6
+            elif d_MR < 0.5:
+                self.us_bar_MR = 0
+            else:
+                self.us_bar_MR = int(np.floor(d_MR)) + 1
 
         # OpenGL - goes to display function.
         glutPostRedisplay()
@@ -854,7 +1084,7 @@ class Visualiser:
             # Title underline.
             glColor3f(0.25, 0.25, 0.15)
             glLineWidth(2.0)
-            self.draw_line([75, 2, 285, 2])
+            self.draw_line([75, 2, 375, 2])
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
@@ -886,6 +1116,11 @@ class Visualiser:
             glMatrixMode(GL_MODELVIEW)
             glPushMatrix()
             glLoadIdentity()
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
             # Render each of the bar sections around the vehicle image.
             glColor3f(0.1, 0.1, 0.1)                                                                        # Top side-bar.
@@ -1088,6 +1323,24 @@ class Visualiser:
                     glColor3f(0.1, 0.1, 0.1)
                 glRectf(self.BL_tx6[i], self.BL_ty6[i], self.BL_tx6[i] + self.wid, self.BL_ty6[i] + self.wid)
 
+            # Title underline.
+            glViewport(0, self.height - 40, self.width, self.height)
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(2.0)
+            self.draw_line([55, 2, 355, 2])
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(85, 20, 'Ultrasonic Sensor x 6')
+            self.draw_text(1250, 20, 'Vehicle: ')
+            self.draw_text(1550, 20, 'Model: ')
+            glColor3f(0.85, 0.35, 0.70)
+            self.draw_text(1255, 20, '         ' + self.vehicle.vid)
+            self.draw_text(1550, 20, '       ' + self.vehicle.model)
+            glDisable( GL_TEXTURE_2D )
+
             # Restore matrices.
             glMatrixMode(GL_PROJECTION)
             glPopMatrix()
@@ -1105,11 +1358,14 @@ class Visualiser:
             glLoadIdentity()
 
             # Render RADAR images.
-            if self.toggle == 0:                                                                                                       # PPI.
+            if self.toggle == 0 or self.toggle == 2:                                                                    # PPI.
                 if len(self.radar_ppi_size) > 0:
                     glViewport(0, 0, self.width, self.height)
                     self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From the .png image.
-                    self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 2)
+                    if self.toggle == 0:
+                        self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 2)
+                    else:
+                        self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
@@ -1143,7 +1399,14 @@ class Visualiser:
                     self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
                     for i in range(401):                                    # colorbar.
                         col = i * 0.0025
-                        glColor3f(col, col, col)
+                        r, g, b = 0, 0, 0
+                        if i < 200:
+                            b = (200 - i) * 0.005
+                            g = i * 0.005
+                        else:
+                            g = (400 - i) * 0.005
+                            r = (i - 200) * 0.005
+                        glColor3f(r, g, b)
                         y = 50 + i
                         self.draw_line([70, y, 100, y])
 
@@ -1151,7 +1414,7 @@ class Visualiser:
                     glViewport(0, self.height - 40, self.width, self.height)
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([25, 2, 520, 2])
+                    self.draw_line([25, 2, 495, 2])
 
                     # Draw Text.
                     glEnable( GL_TEXTURE_2D )
@@ -1183,7 +1446,7 @@ class Visualiser:
                     self.draw_text(49, 490, 'Doppler')
                     glDisable( GL_TEXTURE_2D )
 
-            else:                                                                                                                       # B-scope.
+            elif self.toggle == 1:                                                                                                              # B-scope.
                 if len(self.radar_bscope_size) > 0:
                     glViewport(0, 0, self.width, self.height)
                     self.render_img(350, 45, self.radar_bscope_img, self.radar_bscope_size[0], self.radar_bscope_size[1], 1, 1, 1, 2)
@@ -1251,6 +1514,86 @@ class Visualiser:
                     self.draw_text(125, 460, '50 m/s')
                     glColor3f(0.5, 0.5, 0.5)
                     self.draw_text(49, 490, 'Doppler')
+                    glDisable( GL_TEXTURE_2D )
+
+            else:
+                if len(self.radar_rvv_size) > 0:
+                    glViewport(0, 0, int(self.width * 9.5), int(self.height * 9.5))
+                    self.render_img(int(350.0 / 9.5) + 1, int(45.0 / 9.5) + 1, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
+
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # Draw the PPI scope frame.
+                    glViewport(0, 0, self.width, self.height)
+                    glLineWidth(2.0)
+                    glColor3f(0.3, 0.3, 0.3)
+                    self.draw_line([350, 45, 1300, 45])                     # bottom frame line.
+                    self.draw_line([350, 995, 1300, 995])                   # bottom frame line.
+                    self.draw_line([350, 45, 350, 995])                     # left frame line.
+                    self.draw_line([1300, 45, 1300, 995])                   # right frame line.
+                    div = 95
+                    for i in range(11):
+                        dv = i * div
+                        y = 45 + dv
+                        self.draw_line([1300, y, 1310, y])                  # vertical grooves.
+                        x = 350 + dv
+                        self.draw_line([x, 45, x, 35])                      # horizontal grooves.
+
+                    # Color bar.
+                    glLineWidth(3.0)
+                    y_min, y_max = self.half_height + 65, self.half_height + 106
+                    self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
+                    self.draw_line([69, 451, 115, 451])                     # cb frame - top.
+                    self.draw_line([69, 49, 69, 451])                       # cb frame - left.
+                    self.draw_line([101, 49, 101, 451])                     # cb frame - right.
+                    self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
+                    for i in range(401):                                    # colorbar.
+                        col = i * 0.0025
+                        r, g, b = 0, 0, 0
+                        if i < 200:
+                            b = (200 - i) * 0.005
+                            g = i * 0.005
+                        else:
+                            g = (400 - i) * 0.005
+                            r = (i - 200) * 0.005
+                        glColor3f(r, g, b)
+                        y = 50 + i
+                        self.draw_line([70, y, 100, y])
+
+                    # Title underline.
+                    glViewport(0, self.height - 40, self.width, self.height)
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([25, 2, 290, 2])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(35, 20, 'RADAR: Range - Doppler')
+                    self.draw_text(1460, 20, 'Vehicle: ')
+                    glColor3f(0.85, 0.35, 0.70)
+                    self.draw_text(1465, 20, '         ' + self.vehicle.vid)
+                    glViewport(0, 0, self.width, self.height)
+                    glColor3f(0.4, 0.4, 0.4)
+                    txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
+                    txt2 = ['-50 m/s', '-40 m/s', '-30 m/s', '-20 m/s', '-10 m/s', '0 m/s', '10 m/s', '20 m/s', '30 m/s', '40 m/s', '50 m/s']
+                    for i in range(11):
+                        dv = i * div
+                        y = 52 + dv
+                        self.draw_text(1320, y, txt2[i])                        # vertical text.
+                        x = 332 + dv
+                        self.draw_text(x, 22, txt[i])                           # horizontal text.
+                    self.draw_text(125, 60, '0 m/s')                            # colorbar markers.
+                    self.draw_text(125, 260, '25 m/s')
+                    self.draw_text(125, 460, '50 m/s')
+                    glColor3f(0.5, 0.5, 0.5)
+                    self.draw_text(49, 490, 'Doppler')
+                    self.draw_text(1420, 525, 'Velocity')
+                    self.draw_text(796, 75, 'Range')
                     glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1628,7 +1971,6 @@ class Visualiser:
 
                 # Draw Text.
                 glEnable( GL_TEXTURE_2D )
-                #global texid
                 glBindTexture( GL_TEXTURE_2D, texid )
                 glColor3f(0.85, 0.85, 0.70)
                 if self.toggle == 0:
@@ -1673,7 +2015,336 @@ class Visualiser:
                 glPopMatrix()
 
         elif self.demo == 'multi':
-           pass
+
+            if len(self.camera_color_size) > 0:     # camera - color image.
+                glViewport(0, self.half_height, self.half_width, self.half_height)	# TL
+                self.render_img(50, 50, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+            glViewport(self.half_width, 0, self.half_width, self.half_height)
+            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The ultrasonic .png image.
+
+            if len(self.radar_ppi_size) > 0:
+                glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
+                self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From RADAR .png image.
+                self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            if self.points_count > 0:
+                glViewport(0, 0, self.half_width, self.half_height)
+                glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
+                glVertexPointer(3, GL_FLOAT, 0, ctypes.c_void_p(0))
+                glEnableClientState(GL_VERTEX_ARRAY)
+                glBindBuffer(GL_ARRAY_BUFFER, self.colour_buf)
+                glColorPointer(3, GL_FLOAT, 0, ctypes.c_void_p(0))
+                glEnableClientState(GL_COLOR_ARRAY)
+                glDrawArrays(GL_POINTS, 0, self.points_count // 3)
+                glDisableClientState(GL_VERTEX_ARRAY)
+                glDisableClientState(GL_COLOR_ARRAY)
+                glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            if len(self.radar_ppi_size) > 0:
+                glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
+
+                # Draw the PPI scope frame.
+                glLineWidth(2.0)
+                glColor3f(0.3, 0.3, 0.3)
+                self.draw_line([673, 25, 181, 875])                     # left grid line.
+                self.draw_line([673, 25, 1166, 875])                    # right grid line.
+                self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
+                self.draw_line([722.3, 110.0, 737.3, 101.0])
+                self.draw_line([771.6, 195.0, 786.6, 186.0])
+                self.draw_line([820.9, 280.0, 835.9, 271.0])
+                self.draw_line([870.2, 365.0, 885.2, 356.0])
+                self.draw_line([919.5, 450.0, 934.5, 441.0])
+                self.draw_line([968.8, 535.0, 983.8, 526.0])
+                self.draw_line([1018.1, 620.0, 1033.1, 611.0])
+                self.draw_line([1067.4, 705.0, 1082.4, 696.0])
+                self.draw_line([1116.7, 790.0, 1131.7, 781.0])
+                self.draw_line([1166.0, 875.0, 1181.0, 866.0])
+
+                # Color bar.
+                glLineWidth(3.0)
+                y_min, y_max = self.half_height + 65, self.half_height + 106
+                self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
+                self.draw_line([69, 451, 115, 451])                     # cb frame - top.
+                self.draw_line([69, 49, 69, 451])                       # cb frame - left.
+                self.draw_line([101, 49, 101, 451])                     # cb frame - right.
+                self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
+                for i in range(401):                                    # colorbar.
+                    col = i * 0.0025
+                    r, g, b = 0, 0, 0
+                    if i < 200:
+                        b = (200 - i) * 0.005
+                        g = i * 0.005
+                    else:
+                        g = (400 - i) * 0.005
+                        r = (i - 200) * 0.005
+                    glColor3f(r, g, b)
+                    y = 50 + i
+                    self.draw_line([70, y, 100, y])
+
+            # Ultrasonic.
+            glViewport(self.half_width, 0, self.half_width, self.half_height)
+            glColor3f(0.1, 0.1, 0.1)                                                                        # Top side-bar.
+            glRectf(self.loc_ML_0[0], self.loc_ML_0[1], self.loc_ML_0[2], self.loc_ML_0[3])
+            glRectf(self.loc_ML_1[0], self.loc_ML_1[1], self.loc_ML_1[2], self.loc_ML_1[3])
+            glRectf(self.loc_ML_2[0], self.loc_ML_2[1], self.loc_ML_2[2], self.loc_ML_2[3])
+            glRectf(self.loc_ML_3[0], self.loc_ML_3[1], self.loc_ML_3[2], self.loc_ML_3[3])
+            glRectf(self.loc_ML_4[0], self.loc_ML_4[1], self.loc_ML_4[2], self.loc_ML_4[3])
+            glRectf(self.loc_ML_5[0], self.loc_ML_5[1], self.loc_ML_5[2], self.loc_ML_5[3])
+            glRectf(self.loc_ML_6[0], self.loc_ML_6[1], self.loc_ML_6[2], self.loc_ML_6[3])
+            if self.us_bar_ML == 0:
+                glColor3f(1.0, 0.0, 0.0)
+                glRectf(self.loc_ML_0[0], self.loc_ML_0[1], self.loc_ML_0[2], self.loc_ML_0[3])
+            elif self.us_bar_ML == 1:
+                glColor3f(1.0, 1.0, 0.0)
+                glRectf(self.loc_ML_1[0], self.loc_ML_1[1], self.loc_ML_1[2], self.loc_ML_1[3])
+            elif self.us_bar_ML == 2:
+                glColor3f(1.0, 1.0, 0.0)
+                glRectf(self.loc_ML_2[0], self.loc_ML_2[1], self.loc_ML_2[2], self.loc_ML_2[3])
+            elif self.us_bar_ML == 3:
+                glColor3f(1.0, 1.0, 0.0)
+                glRectf(self.loc_ML_3[0], self.loc_ML_3[1], self.loc_ML_3[2], self.loc_ML_3[3])
+            elif self.us_bar_ML == 4:
+                glColor3f(1.0, 1.0, 1.0)
+                glRectf(self.loc_ML_4[0], self.loc_ML_4[1], self.loc_ML_4[2], self.loc_ML_4[3])
+            elif self.us_bar_ML == 5:
+                glColor3f(1.0, 1.0, 1.0)
+                glRectf(self.loc_ML_5[0], self.loc_ML_5[1], self.loc_ML_5[2], self.loc_ML_5[3])
+            else:
+                glColor3f(1.0, 1.0, 1.0)
+                glRectf(self.loc_ML_6[0], self.loc_ML_6[1], self.loc_ML_6[2], self.loc_ML_6[3])
+            glColor3f(0.1, 0.1, 0.1)                                                                        # Bottom side-bar.
+            glRectf(self.loc_MR_0[0], self.loc_MR_0[1], self.loc_MR_0[2], self.loc_MR_0[3])
+            glRectf(self.loc_MR_1[0], self.loc_MR_1[1], self.loc_MR_1[2], self.loc_MR_1[3])
+            glRectf(self.loc_MR_2[0], self.loc_MR_2[1], self.loc_MR_2[2], self.loc_MR_2[3])
+            glRectf(self.loc_MR_3[0], self.loc_MR_3[1], self.loc_MR_3[2], self.loc_MR_3[3])
+            glRectf(self.loc_MR_4[0], self.loc_MR_4[1], self.loc_MR_4[2], self.loc_MR_4[3])
+            glRectf(self.loc_MR_5[0], self.loc_MR_5[1], self.loc_MR_5[2], self.loc_MR_5[3])
+            glRectf(self.loc_MR_6[0], self.loc_MR_6[1], self.loc_MR_6[2], self.loc_MR_6[3])
+            if self.us_bar_MR == 0:
+                glColor3f(1.0, 0.0, 0.0)
+                glRectf(self.loc_MR_0[0], self.loc_MR_0[1], self.loc_MR_0[2], self.loc_MR_0[3])
+            elif self.us_bar_MR == 1:
+                glColor3f(1.0, 1.0, 0.0)
+                glRectf(self.loc_MR_1[0], self.loc_MR_1[1], self.loc_MR_1[2], self.loc_MR_1[3])
+            elif self.us_bar_MR == 2:
+                glColor3f(1.0, 1.0, 0.0)
+                glRectf(self.loc_MR_2[0], self.loc_MR_2[1], self.loc_MR_2[2], self.loc_MR_2[3])
+            elif self.us_bar_MR == 3:
+                glColor3f(1.0, 1.0, 0.0)
+                glRectf(self.loc_MR_3[0], self.loc_MR_3[1], self.loc_MR_3[2], self.loc_MR_3[3])
+            elif self.us_bar_MR == 4:
+                glColor3f(1.0, 1.0, 1.0)
+                glRectf(self.loc_MR_4[0], self.loc_MR_4[1], self.loc_MR_4[2], self.loc_MR_4[3])
+            elif self.us_bar_MR == 5:
+                glColor3f(1.0, 1.0, 1.0)
+                glRectf(self.loc_MR_5[0], self.loc_MR_5[1], self.loc_MR_5[2], self.loc_MR_5[3])
+            else:
+                glColor3f(1.0, 1.0, 1.0)
+                glRectf(self.loc_MR_6[0], self.loc_MR_6[1], self.loc_MR_6[2], self.loc_MR_6[3])
+            for i in range(self.div):
+                if self.us_bar_FL == 0:                                                                     # Top-right arc.
+                    glColor3f(1.0, 0.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TR_tx0[i], self.TR_ty0[i], self.TR_tx0[i] + self.wid, self.TR_ty0[i] + self.wid)
+                if self.us_bar_FL == 1:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TR_tx1[i], self.TR_ty1[i], self.TR_tx1[i] + self.wid, self.TR_ty1[i] + self.wid)
+                if self.us_bar_FL == 2:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TR_tx2[i], self.TR_ty2[i], self.TR_tx2[i] + self.wid, self.TR_ty2[i] + self.wid)
+                if self.us_bar_FL == 3:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TR_tx3[i], self.TR_ty3[i], self.TR_tx3[i] + self.wid, self.TR_ty3[i] + self.wid)
+                if self.us_bar_FL == 4:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TR_tx4[i], self.TR_ty4[i], self.TR_tx4[i] + self.wid, self.TR_ty4[i] + self.wid)
+                if self.us_bar_FL == 5:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TR_tx5[i], self.TR_ty5[i], self.TR_tx5[i] + self.wid, self.TR_ty5[i] + self.wid)
+                if self.us_bar_FL == 6:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TR_tx6[i], self.TR_ty6[i], self.TR_tx6[i] + self.wid, self.TR_ty6[i] + self.wid)
+                if self.us_bar_FR == 0:                                                                     # Bottom-right arc.
+                    glColor3f(1.0, 0.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BR_tx0[i], self.BR_ty0[i], self.BR_tx0[i] + self.wid, self.BR_ty0[i] + self.wid)
+                if self.us_bar_FR == 1:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BR_tx1[i], self.BR_ty1[i], self.BR_tx1[i] + self.wid, self.BR_ty1[i] + self.wid)
+                if self.us_bar_FR == 2:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BR_tx2[i], self.BR_ty2[i], self.BR_tx2[i] + self.wid, self.BR_ty2[i] + self.wid)
+                if self.us_bar_FR == 3:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BR_tx3[i], self.BR_ty3[i], self.BR_tx3[i] + self.wid, self.BR_ty3[i] + self.wid)
+                if self.us_bar_FR == 4:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BR_tx4[i], self.BR_ty4[i], self.BR_tx4[i] + self.wid, self.BR_ty4[i] + self.wid)
+                if self.us_bar_FR == 5:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BR_tx5[i], self.BR_ty5[i], self.BR_tx5[i] + self.wid, self.BR_ty5[i] + self.wid)
+                if self.us_bar_FR == 6:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BR_tx6[i], self.BR_ty6[i], self.BR_tx6[i] + self.wid, self.BR_ty6[i] + self.wid)
+                if self.us_bar_BL == 0:                                                                     # Top-left arc.
+                    glColor3f(1.0, 0.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TL_tx0[i], self.TL_ty0[i], self.TL_tx0[i] + self.wid, self.TL_ty0[i] + self.wid)
+                if self.us_bar_BL == 1:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TL_tx1[i], self.TL_ty1[i], self.TL_tx1[i] + self.wid, self.TL_ty1[i] + self.wid)
+                if self.us_bar_BL == 2:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TL_tx2[i], self.TL_ty2[i], self.TL_tx2[i] + self.wid, self.TL_ty2[i] + self.wid)
+                if self.us_bar_BL == 3:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TL_tx3[i], self.TL_ty3[i], self.TL_tx3[i] + self.wid, self.TL_ty3[i] + self.wid)
+                if self.us_bar_BL == 4:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TL_tx4[i], self.TL_ty4[i], self.TL_tx4[i] + self.wid, self.TL_ty4[i] + self.wid)
+                if self.us_bar_BL == 5:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TL_tx5[i], self.TL_ty5[i], self.TL_tx5[i] + self.wid, self.TL_ty5[i] + self.wid)
+                if self.us_bar_BL == 6:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.TL_tx6[i], self.TL_ty6[i], self.TL_tx6[i] + self.wid, self.TL_ty6[i] + self.wid)
+                if self.us_bar_BR == 0:                                                                     # Bottom-left arc.
+                    glColor3f(1.0, 0.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BL_tx0[i], self.BL_ty0[i], self.BL_tx0[i] + self.wid, self.BL_ty0[i] + self.wid)
+                if self.us_bar_BR == 1:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BL_tx1[i], self.BL_ty1[i], self.BL_tx1[i] + self.wid, self.BL_ty1[i] + self.wid)
+                if self.us_bar_BR == 2:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BL_tx2[i], self.BL_ty2[i], self.BL_tx2[i] + self.wid, self.BL_ty2[i] + self.wid)
+                if self.us_bar_BR == 3:
+                    glColor3f(1.0, 1.0, 0.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BL_tx3[i], self.BL_ty3[i], self.BL_tx3[i] + self.wid, self.BL_ty3[i] + self.wid)
+                if self.us_bar_BR == 4:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BL_tx4[i], self.BL_ty4[i], self.BL_tx4[i] + self.wid, self.BL_ty4[i] + self.wid)
+                if self.us_bar_BR == 5:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BL_tx5[i], self.BL_ty5[i], self.BL_tx5[i] + self.wid, self.BL_ty5[i] + self.wid)
+                if self.us_bar_BR == 6:
+                    glColor3f(1.0, 1.0, 1.0)
+                else:
+                    glColor3f(0.1, 0.1, 0.1)
+                glRectf(self.BL_tx6[i], self.BL_ty6[i], self.BL_tx6[i] + self.wid, self.BL_ty6[i] + self.wid)
+
+            # View-division lines.
+            glViewport(0, 0, self.width, self.height)
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(3.0)
+            self.draw_line([0, self.half_height, self.width, self.half_height])
+            self.draw_line([self.half_width, 0, self.half_width, self.height])
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(400, 530, ' Camera')
+            self.draw_text(400, 30, '  LiDAR')
+            self.draw_text(1255, 30, '    Ultrasonic')
+            self.draw_text(1280, 530, '    RADAR')
+            self.draw_text(1555, 60, 'Vehicle: ')
+            self.draw_text(1580, 30, 'Model: ')
+            glColor3f(0.85, 0.35, 0.70)
+            self.draw_text(1555, 60, '         ' + self.vehicle.vid)
+            self.draw_text(1580, 30, '       ' + self.vehicle.model)
+            glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
+            glColor3f(0.4, 0.4, 0.4)
+            self.draw_text(700, 21, '0 m')
+            self.draw_text(745.3, 106.3, '10 m')
+            self.draw_text(796.6, 191.6, '20 m')
+            self.draw_text(843.9, 276.9, '30 m')
+            self.draw_text(893.2, 361.2, '40 m')
+            self.draw_text(942.5, 446.5, '50 m')
+            self.draw_text(991.8, 531.8, '60 m')
+            self.draw_text(1041.1, 616.1, '70 m')
+            self.draw_text(1090.4, 701.4, '80 m')
+            self.draw_text(1140.7, 786.7, '90 m')
+            self.draw_text(1189, 871, '100 m')
+            self.draw_text(125, 60, '0 m/s')
+            self.draw_text(125, 260, '25 m/s')
+            self.draw_text(125, 460, '50 m/s')
+            glColor3f(0.5, 0.5, 0.5)
+            self.draw_text(49, 490, 'Doppler')
+            glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
+
+        # Final tidy up for frame data, before going to next update/display.
+        self.radar_ppi_size, self.radar_bscope_size, self.radar_rvv_size = [], [], []
 
         # Flush display - OpenGL.
         glutSwapBuffers()

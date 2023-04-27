@@ -149,6 +149,16 @@ class Radar:
             rangeBins = range_bins, azimuthBins = azimuth_bins)['data']
         return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.float32)
 
+    def get_ppi_rgba(self, range_min: float = 0.0, range_max: float = 100.0, range_bins: int = 200, azimuth_bins: int = 200):
+        self._send_sensor_request('GetPPIRGBARadar', ack='CompletedGetPPIRGBARadar', name=self.name, rangeMin = range_min, rangeMax = range_max,
+            rangeBins = range_bins, azimuthBins = azimuth_bins)['data']
+        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
+
+    def get_range_vs_velocity(self, range_min: float = 0.0, range_max: float = 100.0, vel_min: float = -40.0, vel_max: float = 40.0, range_bins: int = 200, vel_bins: int = 200):
+        self._send_sensor_request('GetRangeVsVelocityRadar', ack='CompletedGetRangeVsVelocityRadar', name=self.name, rangeMin = range_min, rangeMax = range_max,
+            velMin = vel_min, velMax = vel_max, rangeBins = range_bins, velBins = vel_bins)['data']
+        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
+
     def send_ad_hoc_poll_request(self) -> int:
         """
         Sends an ad-hoc polling request to the simulator. This will be executed by the simulator immediately, but will take time to process, so the
