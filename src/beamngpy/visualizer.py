@@ -377,10 +377,13 @@ class Visualiser:
 
     def on_key(self, name, *args):
 
-        if name == b'p':                                            # TODO:  REMOVE.  THIS IS FOR GETTING WEYPOINTS.
+        if name == b'p':                                            # TODO:  REMOVE.  THIS IS FOR RECORDING SCRIPTS.
             self.vehicle.sensors.poll()
             self.pos = self.vehicle.state['pos']
             print(self.pos[0], self.pos[1], self.pos[2])
+
+
+
         if name == self.camera_key:
             if self.demo == 'camera':
                 self.toggle = self.toggle + 1
@@ -728,6 +731,10 @@ class Visualiser:
 
         elif self.demo == 'multi':
             # Multi: Camera update.
+            camera_data1 = self.camera.request_shmem_colour()
+
+
+
             camera_data1 = self.camera.poll_shmem_colour()
             self.camera_color_size = [camera_data1[1], camera_data1[2]]
             self.camera_color_img = camera_data1[0]

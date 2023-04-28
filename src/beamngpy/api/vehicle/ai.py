@@ -159,3 +159,18 @@ class AIApi(VehicleApi):
         data: StrDict = dict(type='SetAiAggression')
         data['aggression'] = aggr
         self._send(data).ack('AiAggressionSet')
+
+    def start_recording(self):
+        data = dict(type='StartRecording')
+        self._send(data).ack('CompletedStartRecording')
+
+    def stop_recording(self, filename):
+        data = dict(type='StopRecording')
+        data['filename'] = filename
+        self._send(data).ack('CompletedStopRecording')
+
+    def execute_script(self, script, start_delay = 0.0):
+        data = dict(type='ExecuteScript')
+        data['script'] = script
+        data['startDelay'] = start_delay
+        self._send(data).ack('CompletedExecuteScript')

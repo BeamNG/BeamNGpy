@@ -6,6 +6,7 @@ import numpy as np
 from numpy import ndarray
 
 from beamngpy.types import Float3, Quat
+import beamngpy.vec3 as v
 
 
 def angle_to_quat(angle: Float3) -> Quat:
@@ -103,3 +104,17 @@ def flip_y_axis(q: Quat) -> Quat:
         The flipped quaternion.
     """
     return quat_multiply((0, 0, 1, 0), q)
+
+def normalize(q: Quat) -> Quat:
+    """
+    Normalizes the given quaternion.
+
+    Args:
+        q: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
+
+    Returns:
+        The normalized quaternion.
+    """
+    d = math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3])
+    d_inv = 1.0 / max(1e-7, d)
+    return (q[0] * d_inv, q[1] * d_inv, q[2] * d_inv, q[3] * d_inv)
