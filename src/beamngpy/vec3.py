@@ -113,6 +113,21 @@ class vec3:
         """
         return vec3(self.y * b.z - self.z * b.y, -(self.x * b.z - self.z * b.x), self.x * b.y - self.y * b.x)
 
+    def distance_sq(self, b) -> float:
+        """
+        The L^1 (squared) distance between this vector and a given vector. AKA the distance formula.
+
+        Args:
+            b: The given vector.
+
+        Returns:
+            The squared distance between the two vectors (a scalar value).
+        """
+        dx = b.x - self.x
+        dy = b.y - self.y
+        dz = b.z - self.z
+        return dx * dx + dy * dy + dz * dz
+
     def distance(self, b) -> float:
         """
         The L^2 (Euclidean) distance between this vector and a given vector. AKA the distance formula.
@@ -121,12 +136,9 @@ class vec3:
             b: The given vector.
 
         Returns:
-            This L^2 (Euclidean) distance between the two vectors (a scalar value).
+            The L^2 (Euclidean) distance between the two vectors (a scalar value).
         """
-        dx = b.x - self.x
-        dy = b.y - self.y
-        dz = b.z - self.z
-        return math.sqrt(dx * dx + dy * dy + dz * dz)
+        return math.sqrt(self.distance_sq(b))
 
     def length(self) -> float:
         """

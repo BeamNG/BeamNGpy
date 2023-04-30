@@ -259,8 +259,8 @@ class Visualiser:
         self.radar_toggle = 0
         self.radar_bscope_img, self.radar_ppi_img, self.radar_rvv_img = [], [], []
         self.radar_bscope_size, self.radar_ppi_size, self.radar_rvv_size = [], [], []
-        self.radar_res = [950, 950]
-        self.radar_bins = [950, 950]
+        self.radar_res = [475, 475]             # range, azimuth.
+        self.radar_bins = [475, 475, 475]       # range, azimuth, velocity.
         self.radar_fov = 70.0
         self.radar_range_min, self.radar_range_max = 0.1, 100.0
         self.radar_vel_min, self.radar_vel_max = -40.0, 40.0
@@ -400,7 +400,7 @@ class Visualiser:
         elif name == self.radar_key:
             if self.demo == 'radar':
                 self.toggle = self.toggle + 1
-                if self.toggle > 3:
+                if self.toggle > 1:
                     self.toggle = 0
             else:
                 self.toggle = 2
@@ -512,7 +512,7 @@ class Visualiser:
         elif demo == 'radar':
             self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
-                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max)
+                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2])
 
         elif demo == 'imu':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
@@ -526,7 +526,7 @@ class Visualiser:
             self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40)
             self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
-                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max)
+                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2])
             self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
             self.us_FR = Ultrasonic('us_FR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
@@ -563,7 +563,7 @@ class Visualiser:
     def _update(self):
 
         # Trajectory and state sensor.
-        self.vehicle.sensors.poll()                                                         # poll the state sensor. also used for lidar.
+        self.vehicle.sensors.poll()                                                         # poll the state sensor.
         self.pos = self.vehicle.state['pos']
         self.traj.append(self.pos)                                                          # update the trajectory queue.
         if len(self.traj) > self.traj_memory:
@@ -660,21 +660,12 @@ class Visualiser:
 
         elif self.demo == 'radar':
             if self.toggle == 0:
-                ppi_data = self.radar.get_ppi_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_ppi_img = ppi_data
-            elif self.toggle == 1:
-                bscope_data = self.radar.get_bscope_data(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
-                self.radar_bscope_size = [self.radar_bins[0], self.radar_bins[1]]
-                self.radar_bscope_img = bscope_data
-            elif self.toggle == 2:
-                ppi_data = self.radar.get_ppi_rgba(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
+                ppi_data = self.radar.get_ppi()
                 self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
                 self.radar_ppi_img = ppi_data
             else:
-                rvv_data = self.radar.get_range_vs_velocity(range_min=self.radar_range_min, range_max=self.radar_range_max, vel_min = self.radar_vel_min, vel_max = self.radar_vel_max,
-                    range_bins=100, vel_bins=100)
-                self.radar_rvv_size = [100, 100]
+                rvv_data = self.radar.get_range_doppler()
+                self.radar_rvv_size = [self.radar_bins[0], self.radar_bins[2]]
                 self.radar_rvv_img = rvv_data
 
         elif self.demo == 'imu':
@@ -731,10 +722,6 @@ class Visualiser:
 
         elif self.demo == 'multi':
             # Multi: Camera update.
-            camera_data1 = self.camera.request_shmem_colour()
-
-
-
             camera_data1 = self.camera.poll_shmem_colour()
             self.camera_color_size = [camera_data1[1], camera_data1[2]]
             self.camera_color_img = camera_data1[0]
@@ -773,7 +760,7 @@ class Visualiser:
                 self.pos[2] = self.focus[2] + self.vehicle.state['dir'][2] + 10
 
             # Multi: RADAR update.
-            ppi_data = self.radar.get_ppi_rgba(range_min=self.radar_range_min, range_max=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1])
+            ppi_data = self.radar.get_ppi()
             self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
             self.radar_ppi_img = ppi_data
 
@@ -1365,14 +1352,11 @@ class Visualiser:
             glLoadIdentity()
 
             # Render RADAR images.
-            if self.toggle == 0 or self.toggle == 2:                                                                    # PPI.
+            if self.toggle == 0:                                                                                # PPI.
                 if len(self.radar_ppi_size) > 0:
-                    glViewport(0, 0, self.width, self.height)
+                    glViewport(0, 0, self.width * 2, self.height * 2)
                     self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From the .png image.
-                    if self.toggle == 0:
-                        self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 2)
-                    else:
-                        self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
+                    self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
@@ -1380,6 +1364,7 @@ class Visualiser:
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
                     # Draw the PPI scope frame.
+                    glViewport(0, 0, self.width, self.height)
                     glLineWidth(2.0)
                     glColor3f(0.3, 0.3, 0.3)
                     self.draw_line([673, 25, 181, 875])                     # left grid line.
@@ -1405,7 +1390,6 @@ class Visualiser:
                     self.draw_line([101, 49, 101, 451])                     # cb frame - right.
                     self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
                     for i in range(401):                                    # colorbar.
-                        col = i * 0.0025
                         r, g, b = 0, 0, 0
                         if i < 200:
                             b = (200 - i) * 0.005
@@ -1453,80 +1437,10 @@ class Visualiser:
                     self.draw_text(49, 490, 'Doppler')
                     glDisable( GL_TEXTURE_2D )
 
-            elif self.toggle == 1:                                                                                                              # B-scope.
-                if len(self.radar_bscope_size) > 0:
-                    glViewport(0, 0, self.width, self.height)
-                    self.render_img(350, 45, self.radar_bscope_img, self.radar_bscope_size[0], self.radar_bscope_size[1], 1, 1, 1, 2)
-
-                    glEnable(GL_LINE_SMOOTH)
-                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-                    # Draw the PPI scope frame.
-                    glLineWidth(2.0)
-                    glColor3f(0.3, 0.3, 0.3)
-                    self.draw_line([350, 45, 1300, 45])                     # bottom frame line.
-                    self.draw_line([350, 995, 1300, 995])                   # bottom frame line.
-                    self.draw_line([350, 45, 350, 995])                     # left frame line.
-                    self.draw_line([1300, 45, 1300, 995])                   # right frame line.
-                    div = 95
-                    for i in range(11):
-                        dv = i * div
-                        y = 45 + dv
-                        self.draw_line([1300, y, 1310, y])                  # vertical grooves.
-                        x = 350 + dv
-                        self.draw_line([x, 45, x, 35])                      # horizontal grooves.
-
-                    # Color bar.
-                    glLineWidth(3.0)
-                    y_min, y_max = self.half_height + 65, self.half_height + 106
-                    self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
-                    self.draw_line([69, 451, 115, 451])                     # cb frame - top.
-                    self.draw_line([69, 49, 69, 451])                       # cb frame - left.
-                    self.draw_line([101, 49, 101, 451])                     # cb frame - right.
-                    self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
-                    for i in range(401):                                    # colorbar.
-                        col = i * 0.0025
-                        glColor3f(col, col, col)
-                        y = 50 + i
-                        self.draw_line([70, y, 100, y])
-
-                    # Title underline.
-                    glViewport(0, self.height - 40, self.width, self.height)
-                    glColor3f(0.25, 0.25, 0.15)
-                    glLineWidth(2.0)
-                    self.draw_line([25, 2, 290, 2])
-
-                    # Draw Text.
-                    glEnable( GL_TEXTURE_2D )
-                    glBindTexture( GL_TEXTURE_2D, texid )
-                    glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(35, 20, 'RADAR Sensor: B-Scope')
-                    self.draw_text(1460, 20, 'Vehicle: ')
-                    glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1465, 20, '         ' + self.vehicle.vid)
-                    glViewport(0, 0, self.width, self.height)
-                    glColor3f(0.4, 0.4, 0.4)
-                    txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
-                    for i in range(11):
-                        tx = txt[i]
-                        dv = i * div
-                        y = 52 + dv
-                        self.draw_text(1320, y, tx)                     # vertical text.
-                        x = 332 + dv
-                        self.draw_text(x, 22, tx)                       # horizontal text.
-                    self.draw_text(125, 60, '0 m/s')                    # colorbar markers.
-                    self.draw_text(125, 260, '25 m/s')
-                    self.draw_text(125, 460, '50 m/s')
-                    glColor3f(0.5, 0.5, 0.5)
-                    self.draw_text(49, 490, 'Doppler')
-                    glDisable( GL_TEXTURE_2D )
-
             else:
                 if len(self.radar_rvv_size) > 0:
-                    glViewport(0, 0, int(self.width * 9.5), int(self.height * 9.5))
-                    self.render_img(int(350.0 / 9.5) + 1, int(45.0 / 9.5) + 1, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
+                    glViewport(0, 0, self.width * 2, self.height * 2)
+                    self.render_img(175, 22.5, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
 
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
@@ -1558,7 +1472,6 @@ class Visualiser:
                     self.draw_line([101, 49, 101, 451])                     # cb frame - right.
                     self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
                     for i in range(401):                                    # colorbar.
-                        col = i * 0.0025
                         r, g, b = 0, 0, 0
                         if i < 200:
                             b = (200 - i) * 0.005
@@ -2031,9 +1944,9 @@ class Visualiser:
             self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The ultrasonic .png image.
 
             if len(self.radar_ppi_size) > 0:
-                glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
+                glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
                 self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From RADAR .png image.
-                self.render_img(200, 25, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
+                self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
             glEnable(GL_LINE_SMOOTH)
             glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
