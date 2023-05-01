@@ -490,10 +490,12 @@ class Visualiser:
 
         # Set up the chosen demonstration.
         if self.demo == 'camera':
-            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000))
+            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000),
+                is_streaming=True)
 
         elif demo == 'lidar':
-            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40)
+            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40,
+                is_streaming=True)
 
         elif demo == 'ultrasonic':
             self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
@@ -512,7 +514,8 @@ class Visualiser:
         elif demo == 'radar':
             self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
-                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2])
+                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
+                is_streaming=True)
 
         elif demo == 'imu':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
@@ -522,11 +525,14 @@ class Visualiser:
             self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.001)
 
         elif demo == 'multi':    # Camera, LiDAR, RADAR, and Ultrasonic together in one view (four viewports).
-            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000))
-            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40)
+            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(850, 450), near_far_planes=(0.01, 1000),
+                is_render_annotations=False, is_render_depth=False, is_streaming=True)
+            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=64, frequency=40,
+                rays_per_second=1500000, is_streaming=True)
             self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
-                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2])
+                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
+                is_streaming=True)
             self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
             self.us_FR = Ultrasonic('us_FR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
@@ -565,28 +571,31 @@ class Visualiser:
         # Trajectory and state sensor.
         self.vehicle.sensors.poll()                                                         # poll the state sensor.
         self.pos = self.vehicle.state['pos']
+        current_pos = [self.pos[0], self.pos[1], self.pos[2]]
         self.traj.append(self.pos)                                                          # update the trajectory queue.
         if len(self.traj) > self.traj_memory:
             self.traj.popleft()
 
         # Handle the update for the chosen demonstration.
         if self.demo == 'camera':
+            cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]
+            cam_size = cam_width * cam_height * 4
             if self.toggle == 0 or self.toggle == 3:
-                camera_data1 = self.camera.poll_shmem_colour()
-                self.camera_color_size = [camera_data1[1], camera_data1[2]]
-                self.camera_color_img = camera_data1[0]
+                camera_data1 = self.camera.stream_colour(cam_size)
+                self.camera_color_size = [cam_width, cam_height]
+                self.camera_color_img = camera_data1
             if self.toggle == 1 or self.toggle == 3:
-                camera_data2 = self.camera.poll_shmem_annotation()
-                self.camera_annot_size = [camera_data2[1], camera_data2[2]]
-                self.camera_annot_img = camera_data2[0]
+                camera_data2 = self.camera.stream_annotation(cam_size)
+                self.camera_annot_size = [cam_width, cam_height]
+                self.camera_annot_img = camera_data2
             if self.toggle > 1:
-                camera_data3 = self.camera.poll_shmem_depth()
-                self.camera_depth_size = [camera_data3[1], camera_data3[2]]
-                self.camera_depth_img = camera_data3[0]
+                camera_data3 = self.camera.stream_depth(cam_size)
+                self.camera_depth_size = [cam_width, cam_height]
+                self.camera_depth_img = camera_data3
 
         elif self.demo == 'lidar':
             self.vehicle.sensors.poll()
-            points = self.lidar.poll()['pointCloud']
+            points = self.lidar.stream()
             assert not self.dirty
             if len(points) == 0:
                 return
@@ -660,11 +669,11 @@ class Visualiser:
 
         elif self.demo == 'radar':
             if self.toggle == 0:
-                ppi_data = self.radar.get_ppi()
+                ppi_data = self.radar.stream_ppi()
                 self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
                 self.radar_ppi_img = ppi_data
             else:
-                rvv_data = self.radar.get_range_doppler()
+                rvv_data = self.radar.stream_range_doppler()
                 self.radar_rvv_size = [self.radar_bins[0], self.radar_bins[2]]
                 self.radar_rvv_img = rvv_data
 
@@ -722,13 +731,13 @@ class Visualiser:
 
         elif self.demo == 'multi':
             # Multi: Camera update.
-            camera_data1 = self.camera.poll_shmem_colour()
-            self.camera_color_size = [camera_data1[1], camera_data1[2]]
-            self.camera_color_img = camera_data1[0]
+            cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]
+            camera_data1 = self.camera.stream_colour(cam_width * cam_height * 4)
+            self.camera_color_size = [cam_width, cam_height]
+            self.camera_color_img = camera_data1
 
             # Multi: LiDAR update.
-            self.vehicle.sensors.poll()
-            points = self.lidar.poll()['pointCloud']
+            points = self.lidar.stream()
             assert not self.dirty
             if len(points) == 0:
                 return
@@ -754,13 +763,13 @@ class Visualiser:
             glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, self.colours, GL_STATIC_DRAW)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             if self.follow and self.vehicle.state:
-                self.focus = self.vehicle.state['pos']
+                self.focus = current_pos
                 self.pos[0] = self.focus[0] + self.vehicle.state['dir'][0] * -30
                 self.pos[1] = self.focus[1] + self.vehicle.state['dir'][1] * -30
                 self.pos[2] = self.focus[2] + self.vehicle.state['dir'][2] + 10
 
             # Multi: RADAR update.
-            ppi_data = self.radar.get_ppi()
+            ppi_data = self.radar.stream_ppi()
             self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
             self.radar_ppi_img = ppi_data
 
@@ -1937,8 +1946,8 @@ class Visualiser:
         elif self.demo == 'multi':
 
             if len(self.camera_color_size) > 0:     # camera - color image.
-                glViewport(0, self.half_height, self.half_width, self.half_height)	# TL
-                self.render_img(50, 50, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+                glViewport(0, self.half_height, self.half_width * 2, self.half_height * 2)	# TL
+                self.render_img(25, 25, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
             glViewport(self.half_width, 0, self.half_width, self.half_height)
             self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The ultrasonic .png image.

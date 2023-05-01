@@ -59,6 +59,7 @@ class Radar:
         range_direct_max_cutoff: the maximum cut-off distance for the RADAR sensor range-shape. This parameter is a hard cutoff - nothing
             further than this will be detected, although other parameters can also control the max distance.
         is_visualised: Whether or not to render the RADAR sensor points in the simulator.
+        is_streaming: Whether or not to stream the data directly to shared memory (no poll required, for efficiency - BeamNGpy won't block.)
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
@@ -68,8 +69,8 @@ class Radar:
         dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), range_bins: int = 200, azimuth_bins: int = 200, vel_bins: int = 200, range_min: float = 0.1, range_max: float = 100.0,
         vel_min: float = -50.0, vel_max: float = 50.0, half_angle_deg: float = 30.0, resolution: Int2 = (200, 200), field_of_view_y: float = 70,
         near_far_planes: Float2 = (0.1, 150.0), range_roundess: float = -2.0, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.23, range_focus: float = 0.12,
-        range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0, is_visualised: bool = True, is_static: bool = False, is_snapping_desired: bool = False,
-        is_force_inside_triangle: bool = False):
+        range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
+        is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.RADAR')
         self.logger.setLevel(DEBUG)
 
@@ -88,7 +89,7 @@ class Radar:
         # Create and initialise this sensor in the simulation.
         self._open_radar(name, vehicle, self.shmem_handle, self.shmem_handle2, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
             vel_bins, range_min, range_max, vel_min, vel_max, half_angle_deg, resolution, field_of_view_y, near_far_planes, range_roundess, range_cutoff_sensitivity, range_shape,
-            range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
+            range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('RADAR - sensor created: 'f'{self.name}')
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs):
@@ -152,7 +153,7 @@ class Radar:
         Gets the latest RADAR PPI (plan position indicator) image from shared memory.
 
         Returns:
-            The latest RADAR PPI (plan position indicator) image from shared memory
+            The latest RADAR PPI (plan position indicator) image from shared memory.
         """
         self._send_sensor_request('GetPPIRadar', ack='CompletedGetPPIRadar', name=self.name)['data']
         return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
@@ -162,9 +163,15 @@ class Radar:
         Gets the latest RADAR Range-Doppler image from shared memory.
 
         Returns:
-            The latest RADAR Range-Doppler image from shared memory
+            The latest RADAR Range-Doppler image from shared memory.
         """
         self._send_sensor_request('GetRangeDopplerRadar', ack='CompletedGetRangeDopplerRadar', name=self.name)['data']
+        return np.frombuffer(shmem.read(self.shmem2, self.shmem_size), dtype=np.uint8)
+
+    def stream_ppi(self):
+        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
+
+    def stream_range_doppler(self):
         return np.frombuffer(shmem.read(self.shmem2, self.shmem_size), dtype=np.uint8)
 
     def send_ad_hoc_poll_request(self) -> int:
@@ -287,8 +294,9 @@ class Radar:
     def _open_radar(self, name: str, vehicle: Vehicle | None, shmem_handle: str | None, shmem_handle2: str | None, shmem_size: int, requested_update_time: float,
         update_priority: float, pos: Float3, dir: Float3, up: Float3, range_bins: int, azimuth_bins: int, vel_bins: int, range_min: float, range_max: float, vel_min: float,
         vel_max: float, half_angle_deg: float, size: Int2, field_of_view_y: float, near_far_planes: Float2, range_roundness: float, range_cutoff_sensitivity: float,
-        range_shape: float, range_focus: float, range_min_cutoff: float, range_direct_max_cutoff: float, is_visualised: bool, is_static: bool, is_snapping_desired: bool,
-        is_force_inside_triangle: bool) -> None:
+        range_shape: float, range_focus: float, range_min_cutoff: float, range_direct_max_cutoff: float, is_visualised: bool, is_streaming: bool, is_static: bool,
+        is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+
         data: StrDict = dict(type='OpenRadar')
         data['name'] = name
         data['shmemHandle'] = shmem_handle
@@ -320,6 +328,7 @@ class Radar:
         data['range_min_cutoff'] = range_min_cutoff
         data['range_direct_max_cutoff'] = range_direct_max_cutoff
         data['isVisualised'] = is_visualised
+        data['isStreaming'] = is_streaming
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle

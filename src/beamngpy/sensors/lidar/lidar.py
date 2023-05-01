@@ -46,18 +46,18 @@ class Lidar:
         max_distance: The maximum distance which this LiDAR sensor will detect, in metres.
         is_using_shared_memory: A flag which indicates if we should use shared memory to send/recieve the sensor readings data.
         is_visualised: A flag which indicates if this LiDAR sensor should appear visualised or not.
+        is_streaming: Whether or not to stream the data directly to shared memory (no poll required, for efficiency - BeamNGpy won't block.)
         is_annotated: A flag which indicates if this LiDAR sensor should return annotation data instead of distance data.
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
-                 update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1),
-                 vertical_resolution: int = 64, vertical_angle: float = 26.9, rays_per_second: float = 2200000,
-                 frequency: float = 20, horizontal_angle: float = 360, max_distance: float = 120,
-                 is_using_shared_memory: bool = True, is_visualised: bool = True, is_annotated: bool = False,
-                 is_static: bool = False, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1, update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
+        dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), vertical_resolution: int = 64, vertical_angle: float = 26.9, rays_per_second: float = 2200000,
+        frequency: float = 20, horizontal_angle: float = 360, max_distance: float = 120, is_using_shared_memory: bool = True, is_visualised: bool = True, is_streaming: bool = False,
+        is_annotated: bool = False, is_static: bool = False, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+
         self.logger = getLogger(f'{LOGGER_ID}.Lidar')
         self.logger.setLevel(DEBUG)
 
@@ -88,7 +88,7 @@ class Lidar:
             name, vehicle, is_using_shared_memory, self.point_cloud_shmem_handle, self.point_cloud_shmem_size, self.
             colour_shmem_handle, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
             vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance,
-            is_visualised, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle)
+            is_visualised, is_streaming, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
@@ -185,6 +185,20 @@ class Lidar:
             processed_readings = self._convert_binary_to_array(binary)
 
         return processed_readings
+
+    def stream(self) -> StrDict:
+        """
+        Gets the streamed LiDAR point cloud data from the associated shared memory location.
+
+        Returns:
+            The LiDAR point cloud data.
+        """
+
+        point_cloud_data = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
+        point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
+        self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
+
+        return point_cloud_data
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -356,7 +370,7 @@ class Lidar:
             point_cloud_shmem_size: int, colour_shmem_handle: str | None, colour_shmem_size: int,
             requested_update_time: float, update_priority: float, pos: Float3, dir: Float3, up: Float3,
             vertical_resolution: int, vertical_angle: float, rays_per_second: float, frequency: float,
-            horizontal_angle: float, max_distance: float, is_visualised: bool, is_annotated: bool, is_static: bool,
+            horizontal_angle: float, max_distance: float, is_visualised: bool, is_streaming: bool, is_annotated: bool, is_static: bool,
             is_snapping_desired: bool, is_force_inside_triangle: bool):
         data: StrDict = dict(type='OpenLidar')
         data['vid'] = 0
@@ -380,6 +394,7 @@ class Lidar:
         data['hAngle'] = horizontal_angle
         data['maxDist'] = max_distance
         data['isVisualised'] = is_visualised
+        data['isStreaming'] = is_streaming
         data['isAnnotated'] = is_annotated
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
