@@ -26,22 +26,19 @@ class Time_Series:
             grid_notch_y (float): The amount of excess on the vertical grid lines (which protrude outside past the horizontal axis).
         """
 
-        # Initialize the time-series data. Default to zero everywhere.
+        self.size = size
         self.x_min, self.x_max, self.y_min, self.y_max = x_min, x_max, y_min, y_max
         self.x_range, self.y_range = self.x_max - self.x_min, self.y_max - self.y_min
-        self.x_mid, self.y_mid = (self.x_min + self.x_max) * 0.5, (self.y_min + self.y_max) * 0.5
         self.y_min, self.y_max = y_min, y_max
-        self.size = size
-        self.num_lines = size - 1
         self.data_min, self.data_max = data_min, data_max
-        self.data_range = self.data_max = self.data_min
-        self.data_range_inv = 1.0 / self.data_range
-        self.t = []
-        self.data = deque()
-        dt = self.x_range / max(1e-24, float(size))
-        for i in range(size):
+        self.data_range_inv = 1.0 / (self.data_max - self.data_min)
+        self.t = []                                                                                             # The x-axis coordinates of the data.
+        self.data = deque()                                                                                     # The y-axis coordinates of the data.
+        dt = self.x_range / max(1e-24, float(self.size))
+        y_midpoint = (self.y_min + self.y_max) * 0.5
+        for i in range(self.size):                                                                              # Default all data to center of plot.
             self.t.append(self.x_min + (i * dt))
-            self.data.append(self.y_mid)
+            self.data.append(y_midpoint)
 
         # Compute the axes data.
         self.axes_overlap_x, self.axes_overlap_y = axes_overlap_x, axes_overlap_y
@@ -73,7 +70,7 @@ class Time_Series:
         """
         # We alternative the grid between thick and thin lines, in both x and y.
         grid_thin, grid_thick = [], []
-        is_line_thick = True
+        is_line_thick = False
 
         # Compute the vertical grid lines (moving along x).
         dx = float(self.x_range) / float(self.grid_spacing_x)
@@ -150,13 +147,12 @@ class Time_Series:
 
     def get_data_lines(self):
         """
-        Gets the data lines for this time series. This is the polyline from each data point to the next, ready to be rendered by a graphics API.
+        Gets the polyline data for this time series, ready to be rendered by a graphics API.
 
         Returns:
-            List: A collection lines, where each line has the format [x0, y0, x1, y1].
+            List: The vertex buffer, where each vertex has the format [x0, y0].
         """
-        lines = []
-        for i in range(self.num_lines):
-            i_plus_1 = i + 1
-            lines.append([self.t[i], self.data[i], self.t[i_plus_1], self.data[i_plus_1]])
-        return lines
+        v = []
+        for i in range(self.size):
+            v.append([self.t[i], self.data[i]])
+        return v
