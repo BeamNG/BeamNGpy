@@ -3,6 +3,8 @@ from collections import deque
 import math
 import numpy as np
 from PIL import Image
+import json
+import time
 from freetype import *
 
 from OpenGL.GL import *
@@ -21,16 +23,20 @@ TURN_SPEED = 1
 base, texid = 0, 0  # for text rendering.
 
 class Visualiser:
-    def __init__(self, bng, vehicle, name, width, height, demo, toggle, map_name):
+    def __init__(self, bng, vehicles, scenario, name, width, height, demo, toggle, map_name):
 
         # BeamNG state.
-        self.bng = bng
-        self.vehicle = vehicle
+        self.bng = bng                                              # The beamng instance.
+        self.vehicles = vehicles                                    # The full vehicle dictionary (for all scenarios/modes).
+        self.scenario = scenario                                    # The scenario instance.
+        self.main_vehicle = vehicles['vehicle_1']                   # The first main vehicle.
+        self.map_name = map_name                                    # The name of the current map (string).
 
-        # Demonstration state (from BeamNGpy script).
-        self.demo = demo
-        self.toggle = toggle
-        self.map_name = map_name
+        # Demonstration state.
+        self.demo = demo                                            # The demo mode (string).
+        self.toggle = toggle                                        # For sensor modes, which screen we are currently displaying (each sensor has various toggles.)
+        self.is_first_time = True                                   # A flag which indicates if this is the first time we are executing the first iteration.
+        self.is_sensor_mode_demo = True                             # A flag which indicates if we are demoing the sensor modes (and not dedicated scenarios).
 
         # General initialization.
         self.width, self.height = width, height
@@ -69,10 +75,10 @@ class Visualiser:
         glViewport(0, 0, self.width, self.height)
         self.vertex_buf = np.uint64(glGenBuffers(1))
         self.colour_buf = np.uint64(glGenBuffers(1))
-        glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE )
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 
         # Load font.
-        self.makefont( 'SourceCodePro-Regular.ttf', 16 )
+        self.makefont('SourceCodePro-Regular.ttf', 16)
 
         # Initialize storage for all possible sensors.
         self.camera = None
@@ -87,7 +93,7 @@ class Visualiser:
         self.imu = None
         self.mesh = None
 
-        # Keys to use.
+        # Keys to use for sensor modes/scenarios.
         self.camera_key = b'c'
         self.lidar_key = b'l'
         self.radar_key = b'r'
@@ -96,6 +102,18 @@ class Visualiser:
         self.mesh_key = b'm'
         self.traj_key = b't'
         self.multi_key = b'a'
+        self.scenario0_key = b'0'
+        self.scenario1_key = b'1'
+        self.scenario2_key = b'2'
+        self.scenario3_key = b'3'
+        self.scenario4_key = b'4'
+        self.scenario5_key = b'5'
+        self.scenario6_key = b'6'
+
+        # Dedicated scenario target initialization.
+        self.scenario2_target = vec3(-798.9409014877656, -408.92386026442546, 103.14585273600176)
+        self.scenario2_is_target_hit = False
+        self.scenario2_hit_time = 1e12
 
         # Trajectory initialization.
         self.traj = deque()
@@ -277,10 +295,10 @@ class Visualiser:
         # IMU:
         rpy_img = Image.open('imu_rpy.png')
         self.rpy_img = np.array(rpy_img)
-        self.rpy_img_size = [rpy_img.size[1], rpy_img.size[0]] # note the size is flipped for PIL images.
+        self.rpy_img_size = [rpy_img.size[1], rpy_img.size[0]]                                  # NOTE: the size is flipped for PIL images.
         self.imu_acc1_verts, self.imu_acc2_verts, self.imu_acc3_verts = [], [], []
         self.imu_gyro1_verts, self.imu_gyro2_verts, self.imu_gyro3_verts = [], [], []
-        self.imu_1_axis_x, self.imu_1_axis_y = [90, 700, 1110, 700], [100, 690, 100, 960]  # the axis lines for the accel plots.
+        self.imu_1_axis_x, self.imu_1_axis_y = [90, 700, 1110, 700], [100, 690, 100, 960]       # The axis lines for the accel plots.
         self.imu_2_axis_x, self.imu_2_axis_y = [90, 400, 1110, 400], [100, 390, 100, 660]
         self.imu_3_axis_x, self.imu_3_axis_y = [90, 100, 1110, 100], [100, 90, 100, 360]
         self.imu_1_grid = []
@@ -377,14 +395,210 @@ class Visualiser:
 
     def on_key(self, name, *args):
 
-        if name == b'p':                                            # TODO:  REMOVE.  THIS IS FOR RECORDING SCRIPTS.
-            self.vehicle.sensors.poll()
-            self.pos = self.vehicle.state['pos']
-            print(self.pos[0], self.pos[1], self.pos[2])
+        # Handle the loading of scenarios.
+        if self.is_first_time or name == self.scenario0_key:
+            self.bng.teleport_vehicle(self.vehicles['vehicle_1'], pos=(-167.36038370872836, 500.836156547889, 75.06553645606348), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_2'], pos=(-224.4359238577308, 493.73223727132427, 74.97080893622115), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_3'], pos=(-257.4128802340638, 525.247786108237, 74.93477922917714), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_4'], pos=(-293.2409596498728, 557.1168029616274, 74.97442921636775), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_5'], pos=(-285.5863921275886, 526.4913239743473, 74.94484505265063), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_6'], pos=(-328.90787081420285, 591.2607434741677, 74.9863941054507), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_7'], pos=(-369.2989675345025, 627.3902712555509, 75.0958857980153), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_8'], pos=(-364.46489701971586, 633.0149337410967, 75.073325342707), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_9'], pos=(-342.42810740644927, 630.6641727234382, 74.97903450986632), reset=True)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_10'], pos=(-404.3606958804594, 654.6428768548212, 74.97191763509181), reset=True)
+            self.vehicles['vehicle_1'].ai.set_mode('span')
+            self.vehicles['vehicle_2'].ai.set_mode('span')
+            self.vehicles['vehicle_3'].ai.set_mode('span')
+            self.vehicles['vehicle_4'].ai.set_mode('span')
+            self.vehicles['vehicle_5'].ai.set_mode('span')
+            self.vehicles['vehicle_6'].ai.set_mode('span')
+            self.vehicles['vehicle_7'].ai.set_mode('span')
+            self.vehicles['vehicle_8'].ai.set_mode('span')
+            self.vehicles['vehicle_9'].ai.set_mode('span')
+            self.vehicles['vehicle_10'].ai.set_mode('span')
+            self.bng.set_relative_camera(pos=(0, -6, 2), dir=(0.0, -1.0, -0.3))
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_first_time = False
+            self.is_sensor_mode_demo = True
+        elif name == self.scenario1_key:
+            script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
+            script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
+            with open('vehicle1.json', 'r') as j:
+                script_vehicle1 = json.loads(j.read())
+            with open('vehicle2.json', 'r') as j:
+                script_vehicle2 = json.loads(j.read())
+            with open('vehicle3.json', 'r') as j:
+                script_vehicle3 = json.loads(j.read())
+            with open('vehicle4.json', 'r') as j:
+                script_vehicle4 = json.loads(j.read())
+            with open('vehicle5.json', 'r') as j:
+                script_vehicle5 = json.loads(j.read())
+            with open('vehicle6.json', 'r') as j:
+                script_vehicle6 = json.loads(j.read())
+            with open('vehicle7.json', 'r') as j:
+                script_vehicle7 = json.loads(j.read())
+            with open('vehicle8.json', 'r') as j:
+                script_vehicle8 = json.loads(j.read())
+            with open('vehicle9.json', 'r') as j:
+                script_vehicle9 = json.loads(j.read())
+            with open('vehicle10.json', 'r') as j:
+                script_vehicle10 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, 1.875)
+            self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
+            self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
+            self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
+            self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
+            self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
+            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
+            self.bng.set_relative_camera(pos=(0, -7, 2.5), dir=(0.0, -1.0, -0.3))
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_sensor_mode_demo = False
+            self.demo = '1'
+        elif name == self.scenario2_key:
+            script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
+            script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
+            with open('vehicle1_sc2.json', 'r') as j:
+                script_vehicle1 = json.loads(j.read())
+            with open('vehicle3_sc2.json', 'r') as j:
+                script_vehicle3 = json.loads(j.read())
+            with open('vehicle4_sc2.json', 'r') as j:
+                script_vehicle4 = json.loads(j.read())
+            with open('vehicle5_sc2.json', 'r') as j:
+                script_vehicle5 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, 5.0)
+            self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
+            self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
+            self.bng.set_relative_camera(pos=(0, -8, 2), dir=(0.0, -1.0, -0.2))
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_sensor_mode_demo = False
+            self.demo = '2'
+            self.scenario2_is_target_hit = False
+        elif name == self.scenario3_key:
+            script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
+            script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
+            with open('vehicle1_sc3.json', 'r') as j:
+                script_vehicle1 = json.loads(j.read())
+            with open('vehicle2_sc3.json', 'r') as j:
+                script_vehicle2 = json.loads(j.read())
+            with open('vehicle3_sc3.json', 'r') as j:
+                script_vehicle3 = json.loads(j.read())
+            with open('vehicle4_sc3.json', 'r') as j:
+                script_vehicle4 = json.loads(j.read())
+            with open('vehicle5_sc3.json', 'r') as j:
+                script_vehicle5 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
+            self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3, start_delay=5.5)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
+            self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5, start_delay=9.0)
+            self.bng.set_relative_camera(pos=(-10, -8, 5), dir=(-0.7, -1.0, -0.4))
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_sensor_mode_demo = False
+            self.demo = '3'
+        elif name == self.scenario4_key:
+            script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
+            script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
+            with open('vehicle1_sc4.json', 'r') as j:
+                script_vehicle1 = json.loads(j.read())
+            with open('vehicle2_sc4.json', 'r') as j:
+                script_vehicle2 = json.loads(j.read())
+            with open('vehicle3_sc4.json', 'r') as j:
+                script_vehicle3 = json.loads(j.read())
+            with open('vehicle4_sc4.json', 'r') as j:
+                script_vehicle4 = json.loads(j.read())
+            with open('vehicle5_sc4.json', 'r') as j:
+                script_vehicle5 = json.loads(j.read())
+            with open('vehicle6_sc4.json', 'r') as j:
+                script_vehicle6 = json.loads(j.read())
+            with open('vehicle7_sc4.json', 'r') as j:
+                script_vehicle7 = json.loads(j.read())
+            with open('vehicle8_sc4.json', 'r') as j:
+                script_vehicle8 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
+            self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
+            self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
+            self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
+            self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
+            self.bng.set_relative_camera(pos=(0, 6, 1), dir=(0.0, 1.0, -0.4))
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_sensor_mode_demo = False
+            self.demo = '4'
+        elif name == self.scenario5_key:
+            script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
+            script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
+            with open('vehicle1_sc5.json', 'r') as j:
+                script_vehicle1 = json.loads(j.read())
+            with open('vehicle2_sc5.json', 'r') as j:
+                script_vehicle2 = json.loads(j.read())
+            with open('vehicle3_sc5.json', 'r') as j:
+                script_vehicle3 = json.loads(j.read())
+            with open('vehicle4_sc5.json', 'r') as j:
+                script_vehicle4 = json.loads(j.read())
+            with open('vehicle5_sc5.json', 'r') as j:
+                script_vehicle5 = json.loads(j.read())
+            with open('vehicle6_sc5.json', 'r') as j:
+                script_vehicle6 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, start_delay=1.0)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
+            self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4, start_delay=2.5)
+            self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6, start_delay=11.5)
+            self.bng.set_relative_camera(pos=(-4, -6, 3), dir=(-0.7, -1.0, -0.4))
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_sensor_mode_demo = False
+            self.demo = '5'
+        elif name == self.scenario6_key:
+            script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
+            script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
+            with open('vehicle1_sc6.json', 'r') as j:
+                script_vehicle1 = json.loads(j.read())
+            with open('vehicle2_sc6.json', 'r') as j:
+                script_vehicle2 = json.loads(j.read())
+            with open('vehicle3_sc6.json', 'r') as j:
+                script_vehicle3 = json.loads(j.read())
+            with open('vehicle4_sc6.json', 'r') as j:
+                script_vehicle4 = json.loads(j.read())
+            with open('vehicle5_sc6.json', 'r') as j:
+                script_vehicle5 = json.loads(j.read())
+            with open('vehicle6_sc6.json', 'r') as j:
+                script_vehicle6 = json.loads(j.read())
+            with open('vehicle7_sc6.json', 'r') as j:
+                script_vehicle7 = json.loads(j.read())
+            with open('vehicle8_sc6.json', 'r') as j:
+                script_vehicle8 = json.loads(j.read())
+            with open('vehicle9_sc6.json', 'r') as j:
+                script_vehicle9 = json.loads(j.read())
+            with open('vehicle10_sc6.json', 'r') as j:
+                script_vehicle10 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, start_delay=1.9)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, start_delay=4.05)
+            self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
+            self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
+            self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
+            self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
+            self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
+            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10, start_delay=3.4)
+            self.bng.set_relative_camera(pos=(-1, -7, 2), dir=(0, -1.0, -0.4))
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_sensor_mode_demo = False
+            self.demo = '6'
 
+        if self.is_sensor_mode_demo == False:                                           # Do not check sensor mode buttons if we are running a dedicated scenario.
+            return
 
-
-        if name == self.camera_key:
+        # Handle the loading of sensor modes.
+        if name == self.camera_key:                                                     # Sensor Mode:  Camera.
             if self.demo == 'camera':
                 self.toggle = self.toggle + 1
                 if self.toggle > 3:
@@ -393,11 +607,11 @@ class Visualiser:
                self.toggle = 3
                self.demo = 'camera'
                self._set_up_sensors(self.demo)
-        elif name == self.lidar_key:
+        elif name == self.lidar_key:                                                    # Sensor Mode:  LiDAR.
             if self.demo != 'lidar':
                 self.demo = 'lidar'
                 self._set_up_sensors(self.demo)
-        elif name == self.radar_key:
+        elif name == self.radar_key:                                                    # Sensor Mode:  RADAR.
             if self.demo == 'radar':
                 self.toggle = self.toggle + 1
                 if self.toggle > 1:
@@ -406,11 +620,11 @@ class Visualiser:
                 self.toggle = 2
                 self.demo = 'radar'
                 self._set_up_sensors(self.demo)
-        elif name == self.ultrasonic_key:
+        elif name == self.ultrasonic_key:                                               # Sensor Mode:  Ultrasonic.
             if self.demo != 'ultrasonic':
                 self.demo = 'ultrasonic'
                 self._set_up_sensors(self.demo)
-        elif name == self.imu_key:
+        elif name == self.imu_key:                                                      # Sensor Mode:  IMU.
             if self.demo == 'imu':
                 self.toggle = self.toggle + 1
                 if self.toggle > 2:
@@ -419,7 +633,7 @@ class Visualiser:
                 self.toggle = 2
                 self.demo = 'imu'
                 self._set_up_sensors(self.demo)
-        elif name == self.mesh_key:
+        elif name == self.mesh_key:                                                     # Sensor Mode:  Vehicle Mesh.
             if self.demo == 'mesh':
                 self.toggle = self.toggle + 1
                 if self.toggle > 3:
@@ -428,11 +642,11 @@ class Visualiser:
                 self.toggle = 0
                 self.demo = 'mesh'
                 self._set_up_sensors(self.demo)
-        elif name == self.traj_key:
+        elif name == self.traj_key:                                                     # Sensor Mode:  Trajectory Plot.
             if self.demo != 'trajectory':
                 self.demo = 'trajectory'
                 self._set_up_sensors(self.demo)
-        elif name == self.multi_key:
+        elif name == self.multi_key:                                                    # Sensor Mode:  Multi-Sensor.
             if self.demo != 'multi':
                 self.demo = 'multi'
                 self._set_up_sensors(self.demo)
@@ -490,60 +704,60 @@ class Visualiser:
 
         # Set up the chosen demonstration.
         if self.demo == 'camera':
-            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000),
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000),
                 is_streaming=True)
 
         elif demo == 'lidar':
-            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40,
+            self.lidar = Lidar('lidar', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=128, frequency=40,
                 is_streaming=True)
 
         elif demo == 'ultrasonic':
-            self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
+            self.us_FL = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_FR = Ultrasonic('us_FR', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
+            self.us_FR = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BL = Ultrasonic('us_BL', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
+            self.us_BL = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BR = Ultrasonic('us_BR', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
+            self.us_BR = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_ML = Ultrasonic('us_ML', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
+            self.us_ML = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_MR = Ultrasonic('us_MR', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
+            self.us_MR = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
 
         elif demo == 'radar':
-            self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
+            self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
                 is_streaming=True)
 
         elif demo == 'imu':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
 
         elif demo == 'mesh':
-            self.mesh = Mesh('mesh', self.bng, self.vehicle, gfx_update_time=0.001)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001)
 
         elif demo == 'multi':    # Camera, LiDAR, RADAR, and Ultrasonic together in one view (four viewports).
-            self.camera = Camera('camera1', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(850, 450), near_far_planes=(0.01, 1000),
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(850, 450), near_far_planes=(0.01, 1000),
                 is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.lidar = Lidar('lidar', self.bng, self.vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=64, frequency=40,
+            self.lidar = Lidar('lidar', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=64, frequency=40,
                 rays_per_second=1500000, is_streaming=True)
-            self.radar = Radar('radar1', self.bng, self.vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
+            self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
                 is_streaming=True)
-            self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
+            self.us_FL = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_FR = Ultrasonic('us_FR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
+            self.us_FR = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BL = Ultrasonic('us_BL', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
+            self.us_BL = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BR = Ultrasonic('us_BR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
+            self.us_BR = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_ML = Ultrasonic('us_ML', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
+            self.us_ML = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_MR = Ultrasonic('us_MR', self.bng, self.vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
+            self.us_MR = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
 
     def on_drag(self, x, y):
@@ -568,15 +782,35 @@ class Visualiser:
 
     def _update(self):
 
-        # Trajectory and state sensor.
-        self.vehicle.sensors.poll()                                                         # poll the state sensor.
-        self.pos = self.vehicle.state['pos']
+        # Trajectory and state sensor poll/update. The trajectory is tracked regardless of mode.
+        self.main_vehicle.sensors.poll()                                                                    # poll the state sensor.
+        self.pos = self.main_vehicle.state['pos']
         current_pos = [self.pos[0], self.pos[1], self.pos[2]]
-        self.traj.append(self.pos)                                                          # update the trajectory queue.
+        self.traj.append(self.pos)                                                                          # update the trajectory queue.
         if len(self.traj) > self.traj_memory:
             self.traj.popleft()
 
-        # Handle the update for the chosen demonstration.
+        # Handle any geometric target logic for the chosen scenario.
+        if self.demo == '2':
+            p = vec3(current_pos[0], current_pos[1], current_pos[2])
+            d = p.distance(self.scenario2_target)
+            if self.scenario2_is_target_hit == True:
+                dt = time.time() - self.scenario2_hit_time
+                if dt > 0.65 and dt < 1.3:
+                    self.vehicles['vehicle_1'].control(steering=-1.0, brake=1.0)            # sc2 hit - step 2.
+                elif dt >= 1.3 and dt < 5.3:
+                    self.vehicles['vehicle_1'].control(steering=0.0)                        # sc2 hit - step 3.
+                    self.vehicles['vehicle_1'].ai.set_mode('span')
+                elif dt >= 5.3:
+                    self.vehicles['vehicle_1'].ai.set_mode('disabled')                      # sc2 hit - step 4.
+                    self.vehicles['vehicle_1'].control(steering=0.0, brake=0.3, gear=0)
+            if d < 5.0 and self.scenario2_is_target_hit == False:
+                self.scenario2_is_target_hit = True
+                self.scenario2_hit_time = time.time()
+                self.vehicles['vehicle_1'].ai.set_mode('disabled')                          # sc2 hit - step 1.
+                self.vehicles['vehicle_1'].control(steering=1.0, brake=1.0)
+
+        # Handle the visualization update for the chosen demonstration.
         if self.demo == 'camera':
             cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]
             cam_size = cam_width * cam_height * 4
@@ -594,7 +828,7 @@ class Visualiser:
                 self.camera_depth_img = camera_data3
 
         elif self.demo == 'lidar':
-            self.vehicle.sensors.poll()
+            self.main_vehicle.sensors.poll()
             points = self.lidar.stream()
             assert not self.dirty
             if len(points) == 0:
@@ -620,11 +854,11 @@ class Visualiser:
             glBindBuffer(GL_ARRAY_BUFFER, self.colour_buf)
             glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, self.colours, GL_STATIC_DRAW)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
-            if self.follow and self.vehicle.state:
-                self.focus = self.vehicle.state['pos']
-                self.pos[0] = self.focus[0] + self.vehicle.state['dir'][0] * -30
-                self.pos[1] = self.focus[1] + self.vehicle.state['dir'][1] * -30
-                self.pos[2] = self.focus[2] + self.vehicle.state['dir'][2] + 10
+            if self.follow and self.main_vehicle.state:
+                self.focus = self.main_vehicle.state['pos']
+                self.pos[0] = self.focus[0] + self.main_vehicle.state['dir'][0] * -30
+                self.pos[1] = self.focus[1] + self.main_vehicle.state['dir'][1] * -30
+                self.pos[2] = self.focus[2] + self.main_vehicle.state['dir'][2] + 10
 
         elif self.demo == 'ultrasonic':
             d_FL, d_FR = self.us_FL.poll()['distance'], self.us_FR.poll()['distance']
@@ -721,8 +955,7 @@ class Visualiser:
                 ctr = ctr + 1
 
         elif self.demo == 'mesh':
-            self.vehicle.sensors.poll()
-            state = self.vehicle.state
+            state = self.main_vehicle.state
             if state:
                 self.mesh_data = self.mesh.poll()                                           # update the mesh in the mesh class state.
                 self.plan_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_up, self.v_forward, self.mesh_plan_screen_center, self.mesh_plan_screen_scale)
@@ -911,8 +1144,8 @@ class Visualiser:
                     self.draw_text(1250, 21, 'Vehicle: ')
                     self.draw_text(1550, 21, 'Model: ')
                     glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1255, 21, '         ' + self.vehicle.vid)
-                    self.draw_text(1550, 21, '       ' + self.vehicle.model)
+                    self.draw_text(1255, 21, '         ' + self.main_vehicle.vid)
+                    self.draw_text(1550, 21, '       ' + self.main_vehicle.model)
                     glDisable( GL_TEXTURE_2D )
 
             elif self.toggle == 1:                                                                                                              # annotation image only.
@@ -963,8 +1196,8 @@ class Visualiser:
                     self.draw_text(85, 795, 'Map: ')
                     self.draw_text(1400, 971, 'Color -> Class Map:')
                     glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(85, 875, '         ' + self.vehicle.vid)
-                    self.draw_text(85, 835, '       ' + self.vehicle.model)
+                    self.draw_text(85, 875, '         ' + self.main_vehicle.vid)
+                    self.draw_text(85, 835, '       ' + self.main_vehicle.model)
                     self.draw_text(85, 795, '     ' + self.map_name)
                     ctr = 0
                     for k in self.annot_map.keys():
@@ -998,8 +1231,8 @@ class Visualiser:
                     self.draw_text(1250, 21, 'Vehicle: ')
                     self.draw_text(1550, 21, 'Model: ')
                     glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1255, 21, '         ' + self.vehicle.vid)
-                    self.draw_text(1550, 21, '       ' + self.vehicle.model)
+                    self.draw_text(1255, 21, '         ' + self.main_vehicle.vid)
+                    self.draw_text(1550, 21, '       ' + self.main_vehicle.model)
                     glDisable( GL_TEXTURE_2D )
 
             else:                                                                                                                               # all images.
@@ -1042,8 +1275,8 @@ class Visualiser:
                     self.draw_text(950, 850, 'Vehicle: ')
                     self.draw_text(950, 800, 'Model: ')
                     glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(950, 850, '         ' + self.vehicle.vid)
-                    self.draw_text(950, 800, '       ' + self.vehicle.model)
+                    self.draw_text(950, 850, '         ' + self.main_vehicle.vid)
+                    self.draw_text(950, 800, '       ' + self.main_vehicle.model)
                     glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1097,8 +1330,8 @@ class Visualiser:
             self.draw_text(1250, 20, 'Vehicle: ')
             self.draw_text(1550, 20, 'Model: ')
             glColor3f(0.85, 0.35, 0.70)
-            self.draw_text(1255, 20, '         ' + self.vehicle.vid)
-            self.draw_text(1550, 20, '       ' + self.vehicle.model)
+            self.draw_text(1255, 20, '         ' + self.main_vehicle.vid)
+            self.draw_text(1550, 20, '       ' + self.main_vehicle.model)
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1340,8 +1573,8 @@ class Visualiser:
             self.draw_text(1250, 20, 'Vehicle: ')
             self.draw_text(1550, 20, 'Model: ')
             glColor3f(0.85, 0.35, 0.70)
-            self.draw_text(1255, 20, '         ' + self.vehicle.vid)
-            self.draw_text(1550, 20, '       ' + self.vehicle.model)
+            self.draw_text(1255, 20, '         ' + self.main_vehicle.vid)
+            self.draw_text(1550, 20, '       ' + self.main_vehicle.model)
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1363,8 +1596,9 @@ class Visualiser:
             # Render RADAR images.
             if self.toggle == 0:                                                                                # PPI.
                 if len(self.radar_ppi_size) > 0:
-                    glViewport(0, 0, self.width * 2, self.height * 2)
+                    glViewport(0, 0, self.width, self.height)
                     self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From the .png image.
+                    glViewport(0, 0, self.width * 2, self.height * 2)
                     self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
                     glEnable(GL_LINE_SMOOTH)
@@ -1424,8 +1658,8 @@ class Visualiser:
                     self.draw_text(1250, 20, 'Vehicle: ')
                     self.draw_text(1550, 20, 'Model: ')
                     glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1255, 20, '         ' + self.vehicle.vid)
-                    self.draw_text(1550, 20, '       ' + self.vehicle.model)
+                    self.draw_text(1255, 20, '         ' + self.main_vehicle.vid)
+                    self.draw_text(1550, 20, '       ' + self.main_vehicle.model)
                     glViewport(0, 0, self.width, self.height)
                     glColor3f(0.4, 0.4, 0.4)
                     self.draw_text(700, 21, '0 m')
@@ -1505,7 +1739,7 @@ class Visualiser:
                     self.draw_text(35, 20, 'RADAR: Range - Doppler')
                     self.draw_text(1460, 20, 'Vehicle: ')
                     glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1465, 20, '         ' + self.vehicle.vid)
+                    self.draw_text(1465, 20, '         ' + self.main_vehicle.vid)
                     glViewport(0, 0, self.width, self.height)
                     glColor3f(0.4, 0.4, 0.4)
                     txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
@@ -1933,8 +2167,8 @@ class Visualiser:
                 self.draw_text(950, 880, 'Vehicle: ')
                 self.draw_text(950, 845, 'Model: ')
                 glColor3f(0.85, 0.35, 0.70)
-                self.draw_text(950, 880, '         ' + self.vehicle.vid)
-                self.draw_text(950, 845, '       ' + self.vehicle.model)
+                self.draw_text(950, 880, '         ' + self.main_vehicle.vid)
+                self.draw_text(950, 845, '       ' + self.main_vehicle.model)
                 glDisable( GL_TEXTURE_2D )
 
                 # Restore matrices.
@@ -1953,8 +2187,9 @@ class Visualiser:
             self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The ultrasonic .png image.
 
             if len(self.radar_ppi_size) > 0:
-                glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
+                glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
                 self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From RADAR .png image.
+                glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
                 self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
             glEnable(GL_LINE_SMOOTH)
@@ -2012,7 +2247,6 @@ class Visualiser:
                 self.draw_line([101, 49, 101, 451])                     # cb frame - right.
                 self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
                 for i in range(401):                                    # colorbar.
-                    col = i * 0.0025
                     r, g, b = 0, 0, 0
                     if i < 200:
                         b = (200 - i) * 0.005
@@ -2244,8 +2478,8 @@ class Visualiser:
             self.draw_text(1555, 60, 'Vehicle: ')
             self.draw_text(1580, 30, 'Model: ')
             glColor3f(0.85, 0.35, 0.70)
-            self.draw_text(1555, 60, '         ' + self.vehicle.vid)
-            self.draw_text(1580, 30, '       ' + self.vehicle.model)
+            self.draw_text(1555, 60, '         ' + self.main_vehicle.vid)
+            self.draw_text(1580, 30, '       ' + self.main_vehicle.model)
             glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
             glColor3f(0.4, 0.4, 0.4)
             self.draw_text(700, 21, '0 m')
