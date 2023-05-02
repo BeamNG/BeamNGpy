@@ -12,7 +12,7 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar, AdvancedIMU, Mesh
-from beamngpy import vec3
+from beamngpy import vec3, time_series
 
 
 CLEAR_COLOUR = (0.1, 0.1, 0.1, 1.0)
@@ -463,16 +463,34 @@ class Visualiser:
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
             with open('vehicle1_sc2.json', 'r') as j:
                 script_vehicle1 = json.loads(j.read())
+            with open('vehicle2_sc2.json', 'r') as j:
+                script_vehicle2 = json.loads(j.read())
             with open('vehicle3_sc2.json', 'r') as j:
                 script_vehicle3 = json.loads(j.read())
             with open('vehicle4_sc2.json', 'r') as j:
                 script_vehicle4 = json.loads(j.read())
             with open('vehicle5_sc2.json', 'r') as j:
                 script_vehicle5 = json.loads(j.read())
+            with open('vehicle6_sc2.json', 'r') as j:
+                script_vehicle6 = json.loads(j.read())
+            with open('vehicle7_sc2.json', 'r') as j:
+                script_vehicle7 = json.loads(j.read())
+            with open('vehicle8_sc2.json', 'r') as j:
+                script_vehicle8 = json.loads(j.read())
+            with open('vehicle9_sc2.json', 'r') as j:
+                script_vehicle9 = json.loads(j.read())
+            with open('vehicle10_sc2.json', 'r') as j:
+                script_vehicle10 = json.loads(j.read())
             self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, 5.0)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, 3.0)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
+            self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
+            self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
+            self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
+            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
             self.bng.set_relative_camera(pos=(0, -8, 2), dir=(0.0, -1.0, -0.2))
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
@@ -491,11 +509,26 @@ class Visualiser:
                 script_vehicle4 = json.loads(j.read())
             with open('vehicle5_sc3.json', 'r') as j:
                 script_vehicle5 = json.loads(j.read())
+            with open('vehicle6_sc3.json', 'r') as j:
+                script_vehicle6 = json.loads(j.read())
+            with open('vehicle7_sc3.json', 'r') as j:
+                script_vehicle7 = json.loads(j.read())
+            with open('vehicle8_sc3.json', 'r') as j:
+                script_vehicle8 = json.loads(j.read())
+            with open('vehicle9_sc3.json', 'r') as j:
+                script_vehicle9 = json.loads(j.read())
+            with open('vehicle10_sc3.json', 'r') as j:
+                script_vehicle10 = json.loads(j.read())
             self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
             self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3, start_delay=5.5)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5, start_delay=9.0)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
+            self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
+            self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
+            self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
+            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
             self.bng.set_relative_camera(pos=(-10, -8, 5), dir=(-0.7, -1.0, -0.4))
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
@@ -519,15 +552,18 @@ class Visualiser:
                 script_vehicle7 = json.loads(j.read())
             with open('vehicle8_sc4.json', 'r') as j:
                 script_vehicle8 = json.loads(j.read())
-            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
+            with open('vehicle10_sc4.json', 'r') as j:
+                script_vehicle10 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, start_delay=3.0)
             self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
-            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4, start_delay=3.0)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
-            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6, start_delay=7.0)
             self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
             self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
-            self.bng.set_relative_camera(pos=(0, 6, 1), dir=(0.0, 1.0, -0.4))
+            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
+            self.bng.set_relative_camera(pos=(1, 6, 0.8), dir=(0.1, 1.0, 0.0))
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '4'
@@ -546,12 +582,21 @@ class Visualiser:
                 script_vehicle5 = json.loads(j.read())
             with open('vehicle6_sc5.json', 'r') as j:
                 script_vehicle6 = json.loads(j.read())
+            with open('vehicle7_sc5.json', 'r') as j:
+                script_vehicle7 = json.loads(j.read())
+            with open('vehicle9_sc5.json', 'r') as j:
+                script_vehicle9 = json.loads(j.read())
+            with open('vehicle10_sc5.json', 'r') as j:
+                script_vehicle10 = json.loads(j.read())
             self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, start_delay=1.0)
             self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4, start_delay=2.5)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
             self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6, start_delay=11.5)
+            self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
+            self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9, start_delay=6.5)
+            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
             self.bng.set_relative_camera(pos=(-4, -6, 3), dir=(-0.7, -1.0, -0.4))
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
