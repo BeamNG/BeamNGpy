@@ -341,7 +341,7 @@ class Visualiser:
             self.bng.teleport_vehicle(self.vehicles['vehicle_8'], pos=(-364.46489701971586, 633.0149337410967, 75.073325342707), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_9'], pos=(-342.42810740644927, 630.6641727234382, 74.97903450986632), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_10'], pos=(-404.3606958804594, 654.6428768548212, 74.97191763509181), reset=True)
-            self.vehicles['vehicle_1'].ai.set_mode('span')
+            #self.vehicles['vehicle_1'].ai.set_mode('span')
             self.vehicles['vehicle_2'].ai.set_mode('span')
             self.vehicles['vehicle_3'].ai.set_mode('span')
             self.vehicles['vehicle_4'].ai.set_mode('span')
@@ -1903,17 +1903,17 @@ class Visualiser:
                     lines = self.plan_data[1]
                     num_lines = len(lines)
                     for i in range(num_lines):
-                        self.set_mesh_color(stresses[i]['stress'], self.imu_stress_min, self.imu_stress_max)
+                        self.set_mesh_color(stresses[i]['stress_norm'], self.imu_stress_min, self.imu_stress_max)
                         p1, p2 = lines[i][0], lines[i][1]
                         self.draw_line([p1[0], p1[1], p2[0], p2[1]])
                     lines = self.elevation_data[1]
                     for i in range(num_lines):
-                        self.set_mesh_color(stresses[i]['stress'], self.imu_stress_min, self.imu_stress_max)
+                        self.set_mesh_color(stresses[i]['stress_norm'], self.imu_stress_min, self.imu_stress_max)
                         p1, p2 = lines[i][0], lines[i][1]
                         self.draw_line([p1[0], p1[1], p2[0], p2[1]])
                     lines = self.end_elevation_data[1]
                     for i in range(num_lines):
-                        self.set_mesh_color(stresses[i]['stress'], self.imu_stress_min, self.imu_stress_max)
+                        self.set_mesh_color(stresses[i]['stress_norm'], self.imu_stress_min, self.imu_stress_max)
                         p1, p2 = lines[i][0], lines[i][1]
                         self.draw_line([p1[0], p1[1], p2[0], p2[1]])
 

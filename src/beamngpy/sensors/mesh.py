@@ -51,21 +51,17 @@ class Mesh:
         # Fetch the unique Id number (in the simulator) for this mesh sensor.  We will need this later.
         self.sensorId = self._get_mesh_id()
 
-        self.node_positions = []
+        self.node_positions = {}
 
         # Populate the list of triangles for this sensor.
-        triangle_data = self._send_sensor_request(
-            'GetFullTriangleData',
-            ack='CompletedGetFullTriangleData',
-            vid=self.vid)['data']
+        triangle_data = self._send_sensor_request('GetFullTriangleData', ack='CompletedGetFullTriangleData', vid=self.vid)['data']
         self.triangles = {}
         for key, value in triangle_data.items():
             self.triangles[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
 
         # Populate the list of beams for this sensor.
         self.beams = self._get_active_beams()
-
-        self.num_nodes = self.get_num_nodes()
+        self.avg_stress = {}
 
         self.logger.debug('Mesh - sensor created: 'f'{self.name}')
 
@@ -76,8 +72,18 @@ class Mesh:
         beam_data = self._send_sensor_request('GetBeamData', ack='CompletedGetBeamData', vid=self.vid)['data']
         self.beams = {}
         for key, value in beam_data.items():
-            if int(value[3]) != 5:                                                          # do not include any broken beams.
+            if int(value[3]) != 5:                                                                      # We do not include any broken beams.
                 self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
+
+    def _update_avg_stresses(self):
+        for k, v in self.raw_data['beams'].items():
+            if k in self.avg_stress:
+                ds = v['stress'] - self.avg_stress[k]
+                self.avg_stress[k] = self.avg_stress[k] + 0.5 * ds                                      # Simple exponential moving average.
+                v['stress_norm'] = ds                                                                   # Store the normalized stress (difference with exp moving avg).
+            else:
+                self.avg_stress[k] = 0.0
+                v['stress_norm'] = 0.0
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
         if not self.bng.connection:
@@ -93,7 +99,6 @@ class Mesh:
         """
         Removes this sensor from the simulation.
         """
-        # Remove this sensor from the simulation.
         self._close_mesh()
         self.logger.debug('Mesh - sensor removed: 'f'{self.name}')
 
@@ -110,10 +115,16 @@ class Mesh:
         self._get_active_beams()
 
         # Send and receive a request for readings data from this sensor.
-        self.node_positions = self._poll_mesh_VE()
+        self.raw_data = self._poll_mesh_VE()
+        self._update_avg_stresses()
+
+        # Convert dict indices to int.
+        self.node_positions = {}
+        for k, v in self.raw_data['nodes'].items():
+            self.node_positions[int(k)] = v
 
         self.logger.debug('Mesh - sensor readings received from simulation: 'f'{self.name}')
-        return self.node_positions
+        return self.raw_data
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -226,17 +237,6 @@ class Mesh:
             includeWheelNodes=is_include_wheels)['data']
         return [int(d['nodeIndex1']), int(d['nodeIndex2']), int(d['nodeIndex3'])]
 
-    def get_num_nodes(self):
-        max_idx = -1
-        for _, v in self.triangles.items():
-            if v[0] > max_idx:
-                max_idx = v[0]
-            if v[1] > max_idx:
-                max_idx = v[1]
-            if v[2] > max_idx:
-                max_idx = v[2]
-        return max_idx
-
     def get_nodes_to_triangles_map(self):
         map = {}
         for i in range(self.num_nodes + 1):
@@ -272,24 +272,14 @@ class Mesh:
                 neighbors.append(k)
         return neighbors
 
-    def convert_node_indices_to_int(self):
-        if len(self.node_positions) == 0:
-            return {}
-        raw = self.node_positions['nodes']
-        nodes = {}
-        for k, v in raw.items():
-            nodes[int(k)] = v
-        return nodes
-
     def compute_beam_line_segments(self):
-        nodes = self.convert_node_indices_to_int()
         lines1 = []
         lines2 = []
         lines3 = []
         c = []
         for _, v in self.beams.items():
-            p1 = nodes[v[0]]['pos']
-            p2 = nodes[v[1]]['pos']
+            p1 = self.node_positions[v[0]]['pos']
+            p2 = self.node_positions[v[1]]['pos']
             lines1.append([(p1['x'], p1['y']), (p2['x'], p2['y'])])
             lines2.append([(p1['x'], p1['z']), (p2['x'], p2['z'])])
             lines3.append([(p1['y'], p1['z']), (p2['y'], p2['z'])])
@@ -300,27 +290,25 @@ class Mesh:
         return lns1, lns2, lns3
 
     def project_nodes_to_plane(self, orig, unit_n, unit_x, screen_center, screen_scale):
-        nodes = self.convert_node_indices_to_int()
-        num_nodes = len(nodes)
-        if num_nodes == 0:
-            return []
         proj_points = []
+        num_nodes = len(self.node_positions)
         for i in range(num_nodes):
-            node = nodes[i]['pos']
+            node = self.node_positions[i]['pos']
             p = vec3(node['x'], node['y'], node['z'])
             p2o = p - orig
             x = p2o.dot(unit_x)
             y = p2o.dot(unit_n.cross(unit_x))
             proj_points.append([(x * screen_scale.x) + screen_center.x, (y * screen_scale.y) + screen_center.y])
+
         lines = []
         for _, v in self.beams.items():
             p1 = proj_points[v[0]]
             p2 = proj_points[v[1]]
             lines.append([[p1[0], p1[1]], [p2[0], p2[1]], [v[0], v[1]]])
+
         return [proj_points, lines]
 
     def mesh_plot(self):
-        nodes = self.convert_node_indices_to_int()
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -341,8 +329,8 @@ class Mesh:
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
         ax[0, 1].axis('off')
-        for i in range(len(nodes)):
-            node = nodes[i]['pos']
+        for i in range(len(self.node_positions)):
+            node = self.node_positions[i]['pos']
             ax[0, 0].plot(node['x'], node['y'], 'ro')
             ax[1, 0].plot(node['x'], node['z'], 'ro')
             ax[1, 1].plot(node['y'], node['z'], 'ro')
