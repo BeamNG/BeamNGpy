@@ -5,7 +5,7 @@ class Time_Series:
     def __init__(self, size = 2000, x_min = 50.0, x_max = 350.0, y_min = 50.0, y_max = 150.0, grid_spacing_x = 10, grid_spacing_y = 5, data_min = -50.0, data_max = 50.0,
         axes_overlap_x = 10.0, axes_overlap_y = 10.0, grid_notch_x = 5.0, grid_notch_y = 5.0):
         """
-        Constructs a time-series data manager and visualizer instance.
+        Constructs a time-series data manager and visualizer instance, for use with fixed-dt data.
         On construction, the data size and various limits can be set, then when new data is generated, this can be updated using the 'update()' method.
         When we want to render the time-series, we call the 'display()' method to fetch the latest geometric data (a vertex buffer and some lines, here).
         It is up to the user of this class how this information is rendered and with which graphics API.
@@ -29,7 +29,6 @@ class Time_Series:
         self.size = size
         self.x_min, self.x_max, self.y_min, self.y_max = x_min, x_max, y_min, y_max
         self.x_range, self.y_range = self.x_max - self.x_min, self.y_max - self.y_min
-        self.y_min, self.y_max = y_min, y_max
         self.data_min, self.data_max = data_min, data_max
         self.data_range_inv = 1.0 / (self.data_max - self.data_min)
         self.t = []                                                                                             # The x-axis coordinates of the data.
