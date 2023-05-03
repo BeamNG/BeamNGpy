@@ -237,41 +237,6 @@ class Mesh:
             includeWheelNodes=is_include_wheels)['data']
         return [int(d['nodeIndex1']), int(d['nodeIndex2']), int(d['nodeIndex3'])]
 
-    def get_nodes_to_triangles_map(self):
-        map = {}
-        for i in range(self.num_nodes + 1):
-            map[i] = []
-        for k, v in self.triangles.items():
-            map[v[0]].append(k)
-            map[v[1]].append(k)
-            map[v[2]].append(k)
-        return map
-
-    def get_neighbor_nodes(self, node_id):
-        neighbors = []
-        for _, v in self.triangles.items():
-            if node_id == v[0]:
-                neighbors.append(v[1])
-                neighbors.append(v[2])
-            if node_id == v[1]:
-                neighbors.append(v[0])
-                neighbors.append(v[2])
-            if node_id == v[2]:
-                neighbors.append(v[0])
-                neighbors.append(v[1])
-        return neighbors
-
-    def get_neighbor_triangles(self, triangle_id):
-        t = self.triangles[triangle_id]
-        neighbors = []
-        for k, v in self.triangles.items():
-            match0 = t[0] == v[0] or t[0] == v[1] or t[0] == v[2]
-            match1 = t[1] == v[0] or t[1] == v[1] or t[1] == v[2]
-            match2 = t[2] == v[0] or t[2] == v[1] or t[2] == v[2]
-            if match0 or match1 or match2:
-                neighbors.append(k)
-        return neighbors
-
     def compute_beam_line_segments(self):
         lines1 = []
         lines2 = []
@@ -288,25 +253,6 @@ class Mesh:
         lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
         lns3 = mc.LineCollection(lines3, colors=c, linewidths=0.5)
         return lns1, lns2, lns3
-
-    def project_nodes_to_plane(self, orig, unit_n, unit_x, screen_center, screen_scale):
-        proj_points = []
-        num_nodes = len(self.node_positions)
-        for i in range(num_nodes):
-            node = self.node_positions[i]['pos']
-            p = vec3(node['x'], node['y'], node['z'])
-            p2o = p - orig
-            x = p2o.dot(unit_x)
-            y = p2o.dot(unit_n.cross(unit_x))
-            proj_points.append([(x * screen_scale.x) + screen_center.x, (y * screen_scale.y) + screen_center.y])
-
-        lines = []
-        for _, v in self.beams.items():
-            p1 = proj_points[v[0]]
-            p2 = proj_points[v[1]]
-            lines.append([[p1[0], p1[1]], [p2[0], p2[1]], [v[0], v[1]]])
-
-        return [proj_points, lines]
 
     def mesh_plot(self):
         fig, ax = plt.subplots(2, 2)

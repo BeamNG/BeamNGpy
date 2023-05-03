@@ -8,6 +8,7 @@ class Time_Series:
         Constructs a time-series data manager and visualizer instance, for use with fixed-dt data.
         On construction, the data size and various limits can be set, then when new data is generated, this can be updated using the 'update()' method.
         When we want to render the time-series, we call the 'display()' method to fetch the latest geometric data (a vertex buffer and some lines, here).
+        The time-series can be paused using the 'pause()' method, which will freeze data on the screen until pause is unset using the same method.
         It is up to the user of this class how this information is rendered and with which graphics API.
 
         Args:
@@ -26,6 +27,7 @@ class Time_Series:
             grid_notch_y (float): The amount of excess on the vertical grid lines (which protrude outside past the horizontal axis).
         """
 
+        # Data parameters.
         self.size = size
         self.x_min, self.x_max, self.y_min, self.y_max = x_min, x_max, y_min, y_max
         self.x_range, self.y_range = self.x_max - self.x_min, self.y_max - self.y_min
@@ -47,6 +49,9 @@ class Time_Series:
         self.grid_spacing_x, self.grid_spacing_y = grid_spacing_x, grid_spacing_y
         self.grid_notch_x, self.grid_notch_y = grid_notch_x, grid_notch_y
         self.grid_lines = self._compute_grid()
+
+        # Miscellaneous.
+        self.is_pause = False
 
     def _compute_axes(self):
         """
@@ -113,17 +118,32 @@ class Time_Series:
         ratio = (val_snapped - self.data_min) * self.data_range_inv
         return self.y_min + ratio * (self.y_range)
 
+    def pause(self, is_pause):
+        """
+        Sets whether to pause this time series instance or not. If paused, no updates will be performed and the data will remain frozen on screen.
+
+        Args:
+            bool: Pauses the time series instance if True, otherwise sets it to continue updating.
+        """
+        self.is_pause = is_pause
+
     def update(self, data):
         """
         Updates this time series with a collection of new data. This data is appended to the end of the current data queue, and an equal amount of data is removed
         from the back of the queue such that the queue always remains the same size (ie has the same amount of memory).
+        NOTE: If the mesh visualizer is paused, the data will remain as it was previously.
 
         Args:
             data: The given collection of data values, in the form [d0, d1, d2, ...] where the d are scalar floats.
         """
+        # If we are pausing, do not perform any data updating.
+        if self.is_pause == True:
+            return
+
+        # Add each new entry one by one. As we add an entry, remove one at the back, so as to always keep the queue the same size.
         data_size = len(data)
         for i in range(data_size):
-            self.data.popleft()                                                 # For every new entry we add, we remove one at the back, to always keep it the same size.
+            self.data.popleft()
             self.data.append(self._scale_to_range(data[i]))
 
     def display(self):

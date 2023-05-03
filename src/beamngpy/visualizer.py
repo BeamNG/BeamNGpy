@@ -12,14 +12,12 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar, AdvancedIMU, Mesh
-from beamngpy import vec3, Time_Series
-
+from beamngpy import vec3, Time_Series, Mesh_View
 
 CLEAR_COLOUR = (0.1, 0.1, 0.1, 1.0)
 MAX_DISTANCE = 120 / 3
 MOVE_SPEED = 0.25
 TURN_SPEED = 1
-
 base, texid = 0, 0  # for text rendering.
 
 class Visualiser:
@@ -47,10 +45,6 @@ class Visualiser:
         self.bitmap_tex = None
         half_pi = math.pi * 0.5
         self.rgb2f = 1.0 / 255.0
-        self.v_origin = vec3(0.0, 0.0, 0.0)
-        self.v_forward = vec3(0.0, -1.0, 0.0)
-        self.v_up = vec3(0.0, 0.0, -1.0)
-        self.v_right = vec3(-1.0, 0.0, 0.0)
 
         # Initialize OpenGL.
         glutInit(sys.argv)
@@ -300,20 +294,10 @@ class Visualiser:
         self.time_series4, self.time_series5, self.time_series6 = [], [], []
 
         # Mesh sensor:
-        self.mesh_data = {}
-        self.imu_mass_min, self.imu_mass_max = 0.0, 10.0
         self.mesh_mass_cbar_label0, self.mesh_mass_cbar_label1, self.mesh_mass_cbar_label2 = '0 kg', '5 kg', '10 kg'
-        self.imu_force_min, self.imu_force_max = 0.0, 300.0
         self.mesh_force_cbar_label0, self.mesh_force_cbar_label1, self.mesh_force_cbar_label2 = '0 N', '150 N', '300 N'
-        self.imu_vel_min, self.imu_vel_max = 0.0, 50.0
         self.mesh_vel_cbar_label0, self.mesh_vel_cbar_label1, self.mesh_vel_cbar_label2 = '0 m/s', '25 m/s', '50 m/s'
-        self.imu_stress_min, self.imu_stress_max = -200.0, 200.0
         self.mesh_stress_cbar_label0, self.mesh_stress_cbar_label1, self.mesh_stress_cbar_label2 = '-200 Nm-2', '0 Nm-2', '200 Nm-2'
-        self.plan_data, self.elevation_data, self.end_elevation_data = [], [], []
-        self.mesh_node_size = 1                                                                                     # The size of node rects on render.
-        self.mesh_plan_screen_center, self.mesh_plan_screen_scale = vec3(495, 820), vec3(150, 150)                  # scale/translation for each of the 3 views.
-        self.mesh_elev_screen_center, self.mesh_elev_screen_scale = vec3(495, 180), vec3(150, 150)
-        self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale = vec3(1295, 180), vec3(150, 150)
 
         # Set up the sensor configuration as chosen by the demo.
         self._set_up_sensors(demo)
@@ -728,6 +712,9 @@ class Visualiser:
 
         elif demo == 'mesh':
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=50.0, force_min=0.0, force_max=50.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=50.0,
+                top_center=vec3(450.0, 750.0), top_scale=vec3(250.0, 250.0), front_center=vec3(450.0, 250.0), front_scale=vec3(250.0, 250.0), right_center=vec3(1350.0, 250.0),
+                right_scale=vec3(250.0, 250.0), is_top=True, is_front=True, is_right=True)
 
         elif demo == 'multi':    # Camera, LiDAR, RADAR, and Ultrasonic together in one view (four viewports).
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(850, 450), near_far_planes=(0.01, 1000),
@@ -922,12 +909,7 @@ class Visualiser:
             self.time_series6.update(gyroZ)
 
         elif self.demo == 'mesh':
-            state = self.main_vehicle.state
-            if state:
-                self.mesh_data = self.mesh.poll()                                           # update the mesh in the mesh class state.
-                self.plan_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_up, self.v_forward, self.mesh_plan_screen_center, self.mesh_plan_screen_scale)
-                self.elevation_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_right, self.v_forward, self.mesh_elev_screen_center, self.mesh_elev_screen_scale)
-                self.end_elevation_data = self.mesh.project_nodes_to_plane(self.v_origin, self.v_forward, self.v_right * -1.0, self.mesh_end_elev_screen_center, self.mesh_end_elev_screen_scale)
+            self.mesh_view.update()
 
         elif self.demo == 'multi':
             # Multi: Camera update.
@@ -1014,7 +996,6 @@ class Visualiser:
             else:
                 self.us_bar_MR = int(np.floor(d_MR)) + 1
 
-        # OpenGL - goes to display function.
         glutPostRedisplay()
 
     def _on_display(self):
@@ -2408,10 +2389,6 @@ class Visualiser:
         glCallLists([ord(c) for c in txt])
         glPopMatrix()
         glPopMatrix()
-
-    def set_mesh_color(self, val, min, max):
-        ratio = (val - min) / (max - min)
-        glColor3f(ratio, 0.0, 1.0 - ratio)
 
     def makefont(self, filename, size):
         global texid

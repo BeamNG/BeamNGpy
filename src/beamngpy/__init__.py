@@ -12,6 +12,7 @@ from beamngpy.logging import config_logging, set_up_simple_logging
 from beamngpy.quat import angle_to_quat
 from beamngpy.vec3 import vec3
 from beamngpy.time_series import Time_Series
+from beamngpy.mesh_view import Mesh_View
 from beamngpy.visualizer import Visualiser
 from beamngpy.scenario import Scenario, ScenarioObject, StaticObject
 from beamngpy.scenario.level import Level
