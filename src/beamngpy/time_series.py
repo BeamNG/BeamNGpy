@@ -6,8 +6,8 @@ class Time_Series:
         axes_overlap_x = 10.0, axes_overlap_y = 10.0, grid_notch_x = 5.0, grid_notch_y = 5.0):
         """
         Constructs a time-series data manager and visualizer instance.
-        On construction, the data size and various limits can be set, then when new data is generated, this can be updated using the 'update_data()' method.
-        When we want to render the time-series, we call separate methods to get the axes lines, grid lines, and actual data polyline.
+        On construction, the data size and various limits can be set, then when new data is generated, this can be updated using the 'update()' method.
+        When we want to render the time-series, we call the 'display()' method to fetch the latest geometric data (a vertex buffer and some lines, here).
         It is up to the user of this class how this information is rendered and with which graphics API.
 
         Args:
@@ -114,7 +114,7 @@ class Time_Series:
         ratio = (val_snapped - self.data_min) * self.data_range_inv
         return self.y_min + ratio * (self.y_range)
 
-    def update_data(self, data):
+    def update(self, data):
         """
         Updates this time series with a collection of new data. This data is appended to the end of the current data queue, and an equal amount of data is removed
         from the back of the queue such that the queue always remains the same size (ie has the same amount of memory).
@@ -127,32 +127,18 @@ class Time_Series:
             self.data.popleft()                                                 # For every new entry we add, we remove one at the back, to always keep it the same size.
             self.data.append(self._scale_to_range(data[i]))
 
-    def get_axes_lines(self):
+    def display(self):
         """
-        Gets the horizontal and vertical axes lines for this time series.
+        Gets all the display data for this time series.
 
         Returns:
-            List: The horizontal [0] and vertical [1] axes lines, where each is in the format [x0, y0, x1, y1].
+            Dict: The axes lines, grid lines, and data polyline in individual keys.
         """
-        return self.axes_lines
-
-    def get_grid_lines(self):
-        """
-        Gets the horizontal and vertical grid lines for this time series.
-
-        Returns:
-            Dict: Contains two collections of lines; one set of thicker-drawn lines, and another thinner-drawn set (the graphics API should handle this, if required).
-        """
-        return self.grid_lines
-
-    def get_data_lines(self):
-        """
-        Gets the polyline data for this time series, ready to be rendered by a graphics API.
-
-        Returns:
-            List: The vertex buffer, where each vertex has the format [x0, y0].
-        """
+        disp = {}
+        disp['axes'] = self.axes_lines
+        disp['grid'] = self.grid_lines
         v = []
         for i in range(self.size):
             v.append([self.t[i], self.data[i]])
-        return v
+        disp['data'] = v
+        return disp

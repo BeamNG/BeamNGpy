@@ -341,7 +341,7 @@ class Visualiser:
             self.bng.teleport_vehicle(self.vehicles['vehicle_8'], pos=(-364.46489701971586, 633.0149337410967, 75.073325342707), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_9'], pos=(-342.42810740644927, 630.6641727234382, 74.97903450986632), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_10'], pos=(-404.3606958804594, 654.6428768548212, 74.97191763509181), reset=True)
-            #self.vehicles['vehicle_1'].ai.set_mode('span')
+            self.vehicles['vehicle_1'].ai.set_mode('span')
             self.vehicles['vehicle_2'].ai.set_mode('span')
             self.vehicles['vehicle_3'].ai.set_mode('span')
             self.vehicles['vehicle_4'].ai.set_mode('span')
@@ -914,12 +914,12 @@ class Visualiser:
                 gyroX.append(gyro[0])
                 gyroY.append(gyro[1])
                 gyroZ.append(gyro[2])
-            self.time_series1.update_data(accX)
-            self.time_series2.update_data(accY)
-            self.time_series3.update_data(accZ)
-            self.time_series4.update_data(gyroX)
-            self.time_series5.update_data(gyroY)
-            self.time_series6.update_data(gyroZ)
+            self.time_series1.update(accX)
+            self.time_series2.update(accY)
+            self.time_series3.update(accZ)
+            self.time_series4.update(gyroX)
+            self.time_series5.update(gyroY)
+            self.time_series6.update(gyroZ)
 
         elif self.demo == 'mesh':
             state = self.main_vehicle.state
@@ -1733,6 +1733,10 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == 'imu':
+            # Get display data.
+            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
+            disp4, disp5, disp6 = self.time_series4.display(), self.time_series5.display(), self.time_series6.display()
+
             glViewport(0, 0, self.width, self.height)
 
             glEnable(GL_LINE_SMOOTH)
@@ -1750,8 +1754,7 @@ class Visualiser:
             glLoadIdentity()
 
             # Draw grid.
-            grid1, grid2, grid3 = self.time_series1.get_grid_lines(), self.time_series2.get_grid_lines(), self.time_series3.get_grid_lines()
-            grid4, grid5, grid6 = self.time_series4.get_grid_lines(), self.time_series5.get_grid_lines(), self.time_series6.get_grid_lines()
+            grid1, grid2, grid3, grid4, grid5, grid6 = disp1['grid'], disp2['grid'], disp3['grid'], disp4['grid'], disp5['grid'], disp6['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
             for i in grid1['thin'] + grid2['thin'] + grid3['thin'] + grid4['thin'] + grid5['thin'] + grid6['thin']:
@@ -1763,18 +1766,17 @@ class Visualiser:
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
-            self.draw_line_strip(self.time_series1.get_data_lines())
-            self.draw_line_strip(self.time_series2.get_data_lines())
-            self.draw_line_strip(self.time_series3.get_data_lines())
-            self.draw_line_strip(self.time_series4.get_data_lines())
-            self.draw_line_strip(self.time_series5.get_data_lines())
-            self.draw_line_strip(self.time_series6.get_data_lines())
+            self.draw_line_strip(disp1['data'])
+            self.draw_line_strip(disp2['data'])
+            self.draw_line_strip(disp3['data'])
+            self.draw_line_strip(disp4['data'])
+            self.draw_line_strip(disp5['data'])
+            self.draw_line_strip(disp6['data'])
 
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3 = self.time_series1.get_axes_lines(), self.time_series2.get_axes_lines(), self.time_series3.get_axes_lines()
-            ax4, ax5, ax6 = self.time_series4.get_axes_lines(), self.time_series5.get_axes_lines(), self.time_series6.get_axes_lines()
+            ax1, ax2, ax3, ax4, ax5, ax6 = disp1['axes'], disp2['axes'], disp3['axes'], disp4['axes'], disp5['axes'], disp6['axes']
             self.draw_line(ax1[0])
             self.draw_line(ax1[1])
             self.draw_line(ax2[0])
