@@ -43,7 +43,9 @@ class Mesh_View:
         # The mesh data structures.
         self.mesh = mesh                                                                    # The Mesh sensor class instance.
         self.mesh_data = {}                                                                 # The latest physical property readings at each node and beam.
-        self.top_coords, self.front_coords, self.right_coords = [], [], []                  # The 2D projections of the nodes/beams in each view (top, front, right).
+        self.top_coords = { 'nodes' : [], 'beams' : [] }                                    # The 2D projections of the nodes/beams in each view (top, front, right).
+        self.front_coords = { 'nodes' : [], 'beams' : [] }
+        self.right_coords = { 'nodes' : [], 'beams' : [] }
         self.beam_colors = []                                                               # The color list for the beams (depends on which data is being visualized).
         self.map = []                                                                       # A map from beams to node indices, eg { beam i = [node a, node b], ... }
 
@@ -61,7 +63,6 @@ class Mesh_View:
         self.top_center, self.top_scale = top_center, top_scale                             # Translation and Scale for each of the three views (top, front, right).
         self.front_center, self.front_scale = front_center, front_scale
         self.right_center, self.right_scale = right_center, right_scale
-        self.node_half_diameter = 1                                                         # The half-diameter of node rectangles.
         self.data_mode = data_mode                                                          # Determines which data to visualise (mass, force, velocity, stress).
         self.is_top, self.is_front, self.is_right = is_top, is_front, is_right              # View flags.
 
@@ -102,7 +103,7 @@ class Mesh_View:
         for _, v in beams.items():
             p1 = projected_points[v[0]]
             p2 = projected_points[v[1]]
-            lines.append([[p1[0], p1[1]], [p2[0], p2[1]]])
+            lines.append([p1[0], p1[1], p2[0], p2[1]])
 
         return { 'nodes' : projected_points, 'beams' : lines }
 
@@ -163,6 +164,7 @@ class Mesh_View:
         Args:
             mode (str): The mode to set this vehicle mesh visualizer to.
         """
+        self.top_coords, self.front_coords, self.right_coords = {'nodes' : [], 'beams' : []}, {'nodes' : [], 'beams' : []}, {'nodes' : [], 'beams' : []}
         self.data_mode = mode
 
     def update(self):
@@ -180,7 +182,7 @@ class Mesh_View:
 
             # Update the mesh sensor and get the latest nodes and beams data.
             self.mesh_data = self.mesh.poll()
-            nodes = self.mesh.node_position
+            nodes = self.mesh.node_positions
             beams = self.mesh.beams
 
             # Compute the beams-to-nodes map (contains the two node indices for each beam).

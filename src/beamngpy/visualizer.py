@@ -287,17 +287,14 @@ class Visualiser:
         self.grid_x, self.grid_y = radius * np.cos(az_plus_half_pi), radius * np.sin(az_plus_half_pi)
 
         # IMU:
+        self.time_series1, self.time_series2, self.time_series3 = [], [], []
+        self.time_series4, self.time_series5, self.time_series6 = [], [], []
         rpy_img = Image.open('imu_rpy.png')
         self.rpy_img = np.array(rpy_img)
         self.rpy_img_size = [rpy_img.size[1], rpy_img.size[0]]                                                      # NOTE: the size is flipped for PIL images.
-        self.time_series1, self.time_series2, self.time_series3 = [], [], []
-        self.time_series4, self.time_series5, self.time_series6 = [], [], []
 
         # Mesh sensor:
-        self.mesh_mass_cbar_label0, self.mesh_mass_cbar_label1, self.mesh_mass_cbar_label2 = '0 kg', '5 kg', '10 kg'
-        self.mesh_force_cbar_label0, self.mesh_force_cbar_label1, self.mesh_force_cbar_label2 = '0 N', '150 N', '300 N'
-        self.mesh_vel_cbar_label0, self.mesh_vel_cbar_label1, self.mesh_vel_cbar_label2 = '0 m/s', '25 m/s', '50 m/s'
-        self.mesh_stress_cbar_label0, self.mesh_stress_cbar_label1, self.mesh_stress_cbar_label2 = '-200 Nm-2', '0 Nm-2', '200 Nm-2'
+        self.mesh_view = []
 
         # Set up the sensor configuration as chosen by the demo.
         self._set_up_sensors(demo)
@@ -605,6 +602,14 @@ class Visualiser:
                 self.toggle = 0
                 self.demo = 'mesh'
                 self._set_up_sensors(self.demo)
+            if self.toggle == 0:
+                self.mesh_view.change_mode('mass')
+            elif self.toggle == 1:
+                self.mesh_view.change_mode('force')
+            elif self.toggle == 2:
+                self.mesh_view.change_mode('velocity')
+            else:
+                self.mesh_view.change_mode('stress')
         elif name == self.traj_key:                                                     # Sensor Mode:  Trajectory Plot.
             if self.demo != 'trajectory':
                 self.demo = 'trajectory'
@@ -712,9 +717,9 @@ class Visualiser:
 
         elif demo == 'mesh':
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001)
-            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=50.0, force_min=0.0, force_max=50.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=50.0,
-                top_center=vec3(450.0, 750.0), top_scale=vec3(250.0, 250.0), front_center=vec3(450.0, 250.0), front_scale=vec3(250.0, 250.0), right_center=vec3(1350.0, 250.0),
-                right_scale=vec3(250.0, 250.0), is_top=True, is_front=True, is_right=True)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=300.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=200.0,
+                top_center=vec3(600.0, 800.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1300.0, 200.0),
+                right_scale=vec3(150.0, 150.0), is_top=True, is_front=True, is_right=True)
 
         elif demo == 'multi':    # Camera, LiDAR, RADAR, and Ultrasonic together in one view (four viewports).
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(850, 450), near_far_planes=(0.01, 1000),
@@ -1822,161 +1827,116 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == 'mesh':
-            if len(self.plan_data) > 0:
-                glViewport(0, 0, self.width, self.height)
+            mesh_data = self.mesh_view.display()
+            top, front, right, colors = mesh_data['top'], mesh_data['front'], mesh_data['right'], mesh_data['colors']
 
-                glEnable(GL_LINE_SMOOTH)
-                glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-                glEnable(GL_BLEND)
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glViewport(0, 0, self.width, self.height)
 
-                # Save and set model view and projection matrix.
-                glMatrixMode(GL_PROJECTION)
-                glPushMatrix()
-                glLoadIdentity()
-                glOrtho(0, self.width, 0, self.height, -1, 1)
-                glMatrixMode(GL_MODELVIEW)
-                glPushMatrix()
-                glLoadIdentity()
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-                # Draw beams (1 viewport with different sections for each projection of mesh).
-                glLineWidth(1.0)
-                if self.toggle == 0:                                                                                # mass distribution.
-                    mesh_data = self.mesh_data['nodes']
-                    lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
-                    num_lines = len(lines)
-                    for i in range(num_lines):
-                        node1, node2 = lines[i][2][0], lines[i][2][1]
-                        mass1, mass2 = mesh_data[node1]['mass'], mesh_data[node2]['mass']
-                        avg_mass = (mass1 + mass2) * 0.5
-                        self.set_mesh_color(avg_mass, self.imu_mass_min, self.imu_mass_max)
-                        p1, p2 = lines[i][0], lines[i][1]
-                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
 
-                elif self.toggle == 1:                                                                              # force distribution.
-                    mesh_data = self.mesh_data['nodes']
-                    lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
-                    num_lines = len(lines)
-                    for i in range(num_lines):
-                        node1, node2 = lines[i][2][0], lines[i][2][1]
-                        md1, md2 = mesh_data[node1]['force'], mesh_data[node2]['force']
-                        f_mag_1 = vec3(md1['x'], md1['y'], md1['z']).length()
-                        f_mag_2 = vec3(md2['x'], md2['y'], md2['z']).length()
-                        avg_f = (f_mag_1 + f_mag_2) * 0.5
-                        self.set_mesh_color(avg_f, self.imu_force_min, self.imu_force_max)
-                        p1, p2 = lines[i][0], lines[i][1]
-                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+            # Draw beams.
+            glLineWidth(1.0)
+            num_beams = len(top['beams'])
+            for i in range(num_beams):
+                color = colors[i]
+                glColor3f(color[0], color[1], color[2])
+                line = top['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+                line = front['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+                line = right['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
 
-                elif self.toggle == 2:                                                                              # velocity distribution.
-                    mesh_data = self.mesh_data['nodes']
-                    lines = self.plan_data[1] + self.elevation_data[1] + self.end_elevation_data[1]
-                    num_lines = len(lines)
-                    for i in range(num_lines):
-                        node1, node2 = lines[i][2][0], lines[i][2][1]
-                        md1, md2 = mesh_data[node1]['vel'], mesh_data[node2]['vel']
-                        v_mag_1 = vec3(md1['x'], md1['y'], md1['z']).length()
-                        v_mag_2 = vec3(md2['x'], md2['y'], md2['z']).length()
-                        avg_v = (v_mag_1 + v_mag_2) * 0.5
-                        self.set_mesh_color(avg_v, self.imu_vel_min, self.imu_vel_max)
-                        p1, p2 = lines[i][0], lines[i][1]
-                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+            # Draw nodes.
+            glColor3f(0.75, 0.75, 0.60)
+            num_nodes = len(top['nodes'])
+            for i in range(num_nodes):
+                node = top['nodes'][i]
+                glRectf(node[0] - 1, node[1] - 1, node[0] + 1, node[1] + 1)
+                node = front['nodes'][i]
+                glRectf(node[0] - 1, node[1] - 1, node[0] + 1, node[1] + 1)
+                node = right['nodes'][i]
+                glRectf(node[0] - 1, node[1] - 1, node[0] + 1, node[1] + 1)
 
-                else:                                                                                               # beam stresses.
-                    stresses = self.mesh_data['beams']
-                    lines = self.plan_data[1]
-                    num_lines = len(lines)
-                    for i in range(num_lines):
-                        self.set_mesh_color(stresses[i]['stress_norm'], self.imu_stress_min, self.imu_stress_max)
-                        p1, p2 = lines[i][0], lines[i][1]
-                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
-                    lines = self.elevation_data[1]
-                    for i in range(num_lines):
-                        self.set_mesh_color(stresses[i]['stress_norm'], self.imu_stress_min, self.imu_stress_max)
-                        p1, p2 = lines[i][0], lines[i][1]
-                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
-                    lines = self.end_elevation_data[1]
-                    for i in range(num_lines):
-                        self.set_mesh_color(stresses[i]['stress_norm'], self.imu_stress_min, self.imu_stress_max)
-                        p1, p2 = lines[i][0], lines[i][1]
-                        self.draw_line([p1[0], p1[1], p2[0], p2[1]])
+            # View-division lines.
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(3.0)
+            self.draw_line([0, self.half_height, self.width, self.half_height])
+            self.draw_line([self.half_width, 0, self.half_width, self.height])
 
-                # Draw nodes.
-                lines = self.elevation_data[1]
-                nodes = self.plan_data[0] + self.elevation_data[0] + self.end_elevation_data[0]
-                num_nodes = len(nodes)
-                node_size = self.mesh_node_size
-                glColor3f(0.75, 0.75, 0.60)
-                for i in range(num_nodes):
-                    node = nodes[i]
-                    x, y = node[0], node[1]
-                    glRectf(x - node_size, y - node_size, x + node_size, y + node_size)
+            # Screen title underline.
+            glLineWidth(2.0)
+            self.draw_line([940, 928, 1289, 930])
 
-                # View-division lines.
-                glColor3f(0.25, 0.25, 0.15)
-                glLineWidth(3.0)
-                self.draw_line([0, self.half_height, self.width, self.half_height])
-                self.draw_line([self.half_width, 0, self.half_width, self.height])
+            # Color bar.
+            glLineWidth(3.0)
+            y_min, y_max = self.half_height + 65, self.half_height + 106
+            self.draw_line([999, y_min - 1, 1701, y_min - 1])       # cb frame - bottom.
+            self.draw_line([999, y_max + 1, 1701, y_max + 1])       # cb frame - top.
+            self.draw_line([999, y_min - 15, 999, y_max + 1])       # cb frame - left.
+            self.draw_line([1701, y_min - 15, 1701, y_max + 1])     # cb frame - right.
+            self.draw_line([1350, y_min - 15, 1350, y_max + 1])     # centreline of colorbar.
+            for x in range(1000, 1700):                             # colorbar.
+                color = self.mesh_view._get_color(x, 1000, 1700, 0.00142857142)
+                glColor3f(color[0], color[1], color[2])
+                self.draw_line([x, y_min, x, y_max])
 
-                # Screen title underline.
-                glLineWidth(2.0)
-                self.draw_line([940, 928, 1289, 930])
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.85, 0.85, 0.70)
+            if self.toggle == 0:
+                self.draw_text(950, 950, 'VEHICLE MASS DISTRIBUTION')
+                self.draw_text(983, y_min - 32, '0 kg')
+                self.draw_text(1332, y_min - 32, '5 kg')
+                self.draw_text(1677, y_min - 32, '10 kg')
 
-                # Color bar.
-                glLineWidth(3.0)
-                y_min, y_max = self.half_height + 65, self.half_height + 106
-                self.draw_line([999, y_min - 1, 1701, y_min - 1])       # cb frame - bottom.
-                self.draw_line([999, y_max + 1, 1701, y_max + 1])       # cb frame - top.
-                self.draw_line([999, y_min - 15, 999, y_max + 1])       # cb frame - left.
-                self.draw_line([1701, y_min - 15, 1701, y_max + 1])     # cb frame - right.
-                self.draw_line([1350, y_min - 15, 1350, y_max + 1])     # centreline of colorbar.
-                for x in range(1000, 1700):                             # colorbar.
-                    self.set_mesh_color(x, 1000, 1700)
-                    self.draw_line([x, y_min, x, y_max])
+            elif self.toggle == 1:
+                self.draw_text(950, 950, 'VEHICLE FORCE DISTRIBUTION')
+                self.draw_text(983, y_min - 32, '0 N')
+                self.draw_text(1332, y_min - 32, '150 N')
+                self.draw_text(1677, y_min - 32, '300 N')
 
-                # Draw Text.
-                glEnable( GL_TEXTURE_2D )
-                glBindTexture( GL_TEXTURE_2D, texid )
-                glColor3f(0.85, 0.85, 0.70)
-                if self.toggle == 0:
-                    self.draw_text(950, 950, 'VEHICLE MASS DISTRIBUTION')
-                    self.draw_text(983, y_min - 32, self.mesh_mass_cbar_label0)
-                    self.draw_text(1332, y_min - 32, self.mesh_mass_cbar_label1)
-                    self.draw_text(1677, y_min - 32, self.mesh_mass_cbar_label2)
+            elif self.toggle == 2:
+                self.draw_text(950, 950, 'VEHICLE VELOCITY DISTRIBUTION')
+                self.draw_text(980, y_min - 32, '0 m/s')
+                self.draw_text(1327, y_min - 32, '25 m/s')
+                self.draw_text(1670, y_min - 32, '50 m/s')
 
-                elif self.toggle == 1:
-                    self.draw_text(950, 950, 'VEHICLE FORCE DISTRIBUTION')
-                    self.draw_text(983, y_min - 32, self.mesh_force_cbar_label0)
-                    self.draw_text(1332, y_min - 32, self.mesh_force_cbar_label1)
-                    self.draw_text(1677, y_min - 32, self.mesh_force_cbar_label2)
+            else:
+                self.draw_text(950, 950, 'VEHICLE STRESS DISTRIBUTION')
+                self.draw_text(980, y_min - 32, '-200 Nm-2')
+                self.draw_text(1327, y_min - 32, '0 Nm-2')
+                self.draw_text(1670, y_min - 32, '200 Nm-2')
 
-                elif self.toggle == 2:
-                    self.draw_text(950, 950, 'VEHICLE VELOCITY DISTRIBUTION')
-                    self.draw_text(980, y_min - 32, self.mesh_vel_cbar_label0)
-                    self.draw_text(1327, y_min - 32, self.mesh_vel_cbar_label1)
-                    self.draw_text(1670, y_min - 32, self.mesh_vel_cbar_label2)
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(422, 530, ' Top')
+            self.draw_text(392, 30, '  Right')
+            self.draw_text(1280, 30, '    Front')
+            self.draw_text(950, 880, 'Vehicle: ')
+            self.draw_text(950, 845, 'Model: ')
+            glColor3f(0.85, 0.35, 0.70)
+            self.draw_text(950, 880, '         ' + self.main_vehicle.vid)
+            self.draw_text(950, 845, '       ' + self.main_vehicle.model)
+            glDisable( GL_TEXTURE_2D )
 
-                else:
-                    self.draw_text(950, 950, 'VEHICLE STRESS DISTRIBUTION')
-                    self.draw_text(980, y_min - 32, self.mesh_stress_cbar_label0)
-                    self.draw_text(1327, y_min - 32, self.mesh_stress_cbar_label1)
-                    self.draw_text(1670, y_min - 32, self.mesh_stress_cbar_label2)
-
-                glColor3f(0.85, 0.85, 0.70)
-                self.draw_text(422, 530, ' Top')
-                self.draw_text(392, 30, '  Right')
-                self.draw_text(1280, 30, '    Front')
-                self.draw_text(950, 880, 'Vehicle: ')
-                self.draw_text(950, 845, 'Model: ')
-                glColor3f(0.85, 0.35, 0.70)
-                self.draw_text(950, 880, '         ' + self.main_vehicle.vid)
-                self.draw_text(950, 845, '       ' + self.main_vehicle.model)
-                glDisable( GL_TEXTURE_2D )
-
-                # Restore matrices.
-                glMatrixMode(GL_PROJECTION)
-                glPopMatrix()
-                glMatrixMode(GL_MODELVIEW)
-                glPopMatrix()
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
 
         elif self.demo == 'multi':
 
