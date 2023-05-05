@@ -123,7 +123,7 @@ class Time_Series:
         Sets whether to pause this time series instance or not. If paused, no updates will be performed and the data will remain frozen on screen.
 
         Args:
-            bool: Pauses the time series instance if True, otherwise sets it to continue updating.
+            is_pause (bool): Pauses the time series instance if True, otherwise sets it to continue updating.
         """
         self.is_pause = is_pause
 

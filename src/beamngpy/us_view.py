@@ -1,29 +1,16 @@
 import math
 import numpy as np
 
-from beamngpy.sensors import Ultrasonic
-
 class US_View:
 
-    def __init__(self, bng, vehicle):
+    def __init__(self, bng, vehicle, us0, us1, us2, us3, us4, us5):
 
         # Set up the BeamNG state.
         self.bng = bng
         self.vehicle = vehicle
 
         # Set up the Ultrasonic sensors.
-        self.us_FL = Ultrasonic('us_FL', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-        self.us_FR = Ultrasonic('us_FR', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
-            is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-        self.us_BL = Ultrasonic('us_BL', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
-            is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-        self.us_BR = Ultrasonic('us_BR', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
-            is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-        self.us_ML = Ultrasonic('us_ML', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-            is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-        self.us_MR = Ultrasonic('us_MR', self.bng, self.vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-            is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+        self.us_FL, self.us_FR, self.us_BL, self.us_BR, self.us_ML, self.us_MR = us0, us1, us2, us3, us4, us5
 
         # Set up the geometric coordinates of the primitives.
         gap = 10.0
@@ -225,7 +212,7 @@ class US_View:
         Sets whether to pause this US_View instance or not. If paused, no updates will be performed and the data will remain frozen on screen.
 
         Args:
-            bool: Pauses the US_View instance if True, otherwise sets it to continue updating.
+            is_pause (bool): Pauses the time series instance if True, otherwise sets it to continue updating.
         """
         self.is_pause = is_pause
 

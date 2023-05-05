@@ -1,5 +1,4 @@
 import ctypes
-from collections import deque
 import math
 import numpy as np
 from PIL import Image
@@ -12,7 +11,7 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar, AdvancedIMU, Mesh
-from beamngpy import vec3, Time_Series, Mesh_View, US_View
+from beamngpy import vec3, Time_Series, Mesh_View, US_View, Trajectory
 
 CLEAR_COLOUR = (0.1, 0.1, 0.1, 1.0)
 MAX_DISTANCE = 120 / 3
@@ -110,10 +109,7 @@ class Visualiser:
         self.scenario2_hit_time = 1e12
 
         # Trajectory initialization.
-        self.traj = deque()
-        self.traj_memory = 10000
-        self.traj_x_min, self.traj_x_max, self.traj_y_min, self.traj_y_max = -1000, 1000, -1000, 1000
-        self.pos = []
+        self.trajectory_view = None
 
         # LiDAR initialization.
         self.points_count = 0
@@ -144,6 +140,7 @@ class Visualiser:
                 self.annot_map[key] = val
 
         # Ultrasonic initialization.
+        self.us0, self.us1, self.us2, self.us3, self.us4, self.us5 = None, None, None, None, None, None
         self.us_view = []
         car_img = Image.open('car.png')
         self.car_img = np.array(car_img)
@@ -172,13 +169,15 @@ class Visualiser:
         self.grid_x, self.grid_y = radius * np.cos(az_plus_half_pi), radius * np.sin(az_plus_half_pi)
 
         # IMU:
-        self.time_series1, self.time_series2, self.time_series3 = [], [], []
-        self.time_series4, self.time_series5, self.time_series6 = [], [], []
+        self.imu1 = None
+        self.time_series1, self.time_series2, self.time_series3 = None, None, None
+        self.time_series4, self.time_series5, self.time_series6 = None, None, None
         rpy_img = Image.open('imu_rpy.png')
         self.rpy_img = np.array(rpy_img)
         self.rpy_img_size = [rpy_img.size[1], rpy_img.size[0]]                                                      # NOTE: the size is flipped for PIL images.
 
         # Mesh sensor:
+        self.mesh = None
         self.mesh_view = []
 
         # Set up the sensor configuration as chosen by the demo.
@@ -207,7 +206,7 @@ class Visualiser:
             self.bng.teleport_vehicle(self.vehicles['vehicle_8'], pos=(-364.46489701971586, 633.0149337410967, 75.073325342707), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_9'], pos=(-342.42810740644927, 630.6641727234382, 74.97903450986632), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_10'], pos=(-404.3606958804594, 654.6428768548212, 74.97191763509181), reset=True)
-            #self.vehicles['vehicle_1'].ai.set_mode('span')
+            self.vehicles['vehicle_1'].ai.set_mode('span')
             self.vehicles['vehicle_2'].ai.set_mode('span')
             self.vehicles['vehicle_3'].ai.set_mode('span')
             self.vehicles['vehicle_4'].ai.set_mode('span')
@@ -221,6 +220,7 @@ class Visualiser:
             self.scenario.set_initial_focus('vehicle_1')
             self.is_first_time = False
             self.is_sensor_mode_demo = True
+            self.demo = 0
         elif name == self.scenario1_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -258,6 +258,7 @@ class Visualiser:
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '1'
+            self._set_up_sensors(self.demo)
         elif name == self.scenario2_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -295,6 +296,7 @@ class Visualiser:
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '2'
+            self._set_up_sensors(self.demo)
             self.scenario2_is_target_hit = False
         elif name == self.scenario3_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
@@ -333,6 +335,7 @@ class Visualiser:
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '3'
+            self._set_up_sensors(self.demo)
         elif name == self.scenario4_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -367,6 +370,7 @@ class Visualiser:
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '4'
+            self._set_up_sensors(self.demo)
         elif name == self.scenario5_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -401,6 +405,7 @@ class Visualiser:
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '5'
+            self._set_up_sensors(self.demo)
         elif name == self.scenario6_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -438,6 +443,7 @@ class Visualiser:
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '6'
+            self._set_up_sensors(self.demo)
 
         if self.is_sensor_mode_demo == False:                                           # Do not check sensor mode buttons if we are running a dedicated scenario.
             return
@@ -527,30 +533,30 @@ class Visualiser:
         if self.lidar is not None:
             self.lidar.remove()
             self.lidar = None
-        if self.us_FL is not None:
-            self.us_FL.remove()
-            self.us_FL = None
-        if self.us_FR is not None:
-            self.us_FR.remove()
-            self.us_FR = None
-        if self.us_BL is not None:
-            self.us_BL.remove()
-            self.us_BL = None
-        if self.us_BR is not None:
-            self.us_BR.remove()
-            self.us_BR = None
-        if self.us_ML is not None:
-            self.us_ML.remove()
-            self.us_ML = None
-        if self.us_MR is not None:
-            self.us_MR.remove()
-            self.us_MR = None
+        if self.us0 is not None:
+            self.us0.remove()
+            self.us0 = None
+        if self.us1 is not None:
+            self.us1.remove()
+            self.us1 = None
+        if self.us2 is not None:
+            self.us2.remove()
+            self.us2 = None
+        if self.us3 is not None:
+            self.us3.remove()
+            self.us3 = None
+        if self.us4 is not None:
+            self.us4.remove()
+            self.us4 = None
+        if self.us5 is not None:
+            self.us5.remove()
+            self.us5 = None
         if self.radar is not None:
             self.radar.remove()
             self.radar = None
-        if self.imu is not None:
-            self.imu.remove()
-            self.imu = None
+        if self.imu1 is not None:
+            self.imu1.remove()
+            self.imu1 = None
         if self.mesh is not None:
             self.mesh.remove()
             self.mesh = None
@@ -565,7 +571,19 @@ class Visualiser:
                 is_streaming=True)
 
         elif demo == 'ultrasonic':
-            self.us_view = US_View(self.bng, self.main_vehicle)
+            self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5)
 
         elif demo == 'radar':
             self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
@@ -595,6 +613,9 @@ class Visualiser:
                 top_center=vec3(600.0, 800.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1300.0, 200.0),
                 right_scale=vec3(150.0, 150.0), is_top=True, is_front=True, is_right=True)
 
+        elif demo == 'trajectory':
+            self.trajectory_view = Trajectory()
+
         elif demo == 'multi':    # Camera, LiDAR, RADAR, and Ultrasonic together in one view (four viewports).
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(850, 450), near_far_planes=(0.01, 1000),
                 is_render_annotations=False, is_render_depth=False, is_streaming=True)
@@ -604,7 +625,19 @@ class Visualiser:
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
                 is_streaming=True)
-            self.us_view = US_View(self.bng, self.main_vehicle)
+            self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5)
 
     def on_drag(self, x, y):
         if self.follow:
@@ -628,13 +661,9 @@ class Visualiser:
 
     def _update(self):
 
-        # Trajectory and state sensor poll/update. The trajectory is tracked regardless of mode.
-        self.main_vehicle.sensors.poll()                                                                    # poll the state sensor.
-        self.pos = self.main_vehicle.state['pos']
-        current_pos = [self.pos[0], self.pos[1], self.pos[2]]
-        self.traj.append(self.pos)                                                                          # update the trajectory queue.
-        if len(self.traj) > self.traj_memory:
-            self.traj.popleft()
+        # Fetch the latest position of the main vehicle.
+        self.main_vehicle.sensors.poll()
+        current_pos = self.main_vehicle.state['pos']
 
         # Handle any geometric target logic for the chosen scenario.
         if self.demo == '2':
@@ -656,8 +685,7 @@ class Visualiser:
                 self.vehicles['vehicle_1'].ai.set_mode('disabled')                          # sc2 hit - step 1.
                 self.vehicles['vehicle_1'].control(steering=1.0, brake=1.0)
 
-        # Handle the visualization update for the chosen demonstration.
-        if self.demo == 'camera':
+        elif self.demo == 'camera':
             cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]
             cam_size = cam_width * cam_height * 4
             if self.toggle == 0 or self.toggle == 3:
@@ -674,7 +702,6 @@ class Visualiser:
                 self.camera_depth_img = camera_data3
 
         elif self.demo == 'lidar':
-            self.main_vehicle.sensors.poll()
             points = self.lidar.stream()
             assert not self.dirty
             if len(points) == 0:
@@ -701,7 +728,7 @@ class Visualiser:
             glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, self.colours, GL_STATIC_DRAW)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             if self.follow and self.main_vehicle.state:
-                self.focus = self.main_vehicle.state['pos']
+                self.focus = current_pos
                 self.pos[0] = self.focus[0] + self.main_vehicle.state['dir'][0] * -30
                 self.pos[1] = self.focus[1] + self.main_vehicle.state['dir'][1] * -30
                 self.pos[2] = self.focus[2] + self.main_vehicle.state['dir'][2] + 10
@@ -741,6 +768,9 @@ class Visualiser:
         elif self.demo == 'mesh':
             self.mesh_view.update()
 
+        elif self.demo == 'trajectory':
+            self.trajectory_view.update(current_pos)
+
         elif self.demo == 'multi':
             # Multi: Camera update.
             cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]
@@ -774,11 +804,11 @@ class Visualiser:
             glBindBuffer(GL_ARRAY_BUFFER, self.colour_buf)
             glBufferData(GL_ARRAY_BUFFER, self.points_count * 4, self.colours, GL_STATIC_DRAW)
             glBindBuffer(GL_ARRAY_BUFFER, 0)
-            if self.follow and self.vehicle.state:
+            if self.follow and self.main_vehicle.state:
                 self.focus = current_pos
-                self.pos[0] = self.focus[0] + self.vehicle.state['dir'][0] * -30
-                self.pos[1] = self.focus[1] + self.vehicle.state['dir'][1] * -30
-                self.pos[2] = self.focus[2] + self.vehicle.state['dir'][2] + 10
+                self.pos[0] = self.focus[0] + self.main_vehicle.state['dir'][0] * -30
+                self.pos[1] = self.focus[1] + self.main_vehicle.state['dir'][1] * -30
+                self.pos[2] = self.focus[2] + self.main_vehicle.state['dir'][2] + 10
 
             # Multi: RADAR update.
             ppi_data = self.radar.stream_ppi()
@@ -802,7 +832,7 @@ class Visualiser:
 
         # Individual render data for each demonstration.
         if self.demo == 'trajectory':
-            if len(self.traj) > 0:
+            if self.trajectory_view is not None:
                 glViewport(0, 0, self.width, self.height)
 
                 # Save and set model view and projection matrix.
@@ -817,13 +847,7 @@ class Visualiser:
                 # Plot the trajectory.
                 glColor3f(0.7, 0.35, 0.7)
                 glLineWidth(2.0)
-                x_off, y_off = self.traj[-1][0] - self.half_width, self.traj[-1][1] - self.half_height    # offset to put trajectory starting at center of image.
-                traj_lines = len(self.traj) - 1
-                for i in range(traj_lines):
-                    p0, p1 = self.traj[i], self.traj[i + 1]
-                    x0, y0 = p0[0] - x_off, p0[1] - y_off
-                    x1, y1 = p1[0] - x_off, p1[1] - y_off
-                    self.draw_line([x0, y0, x1, y1])
+                self.draw_line_strip(self.trajectory_view.display())
 
                 glEnable(GL_LINE_SMOOTH)
                 glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
@@ -1622,205 +1646,19 @@ class Visualiser:
 
             # Ultrasonic.
             glViewport(self.half_width, 0, self.half_width, self.half_height)
-            glColor3f(0.1, 0.1, 0.1)                                                                        # Top side-bar.
-            glRectf(self.loc_ML_0[0], self.loc_ML_0[1], self.loc_ML_0[2], self.loc_ML_0[3])
-            glRectf(self.loc_ML_1[0], self.loc_ML_1[1], self.loc_ML_1[2], self.loc_ML_1[3])
-            glRectf(self.loc_ML_2[0], self.loc_ML_2[1], self.loc_ML_2[2], self.loc_ML_2[3])
-            glRectf(self.loc_ML_3[0], self.loc_ML_3[1], self.loc_ML_3[2], self.loc_ML_3[3])
-            glRectf(self.loc_ML_4[0], self.loc_ML_4[1], self.loc_ML_4[2], self.loc_ML_4[3])
-            glRectf(self.loc_ML_5[0], self.loc_ML_5[1], self.loc_ML_5[2], self.loc_ML_5[3])
-            glRectf(self.loc_ML_6[0], self.loc_ML_6[1], self.loc_ML_6[2], self.loc_ML_6[3])
-            if self.us_bar_ML == 0:
-                glColor3f(1.0, 0.0, 0.0)
-                glRectf(self.loc_ML_0[0], self.loc_ML_0[1], self.loc_ML_0[2], self.loc_ML_0[3])
-            elif self.us_bar_ML == 1:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_ML_1[0], self.loc_ML_1[1], self.loc_ML_1[2], self.loc_ML_1[3])
-            elif self.us_bar_ML == 2:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_ML_2[0], self.loc_ML_2[1], self.loc_ML_2[2], self.loc_ML_2[3])
-            elif self.us_bar_ML == 3:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_ML_3[0], self.loc_ML_3[1], self.loc_ML_3[2], self.loc_ML_3[3])
-            elif self.us_bar_ML == 4:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_ML_4[0], self.loc_ML_4[1], self.loc_ML_4[2], self.loc_ML_4[3])
-            elif self.us_bar_ML == 5:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_ML_5[0], self.loc_ML_5[1], self.loc_ML_5[2], self.loc_ML_5[3])
-            else:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_ML_6[0], self.loc_ML_6[1], self.loc_ML_6[2], self.loc_ML_6[3])
-            glColor3f(0.1, 0.1, 0.1)                                                                        # Bottom side-bar.
-            glRectf(self.loc_MR_0[0], self.loc_MR_0[1], self.loc_MR_0[2], self.loc_MR_0[3])
-            glRectf(self.loc_MR_1[0], self.loc_MR_1[1], self.loc_MR_1[2], self.loc_MR_1[3])
-            glRectf(self.loc_MR_2[0], self.loc_MR_2[1], self.loc_MR_2[2], self.loc_MR_2[3])
-            glRectf(self.loc_MR_3[0], self.loc_MR_3[1], self.loc_MR_3[2], self.loc_MR_3[3])
-            glRectf(self.loc_MR_4[0], self.loc_MR_4[1], self.loc_MR_4[2], self.loc_MR_4[3])
-            glRectf(self.loc_MR_5[0], self.loc_MR_5[1], self.loc_MR_5[2], self.loc_MR_5[3])
-            glRectf(self.loc_MR_6[0], self.loc_MR_6[1], self.loc_MR_6[2], self.loc_MR_6[3])
-            if self.us_bar_MR == 0:
-                glColor3f(1.0, 0.0, 0.0)
-                glRectf(self.loc_MR_0[0], self.loc_MR_0[1], self.loc_MR_0[2], self.loc_MR_0[3])
-            elif self.us_bar_MR == 1:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_MR_1[0], self.loc_MR_1[1], self.loc_MR_1[2], self.loc_MR_1[3])
-            elif self.us_bar_MR == 2:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_MR_2[0], self.loc_MR_2[1], self.loc_MR_2[2], self.loc_MR_2[3])
-            elif self.us_bar_MR == 3:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_MR_3[0], self.loc_MR_3[1], self.loc_MR_3[2], self.loc_MR_3[3])
-            elif self.us_bar_MR == 4:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_MR_4[0], self.loc_MR_4[1], self.loc_MR_4[2], self.loc_MR_4[3])
-            elif self.us_bar_MR == 5:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_MR_5[0], self.loc_MR_5[1], self.loc_MR_5[2], self.loc_MR_5[3])
-            else:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_MR_6[0], self.loc_MR_6[1], self.loc_MR_6[2], self.loc_MR_6[3])
-            for i in range(self.div):
-                if self.us_bar_FL == 0:                                                                     # Top-right arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx0[i], self.TR_ty0[i], self.TR_tx0[i] + self.wid, self.TR_ty0[i] + self.wid)
-                if self.us_bar_FL == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx1[i], self.TR_ty1[i], self.TR_tx1[i] + self.wid, self.TR_ty1[i] + self.wid)
-                if self.us_bar_FL == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx2[i], self.TR_ty2[i], self.TR_tx2[i] + self.wid, self.TR_ty2[i] + self.wid)
-                if self.us_bar_FL == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx3[i], self.TR_ty3[i], self.TR_tx3[i] + self.wid, self.TR_ty3[i] + self.wid)
-                if self.us_bar_FL == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx4[i], self.TR_ty4[i], self.TR_tx4[i] + self.wid, self.TR_ty4[i] + self.wid)
-                if self.us_bar_FL == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx5[i], self.TR_ty5[i], self.TR_tx5[i] + self.wid, self.TR_ty5[i] + self.wid)
-                if self.us_bar_FL == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx6[i], self.TR_ty6[i], self.TR_tx6[i] + self.wid, self.TR_ty6[i] + self.wid)
-                if self.us_bar_FR == 0:                                                                     # Bottom-right arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx0[i], self.BR_ty0[i], self.BR_tx0[i] + self.wid, self.BR_ty0[i] + self.wid)
-                if self.us_bar_FR == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx1[i], self.BR_ty1[i], self.BR_tx1[i] + self.wid, self.BR_ty1[i] + self.wid)
-                if self.us_bar_FR == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx2[i], self.BR_ty2[i], self.BR_tx2[i] + self.wid, self.BR_ty2[i] + self.wid)
-                if self.us_bar_FR == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx3[i], self.BR_ty3[i], self.BR_tx3[i] + self.wid, self.BR_ty3[i] + self.wid)
-                if self.us_bar_FR == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx4[i], self.BR_ty4[i], self.BR_tx4[i] + self.wid, self.BR_ty4[i] + self.wid)
-                if self.us_bar_FR == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx5[i], self.BR_ty5[i], self.BR_tx5[i] + self.wid, self.BR_ty5[i] + self.wid)
-                if self.us_bar_FR == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx6[i], self.BR_ty6[i], self.BR_tx6[i] + self.wid, self.BR_ty6[i] + self.wid)
-                if self.us_bar_BL == 0:                                                                     # Top-left arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx0[i], self.TL_ty0[i], self.TL_tx0[i] + self.wid, self.TL_ty0[i] + self.wid)
-                if self.us_bar_BL == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx1[i], self.TL_ty1[i], self.TL_tx1[i] + self.wid, self.TL_ty1[i] + self.wid)
-                if self.us_bar_BL == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx2[i], self.TL_ty2[i], self.TL_tx2[i] + self.wid, self.TL_ty2[i] + self.wid)
-                if self.us_bar_BL == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx3[i], self.TL_ty3[i], self.TL_tx3[i] + self.wid, self.TL_ty3[i] + self.wid)
-                if self.us_bar_BL == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx4[i], self.TL_ty4[i], self.TL_tx4[i] + self.wid, self.TL_ty4[i] + self.wid)
-                if self.us_bar_BL == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx5[i], self.TL_ty5[i], self.TL_tx5[i] + self.wid, self.TL_ty5[i] + self.wid)
-                if self.us_bar_BL == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx6[i], self.TL_ty6[i], self.TL_tx6[i] + self.wid, self.TL_ty6[i] + self.wid)
-                if self.us_bar_BR == 0:                                                                     # Bottom-left arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx0[i], self.BL_ty0[i], self.BL_tx0[i] + self.wid, self.BL_ty0[i] + self.wid)
-                if self.us_bar_BR == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx1[i], self.BL_ty1[i], self.BL_tx1[i] + self.wid, self.BL_ty1[i] + self.wid)
-                if self.us_bar_BR == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx2[i], self.BL_ty2[i], self.BL_tx2[i] + self.wid, self.BL_ty2[i] + self.wid)
-                if self.us_bar_BR == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx3[i], self.BL_ty3[i], self.BL_tx3[i] + self.wid, self.BL_ty3[i] + self.wid)
-                if self.us_bar_BR == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx4[i], self.BL_ty4[i], self.BL_tx4[i] + self.wid, self.BL_ty4[i] + self.wid)
-                if self.us_bar_BR == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx5[i], self.BL_ty5[i], self.BL_tx5[i] + self.wid, self.BL_ty5[i] + self.wid)
-                if self.us_bar_BR == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx6[i], self.BL_ty6[i], self.BL_tx6[i] + self.wid, self.BL_ty6[i] + self.wid)
+            rects = self.us_view.display()
+            glColor3f(0.1, 0.1, 0.1)
+            for r in rects['grey']:
+                glRectf(r[0], r[1], r[2], r[3])
+            glColor3f(1.0, 1.0, 1.0)
+            for r in rects['white']:
+                glRectf(r[0], r[1], r[2], r[3])
+            glColor3f(1.0, 1.0, 0.0)
+            for r in rects['yellow']:
+                glRectf(r[0], r[1], r[2], r[3])
+            glColor3f(1.0, 0.0, 0.0)
+            for r in rects['red']:
+                glRectf(r[0], r[1], r[2], r[3])
 
             # View-division lines.
             glViewport(0, 0, self.width, self.height)
