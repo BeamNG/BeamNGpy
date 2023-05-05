@@ -12,7 +12,7 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar, AdvancedIMU, Mesh
-from beamngpy import vec3, Time_Series, Mesh_View
+from beamngpy import vec3, Time_Series, Mesh_View, US_View
 
 CLEAR_COLOUR = (0.1, 0.1, 0.1, 1.0)
 MAX_DISTANCE = 120 / 3
@@ -144,125 +144,10 @@ class Visualiser:
                 self.annot_map[key] = val
 
         # Ultrasonic initialization.
+        self.us_view = []
         car_img = Image.open('car.png')
         self.car_img = np.array(car_img)
         self.car_img_size = [car_img.size[1], car_img.size[0]]                                                                      # NOTE: size vec is flipped for PIL images.
-        gap = 10.0
-        ML_x_offset = 500.0                                                                                                         # Top side-bar.
-        ML_y_offset = 665.0
-        ML_w = 300.0
-        ML_h = 15.0
-        ML_h_gap = ML_h + gap
-        self.loc_ML_0 = [ML_x_offset, ML_y_offset, ML_x_offset + ML_w, ML_y_offset + ML_h]
-        self.loc_ML_1 = [ML_x_offset, ML_y_offset + ML_h_gap, ML_x_offset + ML_w, ML_y_offset + ML_h_gap + ML_h]
-        self.loc_ML_2 = [ML_x_offset, ML_y_offset + (2.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (2.0 * ML_h_gap) + ML_h]
-        self.loc_ML_3 = [ML_x_offset, ML_y_offset + (3.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (3.0 * ML_h_gap) + ML_h]
-        self.loc_ML_4 = [ML_x_offset, ML_y_offset + (4.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (4.0 * ML_h_gap) + ML_h]
-        self.loc_ML_5 = [ML_x_offset, ML_y_offset + (5.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (5.0 * ML_h_gap) + ML_h]
-        self.loc_ML_6 = [ML_x_offset, ML_y_offset + (6.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (6.0 * ML_h_gap) + ML_h]
-        MR_x_offset = 500.0                                                                                                         # Bottom side-bar.
-        MR_y_offset = 280.0
-        MR_w = 300.0
-        MR_h = 15.0
-        MR_h_gap = MR_h + gap
-        self.loc_MR_0 = [MR_x_offset, MR_y_offset, MR_x_offset + MR_w, MR_y_offset - MR_h]
-        self.loc_MR_1 = [MR_x_offset, MR_y_offset - MR_h_gap, MR_x_offset + MR_w, MR_y_offset - MR_h_gap - MR_h]
-        self.loc_MR_2 = [MR_x_offset, MR_y_offset - (2.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (2.0 * MR_h_gap) - MR_h]
-        self.loc_MR_3 = [MR_x_offset, MR_y_offset - (3.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (3.0 * MR_h_gap) - MR_h]
-        self.loc_MR_4 = [MR_x_offset, MR_y_offset - (4.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (4.0 * MR_h_gap) - MR_h]
-        self.loc_MR_5 = [MR_x_offset, MR_y_offset - (5.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (5.0 * MR_h_gap) - MR_h]
-        self.loc_MR_6 = [MR_x_offset, MR_y_offset - (6.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (6.0 * MR_h_gap) - MR_h]
-        self.div = 100
-        div_f = half_pi / float(self.div)
-        self.wid = 15
-        cx, cy = 800, 475
-        wid_gap = self.wid + gap
-        r0, r1, r2, r3, r4, r5, r6 = 190, 190 + wid_gap, 190 + (2 * wid_gap), 190 + (3 * wid_gap), 190 + (4 * wid_gap), 190 + (5 * wid_gap), 190 + (6 * wid_gap)
-        self.TR_tx0, self.TR_tx1, self.TR_tx2, self.TR_tx3, self.TR_tx4, self.TR_tx5, self.TR_tx6 = [], [], [], [], [], [], []      # Top-right arc.
-        self.TR_ty0, self.TR_ty1, self.TR_ty2, self.TR_ty3, self.TR_ty4, self.TR_ty5, self.TR_ty6 = [], [], [], [], [], [], []
-        for i in range(self.div):
-            ang = i * div_f
-            ca, sa = math.cos(ang), math.sin(ang)
-            self.TR_tx0.append((r0 * ca) + cx)
-            self.TR_tx1.append((r1 * ca) + cx)
-            self.TR_tx2.append((r2 * ca) + cx)
-            self.TR_tx3.append((r3 * ca) + cx)
-            self.TR_tx4.append((r4 * ca) + cx)
-            self.TR_tx5.append((r5 * ca) + cx)
-            self.TR_tx6.append((r6 * ca) + cx)
-            self.TR_ty0.append((r0 * sa) + cy)
-            self.TR_ty1.append((r1 * sa) + cy)
-            self.TR_ty2.append((r2 * sa) + cy)
-            self.TR_ty3.append((r3 * sa) + cy)
-            self.TR_ty4.append((r4 * sa) + cy)
-            self.TR_ty5.append((r5 * sa) + cy)
-            self.TR_ty6.append((r6 * sa) + cy)
-        cx, cy = 800, 455
-        self.BR_tx0, self.BR_tx1, self.BR_tx2, self.BR_tx3, self.BR_tx4, self.BR_tx5, self.BR_tx6 = [], [], [], [], [], [], []     # Bottom-right arc.
-        self.BR_ty0, self.BR_ty1, self.BR_ty2, self.BR_ty3, self.BR_ty4, self.BR_ty5, self.BR_ty6 = [], [], [], [], [], [], []
-        for i in range(self.div):
-            ang = -i * div_f
-            ca, sa = math.cos(ang), math.sin(ang)
-            self.BR_tx0.append((r0 * ca) + cx)
-            self.BR_tx1.append((r1 * ca) + cx)
-            self.BR_tx2.append((r2 * ca) + cx)
-            self.BR_tx3.append((r3 * ca) + cx)
-            self.BR_tx4.append((r4 * ca) + cx)
-            self.BR_tx5.append((r5 * ca) + cx)
-            self.BR_tx6.append((r6 * ca) + cx)
-            self.BR_ty0.append((r0 * sa) + cy)
-            self.BR_ty1.append((r1 * sa) + cy)
-            self.BR_ty2.append((r2 * sa) + cy)
-            self.BR_ty3.append((r3 * sa) + cy)
-            self.BR_ty4.append((r4 * sa) + cy)
-            self.BR_ty5.append((r5 * sa) + cy)
-            self.BR_ty6.append((r6 * sa) + cy)
-        cx, cy = 485, 475
-        self.TL_tx0, self.TL_tx1, self.TL_tx2, self.TL_tx3, self.TL_tx4, self.TL_tx5, self.TL_tx6 = [], [], [], [], [], [], []      # Top-left arc.
-        self.TL_ty0, self.TL_ty1, self.TL_ty2, self.TL_ty3, self.TL_ty4, self.TL_ty5, self.TL_ty6 = [], [], [], [], [], [], []
-        for i in range(self.div):
-            ang = i * div_f
-            ca, sa = math.cos(ang), math.sin(ang)
-            self.TL_tx0.append(cx - (r0 * ca))
-            self.TL_tx1.append(cx - (r1 * ca))
-            self.TL_tx2.append(cx - (r2 * ca))
-            self.TL_tx3.append(cx - (r3 * ca))
-            self.TL_tx4.append(cx - (r4 * ca))
-            self.TL_tx5.append(cx - (r5 * ca))
-            self.TL_tx6.append(cx - (r6 * ca))
-            self.TL_ty0.append((r0 * sa) + cy)
-            self.TL_ty1.append((r1 * sa) + cy)
-            self.TL_ty2.append((r2 * sa) + cy)
-            self.TL_ty3.append((r3 * sa) + cy)
-            self.TL_ty4.append((r4 * sa) + cy)
-            self.TL_ty5.append((r5 * sa) + cy)
-            self.TL_ty6.append((r6 * sa) + cy)
-        cx, cy = 485, 455
-        self.BL_tx0, self.BL_tx1, self.BL_tx2, self.BL_tx3, self.BL_tx4, self.BL_tx5, self.BL_tx6 = [], [], [], [], [], [], []      # Bottom-left arc.
-        self.BL_ty0, self.BL_ty1, self.BL_ty2, self.BL_ty3, self.BL_ty4, self.BL_ty5, self.BL_ty6 = [], [], [], [], [], [], []
-        for i in range(self.div):
-            ang = -i * div_f
-            ca, sa = math.cos(ang), math.sin(ang)
-            self.BL_tx0.append(cx - (r0 * ca))
-            self.BL_tx1.append(cx - (r1 * ca))
-            self.BL_tx2.append(cx - (r2 * ca))
-            self.BL_tx3.append(cx - (r3 * ca))
-            self.BL_tx4.append(cx - (r4 * ca))
-            self.BL_tx5.append(cx - (r5 * ca))
-            self.BL_tx6.append(cx - (r6 * ca))
-            self.BL_ty0.append((r0 * sa) + cy)
-            self.BL_ty1.append((r1 * sa) + cy)
-            self.BL_ty2.append((r2 * sa) + cy)
-            self.BL_ty3.append((r3 * sa) + cy)
-            self.BL_ty4.append((r4 * sa) + cy)
-            self.BL_ty5.append((r5 * sa) + cy)
-            self.BL_ty6.append((r6 * sa) + cy)
-        self.us_bar_FL = 6
-        self.us_bar_FR = 6
-        self.us_bar_BL = 6
-        self.us_bar_BR = 6
-        self.us_bar_ML = 6
-        self.us_bar_MR = 6
 
         # RADAR initialization.
         car_radar_img = Image.open('car_radar.png')
@@ -322,7 +207,7 @@ class Visualiser:
             self.bng.teleport_vehicle(self.vehicles['vehicle_8'], pos=(-364.46489701971586, 633.0149337410967, 75.073325342707), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_9'], pos=(-342.42810740644927, 630.6641727234382, 74.97903450986632), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_10'], pos=(-404.3606958804594, 654.6428768548212, 74.97191763509181), reset=True)
-            self.vehicles['vehicle_1'].ai.set_mode('span')
+            #self.vehicles['vehicle_1'].ai.set_mode('span')
             self.vehicles['vehicle_2'].ai.set_mode('span')
             self.vehicles['vehicle_3'].ai.set_mode('span')
             self.vehicles['vehicle_4'].ai.set_mode('span')
@@ -680,18 +565,7 @@ class Visualiser:
                 is_streaming=True)
 
         elif demo == 'ultrasonic':
-            self.us_FL = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_FR = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BL = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BR = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_ML = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_MR = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_view = US_View(self.bng, self.main_vehicle)
 
         elif demo == 'radar':
             self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
@@ -730,18 +604,7 @@ class Visualiser:
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
                 is_streaming=True)
-            self.us_FL = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_FR = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BL = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_BR = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_ML = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us_MR = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us_view = US_View(self.bng, self.main_vehicle)
 
     def on_drag(self, x, y):
         if self.follow:
@@ -844,45 +707,7 @@ class Visualiser:
                 self.pos[2] = self.focus[2] + self.main_vehicle.state['dir'][2] + 10
 
         elif self.demo == 'ultrasonic':
-            d_FL, d_FR = self.us_FL.poll()['distance'], self.us_FR.poll()['distance']
-            d_BL, d_BR = self.us_BL.poll()['distance'], self.us_BR.poll()['distance']
-            d_ML, d_MR = self.us_ML.poll()['distance'], self.us_MR.poll()['distance']
-            if d_FL > 5.0:
-                self.us_bar_FL = 6
-            elif d_FL < 0.5:
-                self.us_bar_FL = 0
-            else:
-                self.us_bar_FL = int(np.floor(d_FL)) + 1
-            if d_FR > 5.0:
-                self.us_bar_FR = 6
-            elif d_FR < 0.5:
-                self.us_bar_FR = 0
-            else:
-                self.us_bar_FR = int(np.floor(d_FR)) + 1
-            if d_BL > 5.0:
-                self.us_bar_BL = 6
-            elif d_BL < 0.5:
-                self.us_bar_BL = 0
-            else:
-                self.us_bar_BL = int(np.floor(d_BL)) + 1
-            if d_BR > 5.0:
-                self.us_bar_BR = 6
-            elif d_BR < 0.5:
-                self.us_bar_BR = 0
-            else:
-                self.us_bar_BR = int(np.floor(d_BR)) + 1
-            if d_ML > 5.0:
-                self.us_bar_ML = 6
-            elif d_ML < 0.5:
-                self.us_bar_ML = 0
-            else:
-                self.us_bar_ML = int(np.floor(d_ML)) + 1
-            if d_MR > 5.0:
-                self.us_bar_MR = 6
-            elif d_MR < 0.5:
-                self.us_bar_MR = 0
-            else:
-                self.us_bar_MR = int(np.floor(d_MR)) + 1
+            self.us_view.update()
 
         elif self.demo == 'radar':
             if self.toggle == 0:
@@ -961,45 +786,7 @@ class Visualiser:
             self.radar_ppi_img = ppi_data
 
             # Multi: Ultrasonic update.
-            d_FL, d_FR = self.us_FL.poll()['distance'], self.us_FR.poll()['distance']
-            d_BL, d_BR = self.us_BL.poll()['distance'], self.us_BR.poll()['distance']
-            d_ML, d_MR = self.us_ML.poll()['distance'], self.us_MR.poll()['distance']
-            if d_FL > 5.0:
-                self.us_bar_FL = 6
-            elif d_FL < 0.5:
-                self.us_bar_FL = 0
-            else:
-                self.us_bar_FL = int(np.floor(d_FL)) + 1
-            if d_FR > 5.0:
-                self.us_bar_FR = 6
-            elif d_FR < 0.5:
-                self.us_bar_FR = 0
-            else:
-                self.us_bar_FR = int(np.floor(d_FR)) + 1
-            if d_BL > 5.0:
-                self.us_bar_BL = 6
-            elif d_BL < 0.5:
-                self.us_bar_BL = 0
-            else:
-                self.us_bar_BL = int(np.floor(d_BL)) + 1
-            if d_BR > 5.0:
-                self.us_bar_BR = 6
-            elif d_BR < 0.5:
-                self.us_bar_BR = 0
-            else:
-                self.us_bar_BR = int(np.floor(d_BR)) + 1
-            if d_ML > 5.0:
-                self.us_bar_ML = 6
-            elif d_ML < 0.5:
-                self.us_bar_ML = 0
-            else:
-                self.us_bar_ML = int(np.floor(d_ML)) + 1
-            if d_MR > 5.0:
-                self.us_bar_MR = 6
-            elif d_MR < 0.5:
-                self.us_bar_MR = 0
-            else:
-                self.us_bar_MR = int(np.floor(d_MR)) + 1
+            self.us_view.update()
 
         glutPostRedisplay()
 
@@ -1311,206 +1098,20 @@ class Visualiser:
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-            # Render each of the bar sections around the vehicle image.
-            glColor3f(0.1, 0.1, 0.1)                                                                        # Top side-bar.
-            glRectf(self.loc_ML_0[0], self.loc_ML_0[1], self.loc_ML_0[2], self.loc_ML_0[3])
-            glRectf(self.loc_ML_1[0], self.loc_ML_1[1], self.loc_ML_1[2], self.loc_ML_1[3])
-            glRectf(self.loc_ML_2[0], self.loc_ML_2[1], self.loc_ML_2[2], self.loc_ML_2[3])
-            glRectf(self.loc_ML_3[0], self.loc_ML_3[1], self.loc_ML_3[2], self.loc_ML_3[3])
-            glRectf(self.loc_ML_4[0], self.loc_ML_4[1], self.loc_ML_4[2], self.loc_ML_4[3])
-            glRectf(self.loc_ML_5[0], self.loc_ML_5[1], self.loc_ML_5[2], self.loc_ML_5[3])
-            glRectf(self.loc_ML_6[0], self.loc_ML_6[1], self.loc_ML_6[2], self.loc_ML_6[3])
-            if self.us_bar_ML == 0:
-                glColor3f(1.0, 0.0, 0.0)
-                glRectf(self.loc_ML_0[0], self.loc_ML_0[1], self.loc_ML_0[2], self.loc_ML_0[3])
-            elif self.us_bar_ML == 1:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_ML_1[0], self.loc_ML_1[1], self.loc_ML_1[2], self.loc_ML_1[3])
-            elif self.us_bar_ML == 2:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_ML_2[0], self.loc_ML_2[1], self.loc_ML_2[2], self.loc_ML_2[3])
-            elif self.us_bar_ML == 3:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_ML_3[0], self.loc_ML_3[1], self.loc_ML_3[2], self.loc_ML_3[3])
-            elif self.us_bar_ML == 4:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_ML_4[0], self.loc_ML_4[1], self.loc_ML_4[2], self.loc_ML_4[3])
-            elif self.us_bar_ML == 5:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_ML_5[0], self.loc_ML_5[1], self.loc_ML_5[2], self.loc_ML_5[3])
-            else:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_ML_6[0], self.loc_ML_6[1], self.loc_ML_6[2], self.loc_ML_6[3])
-            glColor3f(0.1, 0.1, 0.1)                                                                        # Bottom side-bar.
-            glRectf(self.loc_MR_0[0], self.loc_MR_0[1], self.loc_MR_0[2], self.loc_MR_0[3])
-            glRectf(self.loc_MR_1[0], self.loc_MR_1[1], self.loc_MR_1[2], self.loc_MR_1[3])
-            glRectf(self.loc_MR_2[0], self.loc_MR_2[1], self.loc_MR_2[2], self.loc_MR_2[3])
-            glRectf(self.loc_MR_3[0], self.loc_MR_3[1], self.loc_MR_3[2], self.loc_MR_3[3])
-            glRectf(self.loc_MR_4[0], self.loc_MR_4[1], self.loc_MR_4[2], self.loc_MR_4[3])
-            glRectf(self.loc_MR_5[0], self.loc_MR_5[1], self.loc_MR_5[2], self.loc_MR_5[3])
-            glRectf(self.loc_MR_6[0], self.loc_MR_6[1], self.loc_MR_6[2], self.loc_MR_6[3])
-            if self.us_bar_MR == 0:
-                glColor3f(1.0, 0.0, 0.0)
-                glRectf(self.loc_MR_0[0], self.loc_MR_0[1], self.loc_MR_0[2], self.loc_MR_0[3])
-            elif self.us_bar_MR == 1:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_MR_1[0], self.loc_MR_1[1], self.loc_MR_1[2], self.loc_MR_1[3])
-            elif self.us_bar_MR == 2:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_MR_2[0], self.loc_MR_2[1], self.loc_MR_2[2], self.loc_MR_2[3])
-            elif self.us_bar_MR == 3:
-                glColor3f(1.0, 1.0, 0.0)
-                glRectf(self.loc_MR_3[0], self.loc_MR_3[1], self.loc_MR_3[2], self.loc_MR_3[3])
-            elif self.us_bar_MR == 4:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_MR_4[0], self.loc_MR_4[1], self.loc_MR_4[2], self.loc_MR_4[3])
-            elif self.us_bar_MR == 5:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_MR_5[0], self.loc_MR_5[1], self.loc_MR_5[2], self.loc_MR_5[3])
-            else:
-                glColor3f(1.0, 1.0, 1.0)
-                glRectf(self.loc_MR_6[0], self.loc_MR_6[1], self.loc_MR_6[2], self.loc_MR_6[3])
-            for i in range(self.div):
-                if self.us_bar_FL == 0:                                                                     # Top-right arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx0[i], self.TR_ty0[i], self.TR_tx0[i] + self.wid, self.TR_ty0[i] + self.wid)
-                if self.us_bar_FL == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx1[i], self.TR_ty1[i], self.TR_tx1[i] + self.wid, self.TR_ty1[i] + self.wid)
-                if self.us_bar_FL == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx2[i], self.TR_ty2[i], self.TR_tx2[i] + self.wid, self.TR_ty2[i] + self.wid)
-                if self.us_bar_FL == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx3[i], self.TR_ty3[i], self.TR_tx3[i] + self.wid, self.TR_ty3[i] + self.wid)
-                if self.us_bar_FL == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx4[i], self.TR_ty4[i], self.TR_tx4[i] + self.wid, self.TR_ty4[i] + self.wid)
-                if self.us_bar_FL == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx5[i], self.TR_ty5[i], self.TR_tx5[i] + self.wid, self.TR_ty5[i] + self.wid)
-                if self.us_bar_FL == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TR_tx6[i], self.TR_ty6[i], self.TR_tx6[i] + self.wid, self.TR_ty6[i] + self.wid)
-                if self.us_bar_FR == 0:                                                                     # Bottom-right arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx0[i], self.BR_ty0[i], self.BR_tx0[i] + self.wid, self.BR_ty0[i] + self.wid)
-                if self.us_bar_FR == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx1[i], self.BR_ty1[i], self.BR_tx1[i] + self.wid, self.BR_ty1[i] + self.wid)
-                if self.us_bar_FR == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx2[i], self.BR_ty2[i], self.BR_tx2[i] + self.wid, self.BR_ty2[i] + self.wid)
-                if self.us_bar_FR == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx3[i], self.BR_ty3[i], self.BR_tx3[i] + self.wid, self.BR_ty3[i] + self.wid)
-                if self.us_bar_FR == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx4[i], self.BR_ty4[i], self.BR_tx4[i] + self.wid, self.BR_ty4[i] + self.wid)
-                if self.us_bar_FR == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx5[i], self.BR_ty5[i], self.BR_tx5[i] + self.wid, self.BR_ty5[i] + self.wid)
-                if self.us_bar_FR == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BR_tx6[i], self.BR_ty6[i], self.BR_tx6[i] + self.wid, self.BR_ty6[i] + self.wid)
-                if self.us_bar_BL == 0:                                                                     # Top-left arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx0[i], self.TL_ty0[i], self.TL_tx0[i] + self.wid, self.TL_ty0[i] + self.wid)
-                if self.us_bar_BL == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx1[i], self.TL_ty1[i], self.TL_tx1[i] + self.wid, self.TL_ty1[i] + self.wid)
-                if self.us_bar_BL == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx2[i], self.TL_ty2[i], self.TL_tx2[i] + self.wid, self.TL_ty2[i] + self.wid)
-                if self.us_bar_BL == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx3[i], self.TL_ty3[i], self.TL_tx3[i] + self.wid, self.TL_ty3[i] + self.wid)
-                if self.us_bar_BL == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx4[i], self.TL_ty4[i], self.TL_tx4[i] + self.wid, self.TL_ty4[i] + self.wid)
-                if self.us_bar_BL == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx5[i], self.TL_ty5[i], self.TL_tx5[i] + self.wid, self.TL_ty5[i] + self.wid)
-                if self.us_bar_BL == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.TL_tx6[i], self.TL_ty6[i], self.TL_tx6[i] + self.wid, self.TL_ty6[i] + self.wid)
-                if self.us_bar_BR == 0:                                                                     # Bottom-left arc.
-                    glColor3f(1.0, 0.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx0[i], self.BL_ty0[i], self.BL_tx0[i] + self.wid, self.BL_ty0[i] + self.wid)
-                if self.us_bar_BR == 1:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx1[i], self.BL_ty1[i], self.BL_tx1[i] + self.wid, self.BL_ty1[i] + self.wid)
-                if self.us_bar_BR == 2:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx2[i], self.BL_ty2[i], self.BL_tx2[i] + self.wid, self.BL_ty2[i] + self.wid)
-                if self.us_bar_BR == 3:
-                    glColor3f(1.0, 1.0, 0.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx3[i], self.BL_ty3[i], self.BL_tx3[i] + self.wid, self.BL_ty3[i] + self.wid)
-                if self.us_bar_BR == 4:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx4[i], self.BL_ty4[i], self.BL_tx4[i] + self.wid, self.BL_ty4[i] + self.wid)
-                if self.us_bar_BR == 5:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx5[i], self.BL_ty5[i], self.BL_tx5[i] + self.wid, self.BL_ty5[i] + self.wid)
-                if self.us_bar_BR == 6:
-                    glColor3f(1.0, 1.0, 1.0)
-                else:
-                    glColor3f(0.1, 0.1, 0.1)
-                glRectf(self.BL_tx6[i], self.BL_ty6[i], self.BL_tx6[i] + self.wid, self.BL_ty6[i] + self.wid)
+            # Render each of the display bars.
+            rects = self.us_view.display()
+            glColor3f(0.1, 0.1, 0.1)
+            for r in rects['grey']:
+                glRectf(r[0], r[1], r[2], r[3])
+            glColor3f(1.0, 1.0, 1.0)
+            for r in rects['white']:
+                glRectf(r[0], r[1], r[2], r[3])
+            glColor3f(1.0, 1.0, 0.0)
+            for r in rects['yellow']:
+                glRectf(r[0], r[1], r[2], r[3])
+            glColor3f(1.0, 0.0, 0.0)
+            for r in rects['red']:
+                glRectf(r[0], r[1], r[2], r[3])
 
             # Title underline.
             glViewport(0, self.height - 40, self.width, self.height)
