@@ -2,7 +2,7 @@ from collections import deque
 
 class Trajectory:
 
-    def __init__(self, memory = 10000, x_min = -1000.0, x_max = 1000.0, y_min = -1000.0, y_max = 1000.0, origin_x = 900.0, origin_y = 500.0):
+    def __init__(self, memory = 2000, x_min = -1000.0, x_max = 1000.0, y_min = -1000.0, y_max = 1000.0, origin_x = 900.0, origin_y = 500.0):
         """
         Constructs a trajectory manager/viewer instance.
         This is used to store the trajectory of a given vehicle over time, and to plot it using a graphics API.
