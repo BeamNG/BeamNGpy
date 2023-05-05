@@ -35,6 +35,12 @@ class Trajectory:
         """
         self.is_pause = is_pause
 
+    def reset(self):
+        """
+        Resets the trajectory queue to start recording from the current position (all memory is removed from trajectory queue).
+        """
+        self.trajectory = deque()
+
     def update(self, pos):
         """
         Update this trajectory manager/viewer with the latest positional information.
