@@ -1,9 +1,11 @@
+import math
+
 from beamngpy import vec3
 
 class Mesh_View:
 
-    def __init__(self, mesh, mass_min = 0.0, mass_max = 50.0, force_min = 0.0, force_max = 50.0, vel_min = 0.0, vel_max = 50.0, stress_min = 0.0, stress_max = 50.0,
-        top_center = vec3(450.0, 750.0), top_scale = vec3(250.0, 250.0), front_center = vec3(450.0, 250.0), front_scale = vec3(250.0, 250.0),
+    def __init__(self, mesh, mass_min = 0.0, mass_max = 50.0, force_min = 0.0, force_max = 50.0, vel_min = 0.0, vel_max = 50.0, vel_dir_sensitivity = 8.0, stress_min = 0.0,
+        stress_max = 50.0, top_center = vec3(450.0, 750.0), top_scale = vec3(250.0, 250.0), front_center = vec3(450.0, 250.0), front_scale = vec3(250.0, 250.0),
         right_center = vec3(1350.0, 250.0), right_scale = vec3(250.0, 250.0), is_top = True, is_front = True, is_right = True, data_mode = 'mass'):
         """
         Constructs a mesh data manager and visualizer instance, used to generate multi-perspective vehicle mesh plots (nodes and beams), highlighting the distribution
@@ -16,6 +18,7 @@ class Mesh_View:
             mass: The mass distribution across the vehicle. This is fixed for all time. The colours are averaged for each beam.
             force: The force distribution across the vehicle. This is averaged for each beam, and we show the force vector magnitude.
             velocity: The velocity distribution across the vehicle.  This is averaged for each beam, and we show the velocity vector magnitude.
+            vel_dir: The velocity direction distrubution.  This is the dot product between the vehicle forward direction and the mean velocity on the beam.
             beam stress: The stress distribution across the vehicle. This is a scalar value for each beam, and is smoothed with exponential smoothing.
         On construction, the basic display properties are set, then when new data is generated, this can be updated using the 'update()' method.
         When we want to render the mesh plots, we call the 'display()' method to fetch the latest geometric data (rectangles and colored lines, here).
@@ -30,6 +33,7 @@ class Mesh_View:
             force_max (float): The maximum displayable value for force distribution plots.
             vel_min (float): The minimum displayable value for velocity distribution plots.
             vel_max (float): The maximum displayable value for velocity distribution plots.
+            vel_dir_sensitivity (float): The division factor by which to limit the maximum angle when in velocity direction mode (ie max_ang := pi / vel_dir_sensitivity).
             stress_min (float): The minimum displayable value for beam stress distribution plots.
             stress_max (float): The maximum displayable value for beam stress distribution plots.
             top_center (vec3): The center point at which to display the top-view mesh, if selected. This is where the mesh origin node will appear on-screen.
@@ -38,6 +42,10 @@ class Mesh_View:
             front_scale (vec3): The scaling factor (x, y, -) by which to scale the front-view mesh, if selected.
             right_center (vec3): The center point at which to display the right-view mesh, if selected. This is where the mesh origin node will appear on-screen.
             right_scale (vec3): The scaling factor (x, y, -) by which to scale the right-view mesh, if selected.
+            is_top (bool): A flag which indicates if the top (plan) view will be computed.
+            is_right (bool): A flag which indicates if the right (side) view will be computed.
+            is_front (bool): A flag which indicates if the front view will be computed.
+            data_mode (str): A string which indicates which data to show in the colour dimension. Valid values are { 'mass', 'force', 'velocity', 'vel_dir', 'stress' }.
         """
 
         # The mesh data structures.
@@ -74,6 +82,10 @@ class Mesh_View:
 
         # Miscellaneous.
         self.is_pause = False
+        self.ang_range = 0.0                                                                # The angle range when using velocity direction mode ('vel_dir').
+        self.force_range = 0.0                                                              # The force range when using force mode ('force').
+        self.max_vd_ang = math.pi / float(vel_dir_sensitivity)                              # The maximum angle to detect when in velocity direction mode.
+        self.max_vd_ang_inv = 1.0 / self.max_vd_ang
 
     def _project(self, nodes, beams, unit_n, unit_x, center, scale):
         """
@@ -167,10 +179,13 @@ class Mesh_View:
         self.top_coords, self.front_coords, self.right_coords = {'nodes' : [], 'beams' : []}, {'nodes' : [], 'beams' : []}, {'nodes' : [], 'beams' : []}
         self.data_mode = mode
 
-    def update(self):
+    def update(self, dir=vec3(0.0, -1.0, 0.0)):
         """
         Updates the data in this mesh visualizer to reflect the latest data from the associated Mesh sensor.
         NOTE: If the mesh visualizer is paused, the data will remain as it was previously.
+
+        Args:
+            dir (vec3): The forward direction of the vehicle (optional).
         """
 
         # If we are pausing, do not perform any data updating.
@@ -208,12 +223,16 @@ class Mesh_View:
                     self.beam_colors.append(self._get_color(avg, self.mass_min, self.mass_max, self.mass_range_inv))
             elif self.data_mode == 'force':
                 node_data = self.mesh_data['nodes']
+                min_f, max_f = 1e12, -1e12
                 for i in range(num_lines):
                     beam = self.map[i]
                     d1, d2 = node_data[beam[0]]['force'], node_data[beam[1]]['force']
                     mag_1, mag_2 = vec3(d1['x'], d1['y'], d1['z']).length(), vec3(d2['x'], d2['y'], d2['z']).length()
                     avg = (mag_1 + mag_2) * 0.5
+                    min_f = min(min_f, avg)
+                    max_f = max(max_f, avg)
                     self.beam_colors.append(self._get_color(avg, self.force_min, self.force_max, self.force_range_inv))
+                self.force_range = max_f - min_f
             elif self.data_mode == 'velocity':
                 node_data = self.mesh_data['nodes']
                 for i in range(num_lines):
@@ -222,6 +241,23 @@ class Mesh_View:
                     mag_1, mag_2 = vec3(d1['x'], d1['y'], d1['z']).length(), vec3(d2['x'], d2['y'], d2['z']).length()
                     avg = (mag_1 + mag_2) * 0.5
                     self.beam_colors.append(self._get_color(avg, self.vel_min, self.vel_max, self.vel_range_inv))
+            elif self.data_mode == 'vel_dir':
+                node_data = self.mesh_data['nodes']
+                min_ang, max_ang = 0.0, self.max_vd_ang
+                for i in range(num_lines):
+                    beam = self.map[i]
+                    d1, d2 = node_data[beam[0]]['vel'], node_data[beam[1]]['vel']
+                    mean_vec = vec3((d1['x'] + d2['x']) * 0.5, (d1['y'] + d2['y']) * 0.5, (d1['z'] + d2['z']) * 0.5)
+                    dot = 1.0                           # default to forwards for very small velocities (to avoid jittering due to jumping velocity directions when stopped).
+                    if mean_vec.length() > 0.2:
+                        mean_n = mean_vec.normalize()
+                        dot = mean_n.dot(vec3(dir[0], dir[1], dir[2]))
+                    ang = abs(math.acos(max(-1, min(1, dot))))
+                    ang = min(ang, self.max_vd_ang)
+                    min_ang = min(min_ang, ang)         # Store the min/max angles in the mesh.
+                    max_ang = max(max_ang, ang)
+                    self.beam_colors.append(self._get_color(ang, 0.0, self.max_vd_ang, self.max_vd_ang_inv))
+                self.ang_range = max_ang - min_ang
             else:
                 beam_data = self.mesh_data['beams']
                 for i in range(num_lines):

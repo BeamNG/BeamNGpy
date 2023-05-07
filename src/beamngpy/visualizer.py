@@ -34,6 +34,7 @@ class Visualiser:
         self.toggle = toggle                                        # For sensor modes, which screen we are currently displaying (each sensor has various toggles.)
         self.is_first_time = True                                   # A flag which indicates if this is the first time we are executing the first iteration.
         self.is_sensor_mode_demo = True                             # A flag which indicates if we are demoing the sensor modes (and not dedicated scenarios).
+        self.is_ai_driving = True                                   # A flag which indicates if the main vehicle is to be AI-driven (True) or human driven (False).
 
         # General initialization.
         self.width, self.height = width, height
@@ -75,6 +76,7 @@ class Visualiser:
 
         # Initialize storage for all possible sensors.
         self.camera = None
+        self.camera2 = None
         self.lidar = None
         self.radar = None
         self.us_FL = None
@@ -87,7 +89,7 @@ class Visualiser:
         self.mesh = None
 
         # Keys to use for sensor modes/scenarios.
-        self.camera_key = b'c'
+        self.camera_key = b'c'                                                                          # Sensor mode keys.
         self.lidar_key = b'l'
         self.radar_key = b'r'
         self.ultrasonic_key = b'u'
@@ -95,18 +97,37 @@ class Visualiser:
         self.mesh_key = b'm'
         self.traj_key = b't'
         self.multi_key = b'a'
-        self.scenario0_key = b'0'
+        self.scenario0_key = b'0'                                                                       # Dedicated scenario keys.
         self.scenario1_key = b'1'
         self.scenario2_key = b'2'
         self.scenario3_key = b'3'
         self.scenario4_key = b'4'
         self.scenario5_key = b'5'
         self.scenario6_key = b'6'
+        self.ai_key = b' '                                                                              # Switch between AI-driven and human-driven.
 
         # Dedicated scenario target initialization.
-        self.scenario2_target = vec3(-798.9409014877656, -408.92386026442546, 103.14585273600176)
+        self.scenario1_target = vec3(724.2028016672593, -886.0135850848401, 149.6246404944941)          # scenario 1.
+        self.scenario1_is_target_hit = False
+        self.scenario1_hit_time = 1e12
+        self.scenario2_target = vec3(-798.9409014877656, -408.92386026442546, 103.14585273600176)       # scenario 2.
         self.scenario2_is_target_hit = False
         self.scenario2_hit_time = 1e12
+        self.scenario3_target = vec3(-87.92972193099558, -677.5602118819952, 140.7823222070001)         # scenario 3.
+        self.is_scenario_3_paused = False
+        self.scenario4_target = vec3(-349.4291180372238, 469.7554428577423, 89.0815799459815)           # scenario 4.
+        self.scenario4_is_target_hit = False
+        self.scenario4_hit_time = 1e12
+        self.is_scenario_4_paused = False
+        self.scenario5_target = vec3(-431.46150547266006, -761.1655665487051, 141.8720615557395)        # scenario 5.
+        self.scenario5_is_target_hit = False
+        self.scenario5_hit_time = 1e12
+        self.is_scenario_5_paused = False
+
+        # RGB colorbar.
+        rgb_colorbar_img = Image.open('rgb_colorbar.png')
+        self.rgb_colorbar = np.array(rgb_colorbar_img)
+        self.rgb_colorbar_size = [rgb_colorbar_img.size[1], rgb_colorbar_img.size[0]]
 
         # Trajectory initialization.
         self.trajectory_view = None
@@ -129,6 +150,7 @@ class Visualiser:
 
         # Camera initialization.
         self.camera_color_img, self.camera_color_size = [], []
+        self.camera2_color_img, self.camera2_color_size = [], []
         self.camera_annot_img, self.camera_annot_size = [], []
         self.camera_depth_img, self.camera_depth_size = [], []
         raw_annot_map = bng.camera.get_annotations()                                                                                # annotation colors indexed by name strings.
@@ -147,9 +169,6 @@ class Visualiser:
         self.car_img_size = [car_img.size[1], car_img.size[0]]                                                                      # NOTE: size vec is flipped for PIL images.
 
         # RADAR initialization.
-        car_radar_img = Image.open('car_radar.png')
-        self.car_radar_img = np.array(car_radar_img)
-        self.car_radar_img_size = [car_radar_img.size[1], car_radar_img.size[0]]
         self.radar_toggle = 0
         self.radar_bscope_img, self.radar_ppi_img, self.radar_rvv_img = [], [], []
         self.radar_bscope_size, self.radar_ppi_size, self.radar_rvv_size = [], [], []
@@ -172,9 +191,6 @@ class Visualiser:
         self.imu1 = None
         self.time_series1, self.time_series2, self.time_series3 = None, None, None
         self.time_series4, self.time_series5, self.time_series6 = None, None, None
-        rpy_img = Image.open('imu_rpy.png')
-        self.rpy_img = np.array(rpy_img)
-        self.rpy_img_size = [rpy_img.size[1], rpy_img.size[0]]                                                      # NOTE: the size is flipped for PIL images.
 
         # Mesh sensor:
         self.mesh = None
@@ -195,6 +211,13 @@ class Visualiser:
     def on_key(self, name, *args):
 
         # Handle the loading of scenarios.
+        if name == self.ai_key:
+            if self.is_ai_driving == True:
+                self.vehicles['vehicle_1'].ai.set_mode('disabled')
+            else:
+                self.vehicles['vehicle_1'].ai.set_mode('span')
+            self.is_ai_driving = not self.is_ai_driving
+
         if self.is_first_time or name == self.scenario0_key:
             self.bng.teleport_vehicle(self.vehicles['vehicle_1'], pos=(-167.36038370872836, 500.836156547889, 75.06553645606348), reset=True)
             self.bng.teleport_vehicle(self.vehicles['vehicle_2'], pos=(-224.4359238577308, 493.73223727132427, 74.97080893622115), reset=True)
@@ -259,6 +282,7 @@ class Visualiser:
             self.is_sensor_mode_demo = False
             self.demo = '1'
             self._set_up_sensors(self.demo)
+            self.scenario1_is_target_hit = False
         elif name == self.scenario2_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -292,6 +316,7 @@ class Visualiser:
             self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
             self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
             self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
+            self.bng.teleport_vehicle(self.vehicles['vehicle_11'], pos=(-772.6274979914087, -387.2534139925265, 103.49886869300644), reset=True) # Move c-box to original pos.
             self.bng.set_relative_camera(pos=(0, -8, 2), dir=(0.0, -1.0, -0.2))
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
@@ -336,6 +361,7 @@ class Visualiser:
             self.is_sensor_mode_demo = False
             self.demo = '3'
             self._set_up_sensors(self.demo)
+            self.is_scenario_3_paused = False
         elif name == self.scenario4_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -371,6 +397,8 @@ class Visualiser:
             self.is_sensor_mode_demo = False
             self.demo = '4'
             self._set_up_sensors(self.demo)
+            self.scenario4_is_target_hit = False
+            self.is_scenario_4_paused = False
         elif name == self.scenario5_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -406,6 +434,8 @@ class Visualiser:
             self.is_sensor_mode_demo = False
             self.demo = '5'
             self._set_up_sensors(self.demo)
+            self.scenario5_is_target_hit = False
+            self.is_scenario_5_paused = False
         elif name == self.scenario6_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -476,18 +506,13 @@ class Visualiser:
                 self.demo = 'ultrasonic'
                 self._set_up_sensors(self.demo)
         elif name == self.imu_key:                                                      # Sensor Mode:  IMU.
-            if self.demo == 'imu':
-                self.toggle = self.toggle + 1
-                if self.toggle > 2:
-                    self.toggle = 0
-            else:
-                self.toggle = 2
+            if self.demo != 'imu':
                 self.demo = 'imu'
                 self._set_up_sensors(self.demo)
         elif name == self.mesh_key:                                                     # Sensor Mode:  Vehicle Mesh.
             if self.demo == 'mesh':
                 self.toggle = self.toggle + 1
-                if self.toggle > 3:
+                if self.toggle > 4:
                     self.toggle = 0
             else:
                 self.toggle = 0
@@ -499,6 +524,8 @@ class Visualiser:
                 self.mesh_view.change_mode('force')
             elif self.toggle == 2:
                 self.mesh_view.change_mode('velocity')
+            elif self.toggle == 3:
+                self.mesh_view.change_mode('vel_dir')
             else:
                 self.mesh_view.change_mode('stress')
         elif name == self.traj_key:                                                     # Sensor Mode:  Trajectory Plot.
@@ -530,6 +557,9 @@ class Visualiser:
         if self.camera is not None:
             self.camera.remove()
             self.camera = None
+        if self.camera2 is not None:
+            self.camera2.remove()
+            self.camera2 = None
         if self.lidar is not None:
             self.lidar.remove()
             self.lidar = None
@@ -563,7 +593,7 @@ class Visualiser:
 
         # Set up the chosen demonstration.
         if self.demo == 'camera':
-            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1700, 900), near_far_planes=(0.01, 1000),
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(1820, 980), near_far_planes=(0.01, 1000),
                 is_streaming=True)
 
         elif demo == 'lidar':
@@ -592,8 +622,8 @@ class Visualiser:
                 is_streaming=True)
 
         elif demo == 'imu':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
-                is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.005,
+                is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
             self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
@@ -610,14 +640,14 @@ class Visualiser:
         elif demo == 'mesh':
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=300.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=200.0,
-                top_center=vec3(600.0, 800.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1300.0, 200.0),
+                top_center=vec3(600.0, 840.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1340.0, 200.0),
                 right_scale=vec3(150.0, 150.0), is_top=True, is_front=True, is_right=True)
 
         elif demo == 'trajectory':
-            self.trajectory_view = Trajectory()
+            self.trajectory_view = Trajectory(memory=10000, x_min=0, x_max=self.width, y_min=0, y_max=self.height, origin_x=self.width * 0.5, origin_y=self.height * 0.5)
 
         elif demo == 'multi':    # Camera, LiDAR, RADAR, and Ultrasonic together in one view (four viewports).
-            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(850, 450), near_far_planes=(0.01, 1000),
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, resolution=(910, 490), near_far_planes=(0.01, 1000),
                 is_render_annotations=False, is_render_depth=False, is_streaming=True)
             self.lidar = Lidar('lidar', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, is_visualised=False, vertical_resolution=64, frequency=40,
                 rays_per_second=1500000, is_streaming=True)
@@ -638,6 +668,87 @@ class Visualiser:
             self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
                 is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
             self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5)
+
+        elif demo == '1':
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
+                is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
+            self.time_series1 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series2 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series3 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=250.0, top_center=vec3(1500.0, 785.0), top_scale=vec3(190.0, 190.0),
+                front_center=vec3(1500.0, 215.0), front_scale=vec3(190.0, 190.0), is_top=True, is_front=True, is_right=False)
+            self.mesh_view.data_mode = 'force'
+
+        elif demo == '2':
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
+                is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
+            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.trajectory_view = Trajectory(x_min=960, x_max=1920, y_min=540, y_max=1080, origin_x=1800, origin_y=810, zoom=8.0, rot_deg=-40.0)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, top_center=vec3(1500.0, 290.0), top_scale=vec3(150.0, 150.0),
+                is_top=True, is_front=False, is_right=False)
+            self.mesh_view.data_mode = 'vel_dir'
+
+        elif demo == '3':
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
+                is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
+            self.time_series1 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series2 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series3 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
+                resolution=(910, 490), near_far_planes=(0.1, 10), is_render_annotations=False, is_render_depth=False, is_streaming=True)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=600.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
+                is_top=False, is_front=True, is_right=False)
+            self.mesh_view.data_mode = 'force'
+
+        elif demo == '4':
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
+                is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
+            self.time_series1 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-100.0, data_max=100.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series2 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-100.0, data_max=100.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series3 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-100.0, data_max=100.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
+                resolution=(910, 490), near_far_planes=(0.1, 10), is_render_annotations=False, is_render_depth=False, is_streaming=True)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=1000.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
+                is_top=False, is_front=True, is_right=False)
+            self.mesh_view.data_mode = 'force'
+
+        elif demo == '5':
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
+                is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
+            self.time_series1 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series2 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.time_series3 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+                axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-1.4, 1.3, 0.1), dir=(1, 0, 0),
+                resolution=(480, 480), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
+            self.camera2 = Camera('camera2', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0.6, -2.0, 0.15), dir=(0, 1, 0),
+                resolution=(480, 480), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=250.0,
+                front_center=vec3(1250.0, 185.0), front_scale=vec3(125.0, 125.0),
+                right_center=vec3(1580.0, 185.0), right_scale=vec3(125.0, 125.0),
+                is_top=False, is_front=True, is_right=True)
+            self.mesh_view.data_mode = 'force'
 
     def on_drag(self, x, y):
         if self.follow:
@@ -664,28 +775,10 @@ class Visualiser:
         # Fetch the latest position of the main vehicle.
         self.main_vehicle.sensors.poll()
         current_pos = self.main_vehicle.state['pos']
+        current_dir = self.main_vehicle.state['dir']
 
         # Handle any geometric target logic for the chosen scenario.
-        if self.demo == '2':
-            p = vec3(current_pos[0], current_pos[1], current_pos[2])
-            d = p.distance(self.scenario2_target)
-            if self.scenario2_is_target_hit == True:
-                dt = time.time() - self.scenario2_hit_time
-                if dt > 0.65 and dt < 1.3:
-                    self.vehicles['vehicle_1'].control(steering=-1.0, brake=1.0)            # sc2 hit - step 2.
-                elif dt >= 1.3 and dt < 5.3:
-                    self.vehicles['vehicle_1'].control(steering=0.0)                        # sc2 hit - step 3.
-                    self.vehicles['vehicle_1'].ai.set_mode('span')
-                elif dt >= 5.3:
-                    self.vehicles['vehicle_1'].ai.set_mode('disabled')                      # sc2 hit - step 4.
-                    self.vehicles['vehicle_1'].control(steering=0.0, brake=0.3, gear=0)
-            if d < 5.0 and self.scenario2_is_target_hit == False:
-                self.scenario2_is_target_hit = True
-                self.scenario2_hit_time = time.time()
-                self.vehicles['vehicle_1'].ai.set_mode('disabled')                          # sc2 hit - step 1.
-                self.vehicles['vehicle_1'].control(steering=1.0, brake=1.0)
-
-        elif self.demo == 'camera':
+        if self.demo == 'camera':
             cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]
             cam_size = cam_width * cam_height * 4
             if self.toggle == 0 or self.toggle == 3:
@@ -729,9 +822,9 @@ class Visualiser:
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             if self.follow and self.main_vehicle.state:
                 self.focus = current_pos
-                self.pos[0] = self.focus[0] + self.main_vehicle.state['dir'][0] * -30
-                self.pos[1] = self.focus[1] + self.main_vehicle.state['dir'][1] * -30
-                self.pos[2] = self.focus[2] + self.main_vehicle.state['dir'][2] + 10
+                self.pos[0] = self.focus[0] + current_dir[0] * -30
+                self.pos[1] = self.focus[1] + current_dir[1] * -30
+                self.pos[2] = self.focus[2] + current_dir[2] + 10
 
         elif self.demo == 'ultrasonic':
             self.us_view.update()
@@ -766,7 +859,7 @@ class Visualiser:
             self.time_series6.update(gyroZ)
 
         elif self.demo == 'mesh':
-            self.mesh_view.update()
+            self.mesh_view.update(dir=current_dir)
 
         elif self.demo == 'trajectory':
             self.trajectory_view.update(current_pos)
@@ -796,7 +889,7 @@ class Visualiser:
             max_height = np.absolute(points[2::3].max() - min_height)
             self.colours[0:self.points_count:3] = points[2::3]
             self.colours[0:self.points_count:3] -= min_height
-            self.colours[0:self.points_count:3] /= max_height
+            self.colours[0:self.points_count:3] /= max(1e-12, max_height)
             self.colours[1:self.points_count:3] = 0.25
             self.colours[2:self.points_count:3] = 1.0 - self.colours[0:self.points_count:3]
             glDeleteBuffers(1, self.colour_buf)
@@ -806,9 +899,9 @@ class Visualiser:
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             if self.follow and self.main_vehicle.state:
                 self.focus = current_pos
-                self.pos[0] = self.focus[0] + self.main_vehicle.state['dir'][0] * -30
-                self.pos[1] = self.focus[1] + self.main_vehicle.state['dir'][1] * -30
-                self.pos[2] = self.focus[2] + self.main_vehicle.state['dir'][2] + 10
+                self.pos[0] = self.focus[0] + current_dir[0] * -30
+                self.pos[1] = self.focus[1] + current_dir[1] * -30
+                self.pos[2] = self.focus[2] + current_dir[2] + 10
 
             # Multi: RADAR update.
             ppi_data = self.radar.stream_ppi()
@@ -817,6 +910,190 @@ class Visualiser:
 
             # Multi: Ultrasonic update.
             self.us_view.update()
+
+        elif self.demo == '1':
+            full_imu_data = self.imu1.poll()                                                # update IMU sensor.
+            accX, accY, accZ = [], [], []
+            for i in range(len(full_imu_data)):
+                new_imu_data = full_imu_data[i]
+                acc = new_imu_data['accSmooth']
+                accX.append(acc[0])
+                accY.append(acc[1])
+                accZ.append(acc[2])
+            self.time_series1.update(accX)
+            self.time_series2.update(accY)
+            self.time_series3.update(accZ)
+            self.mesh_view.update(dir=current_dir)                                          # update Mesh sensor.
+
+            pos = vec3(current_pos[0], current_pos[1], current_pos[2])
+            p = vec3(pos[0], pos[1], pos[2])
+            d = p.distance(self.scenario1_target)
+            if self.scenario1_is_target_hit == True:
+                dt = time.time() - self.scenario1_hit_time
+                if dt > 0.8:
+                    self.mesh_view.pause(True)                                              # pause the mesh after 0.8s.
+                if dt > 2.0:
+                    self.time_series1.pause(True)                                           # pause the IMU after 2.0s.
+                    self.time_series2.pause(True)
+                    self.time_series3.pause(True)
+            if d < 7.0:
+                self.scenario1_is_target_hit = True
+                self.scenario1_hit_time = time.time()
+                self.vehicles['vehicle_1'].ai.set_mode('disabled')
+                self.vehicles['vehicle_1'].control(brake=1.0, parkingbrake=1.0, gear=0, steering=0.0)
+
+        elif self.demo == '2':
+            full_imu_data = self.imu1.poll()                                                # update IMU sensor.
+            gyroX, gyroY, gyroZ = [], [], []
+            for i in range(len(full_imu_data)):
+                new_imu_data = full_imu_data[i]
+                gyro = new_imu_data['angVelSmooth']
+                gyroX.append(gyro[0])
+                gyroY.append(gyro[1])
+                gyroZ.append(gyro[2])
+            self.time_series1.update(gyroX)
+            self.time_series2.update(gyroY)
+            self.time_series3.update(gyroZ)
+            self.mesh_view.update(dir=current_dir)                                          # update Mesh sensor.
+            self.trajectory_view.update(current_pos)                                        # update Trajectory.
+
+            p = vec3(current_pos[0], current_pos[1], current_pos[2])
+            d = p.distance(self.scenario2_target)
+            if self.scenario2_is_target_hit == True:
+                dt = time.time() - self.scenario2_hit_time
+                if dt > 0.65 and dt < 1.3:
+                    self.vehicles['vehicle_1'].control(steering=-1.0, brake=1.0)            # sc2 hit - step 2.
+                elif dt >= 1.3 and dt < 2.2:
+                    self.vehicles['vehicle_1'].control(steering=0.0)                        # sc2 hit - step 3.
+                    self.vehicles['vehicle_1'].ai.set_mode('span')
+                elif dt >= 2.2 and dt < 5.3:
+                    self.vehicles['vehicle_1'].control(steering=0.0)
+                    self.vehicles['vehicle_1'].ai.set_mode('span')
+                    if self.mesh_view.ang_range > math.pi * 0.0625:                         # pause the mesh when the angle variance across the mesh is large enough.
+                        self.mesh_view.pause(True)
+                elif dt >= 5.3:
+                    self.time_series1.pause(True)                                           # pause the IMU.
+                    self.time_series2.pause(True)
+                    self.time_series3.pause(True)
+                    self.trajectory_view.pause(True)                                        # pause the Trajectory.
+                    self.vehicles['vehicle_1'].ai.set_mode('disabled')                      # sc2 hit - step 4.
+                    self.vehicles['vehicle_1'].control(steering=0.0, brake=0.3, gear=0)
+            if d < 5.0 and self.scenario2_is_target_hit == False:
+                self.scenario2_is_target_hit = True
+                self.scenario2_hit_time = time.time()
+                self.vehicles['vehicle_1'].ai.set_mode('disabled')                          # sc2 hit - step 1.
+                self.vehicles['vehicle_1'].control(steering=1.0, brake=1.0)
+
+        elif self.demo == '3':
+            full_imu_data = self.imu1.poll()                                                    # update IMU sensor.
+            gyroX, gyroY, gyroZ = [], [], []
+            for i in range(len(full_imu_data)):
+                new_imu_data = full_imu_data[i]
+                gyro = new_imu_data['angVelSmooth']
+                gyroX.append(gyro[0])
+                gyroY.append(gyro[1])
+                gyroZ.append(gyro[2])
+            self.time_series1.update(gyroX)
+            self.time_series2.update(gyroY)
+            self.time_series3.update(gyroZ)
+            self.mesh_view.update(dir=current_dir)                                              # update Mesh sensor.
+            if self.is_scenario_3_paused == False:
+                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensor (unless it has been paused).
+                camera_data1 = self.camera.stream_colour(cam_width * cam_height * 4)
+                self.camera_color_size = [cam_width, cam_height]
+                self.camera_color_img = camera_data1
+
+            pos = vec3(current_pos[0], current_pos[1], current_pos[2])
+            p = vec3(pos[0], pos[1], pos[2])
+            d = p.distance(self.scenario3_target)
+            if d < 4.0:
+                if self.mesh_view.force_range > 550.0:
+                    self.mesh_view.pause(True)                                                  # pause the mesh when the force variance is large enough.
+                    self.time_series1.pause(True)                                               # pause the IMU.
+                    self.time_series2.pause(True)
+                    self.time_series3.pause(True)
+                    self.is_scenario_3_paused = True
+
+        elif self.demo == '4':
+            full_imu_data = self.imu1.poll()                                                    # update IMU sensor.
+            accX, accY, accZ = [], [], []
+            for i in range(len(full_imu_data)):
+                new_imu_data = full_imu_data[i]
+                acc = new_imu_data['accSmooth']
+                accX.append(acc[0])
+                accY.append(acc[1])
+                accZ.append(acc[2])
+            self.time_series1.update(accX)
+            self.time_series2.update(accY)
+            self.time_series3.update(accZ)
+            self.mesh_view.update(dir=current_dir)                                              # update Mesh sensor.
+            if self.is_scenario_4_paused == False:
+                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensor (unless it has been paused).
+                camera_data1 = self.camera.stream_colour(cam_width * cam_height * 4)
+                self.camera_color_size = [cam_width, cam_height]
+                self.camera_color_img = camera_data1
+
+            pos = vec3(current_pos[0], current_pos[1], current_pos[2])
+            p = vec3(pos[0], pos[1], pos[2])
+            d = p.distance(self.scenario4_target)
+            if self.scenario4_is_target_hit == True:
+                dt = time.time() - self.scenario4_hit_time
+                if dt > 1.0:
+                    self.time_series1.pause(True)                                               # pause the IMU.
+                    self.time_series2.pause(True)
+                    self.time_series3.pause(True)
+            if d < 5.0:
+                if self.mesh_view.force_range > 950.0:
+                    self.mesh_view.pause(True)
+                    self.scenario4_is_target_hit = True
+                    self.scenario4_hit_time = time.time()
+                    self.is_scenario_4_paused = True
+
+        elif self.demo == '5':
+            full_imu_data = self.imu1.poll()                                                    # update IMU sensor.
+            accX, accY, accZ = [], [], []
+            for i in range(len(full_imu_data)):
+                new_imu_data = full_imu_data[i]
+                acc = new_imu_data['accSmooth']
+                accX.append(acc[0])
+                accY.append(acc[1])
+                accZ.append(acc[2])
+            self.time_series1.update(accX)
+            self.time_series2.update(accY)
+            self.time_series3.update(accZ)
+            self.mesh_view.update(dir=current_dir)                                              # update Mesh sensor.
+            if self.is_scenario_5_paused == False:
+                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensors (unless paused).
+                cam_size = cam_width * cam_height * 4
+                camera_data1 = self.camera.stream_colour(cam_size)
+                self.camera_color_size = [cam_width, cam_height]
+                self.camera_color_img = camera_data1
+                camera_data2 = self.camera2.stream_colour(cam_size)
+                self.camera2_color_size = [cam_width, cam_height]
+                self.camera2_color_img = camera_data2
+
+            pos = vec3(current_pos[0], current_pos[1], current_pos[2])
+            p = vec3(pos[0], pos[1], pos[2])
+            d = p.distance(self.scenario5_target)
+            if self.scenario5_is_target_hit == True:
+                dt = time.time() - self.scenario5_hit_time
+                if dt > 0.4:
+                    self.mesh_view.pause(True)                                                  # pause the mesh.
+                    self.is_scenario_5_paused = True
+                    self.vehicles['vehicle_1'].ai.set_mode('span')
+                if dt > 2.0:
+                    self.time_series1.pause(True)                                               # pause the IMU.
+                    self.time_series2.pause(True)
+                    self.time_series3.pause(True)
+                    self.vehicles['vehicle_6'].ai.set_mode('disabled')                          # force other vehicle to brake.
+                    self.vehicles['vehicle_6'].control(steering=0.0, brake=1.0, gear=0)
+            if d < 8.0:
+                self.scenario5_is_target_hit = True
+                self.scenario5_hit_time = time.time()
+                self.vehicles['vehicle_1'].ai.set_mode('disabled')
+                self.vehicles['vehicle_1'].deflate_tire(0)                                      # deflate the FL tyre.
+                self.vehicles['vehicle_7'].ai.set_mode('disabled')                              # force other vehicles to brake.
+                self.vehicles['vehicle_7'].control(steering=0.0, brake=1.0, gear=0)
 
         glutPostRedisplay()
 
@@ -847,7 +1124,15 @@ class Visualiser:
                 # Plot the trajectory.
                 glColor3f(0.7, 0.35, 0.7)
                 glLineWidth(2.0)
-                self.draw_line_strip(self.trajectory_view.display())
+                traj_lines = self.trajectory_view.display()
+                for line in traj_lines:
+                    self.draw_line(line)
+                if len(traj_lines) > 0:
+                    car_x, car_y = traj_lines[-1][2], traj_lines[-1][3]                                             # The car rectangle.
+                    glColor3f(0.9, 0.05, 0.05)
+                    glRectf(car_x - 10, car_y - 10, car_x + 10, car_y + 10)
+                    glColor3f(0.0, 0.0, 0.0)
+                    glRectf(car_x - 8, car_y - 8, car_x + 8, car_y + 8)
 
                 glEnable(GL_LINE_SMOOTH)
                 glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
@@ -855,15 +1140,14 @@ class Visualiser:
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
                 # Screen title underline.
-                glViewport(0, self.height - 40, self.width, self.height)
                 glLineWidth(2.0)
-                self.draw_line([40, 928, 300, 930])
+                self.draw_line([40, 1040, 300, 1040])
 
                 # Draw Text.
                 glEnable( GL_TEXTURE_2D )
                 glBindTexture( GL_TEXTURE_2D, texid )
                 glColor3f(0.85, 0.85, 0.70)
-                self.draw_text(50, 950, 'Trajectory')
+                self.draw_text(50, 1060, 'Trajectory')
                 glDisable( GL_TEXTURE_2D )
 
                 # Restore matrices.
@@ -885,11 +1169,10 @@ class Visualiser:
 
             if self.toggle == 0:                                                                                                                # colour image only.
                 if len(self.camera_color_size) > 0:
-                    glViewport(0, 0, self.width, self.height - 40)
+                    glViewport(0, 0, self.width, self.height)
                     self.render_img(50, 50, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
                     # Now deal with the 2D top bar (title etc).
-                    glViewport(0, self.height - 40, self.width, self.height)
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                     glEnable(GL_BLEND)
@@ -898,18 +1181,13 @@ class Visualiser:
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([75, 1, 400, 1])
+                    self.draw_line([75, 1000, 400, 1000])
 
                     # Draw Text.
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(85, 21, 'Camera Sensor - Color Image')
-                    self.draw_text(1250, 21, 'Vehicle: ')
-                    self.draw_text(1550, 21, 'Model: ')
-                    glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1255, 21, '         ' + self.main_vehicle.vid)
-                    self.draw_text(1550, 21, '       ' + self.main_vehicle.model)
+                    self.draw_text(85, 1020, 'Camera Sensor - Color Image')
                     glDisable( GL_TEXTURE_2D )
 
             elif self.toggle == 1:                                                                                                              # annotation image only.
@@ -927,7 +1205,7 @@ class Visualiser:
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([75, 950, 460, 950])
+                    self.draw_line([75, 985, 460, 985])
 
                     # View-division lines.
                     glLineWidth(3.0)
@@ -936,7 +1214,7 @@ class Visualiser:
 
                     # Draw the colour rectangles for each class key.
                     glLineWidth(1.0)
-                    box_x0, box_x1 = 1400, 1420
+                    box_x0, box_x1 = 1440, 1460
                     ctr = 0
                     for _, val in self.annot_map.items():
                         y_pos = 881 - (ctr * 26)
@@ -954,20 +1232,16 @@ class Visualiser:
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(85, 971, 'Camera Sensor - Class Annotations')
-                    self.draw_text(85, 875, 'Vehicle: ')
-                    self.draw_text(85, 835, 'Model: ')
-                    self.draw_text(85, 795, 'Map: ')
-                    self.draw_text(1400, 971, 'Color -> Class Map:')
+                    self.draw_text(85, 1000, 'Camera Sensor - Class Annotations')
+                    self.draw_text(85, 900, 'Map: ')
+                    self.draw_text(1440, 971, 'Color -> Class Map:')
                     glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(85, 875, '         ' + self.main_vehicle.vid)
-                    self.draw_text(85, 835, '       ' + self.main_vehicle.model)
-                    self.draw_text(85, 795, '     ' + self.map_name)
+                    self.draw_text(85, 900, '     ' + self.map_name)
                     ctr = 0
                     for k in self.annot_map.keys():
                         y_pos = 895 - (ctr * 26)
                         ctr = ctr + 1
-                        self.draw_text(1450, y_pos, k)
+                        self.draw_text(1490, y_pos, k)
                     glDisable( GL_TEXTURE_2D )
 
             elif self.toggle == 2:                                                                                                              # depth image only.
@@ -976,7 +1250,6 @@ class Visualiser:
                     self.render_img(50, 50, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
 
                     # Now deal with the 2D top bar (title etc).
-                    glViewport(0, self.height - 40, self.width, self.height)
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                     glEnable(GL_BLEND)
@@ -985,30 +1258,25 @@ class Visualiser:
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([75, 1, 400, 1])
+                    self.draw_line([75, 1000, 400, 1000])
 
                     # Draw Text.
-                    glEnable( GL_TEXTURE_2D )
-                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glEnable(GL_TEXTURE_2D)
+                    glBindTexture(GL_TEXTURE_2D, texid)
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(85, 21, 'Camera Sensor - Depth Image')
-                    self.draw_text(1250, 21, 'Vehicle: ')
-                    self.draw_text(1550, 21, 'Model: ')
-                    glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1255, 21, '         ' + self.main_vehicle.vid)
-                    self.draw_text(1550, 21, '       ' + self.main_vehicle.model)
-                    glDisable( GL_TEXTURE_2D )
+                    self.draw_text(85, 1020, 'Camera Sensor - Depth Image')
+                    glDisable(GL_TEXTURE_2D)
 
             else:                                                                                                                               # all images.
                 if len(self.camera_color_size) > 0:
                     glViewport(0, 0, self.half_width, self.half_height)
-                    self.render_img(50, 80, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+                    self.render_img(50, 50, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
                 if len(self.camera_annot_size) > 0:
                     glViewport(self.half_width, 0, self.half_width, self.half_height)
-                    self.render_img(50, 80, self.camera_annot_img, self.camera_annot_size[0], self.camera_annot_size[1], 1, 1, 1, 0)
+                    self.render_img(50, 50, self.camera_annot_img, self.camera_annot_size[0], self.camera_annot_size[1], 1, 1, 1, 0)
                 if len(self.camera_depth_size) > 0:
                     glViewport(0, self.half_height, self.half_width, self.half_height)
-                    self.render_img(50, 80, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
+                    self.render_img(50, 50, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
 
                     glViewport(0, 0, self.width, self.height)
                     glEnable(GL_LINE_SMOOTH)
@@ -1025,22 +1293,17 @@ class Visualiser:
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([940, 932, 1105, 932])
+                    self.draw_line([1000, 1000, 1185, 1000])
 
                     # Draw Text.
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(377, 525, ' Depth Camera')
-                    self.draw_text(1230, 25, '  Semantic Annotations')
-                    self.draw_text(386, 25, 'Color Camera')
+                    self.draw_text(410, 565, ' Depth Camera')
+                    self.draw_text(1310, 25, '  Semantic Annotations')
+                    self.draw_text(420, 25, 'Color Camera')
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(950, 950, 'Camera Sensor')
-                    self.draw_text(950, 850, 'Vehicle: ')
-                    self.draw_text(950, 800, 'Model: ')
-                    glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(950, 850, '         ' + self.main_vehicle.vid)
-                    self.draw_text(950, 800, '       ' + self.main_vehicle.model)
+                    self.draw_text(1020, 1020, 'Camera Sensor')
                     glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1050,14 +1313,12 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == 'lidar':
-            glViewport(0, 0, self.width, self.height - 40)
-
             glEnable(GL_LINE_SMOOTH)
             glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             if self.points_count > 0:
+                glViewport(0, 0, self.width, self.height)
                 glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
                 glVertexPointer(3, GL_FLOAT, 0, ctypes.c_void_p(0))
                 glEnableClientState(GL_VERTEX_ARRAY)
@@ -1068,9 +1329,6 @@ class Visualiser:
                 glDisableClientState(GL_VERTEX_ARRAY)
                 glDisableClientState(GL_COLOR_ARRAY)
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-            # Now deal with the 2D top bar (title etc).
-            glViewport(0, self.height - 40, self.width, self.height)
 
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
@@ -1084,18 +1342,13 @@ class Visualiser:
             # Title underline.
             glColor3f(0.25, 0.25, 0.15)
             glLineWidth(2.0)
-            self.draw_line([75, 2, 375, 2])
+            self.draw_line([75, 1000, 375, 1000])
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(85, 20, 'LiDAR Sensor: Point Cloud')
-            self.draw_text(1250, 20, 'Vehicle: ')
-            self.draw_text(1550, 20, 'Model: ')
-            glColor3f(0.85, 0.35, 0.70)
-            self.draw_text(1255, 20, '         ' + self.main_vehicle.vid)
-            self.draw_text(1550, 20, '       ' + self.main_vehicle.model)
+            self.draw_text(85, 1020, 'LiDAR Sensor: Point Cloud')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1138,21 +1391,15 @@ class Visualiser:
                 glRectf(r[0], r[1], r[2], r[3])
 
             # Title underline.
-            glViewport(0, self.height - 40, self.width, self.height)
             glColor3f(0.25, 0.25, 0.15)
             glLineWidth(2.0)
-            self.draw_line([55, 2, 355, 2])
+            self.draw_line([55, 1040, 320, 1040])
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(85, 20, 'Ultrasonic Sensor x 6')
-            self.draw_text(1250, 20, 'Vehicle: ')
-            self.draw_text(1550, 20, 'Model: ')
-            glColor3f(0.85, 0.35, 0.70)
-            self.draw_text(1255, 20, '         ' + self.main_vehicle.vid)
-            self.draw_text(1550, 20, '       ' + self.main_vehicle.model)
+            self.draw_text(85, 1045, 'Ultrasonic Sensor')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1172,10 +1419,13 @@ class Visualiser:
             glLoadIdentity()
 
             # Render RADAR images.
-            if self.toggle == 0:                                                                                # PPI.
+            if self.toggle == 0:                                                                                # Range-Doppler-Azimuth.
                 if len(self.radar_ppi_size) > 0:
                     glViewport(0, 0, self.width, self.height)
-                    self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From the .png image.
+
+                    # Render the colorbar.
+                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
                     glViewport(0, 0, self.width * 2, self.height * 2)
                     self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
@@ -1202,43 +1452,16 @@ class Visualiser:
                     self.draw_line([1116.7, 790.0, 1131.7, 781.0])
                     self.draw_line([1166.0, 875.0, 1181.0, 866.0])
 
-                    # Color bar.
-                    glLineWidth(3.0)
-                    y_min, y_max = self.half_height + 65, self.half_height + 106
-                    self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
-                    self.draw_line([69, 451, 115, 451])                     # cb frame - top.
-                    self.draw_line([69, 49, 69, 451])                       # cb frame - left.
-                    self.draw_line([101, 49, 101, 451])                     # cb frame - right.
-                    self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
-                    for i in range(401):                                    # colorbar.
-                        r, g, b = 0, 0, 0
-                        if i < 200:
-                            b = (200 - i) * 0.005
-                            g = i * 0.005
-                        else:
-                            g = (400 - i) * 0.005
-                            r = (i - 200) * 0.005
-                        glColor3f(r, g, b)
-                        y = 50 + i
-                        self.draw_line([70, y, 100, y])
-
                     # Title underline.
-                    glViewport(0, self.height - 40, self.width, self.height)
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([25, 2, 495, 2])
+                    self.draw_line([25, 1020, 475, 1020])
 
                     # Draw Text.
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(35, 20, 'RADAR Sensor:  Range-Azimuth-Doppler PPI')
-                    self.draw_text(1250, 20, 'Vehicle: ')
-                    self.draw_text(1550, 20, 'Model: ')
-                    glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1255, 20, '         ' + self.main_vehicle.vid)
-                    self.draw_text(1550, 20, '       ' + self.main_vehicle.model)
-                    glViewport(0, 0, self.width, self.height)
+                    self.draw_text(35, 1040, 'RADAR Sensor:  Range-Azimuth-Doppler')
                     glColor3f(0.4, 0.4, 0.4)
                     self.draw_text(700, 21, '0 m')
                     self.draw_text(745.3, 106.3, '10 m')
@@ -1251,11 +1474,11 @@ class Visualiser:
                     self.draw_text(1090.4, 701.4, '80 m')
                     self.draw_text(1140.7, 786.7, '90 m')
                     self.draw_text(1189, 871, '100 m')
-                    self.draw_text(125, 60, '0 m/s')
-                    self.draw_text(125, 260, '25 m/s')
-                    self.draw_text(125, 460, '50 m/s')
+                    self.draw_text(120, 60, '0 m/s')
+                    self.draw_text(120, 257, '25 m/s')
+                    self.draw_text(120, 455, '50 m/s')
                     glColor3f(0.5, 0.5, 0.5)
-                    self.draw_text(49, 490, 'Doppler')
+                    self.draw_text(44, 490, 'Velocity')
                     glDisable( GL_TEXTURE_2D )
 
             else:
@@ -1263,13 +1486,16 @@ class Visualiser:
                     glViewport(0, 0, self.width * 2, self.height * 2)
                     self.render_img(175, 22.5, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
 
+                    # Render the colorbar.
+                    glViewport(0, 0, self.width, self.height)
+                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                     glEnable(GL_BLEND)
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
                     # Draw the PPI scope frame.
-                    glViewport(0, 0, self.width, self.height)
                     glLineWidth(2.0)
                     glColor3f(0.3, 0.3, 0.3)
                     self.draw_line([350, 45, 1300, 45])                     # bottom frame line.
@@ -1284,41 +1510,16 @@ class Visualiser:
                         x = 350 + dv
                         self.draw_line([x, 45, x, 35])                      # horizontal grooves.
 
-                    # Color bar.
-                    glLineWidth(3.0)
-                    y_min, y_max = self.half_height + 65, self.half_height + 106
-                    self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
-                    self.draw_line([69, 451, 115, 451])                     # cb frame - top.
-                    self.draw_line([69, 49, 69, 451])                       # cb frame - left.
-                    self.draw_line([101, 49, 101, 451])                     # cb frame - right.
-                    self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
-                    for i in range(401):                                    # colorbar.
-                        r, g, b = 0, 0, 0
-                        if i < 200:
-                            b = (200 - i) * 0.005
-                            g = i * 0.005
-                        else:
-                            g = (400 - i) * 0.005
-                            r = (i - 200) * 0.005
-                        glColor3f(r, g, b)
-                        y = 50 + i
-                        self.draw_line([70, y, 100, y])
-
                     # Title underline.
-                    glViewport(0, self.height - 40, self.width, self.height)
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([25, 2, 290, 2])
+                    self.draw_line([25, 1020, 290, 1020])
 
                     # Draw Text.
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(35, 20, 'RADAR: Range - Doppler')
-                    self.draw_text(1460, 20, 'Vehicle: ')
-                    glColor3f(0.85, 0.35, 0.70)
-                    self.draw_text(1465, 20, '         ' + self.main_vehicle.vid)
-                    glViewport(0, 0, self.width, self.height)
+                    self.draw_text(35, 1040, 'RADAR: Range - Doppler')
                     glColor3f(0.4, 0.4, 0.4)
                     txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
                     txt2 = ['-50 m/s', '-40 m/s', '-30 m/s', '-20 m/s', '-10 m/s', '0 m/s', '10 m/s', '20 m/s', '30 m/s', '40 m/s', '50 m/s']
@@ -1328,11 +1529,12 @@ class Visualiser:
                         self.draw_text(1320, y, txt2[i])                        # vertical text.
                         x = 332 + dv
                         self.draw_text(x, 22, txt[i])                           # horizontal text.
-                    self.draw_text(125, 60, '0 m/s')                            # colorbar markers.
-                    self.draw_text(125, 260, '25 m/s')
-                    self.draw_text(125, 460, '50 m/s')
+                    self.draw_text(120, 60, '0 m/s')
+                    self.draw_text(120, 257, '25 m/s')
+                    self.draw_text(120, 455, '50 m/s')
                     glColor3f(0.5, 0.5, 0.5)
-                    self.draw_text(49, 490, 'Doppler')
+                    self.draw_text(44, 490, 'Velocity')
+                    glColor3f(0.75, 0.75, 0.75)
                     self.draw_text(1420, 525, 'Velocity')
                     self.draw_text(796, 75, 'Range')
                     glDisable( GL_TEXTURE_2D )
@@ -1408,8 +1610,8 @@ class Visualiser:
             self.draw_text(1710, 275, 'X [roll]')
             self.draw_text(1710, 570, 'Y [pitch]')
             self.draw_text(1710, 875, 'Z [yaw]')
-            self.draw_text(350, 985, 'IMU - TRI-AXIAL ACCELERATION')
-            self.draw_text(1250, 985, ' IMU - TRI-AXIAL GYROSCOPIC')
+            self.draw_text(300, 985, 'IMU - TRI-AXIAL ACCELERATION')
+            self.draw_text(1200, 985, ' IMU - TRI-AXIAL GYROSCOPIC')
             self.draw_text(1300, 45, 'time (seconds)')
             self.draw_text(400, 45, 'time (seconds)')
             glColor3f(0.85, 0.85, 0.70)
@@ -1457,6 +1659,9 @@ class Visualiser:
 
             glViewport(0, 0, self.width, self.height)
 
+            # Render the colorbar.
+            self.render_img(1780, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
             glEnable(GL_LINE_SMOOTH)
             glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
             glEnable(GL_BLEND)
@@ -1489,11 +1694,11 @@ class Visualiser:
             num_nodes = len(top['nodes'])
             for i in range(num_nodes):
                 node = top['nodes'][i]
-                glRectf(node[0] - 1, node[1] - 1, node[0] + 1, node[1] + 1)
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
                 node = front['nodes'][i]
-                glRectf(node[0] - 1, node[1] - 1, node[0] + 1, node[1] + 1)
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
                 node = right['nodes'][i]
-                glRectf(node[0] - 1, node[1] - 1, node[0] + 1, node[1] + 1)
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
 
             # View-division lines.
             glColor3f(0.25, 0.25, 0.15)
@@ -1503,58 +1708,46 @@ class Visualiser:
 
             # Screen title underline.
             glLineWidth(2.0)
-            self.draw_line([940, 928, 1289, 930])
-
-            # Color bar.
-            glLineWidth(3.0)
-            y_min, y_max = self.half_height + 65, self.half_height + 106
-            self.draw_line([999, y_min - 1, 1701, y_min - 1])       # cb frame - bottom.
-            self.draw_line([999, y_max + 1, 1701, y_max + 1])       # cb frame - top.
-            self.draw_line([999, y_min - 15, 999, y_max + 1])       # cb frame - left.
-            self.draw_line([1701, y_min - 15, 1701, y_max + 1])     # cb frame - right.
-            self.draw_line([1350, y_min - 15, 1350, y_max + 1])     # centreline of colorbar.
-            for x in range(1000, 1700):                             # colorbar.
-                color = self.mesh_view._get_color(x, 1000, 1700, 0.00142857142)
-                glColor3f(color[0], color[1], color[2])
-                self.draw_line([x, y_min, x, y_max])
+            self.draw_line([1020, 928, 1400, 930])
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
             if self.toggle == 0:
-                self.draw_text(950, 950, 'VEHICLE MASS DISTRIBUTION')
-                self.draw_text(983, y_min - 32, '0 kg')
-                self.draw_text(1332, y_min - 32, '5 kg')
-                self.draw_text(1677, y_min - 32, '10 kg')
+                self.draw_text(1050, 950, 'Vehicle Mass Distribution')
+                self.draw_text(1822, 51, '0 kg')
+                self.draw_text(1822, 251, '5 kg')
+                self.draw_text(1822, 451, '10 kg')
 
             elif self.toggle == 1:
-                self.draw_text(950, 950, 'VEHICLE FORCE DISTRIBUTION')
-                self.draw_text(983, y_min - 32, '0 N')
-                self.draw_text(1332, y_min - 32, '150 N')
-                self.draw_text(1677, y_min - 32, '300 N')
+                self.draw_text(1050, 950, 'Vehicle Force Distribution')
+                self.draw_text(1822, 51, '0 N')
+                self.draw_text(1822, 251, '150 N')
+                self.draw_text(1822, 451, '300 N')
 
             elif self.toggle == 2:
-                self.draw_text(950, 950, 'VEHICLE VELOCITY DISTRIBUTION')
-                self.draw_text(980, y_min - 32, '0 m/s')
-                self.draw_text(1327, y_min - 32, '25 m/s')
-                self.draw_text(1670, y_min - 32, '50 m/s')
+                self.draw_text(1050, 950, 'Velocity (Size) Distribution')
+                self.draw_text(1822, 51, '0 m/s')
+                self.draw_text(1822, 251, '25 m/s')
+                self.draw_text(1822, 451, '50 m/s')
+
+            elif self.toggle == 3:
+                self.draw_text(1050, 950, 'Vehicle Velocity (Direction)')
+                self.draw_text(1822, 51, 'Fwds')
+                self.draw_text(1822, 251, 'Lat')
+                self.draw_text(1822, 451, 'Bwds')
 
             else:
-                self.draw_text(950, 950, 'VEHICLE STRESS DISTRIBUTION')
-                self.draw_text(980, y_min - 32, '-200 Nm-2')
-                self.draw_text(1327, y_min - 32, '0 Nm-2')
-                self.draw_text(1670, y_min - 32, '200 Nm-2')
+                self.draw_text(1050, 950, 'Beam Stress Distribution')
+                self.draw_text(1822, 51, '-200 Nm-2')
+                self.draw_text(1822, 251, '0 Nm-2')
+                self.draw_text(1822, 451, '200 Nm-2')
 
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(422, 530, ' Top')
-            self.draw_text(392, 30, '  Right')
-            self.draw_text(1280, 30, '    Front')
-            self.draw_text(950, 880, 'Vehicle: ')
-            self.draw_text(950, 845, 'Model: ')
-            glColor3f(0.85, 0.35, 0.70)
-            self.draw_text(950, 880, '         ' + self.main_vehicle.vid)
-            self.draw_text(950, 845, '       ' + self.main_vehicle.model)
+            self.draw_text(442, 570, ' Top')
+            self.draw_text(422, 30, '  Right')
+            self.draw_text(1320, 30, '    Front')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -1565,16 +1758,17 @@ class Visualiser:
 
         elif self.demo == 'multi':
 
-            if len(self.camera_color_size) > 0:     # camera - color image.
+            if len(self.camera_color_size) > 0:                                                                                         # camera - color image.
                 glViewport(0, self.half_height, self.half_width * 2, self.half_height * 2)	# TL
                 self.render_img(25, 25, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
             glViewport(self.half_width, 0, self.half_width, self.half_height)
-            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The ultrasonic .png image.
+            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)                             # The Ultrasonic .png image.
 
             if len(self.radar_ppi_size) > 0:
                 glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
-                self.render_img(1160, 10, self.car_radar_img, self.car_radar_img_size[0], self.car_radar_img_size[1], 1, 1, 1, 1)  # From RADAR .png image.
+                # Render the colorbar.
+                self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
                 glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
                 self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
@@ -1624,26 +1818,6 @@ class Visualiser:
                 self.draw_line([1116.7, 790.0, 1131.7, 781.0])
                 self.draw_line([1166.0, 875.0, 1181.0, 866.0])
 
-                # Color bar.
-                glLineWidth(3.0)
-                y_min, y_max = self.half_height + 65, self.half_height + 106
-                self.draw_line([69, 49, 115, 49])                       # cb frame - bottom.
-                self.draw_line([69, 451, 115, 451])                     # cb frame - top.
-                self.draw_line([69, 49, 69, 451])                       # cb frame - left.
-                self.draw_line([101, 49, 101, 451])                     # cb frame - right.
-                self.draw_line([100, 250, 115, 250])                    # centreline of colorbar.
-                for i in range(401):                                    # colorbar.
-                    r, g, b = 0, 0, 0
-                    if i < 200:
-                        b = (200 - i) * 0.005
-                        g = i * 0.005
-                    else:
-                        g = (400 - i) * 0.005
-                        r = (i - 200) * 0.005
-                    glColor3f(r, g, b)
-                    y = 50 + i
-                    self.draw_line([70, y, 100, y])
-
             # Ultrasonic.
             glViewport(self.half_width, 0, self.half_width, self.half_height)
             rects = self.us_view.display()
@@ -1671,15 +1845,10 @@ class Visualiser:
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(400, 530, ' Camera')
-            self.draw_text(400, 30, '  LiDAR')
-            self.draw_text(1255, 30, '    Ultrasonic')
-            self.draw_text(1280, 530, '    RADAR')
-            self.draw_text(1555, 60, 'Vehicle: ')
-            self.draw_text(1580, 30, 'Model: ')
-            glColor3f(0.85, 0.35, 0.70)
-            self.draw_text(1555, 60, '         ' + self.main_vehicle.vid)
-            self.draw_text(1580, 30, '       ' + self.main_vehicle.model)
+            self.draw_text(450, 565, ' Camera')
+            self.draw_text(450, 30, '  LiDAR')
+            self.draw_text(1335, 30, '    Ultrasonic')
+            self.draw_text(1350, 565, '    RADAR')
             glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
             glColor3f(0.4, 0.4, 0.4)
             self.draw_text(700, 21, '0 m')
@@ -1693,11 +1862,613 @@ class Visualiser:
             self.draw_text(1090.4, 701.4, '80 m')
             self.draw_text(1140.7, 786.7, '90 m')
             self.draw_text(1189, 871, '100 m')
-            self.draw_text(125, 60, '0 m/s')
-            self.draw_text(125, 260, '25 m/s')
-            self.draw_text(125, 460, '50 m/s')
+            self.draw_text(120, 60, '0 m/s')
+            self.draw_text(120, 257, '25 m/s')
+            self.draw_text(120, 455, '50 m/s')
             glColor3f(0.5, 0.5, 0.5)
-            self.draw_text(49, 490, 'Doppler')
+            self.draw_text(44, 490, 'Velocity')
+            glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
+
+        elif self.demo == '1':
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the colorbar.
+            self.render_img(1800, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            # Accelerometer (IMU) render.
+            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
+
+            # Draw grid.
+            grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
+            glColor3f(0.1, 0.1, 0.1)
+            glLineWidth(1.0)
+            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
+                self.draw_line(i)
+            glColor3f(0.2, 0.2, 0.2)
+            glLineWidth(2.0)
+            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
+                self.draw_line(i)
+
+            # Draw data polylines.
+            glColor3f(1.0, 0.0, 0.0)
+            self.draw_line_strip(disp1['data'])
+            self.draw_line_strip(disp2['data'])
+            self.draw_line_strip(disp3['data'])
+
+            # Draw axes.
+            glColor3f(1.0, 1.0, 1.0)
+            glLineWidth(3.0)
+            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
+            self.draw_line(ax1[0])
+            self.draw_line(ax1[1])
+            self.draw_line(ax2[0])
+            self.draw_line(ax2[1])
+            self.draw_line(ax3[0])
+            self.draw_line(ax3[1])
+
+            # Mesh render.
+            mesh_data = self.mesh_view.display()
+            top, front, colors = mesh_data['top'], mesh_data['front'], mesh_data['colors']
+
+            # Draw beams.
+            glLineWidth(1.0)
+            num_beams = len(top['beams'])
+            for i in range(num_beams):
+                color = colors[i]
+                glColor3f(color[0], color[1], color[2])
+                line = top['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+                line = front['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+
+            # Draw nodes.
+            glColor3f(0.75, 0.75, 0.60)
+            num_nodes = len(top['nodes'])
+            for i in range(num_nodes):
+                node = top['nodes'][i]
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                node = front['nodes'][i]
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.65, 0.65, 0.3)
+            self.draw_text(820, 233, 'X')
+            self.draw_text(820, 534, 'Y')
+            self.draw_text(820, 834, 'Z')
+            self.draw_text(350, 985, 'IMU - Acceleration')
+            self.draw_text(1160, 985, 'Vehicle Force Distribution')
+            self.draw_text(373, 45, 'time (seconds)')
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(794, 80, '0s')
+            self.draw_text(646, 80, '-1s')
+            self.draw_text(506, 80, '-2s')
+            self.draw_text(366, 80, '-3s')
+            self.draw_text(225, 80, '-4s')
+            self.draw_text(85, 80, '-5s')
+            self.draw_text(44, 231, '0')
+            self.draw_text(44, 531, '0')
+            self.draw_text(44, 831, '0')
+            self.draw_text(20, 107, '-18.0')
+            self.draw_text(30, 357, '18.0')
+            self.draw_text(20, 408, '-18.0')
+            self.draw_text(30, 657, '18.0')
+            self.draw_text(20, 708, '-18.0')
+            self.draw_text(30, 957, '18.0')
+            self.draw_text(1840, 456, '300 N')
+            self.draw_text(1840, 257, '150 N')
+            self.draw_text(1840, 60, '0 N')
+            glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
+
+        if self.demo == '2':
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the colorbar.
+            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            # Gyroscopic (IMU) render.
+            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
+
+            # Draw grid.
+            grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
+            glColor3f(0.1, 0.1, 0.1)
+            glLineWidth(1.0)
+            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
+                self.draw_line(i)
+            glColor3f(0.2, 0.2, 0.2)
+            glLineWidth(2.0)
+            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
+                self.draw_line(i)
+
+            # Draw data polylines.
+            glColor3f(1.0, 0.0, 0.0)
+            self.draw_line_strip(disp1['data'])
+            self.draw_line_strip(disp2['data'])
+            self.draw_line_strip(disp3['data'])
+
+            # Draw axes.
+            glColor3f(1.0, 1.0, 1.0)
+            glLineWidth(3.0)
+            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
+            self.draw_line(ax1[0])
+            self.draw_line(ax1[1])
+            self.draw_line(ax2[0])
+            self.draw_line(ax2[1])
+            self.draw_line(ax3[0])
+            self.draw_line(ax3[1])
+
+            # Mesh render.
+            mesh_data = self.mesh_view.display()
+            top, colors = mesh_data['top'], mesh_data['colors']
+
+            # Draw beams.
+            glLineWidth(1.0)
+            num_beams = len(top['beams'])
+            for i in range(num_beams):
+                color = colors[i]
+                glColor3f(color[0], color[1], color[2])
+                line = top['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+
+            # Draw nodes.
+            glColor3f(0.75, 0.75, 0.60)
+            num_nodes = len(top['nodes'])
+            for i in range(num_nodes):
+                node = top['nodes'][i]
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+
+            # Plot the trajectory.
+            glColor3f(0.7, 0.35, 0.7)
+            glLineWidth(2.0)
+            traj_lines = self.trajectory_view.display()
+            for line in traj_lines:
+                self.draw_line(line)
+            if len(traj_lines) > 0:
+                car_x, car_y = traj_lines[-1][2], traj_lines[-1][3]                                             # The car rectangle.
+                glColor3f(0.9, 0.05, 0.05)
+                glRectf(car_x - 20, car_y - 10, car_x + 20, car_y + 10)
+                glColor3f(0.0, 0.0, 0.0)
+                glRectf(car_x - 18, car_y - 8, car_x + 18, car_y + 8)
+
+            # View-division lines.
+            glViewport(0, 0, self.width, self.height)
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(3.0)
+            self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
+            self.draw_line([self.half_width, 0, self.half_width, self.height])
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.65, 0.65, 0.3)
+            self.draw_text(820, 233, 'Roll [X]')
+            self.draw_text(820, 534, 'Pitch [Y]')
+            self.draw_text(820, 834, 'Yaw [Z]')
+            self.draw_text(358, 995, 'IMU - Gyroscopic')
+            self.draw_text(1330, 500, 'Vehicle Velocity Direction')
+            self.draw_text(1400, 995, 'Trajectory')
+            self.draw_text(373, 47, 'time (seconds)')
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(795, 80, '0s')
+            self.draw_text(645, 80, '-2s')
+            self.draw_text(505, 80, '-4s')
+            self.draw_text(364, 80, '-6s')
+            self.draw_text(223, 80, '-8s')
+            self.draw_text(84, 80, '-10s')
+            self.draw_text(44, 231, '0')
+            self.draw_text(44, 531, '0')
+            self.draw_text(44, 831, '0')
+            self.draw_text(20, 107, '-2.5')
+            self.draw_text(30, 357, '2.5')
+            self.draw_text(20, 408, '-2.5')
+            self.draw_text(30, 657, '2.5')
+            self.draw_text(20, 708, '-2.5')
+            self.draw_text(30, 957, '2.5')
+            self.draw_text(1810, 451, '22.5 deg')
+            self.draw_text(1810, 252, '11.25 deg')
+            self.draw_text(1810, 55, 'Fwd')
+            glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
+
+        elif self.demo == '3':
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the Camera colour image.
+            if len(self.camera_color_size) > 0:
+                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+            # Render the colorbar.
+            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            # Gyroscopic (IMU) render.
+            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
+
+            # Draw grid.
+            grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
+            glColor3f(0.1, 0.1, 0.1)
+            glLineWidth(1.0)
+            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
+                self.draw_line(i)
+            glColor3f(0.2, 0.2, 0.2)
+            glLineWidth(2.0)
+            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
+                self.draw_line(i)
+
+            # Draw data polylines.
+            glColor3f(1.0, 0.0, 0.0)
+            self.draw_line_strip(disp1['data'])
+            self.draw_line_strip(disp2['data'])
+            self.draw_line_strip(disp3['data'])
+
+            # Draw axes.
+            glColor3f(1.0, 1.0, 1.0)
+            glLineWidth(3.0)
+            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
+            self.draw_line(ax1[0])
+            self.draw_line(ax1[1])
+            self.draw_line(ax2[0])
+            self.draw_line(ax2[1])
+            self.draw_line(ax3[0])
+            self.draw_line(ax3[1])
+
+            # Mesh render.
+            mesh_data = self.mesh_view.display()
+            front, colors = mesh_data['front'], mesh_data['colors']
+
+            # Draw beams.
+            glLineWidth(1.0)
+            num_beams = len(front['beams'])
+            for i in range(num_beams):
+                color = colors[i]
+                glColor3f(color[0], color[1], color[2])
+                line = front['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+
+            # Draw nodes.
+            glColor3f(0.75, 0.75, 0.60)
+            num_nodes = len(front['nodes'])
+            for i in range(num_nodes):
+                node = front['nodes'][i]
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+
+            # View-division lines.
+            glViewport(0, 0, self.width, self.height)
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(3.0)
+            self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
+            self.draw_line([self.half_width, 0, self.half_width, self.height])
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.65, 0.65, 0.3)
+            self.draw_text(820, 233, 'Roll [X]')
+            self.draw_text(820, 534, 'Pitch [Y]')
+            self.draw_text(820, 834, 'Yaw [Z]')
+            self.draw_text(358, 995, 'IMU - Gyroscopic')
+            self.draw_text(1330, 500, 'Force Distribution')
+            self.draw_text(373, 47, 'time (seconds)')
+            glColor3f(0.1, 0.1, 0.1)
+            self.draw_text(1400, 1040, 'Side Camera')
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(795, 80, '0s')
+            self.draw_text(645, 80, '-1s')
+            self.draw_text(505, 80, '-2s')
+            self.draw_text(364, 80, '-3s')
+            self.draw_text(223, 80, '-4s')
+            self.draw_text(84, 80, '-5s')
+            self.draw_text(44, 231, '0')
+            self.draw_text(44, 531, '0')
+            self.draw_text(44, 831, '0')
+            self.draw_text(20, 107, '-2.5')
+            self.draw_text(30, 357, '2.5')
+            self.draw_text(20, 408, '-2.5')
+            self.draw_text(30, 657, '2.5')
+            self.draw_text(20, 708, '-2.5')
+            self.draw_text(30, 957, '2.5')
+            self.draw_text(1810, 451, '600 N')
+            self.draw_text(1810, 252, '300 N')
+            self.draw_text(1810, 55, '0 N')
+            glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
+
+        elif self.demo == '4':
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the Camera colour image.
+            if len(self.camera_color_size) > 0:
+                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+            # Render the colorbar.
+            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            # Gyroscopic (IMU) render.
+            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
+
+            # Draw grid.
+            grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
+            glColor3f(0.1, 0.1, 0.1)
+            glLineWidth(1.0)
+            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
+                self.draw_line(i)
+            glColor3f(0.2, 0.2, 0.2)
+            glLineWidth(2.0)
+            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
+                self.draw_line(i)
+
+            # Draw data polylines.
+            glColor3f(1.0, 0.0, 0.0)
+            self.draw_line_strip(disp1['data'])
+            self.draw_line_strip(disp2['data'])
+            self.draw_line_strip(disp3['data'])
+
+            # Draw axes.
+            glColor3f(1.0, 1.0, 1.0)
+            glLineWidth(3.0)
+            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
+            self.draw_line(ax1[0])
+            self.draw_line(ax1[1])
+            self.draw_line(ax2[0])
+            self.draw_line(ax2[1])
+            self.draw_line(ax3[0])
+            self.draw_line(ax3[1])
+
+            # Mesh render.
+            mesh_data = self.mesh_view.display()
+            front, colors = mesh_data['front'], mesh_data['colors']
+
+            # Draw beams.
+            glLineWidth(1.0)
+            num_beams = len(front['beams'])
+            for i in range(num_beams):
+                color = colors[i]
+                glColor3f(color[0], color[1], color[2])
+                line = front['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+
+            # Draw nodes.
+            glColor3f(0.75, 0.75, 0.60)
+            num_nodes = len(front['nodes'])
+            for i in range(num_nodes):
+                node = front['nodes'][i]
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+
+            # View-division lines.
+            glViewport(0, 0, self.width, self.height)
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(3.0)
+            self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
+            self.draw_line([self.half_width, 0, self.half_width, self.height])
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.65, 0.65, 0.3)
+            self.draw_text(820, 233, 'X')
+            self.draw_text(820, 534, 'Y')
+            self.draw_text(820, 834, 'Z')
+            self.draw_text(358, 995, 'IMU - Acceleration')
+            self.draw_text(1330, 500, 'Force Distribution')
+            self.draw_text(373, 47, 'time (seconds)')
+            glColor3f(0.1, 0.1, 0.1)
+            self.draw_text(1400, 1040, 'Side Camera')
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(795, 80, '0s')
+            self.draw_text(645, 80, '-1s')
+            self.draw_text(505, 80, '-2s')
+            self.draw_text(364, 80, '-3s')
+            self.draw_text(223, 80, '-4s')
+            self.draw_text(84, 80, '-5s')
+            self.draw_text(44, 231, '0')
+            self.draw_text(44, 531, '0')
+            self.draw_text(44, 831, '0')
+            self.draw_text(20, 107, '-100.0')
+            self.draw_text(30, 357, '100.0')
+            self.draw_text(20, 408, '-100.0')
+            self.draw_text(30, 657, '100.0')
+            self.draw_text(20, 708, '-100.0')
+            self.draw_text(30, 957, '100.0')
+            self.draw_text(1810, 451, '1000 N')
+            self.draw_text(1810, 252, '500 N')
+            self.draw_text(1810, 55, '0 N')
+            glDisable( GL_TEXTURE_2D )
+
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
+
+        elif self.demo == '5':
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the two Camera colour images.
+            if len(self.camera_color_size) > 0 and len(self.camera2_color_size) > 0:
+                self.render_img(1400, 480, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+                self.render_img(880, 480, self.camera2_color_img, self.camera2_color_size[0], self.camera2_color_size[1], 1, 1, 1, 0)
+
+            # Render the colorbar.
+            self.render_img(1800, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            # Accelerometer (IMU) render.
+            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
+
+            # Draw grid.
+            grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
+            glColor3f(0.1, 0.1, 0.1)
+            glLineWidth(1.0)
+            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
+                self.draw_line(i)
+            glColor3f(0.2, 0.2, 0.2)
+            glLineWidth(2.0)
+            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
+                self.draw_line(i)
+
+            # Draw data polylines.
+            glColor3f(1.0, 0.0, 0.0)
+            self.draw_line_strip(disp1['data'])
+            self.draw_line_strip(disp2['data'])
+            self.draw_line_strip(disp3['data'])
+
+            # Draw axes.
+            glColor3f(1.0, 1.0, 1.0)
+            glLineWidth(3.0)
+            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
+            self.draw_line(ax1[0])
+            self.draw_line(ax1[1])
+            self.draw_line(ax2[0])
+            self.draw_line(ax2[1])
+            self.draw_line(ax3[0])
+            self.draw_line(ax3[1])
+
+            # Mesh render.
+            mesh_data = self.mesh_view.display()
+            front, right, colors = mesh_data['front'], mesh_data['right'], mesh_data['colors']
+
+            # Draw beams.
+            glLineWidth(1.0)
+            num_beams = len(front['beams'])
+            for i in range(num_beams):
+                color = colors[i]
+                glColor3f(color[0], color[1], color[2])
+                line = front['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+                line = right['beams'][i]
+                self.draw_line([line[0], line[1], line[2], line[3]])
+
+            # Draw nodes.
+            glColor3f(0.75, 0.75, 0.60)
+            num_nodes = len(front['nodes'])
+            for i in range(num_nodes):
+                node = front['nodes'][i]
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                node = right['nodes'][i]
+                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+
+            # Draw Text.
+            glEnable( GL_TEXTURE_2D )
+            glBindTexture( GL_TEXTURE_2D, texid )
+            glColor3f(0.65, 0.65, 0.3)
+            self.draw_text(820, 233, 'X')
+            self.draw_text(820, 534, 'Y')
+            self.draw_text(820, 834, 'Z')
+            self.draw_text(350, 985, 'IMU - Acceleration')
+            self.draw_text(1090, 985, 'Tire: Front')
+            self.draw_text(1390, 985, 'Tire: Side')
+            self.draw_text(1170, 425, 'Vehicle Force Distribution')
+            self.draw_text(373, 45, 'time (seconds)')
+            glColor3f(0.85, 0.85, 0.70)
+            self.draw_text(794, 80, '0s')
+            self.draw_text(646, 80, '-1s')
+            self.draw_text(506, 80, '-2s')
+            self.draw_text(366, 80, '-3s')
+            self.draw_text(225, 80, '-4s')
+            self.draw_text(85, 80, '-5s')
+            self.draw_text(44, 231, '0')
+            self.draw_text(44, 531, '0')
+            self.draw_text(44, 831, '0')
+            self.draw_text(20, 107, '-18.0')
+            self.draw_text(30, 357, '18.0')
+            self.draw_text(20, 408, '-18.0')
+            self.draw_text(30, 657, '18.0')
+            self.draw_text(20, 708, '-18.0')
+            self.draw_text(30, 957, '18.0')
+            self.draw_text(1840, 456, '300 N')
+            self.draw_text(1840, 257, '150 N')
+            self.draw_text(1840, 60, '0 N')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
