@@ -622,19 +622,19 @@ class Visualiser:
                 is_streaming=True)
 
         elif demo == 'imu':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.005,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0005,
                 is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, window_width=1)
-            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
+            self.time_series1 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
+            self.time_series2 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
+            self.time_series3 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series4 = Time_Series(size=10000, x_min=1000.0, x_max=1700, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
+            self.time_series4 = Time_Series(size=2000, x_min=1000.0, x_max=1700, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series5 = Time_Series(size=10000, x_min=1000.0, x_max=1700, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
+            self.time_series5 = Time_Series(size=2000, x_min=1000.0, x_max=1700, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series6 = Time_Series(size=10000, x_min=1000.0, x_max=1700, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
+            self.time_series6 = Time_Series(size=2000, x_min=1000.0, x_max=1700, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
 
         elif demo == 'mesh':
@@ -1631,11 +1631,11 @@ class Visualiser:
             self.draw_text(20, 708, '-50.0')
             self.draw_text(30, 957, '50.0')
             self.draw_text(1690, 80, '0s')
-            self.draw_text(1590, 80, '-1s')
-            self.draw_text(1440, 80, '-2s')
-            self.draw_text(1290, 80, '-3s')
-            self.draw_text(1140, 80, '-4s')
-            self.draw_text(990, 80, '-5s')
+            self.draw_text(1590, 80, '-0.4s')
+            self.draw_text(1440, 80, '-0.8s')
+            self.draw_text(1290, 80, '-1.2s')
+            self.draw_text(1140, 80, '-1.6s')
+            self.draw_text(990, 80, '-2s')
             self.draw_text(944, 231, '0')
             self.draw_text(944, 531, '0')
             self.draw_text(944, 831, '0')
@@ -2446,9 +2446,9 @@ class Visualiser:
             self.draw_text(820, 534, 'Y')
             self.draw_text(820, 834, 'Z')
             self.draw_text(350, 985, 'IMU - Acceleration')
-            self.draw_text(1090, 985, 'Tire: Front')
-            self.draw_text(1390, 985, 'Tire: Side')
-            self.draw_text(1170, 425, 'Vehicle Force Distribution')
+            self.draw_text(1065, 985, 'Tire: Front')
+            self.draw_text(1580, 985, 'Tire: Side')
+            self.draw_text(1170, 400, 'Vehicle Force Distribution')
             self.draw_text(373, 45, 'time (seconds)')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(794, 80, '0s')
