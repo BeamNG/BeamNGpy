@@ -35,11 +35,13 @@ class Time_Series:
         self.data_range_inv = 1.0 / (self.data_max - self.data_min)
         self.t = []                                                                                             # The x-axis coordinates of the data.
         self.data = deque()                                                                                     # The y-axis coordinates of the data.
+        self.times = deque()                                                                                    # The time-stamps for the data (optional use).
         dt = self.x_range / max(1e-24, float(self.size))
         y_midpoint = (self.y_min + self.y_max) * 0.5
         for i in range(self.size):                                                                              # Default all data to center of plot.
             self.t.append(self.x_min + (i * dt))
             self.data.append(y_midpoint)
+            self.times.append(-1e12)
 
         # Compute the axes data.
         self.axes_overlap_x, self.axes_overlap_y = axes_overlap_x, axes_overlap_y
@@ -50,7 +52,11 @@ class Time_Series:
         self.grid_notch_x, self.grid_notch_y = grid_notch_x, grid_notch_y
         self.grid_lines = self._compute_grid()
 
-        # Miscellaneous.
+        # Marking/pausing properties.
+        self.is_marked = False
+        self.mark_pos_in_queue = 1
+        self.mark_index = 0
+        self.is_marker_at_target = False
         self.is_pause = False
 
     def _compute_axes(self):
@@ -127,24 +133,78 @@ class Time_Series:
         """
         self.is_pause = is_pause
 
-    def update(self, data):
+    def mark(self, idx = 300, sync_time = None):
+        """
+        Marks the time-series at the current instant in time, such that this marked point (the most-recently added item of data) runs until the idx position in the queue,
+        then the time-series will pause.
+
+        Args:
+            idx (int): The index in the queue, at which to allow the marked position to run to, before pausing.
+            sync_time (float): The time at which to sync the mark to (eg from another sensor). This is used to line up readings at the correct time.
+        """
+        size = len(self.data)
+        self.is_marked = True
+        self.mark_index = idx
+        if sync_time is None:
+            self.mark_pos_in_queue = size - 1
+        else:
+            closest_time = 1e12
+            closest_idx = -1
+            for i in range(size):
+                dt = abs(sync_time - self.times[i])
+                if dt < closest_time:
+                    closest_time = min(closest_time, abs(sync_time - self.times[i]))
+                    closest_idx = i
+            if closest_idx >= 0:
+                self.mark_pos_in_queue = closest_idx
+            else:
+                self.mark_pos_in_queue = size - 1
+
+    def find_first_spike(self, tol = 10.0):
+        """
+        Finds the first data point, along t, which has a rate of change larger than the given tolerance.
+
+        Args:
+            tol (float): The given tolerance.
+
+        Return:
+            float: The x coordinate in the display space, at which the first spike in the data occurs. If none are found, the last point is returned.
+        """
+        for i in range(0, len(self.data) - 1):
+            a, b = self.data[i], self.data[i + 1]
+            dx = abs(b - a)
+            if dx > tol:
+                return self.t[i]
+        return self.t[-1]
+
+    def update(self, data, times = []):
         """
         Updates this time series with a collection of new data. This data is appended to the end of the current data queue, and an equal amount of data is removed
         from the back of the queue such that the queue always remains the same size (ie has the same amount of memory).
-        NOTE: If the mesh visualizer is paused, the data will remain as it was previously.
+        NOTE: If the mesh visualizer is paused or marking is complete, the data will remain as it was previously.
 
         Args:
             data: The given collection of data values, in the form [d0, d1, d2, ...] where the d are scalar floats.
+            times: The time-stamps for the data (optional). This is needed if syncing is required.
         """
-        # If we are pausing, do not perform any data updating.
-        if self.is_pause == True:
+        # If we are pausing or marking (with the marker having reached its target destination), do not perform any data updating.
+        if self.is_pause == True or self.is_marker_at_target == True:
             return
 
         # Add each new entry one by one. As we add an entry, remove one at the back, so as to always keep the queue the same size.
+        is_times = len(times) > 0
         data_size = len(data)
         for i in range(data_size):
             self.data.popleft()
             self.data.append(self._scale_to_range(data[i]))
+            if is_times:
+                self.times.popleft()
+                self.times.append(times[i])
+            if self.is_marked == True:                                      # Transport the marker until it reaches its destination (the stored mark index).
+                self.mark_pos_in_queue = self.mark_pos_in_queue - 1
+                if self.mark_pos_in_queue <= self.mark_index:
+                    self.is_marker_at_target = True
+                    return
 
     def display(self):
         """

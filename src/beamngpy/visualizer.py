@@ -35,6 +35,7 @@ class Visualiser:
         self.is_first_time = True                                   # A flag which indicates if this is the first time we are executing the first iteration.
         self.is_sensor_mode_demo = True                             # A flag which indicates if we are demoing the sensor modes (and not dedicated scenarios).
         self.is_ai_driving = True                                   # A flag which indicates if the main vehicle is to be AI-driven (True) or human driven (False).
+        self.is_final_display = False                               # A flag which indicates if we are in the final (frozen) display phase of a scenario demo.
 
         # General initialization.
         self.width, self.height = width, height
@@ -249,6 +250,7 @@ class Visualiser:
             self.is_first_time = False
             self.is_sensor_mode_demo = True
             self.demo = 0
+            self.is_final_display = False
         elif name == self.scenario1_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -288,6 +290,7 @@ class Visualiser:
             self.demo = '1'
             self._set_up_sensors(self.demo)
             self.scenario1_is_target_hit = False
+            self.is_final_display = False
         elif name == self.scenario2_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -328,6 +331,7 @@ class Visualiser:
             self.demo = '2'
             self._set_up_sensors(self.demo)
             self.scenario2_is_target_hit = False
+            self.is_final_display = False
         elif name == self.scenario3_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -367,6 +371,7 @@ class Visualiser:
             self.demo = '3'
             self._set_up_sensors(self.demo)
             self.is_scenario_3_paused = False
+            self.is_final_display = False
         elif name == self.scenario4_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -404,6 +409,7 @@ class Visualiser:
             self._set_up_sensors(self.demo)
             self.scenario4_is_target_hit = False
             self.is_scenario_4_paused = False
+            self.is_final_display = False
         elif name == self.scenario5_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -441,6 +447,7 @@ class Visualiser:
             self._set_up_sensors(self.demo)
             self.scenario5_is_target_hit = False
             self.is_scenario_5_paused = False
+            self.is_final_display = False
         elif name == self.scenario6_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
             script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
@@ -469,6 +476,7 @@ class Visualiser:
             self._set_up_sensors(self.demo)
             self.scenario6_is_target_hit = False
             self.is_scenario_6_paused = False
+            self.is_final_display = False
 
         if self.is_sensor_mode_demo == False:                                           # Do not check sensor mode buttons if we are running a dedicated scenario.
             return
@@ -620,7 +628,7 @@ class Visualiser:
                 is_streaming=True)
 
         elif demo == 'imu':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.05, physics_update_time=0.0005,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001,
                 is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
             self.time_series1 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
@@ -668,13 +676,13 @@ class Visualiser:
             self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5)
 
         elif demo == '1':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005, is_using_gravity=True, is_visualised=False,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
-            self.time_series1 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series3 = Time_Series(size=5000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+            self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=250.0, top_center=vec3(1500.0, 785.0), top_scale=vec3(190.0, 190.0),
@@ -682,7 +690,7 @@ class Visualiser:
             self.mesh_view.data_mode = 'force'
 
         elif demo == '2':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005, is_using_gravity=True, is_visualised=False,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, gyro_window_width=50)
             self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
@@ -697,7 +705,7 @@ class Visualiser:
             self.mesh_view.data_mode = 'vel_dir'
 
         elif demo == '3':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005, is_using_gravity=True, is_visualised=False,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
             self.time_series1 = Time_Series(size=1000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
@@ -713,7 +721,7 @@ class Visualiser:
             self.mesh_view.data_mode = 'force'
 
         elif demo == '4':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005, is_using_gravity=True, is_visualised=False,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
             self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-100.0, data_max=100.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
@@ -729,7 +737,7 @@ class Visualiser:
             self.mesh_view.data_mode = 'force'
 
         elif demo == '5':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005, is_using_gravity=True, is_visualised=False,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
             self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
@@ -749,21 +757,21 @@ class Visualiser:
             self.mesh_view.data_mode = 'force'
 
         elif demo == '6':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(10.0, -15.0, 0.3), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, -2.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001,
                 is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=150)
-            self.imu2 = AdvancedIMU('imu2', self.bng, self.main_vehicle, pos=(-7.0, 7.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005,
+            self.imu2 = AdvancedIMU('imu2', self.bng, self.main_vehicle, pos=(0.0, 7.0, 4.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001,
                 is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=150)
-            self.time_series1 = Time_Series(size=500, x_min=80.0, x_max=670, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series1 = Time_Series(size=1000, x_min=80.0, x_max=670, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=500, x_min=720.0, x_max=1310, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series2 = Time_Series(size=1000, x_min=720.0, x_max=1310, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series3 = Time_Series(size=500, x_min=1360.0, x_max=1900, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series3 = Time_Series(size=1000, x_min=1360.0, x_max=1900, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series4 = Time_Series(size=500, x_min=80.0, x_max=670, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series4 = Time_Series(size=1000, x_min=80.0, x_max=670, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series5 = Time_Series(size=500, x_min=720.0, x_max=1310, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series5 = Time_Series(size=1000, x_min=720.0, x_max=1310, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series6 = Time_Series(size=500, x_min=1360.0, x_max=1900, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series6 = Time_Series(size=1000, x_min=1360.0, x_max=1900, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-3.0, -1.1, 0.4), dir=(1, 0, 0),
                 resolution=(370, 370), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
@@ -952,15 +960,16 @@ class Visualiser:
                 dt = time.time() - self.scenario1_hit_time
                 if dt > 0.8:
                     self.mesh_view.pause(True)                                              # pause the mesh after 0.8s.
-                if dt > 2.0:
-                    self.time_series1.pause(True)                                           # pause the IMU after 2.0s.
-                    self.time_series2.pause(True)
-                    self.time_series3.pause(True)
             elif d < 7.0:
                 self.scenario1_is_target_hit = True
                 self.scenario1_hit_time = time.time()
                 self.vehicles['vehicle_1'].ai.set_mode('disabled')
                 self.vehicles['vehicle_1'].control(brake=1.0, parkingbrake=1.0, gear=0, steering=0.0)
+                self.time_series1.mark(idx=3000)
+                self.time_series2.mark(idx=3000)
+                self.time_series3.mark(idx=3000)
+            if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
+                self.is_final_display = True
 
         elif self.demo == '2':
             full_imu_data = self.imu1.poll()                                                # update IMU sensor.
@@ -997,9 +1006,6 @@ class Visualiser:
                     if self.mesh_view.ang_range > math.pi * 0.0625:                         # pause the mesh when the angle variance across the mesh is large enough.
                         self.mesh_view.pause(True)
                 elif dt >= 3.3:
-                    self.time_series1.pause(True)                                           # pause the IMU.
-                    self.time_series2.pause(True)
-                    self.time_series3.pause(True)
                     self.trajectory_view.pause(True)                                        # pause the Trajectory.
                     self.vehicles['vehicle_1'].ai.set_mode('disabled')                      # sc2 hit - step 4.
                     self.vehicles['vehicle_1'].control(steering=0.0, brake=0.3, gear=0)
@@ -1008,6 +1014,11 @@ class Visualiser:
                 self.scenario2_hit_time = time.time()
                 self.vehicles['vehicle_1'].ai.set_mode('disabled')                          # sc2 hit - step 1.
                 self.vehicles['vehicle_1'].control(steering=1.0, brake=1.0)
+                self.time_series1.mark(idx=50)
+                self.time_series2.mark(idx=50)
+                self.time_series3.mark(idx=50)
+            if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
+                self.is_final_display = True
 
         elif self.demo == '3':
             full_imu_data = self.imu1.poll()                                                    # update IMU sensor.
@@ -1034,10 +1045,12 @@ class Visualiser:
             if d < 4.0:
                 if self.mesh_view.force_range > 550.0:
                     self.mesh_view.pause(True)                                                  # pause the mesh when the force variance is large enough.
-                    self.time_series1.pause(True)                                               # pause the IMU.
-                    self.time_series2.pause(True)
-                    self.time_series3.pause(True)
-                    self.is_scenario_3_paused = True
+                self.time_series1.mark(idx=500)
+                self.time_series2.mark(idx=500)
+                self.time_series3.mark(idx=500)
+                self.is_scenario_3_paused = True
+            if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
+                self.is_final_display = True
 
         elif self.demo == '4':
             full_imu_data = self.imu1.poll()                                                    # update IMU sensor.
@@ -1061,18 +1074,15 @@ class Visualiser:
             pos = vec3(current_pos[0], current_pos[1], current_pos[2])
             p = vec3(pos[0], pos[1], pos[2])
             d = p.distance(self.scenario4_target)
-            if self.scenario4_is_target_hit == True:
-                dt = time.time() - self.scenario4_hit_time
-                if dt > 1.0:
-                    self.time_series1.pause(True)                                               # pause the IMU.
-                    self.time_series2.pause(True)
-                    self.time_series3.pause(True)
-            elif d < 5.0:
+            if d < 5.0:
                 if self.mesh_view.force_range > 950.0:
                     self.mesh_view.pause(True)
-                    self.scenario4_is_target_hit = True
-                    self.scenario4_hit_time = time.time()
-                    self.is_scenario_4_paused = True
+                self.is_scenario_4_paused = True
+                self.time_series1.mark(idx=2500)
+                self.time_series2.mark(idx=2500)
+                self.time_series3.mark(idx=2500)
+            if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
+                self.is_final_display = True
 
         elif self.demo == '5':
             full_imu_data = self.imu1.poll()                                                    # update IMU sensor.
@@ -1107,9 +1117,6 @@ class Visualiser:
                     self.is_scenario_5_paused = True
                     self.vehicles['vehicle_1'].ai.set_mode('span')
                 if dt > 3.0:
-                    self.time_series1.pause(True)                                               # pause the IMU.
-                    self.time_series2.pause(True)
-                    self.time_series3.pause(True)
                     self.vehicles['vehicle_6'].ai.set_mode('disabled')                          # force other vehicle to brake.
                     self.vehicles['vehicle_6'].control(steering=0.0, brake=1.0, gear=0)
             elif d < 8.0:
@@ -1119,17 +1126,24 @@ class Visualiser:
                 self.vehicles['vehicle_1'].deflate_tire(0)                                      # deflate the FL tyre.
                 self.vehicles['vehicle_7'].ai.set_mode('disabled')                              # force other vehicle to brake.
                 self.vehicles['vehicle_7'].control(steering=0.0, brake=1.0, gear=0)
+                self.time_series1.mark(idx=2500)
+                self.time_series2.mark(idx=2500)
+                self.time_series3.mark(idx=2500)
+            if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
+                self.is_final_display = True
 
         elif self.demo == '6':
             full_imu_data1 = self.imu1.poll()
             full_imu_data2 = self.imu2.poll()
-            acc1X, acc1Y, acc1Z, acc2X, acc2Y, acc2Z = [], [], [], [], [], []
+            acc1X, acc1Y, acc1Z, acc2X, acc2Y, acc2Z, acc2T = [], [], [], [], [], [], []
+            sync_time = -1e12
             for i in range(len(full_imu_data1)):
                 new_imu_data = full_imu_data1[i]
                 acc = new_imu_data['accSmooth']
                 acc1X.append(acc[0])
                 acc1Y.append(acc[1])
                 acc1Z.append(acc[2])
+                sync_time = max(sync_time, new_imu_data['time'])
             self.time_series1.update(acc1X)
             self.time_series2.update(acc1Y)
             self.time_series3.update(acc1Z)
@@ -1139,9 +1153,10 @@ class Visualiser:
                 acc2X.append(acc[0])
                 acc2Y.append(acc[1])
                 acc2Z.append(acc[2])
-            self.time_series4.update(acc2X)
-            self.time_series5.update(acc2Y)
-            self.time_series6.update(acc2Z)
+                acc2T.append(new_imu_data['time'])
+            self.time_series4.update(acc2X, times=acc2T)
+            self.time_series5.update(acc2Y, times=acc2T)
+            self.time_series6.update(acc2Z, times=acc2T)
             if self.is_scenario_6_paused == False:
                 cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensors (unless paused).
                 cam_size = cam_width * cam_height * 4
@@ -1157,17 +1172,19 @@ class Visualiser:
             d = p.distance(self.scenario6_target)
             if self.scenario6_is_target_hit == True:
                 dt = time.time() - self.scenario6_hit_time
-                if dt > 0.4:
-                    self.time_series1.pause(True)                                               # Pause both IMUs.
-                    self.time_series2.pause(True)
-                    self.time_series3.pause(True)
-                    self.time_series4.pause(True)
-                    self.time_series5.pause(True)
-                    self.time_series6.pause(True)
+                if dt > 0.3:
                     self.is_scenario_6_paused = True
             elif d < 3.0:
                 self.scenario6_is_target_hit = True
                 self.scenario6_hit_time = time.time()
+                self.time_series1.mark(idx=100)                                                 # Mark the time series displays so they all stop at the same point.
+                self.time_series2.mark(idx=100)
+                self.time_series3.mark(idx=100)
+                self.time_series4.mark(idx=100, sync_time=sync_time)
+                self.time_series5.mark(idx=100, sync_time=sync_time)
+                self.time_series6.mark(idx=100, sync_time=sync_time)
+            if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
+                self.is_final_display = True
 
         glutPostRedisplay()
 
@@ -2615,6 +2632,30 @@ class Visualiser:
             self.draw_line(ax6[0])
             self.draw_line(ax6[1])
 
+            # Draw final display markups.
+            spike1_x, spike2_x, spike3_x, spike4_x, spike5_x, spike6_x = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+            if self.is_final_display == True:
+                glColor3f(1.0, 1.0, 0.0)
+                glLineWidth(2.0)
+                spike1_x = self.time_series1.find_first_spike(tol=0.15)
+                spike2_x = self.time_series2.find_first_spike(tol=0.15)
+                spike3_x = self.time_series3.find_first_spike(tol=0.15)
+                spike4_x = self.time_series4.find_first_spike(tol=0.15)
+                spike5_x = self.time_series5.find_first_spike(tol=0.15)
+                spike6_x = self.time_series6.find_first_spike(tol=0.15)
+                if spike4_x > spike1_x:
+                    self.draw_line([spike1_x, 709, spike1_x, 1005])
+                    self.draw_line([spike2_x, 709, spike2_x, 1005])
+                    self.draw_line([spike3_x, 709, spike3_x, 1005])
+                    self.draw_line([spike4_x, 420, spike4_x, 709])
+                    self.draw_line([spike5_x, 420, spike5_x, 709])
+                    self.draw_line([spike6_x, 420, spike6_x, 709])
+                    glLineWidth(12.0)
+                    glColor3f(1.0, 1.0, 0.05)
+                    self.draw_line([spike1_x, 707, spike4_x, 707])
+                    self.draw_line([spike2_x, 707, spike5_x, 707])
+                    self.draw_line([spike3_x, 707, spike6_x, 707])
+
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
@@ -2626,8 +2667,8 @@ class Visualiser:
             self.draw_text(946, 370, 'time (seconds)')
             self.draw_text(1562, 370, 'time (seconds)')
             glColor3f(0.95, 0.25, 0.70)
-            self.draw_text(10, 1040, 'Left IMU - Accel')
-            self.draw_text(10, 356, 'Right IMU - Accel')
+            self.draw_text(10, 1040, '[Left IMU - Accel]')
+            self.draw_text(10, 356, '[Right IMU - Accel]')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(2, 436, '-300.0')
             self.draw_text(33, 561, '0')
@@ -2656,6 +2697,11 @@ class Visualiser:
             self.draw_text(1545, 408, '-0.15s')
             self.draw_text(1441, 408, '-0.2s')
             self.draw_text(1330, 408, '-0.25s')
+
+            if self.is_final_display == True and spike4_x > spike1_x:
+                self.draw_text(spike4_x + 8, 706, 'LAG')
+                self.draw_text(spike5_x + 8, 706, 'LAG')
+                self.draw_text(spike6_x + 8, 706, 'LAG')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
