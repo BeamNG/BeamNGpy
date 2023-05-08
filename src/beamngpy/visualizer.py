@@ -749,22 +749,26 @@ class Visualiser:
             self.mesh_view.data_mode = 'force'
 
         elif demo == '6':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(10.0, -15.0, 0.7), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005,
-                is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
-            self.imu2 = AdvancedIMU('imu2', self.bng, self.main_vehicle, pos=(-7.0, 7.0, 0.7), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005,
-                is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
-            self.time_series1 = Time_Series(size=500, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(10.0, -15.0, 0.3), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005,
+                is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=150)
+            self.imu2 = AdvancedIMU('imu2', self.bng, self.main_vehicle, pos=(-7.0, 7.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0005, physics_update_time=0.0005,
+                is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=150)
+            self.time_series1 = Time_Series(size=500, x_min=80.0, x_max=670, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=500, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series2 = Time_Series(size=500, x_min=720.0, x_max=1310, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series3 = Time_Series(size=500, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series3 = Time_Series(size=500, x_min=1360.0, x_max=1900, y_min=730.0, y_max=980.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series4 = Time_Series(size=500, x_min=1000.0, x_max=1700, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series4 = Time_Series(size=500, x_min=80.0, x_max=670, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series5 = Time_Series(size=500, x_min=1000.0, x_max=1700, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series5 = Time_Series(size=500, x_min=720.0, x_max=1310, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series6 = Time_Series(size=500, x_min=1000.0, x_max=1700, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
+            self.time_series6 = Time_Series(size=500, x_min=1360.0, x_max=1900, y_min=430.0, y_max=680.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-300.0, data_max=300.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-3.0, -1.1, 0.4), dir=(1, 0, 0),
+                resolution=(370, 370), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
+            self.camera2 = Camera('camera2', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0.0, -1.5, 3.0), dir=(0.0, 0.1, -1),
+                resolution=(370, 370), near_far_planes=(0.1, 30), is_render_annotations=False, is_render_depth=False, is_streaming=True)
 
     def on_drag(self, x, y):
         if self.follow:
@@ -1138,6 +1142,15 @@ class Visualiser:
             self.time_series4.update(acc2X)
             self.time_series5.update(acc2Y)
             self.time_series6.update(acc2Z)
+            if self.is_scenario_6_paused == False:
+                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensors (unless paused).
+                cam_size = cam_width * cam_height * 4
+                camera_data1 = self.camera.stream_colour(cam_size)
+                self.camera_color_size = [cam_width, cam_height]
+                self.camera_color_img = camera_data1
+                camera_data2 = self.camera2.stream_colour(cam_size)
+                self.camera2_color_size = [cam_width, cam_height]
+                self.camera2_color_img = camera_data2
 
             pos = vec3(current_pos[0], current_pos[1], current_pos[2])
             p = vec3(pos[0], pos[1], pos[2])
@@ -1151,6 +1164,7 @@ class Visualiser:
                     self.time_series4.pause(True)
                     self.time_series5.pause(True)
                     self.time_series6.pause(True)
+                    self.is_scenario_6_paused = True
             elif d < 3.0:
                 self.scenario6_is_target_hit = True
                 self.scenario6_hit_time = time.time()
@@ -2538,9 +2552,11 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == '6':
-            # Get display data.
-            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
-            disp4, disp5, disp6 = self.time_series4.display(), self.time_series5.display(), self.time_series6.display()
+
+            # Render the two Camera colour images.
+            if len(self.camera_color_size) > 0 and len(self.camera2_color_size) > 0:
+                self.render_img(530, 10, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+                self.render_img(1150, 10, self.camera2_color_img, self.camera2_color_size[0], self.camera2_color_size[1], 1, 1, 1, 0)
 
             glViewport(0, 0, self.width, self.height)
 
@@ -2557,6 +2573,10 @@ class Visualiser:
             glMatrixMode(GL_MODELVIEW)
             glPushMatrix()
             glLoadIdentity()
+
+            # Get display data.
+            disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
+            disp4, disp5, disp6 = self.time_series4.display(), self.time_series5.display(), self.time_series6.display()
 
             # Draw grid.
             grid1, grid2, grid3, grid4, grid5, grid6 = disp1['grid'], disp2['grid'], disp3['grid'], disp4['grid'], disp5['grid'], disp6['grid']
@@ -2599,44 +2619,43 @@ class Visualiser:
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
-            self.draw_text(1710, 275, 'X')
-            self.draw_text(1710, 570, 'Y')
-            self.draw_text(1710, 875, 'Z')
-            self.draw_text(300, 985, 'Left IMU - Acceleration')
-            self.draw_text(1200, 985, ' Right IMU - Acceleration')
-            self.draw_text(1300, 45, 'time (seconds)')
-            self.draw_text(400, 45, 'time (seconds)')
+            self.draw_text(369, 1017, 'X')
+            self.draw_text(1008, 1017, 'Y')
+            self.draw_text(1621, 1017, 'Z')
+            self.draw_text(307, 370, 'time (seconds)')
+            self.draw_text(946, 370, 'time (seconds)')
+            self.draw_text(1562, 370, 'time (seconds)')
+            glColor3f(0.95, 0.25, 0.70)
+            self.draw_text(10, 1040, 'Left IMU - Accel')
+            self.draw_text(10, 356, 'Right IMU - Accel')
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(790, 80, '0s')
-            self.draw_text(690, 80, '-0.05s')
-            self.draw_text(540, 80, '-0.1s')
-            self.draw_text(390, 80, '-0.15s')
-            self.draw_text(240, 80, '-0.2s')
-            self.draw_text(90, 80, '-0.25s')
-            self.draw_text(44, 231, '0')
-            self.draw_text(44, 531, '0')
-            self.draw_text(44, 831, '0')
-            self.draw_text(20, 107, '-300.0')
-            self.draw_text(30, 357, '300.0')
-            self.draw_text(20, 408, '-300.0')
-            self.draw_text(30, 657, '300.0')
-            self.draw_text(20, 708, '-300.0')
-            self.draw_text(30, 957, '300.0')
-            self.draw_text(1690, 80, '0s')
-            self.draw_text(1590, 80, '-0.05s')
-            self.draw_text(1440, 80, '-0.1s')
-            self.draw_text(1290, 80, '-0.15s')
-            self.draw_text(1140, 80, '-0.2s')
-            self.draw_text(990, 80, '-0.25s')
-            self.draw_text(944, 231, '0')
-            self.draw_text(944, 531, '0')
-            self.draw_text(944, 831, '0')
-            self.draw_text(920, 107, '-300.0')
-            self.draw_text(930, 357, '300.0')
-            self.draw_text(920, 408, '-300.0')
-            self.draw_text(930, 657, '300.0')
-            self.draw_text(920, 708, '-300.0')
-            self.draw_text(930, 957, '300.0')
+            self.draw_text(2, 436, '-300.0')
+            self.draw_text(33, 561, '0')
+            self.draw_text(7, 692, '300.0')
+            self.draw_text(2, 736, '-300.0')
+            self.draw_text(33, 863, '0')
+            self.draw_text(7, 987, '300.0')
+
+            self.draw_text(655, 408, '0s')
+            self.draw_text(518, 408, '-0.05s')
+            self.draw_text(404, 408, '-0.1s')
+            self.draw_text(282, 408, '-0.15s')
+            self.draw_text(177, 408, '-0.2s')
+            self.draw_text(50, 408, '-0.25s')
+
+            self.draw_text(1293, 408, '0s')
+            self.draw_text(1162, 408, '-0.05s')
+            self.draw_text(1045, 408, '-0.1s')
+            self.draw_text(923, 408, '-0.15s')
+            self.draw_text(812, 408, '-0.2s')
+            self.draw_text(690, 408, '-0.25s')
+
+            self.draw_text(1884, 408, '0s')
+            self.draw_text(1764, 408, '-0.05s')
+            self.draw_text(1657, 408, '-0.1s')
+            self.draw_text(1545, 408, '-0.15s')
+            self.draw_text(1441, 408, '-0.2s')
+            self.draw_text(1330, 408, '-0.25s')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
