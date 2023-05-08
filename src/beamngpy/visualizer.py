@@ -723,11 +723,11 @@ class Visualiser:
         elif demo == '4':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
-            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-100.0, data_max=100.0,
+            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-40.0, data_max=40.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-100.0, data_max=100.0,
+            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-40.0, data_max=40.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-100.0, data_max=100.0,
+            self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-40.0, data_max=40.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
                 resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
@@ -739,9 +739,9 @@ class Visualiser:
         elif demo == '5':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
-            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-9.0, data_max=9.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
+            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-9.0, data_max=9.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
@@ -990,7 +990,7 @@ class Visualiser:
             d = p.distance(self.scenario2_target)
             if self.scenario2_is_target_hit == True:
                 dt = time.time() - self.scenario2_hit_time
-                if dt > 0.5 and dt < 1.0:
+                if dt > 0.75 and dt < 1.0:
                     self.vehicles['vehicle_1'].control(steering=-1.0, brake=1.0)            # sc2 hit - step 2.
                 elif dt >= 1.0 and dt < 3.3:
                     self.vehicles['vehicle_1'].control(steering=0.0)
@@ -1009,7 +1009,7 @@ class Visualiser:
                     self.trajectory_view.pause(True)                                        # pause the Trajectory.
                     self.vehicles['vehicle_1'].ai.set_mode('disabled')                      # sc2 hit - step 4.
                     self.vehicles['vehicle_1'].control(steering=0.0, brake=0.3, gear=0)
-            elif d < 9.0 and self.scenario2_is_target_hit == False:
+            elif d < 13.0 and self.scenario2_is_target_hit == False:
                 self.scenario2_is_target_hit = True
                 self.scenario2_hit_time = time.time()
                 self.vehicles['vehicle_1'].ai.set_mode('disabled')                          # sc2 hit - step 1.
@@ -1116,7 +1116,7 @@ class Visualiser:
                     self.mesh_view.pause(True)                                                  # pause the mesh.
                     self.is_scenario_5_paused = True
                     self.vehicles['vehicle_1'].ai.set_mode('span')
-                if dt > 3.0:
+                if dt > 2.0:
                     self.vehicles['vehicle_6'].ai.set_mode('disabled')                          # force other vehicle to brake.
                     self.vehicles['vehicle_6'].control(steering=0.0, brake=1.0, gear=0)
             elif d < 8.0:
@@ -1183,7 +1183,7 @@ class Visualiser:
                 self.time_series4.mark(idx=100, sync_time=sync_time)
                 self.time_series5.mark(idx=100, sync_time=sync_time)
                 self.time_series6.mark(idx=100, sync_time=sync_time)
-            if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
+            if self.is_final_display == False and self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
                 self.is_final_display = True
 
         glutPostRedisplay()
@@ -2432,12 +2432,12 @@ class Visualiser:
             self.draw_text(44, 231, '0')
             self.draw_text(44, 531, '0')
             self.draw_text(44, 831, '0')
-            self.draw_text(20, 107, '-100.0')
-            self.draw_text(30, 357, '100.0')
-            self.draw_text(20, 408, '-100.0')
-            self.draw_text(30, 657, '100.0')
-            self.draw_text(20, 708, '-100.0')
-            self.draw_text(30, 957, '100.0')
+            self.draw_text(20, 107, '-40.0')
+            self.draw_text(30, 357, '40.0')
+            self.draw_text(20, 408, '-40.0')
+            self.draw_text(30, 657, '40.0')
+            self.draw_text(20, 708, '-40.0')
+            self.draw_text(30, 957, '40.0')
             self.draw_text(1810, 451, '1000 N')
             self.draw_text(1810, 252, '500 N')
             self.draw_text(1810, 55, '0 N')
@@ -2505,6 +2505,14 @@ class Visualiser:
             self.draw_line(ax3[0])
             self.draw_line(ax3[1])
 
+            # Draw final display markups.
+            spike1_x = 0.0
+            if self.is_final_display == True:
+                glColor3f(1.0, 1.0, 0.0)
+                glLineWidth(2.0)
+                spike1_x = self.time_series2.find_first_spike(tol=0.35)
+                self.draw_line([spike1_x, 50, spike1_x, 1000])
+
             # Mesh render.
             mesh_data = self.mesh_view.display()
             front, right, colors = mesh_data['front'], mesh_data['right'], mesh_data['colors']
@@ -2540,7 +2548,7 @@ class Visualiser:
             self.draw_text(1065, 985, 'Tire: Front')
             self.draw_text(1580, 985, 'Tire: Side')
             self.draw_text(1170, 400, 'Vehicle Force Distribution')
-            self.draw_text(373, 45, 'time (seconds)')
+            self.draw_text(373, 48, 'time (seconds)')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(794, 80, '0s')
             self.draw_text(646, 80, '-1s')
@@ -2551,15 +2559,17 @@ class Visualiser:
             self.draw_text(44, 231, '0')
             self.draw_text(44, 531, '0')
             self.draw_text(44, 831, '0')
-            self.draw_text(20, 107, '-18.0')
-            self.draw_text(30, 357, '18.0')
-            self.draw_text(20, 408, '-18.0')
-            self.draw_text(30, 657, '18.0')
+            self.draw_text(20, 107, '-9.0')
+            self.draw_text(30, 357, '9.0')
+            self.draw_text(20, 408, '-9.0')
+            self.draw_text(30, 657, '9.0')
             self.draw_text(20, 708, '-18.0')
             self.draw_text(30, 957, '18.0')
             self.draw_text(1840, 456, '300 N')
             self.draw_text(1840, 257, '150 N')
             self.draw_text(1840, 60, '0 N')
+            if self.is_final_display == True:
+                self.draw_text(spike1_x - 66, 20, 'TYRE BLOW OUT')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
