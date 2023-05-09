@@ -115,6 +115,7 @@ class Visualiser:
         self.scenario2_target = vec3(-798.9409014877656, -408.92386026442546, 103.14585273600176)       # scenario 2.
         self.scenario2_is_target_hit = False
         self.scenario2_hit_time = 1e12
+        self.is_scenario_2_paused = False
         self.scenario3_target = vec3(-87.92972193099558, -677.5602118819952, 140.7823222070001)         # scenario 3.
         self.is_scenario_3_paused = False
         self.scenario4_target = vec3(-349.4291180372238, 469.7554428577423, 89.0815799459815)           # scenario 4.
@@ -125,7 +126,7 @@ class Visualiser:
         self.scenario5_is_target_hit = False
         self.scenario5_hit_time = 1e12
         self.is_scenario_5_paused = False
-        self.scenario6_target = vec3(-972.4352, -636.335896, 106.9540274)                             # scenario 6.
+        self.scenario6_target = vec3(-972.4352, -636.335896, 106.9540274)                               # scenario 6.
         self.scenario6_is_target_hit = False
         self.scenario6_hit_time = 1e12
         self.is_scenario_6_paused = False
@@ -331,6 +332,7 @@ class Visualiser:
             self.demo = '2'
             self._set_up_sensors(self.demo)
             self.scenario2_is_target_hit = False
+            self.is_scenario_2_paused = False
             self.is_final_display = False
         elif name == self.scenario3_key:
             script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
@@ -644,7 +646,7 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
 
         elif demo == 'mesh':
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001, groups_list=['sbr_suspension_F', 'sbr_suspension_R'])
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=300.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=200.0,
                 top_center=vec3(600.0, 840.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1340.0, 200.0),
                 right_scale=vec3(150.0, 150.0), is_top=True, is_front=True, is_right=True)
@@ -684,38 +686,40 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body', 'sbr_wheeldata_F', 'sbr_wheeldata_R'])
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=250.0, top_center=vec3(1500.0, 785.0), top_scale=vec3(190.0, 190.0),
                 front_center=vec3(1500.0, 215.0), front_scale=vec3(190.0, 190.0), is_top=True, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
 
         elif demo == '2':
-            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
-                is_snapping_desired=True, is_force_inside_triangle=True, gyro_window_width=50)
+            self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001,
+                is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, gyro_window_width=50)
             self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.trajectory_view = Trajectory(x_min=960, x_max=1920, y_min=540, y_max=1080, origin_x=1800, origin_y=810, zoom=8.0, rot_deg=-40.0)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
-            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, top_center=vec3(1500.0, 290.0), top_scale=vec3(150.0, 150.0),
-                is_top=True, is_front=False, is_right=False)
+            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0, -15.0, 15.0), dir=(0.0, 1, -1),
+                resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body'])
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
+                is_top=False, is_front=True, is_right=False, vel_dir_sensitivity=8.0)
             self.mesh_view.data_mode = 'vel_dir'
 
         elif demo == '3':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001, is_using_gravity=True, is_visualised=False,
                 is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
-            self.time_series1 = Time_Series(size=1000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+            self.time_series1 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=1000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+            self.time_series2 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series3 = Time_Series(size=1000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
+            self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
                 resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_suspension_F', 'sbr_suspension_R'])
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005,
+                groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'])
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=600.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
                 is_top=False, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
@@ -731,7 +735,8 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
                 resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005,
+                groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'])
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=1000.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
                 is_top=False, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
@@ -749,7 +754,7 @@ class Visualiser:
                 resolution=(480, 480), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
             self.camera2 = Camera('camera2', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0.6, -2.0, 0.15), dir=(0, 1, 0),
                 resolution=(480, 480), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body', 'sbr_wheeldata_F', 'sbr_wheeldata_R'])
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=250.0,
                 front_center=vec3(1250.0, 185.0), front_scale=vec3(125.0, 125.0),
                 right_center=vec3(1580.0, 185.0), right_scale=vec3(125.0, 125.0),
@@ -984,7 +989,11 @@ class Visualiser:
             self.time_series2.update(gyroY)
             self.time_series3.update(gyroZ)
             self.mesh_view.update(dir=current_dir)                                          # update Mesh sensor.
-            self.trajectory_view.update(current_pos)                                        # update Trajectory.
+            if self.is_scenario_2_paused == False:
+                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensor (unless it has been paused).
+                camera_data1 = self.camera.stream_colour(cam_width * cam_height * 4)
+                self.camera_color_size = [cam_width, cam_height]
+                self.camera_color_img = camera_data1
 
             p = vec3(current_pos[0], current_pos[1], current_pos[2])
             d = p.distance(self.scenario2_target)
@@ -1006,7 +1015,7 @@ class Visualiser:
                     if self.mesh_view.ang_range > math.pi * 0.0625:                         # pause the mesh when the angle variance across the mesh is large enough.
                         self.mesh_view.pause(True)
                 elif dt >= 3.3:
-                    self.trajectory_view.pause(True)                                        # pause the Trajectory.
+                    self.is_scenario_2_paused = True
                     self.vehicles['vehicle_1'].ai.set_mode('disabled')                      # sc2 hit - step 4.
                     self.vehicles['vehicle_1'].control(steering=0.0, brake=0.3, gear=0)
             elif d < 13.0 and self.scenario2_is_target_hit == False:
@@ -1014,9 +1023,9 @@ class Visualiser:
                 self.scenario2_hit_time = time.time()
                 self.vehicles['vehicle_1'].ai.set_mode('disabled')                          # sc2 hit - step 1.
                 self.vehicles['vehicle_1'].control(steering=1.0, brake=1.0)
-                self.time_series1.mark(idx=50)
-                self.time_series2.mark(idx=50)
-                self.time_series3.mark(idx=50)
+                self.time_series1.mark(idx=1500)
+                self.time_series2.mark(idx=1500)
+                self.time_series3.mark(idx=1500)
             if self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
                 self.is_final_display = True
 
@@ -2076,6 +2085,7 @@ class Visualiser:
             self.draw_text(1840, 60, '0 N')
             if self.is_final_display == True:
                 self.draw_text(spike2_x - 66, 20, 'BRAKING: START')
+                self.draw_text(1120, 100, 'VEHICLE WEIGHT SHIFTED TO FRONT >>>>>')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -2086,6 +2096,10 @@ class Visualiser:
 
         if self.demo == '2':
             glViewport(0, 0, self.width, self.height)
+
+            # Render the Camera colour image.
+            if len(self.camera_color_size) > 0:
+                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
             # Render the colorbar.
             self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
@@ -2137,34 +2151,21 @@ class Visualiser:
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
-            top, colors = mesh_data['top'], mesh_data['colors']
+            front, colors = mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
             glLineWidth(1.0)
-            num_beams = len(top['beams'])
+            num_beams = len(front['beams'])
             for i in range(num_beams):
                 color = colors[i]
                 glColor3f(color[0], color[1], color[2])
-                line = top['beams'][i]
+                line = front['beams'][i]
                 self.draw_line([line[0], line[1], line[2], line[3]])
 
             # Draw nodes.
             glColor3f(0.75, 0.75, 0.60)
-            for _, node in top['nodes'].items():
+            for _, node in front['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
-
-            # Plot the trajectory.
-            glColor3f(0.7, 0.35, 0.7)
-            glLineWidth(2.0)
-            traj_lines = self.trajectory_view.display()
-            for line in traj_lines:
-                self.draw_line(line)
-            if len(traj_lines) > 0:
-                car_x, car_y = traj_lines[-1][2], traj_lines[-1][3]                                             # The car rectangle.
-                glColor3f(0.9, 0.05, 0.05)
-                glRectf(car_x - 20, car_y - 10, car_x + 20, car_y + 10)
-                glColor3f(0.0, 0.0, 0.0)
-                glRectf(car_x - 18, car_y - 8, car_x + 18, car_y + 8)
 
             # View-division lines.
             glViewport(0, 0, self.width, self.height)
@@ -2172,6 +2173,14 @@ class Visualiser:
             glLineWidth(3.0)
             self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
             self.draw_line([self.half_width, 0, self.half_width, self.height])
+
+            # Draw final display markups.
+            spike3_x = 0.0
+            if self.is_final_display == True:
+                glColor3f(1.0, 1.0, 0.0)
+                glLineWidth(2.0)
+                spike3_x = self.time_series3.find_first_spike(tol=0.05)
+                self.draw_line([spike3_x, 45, spike3_x, 1000])
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
@@ -2182,15 +2191,16 @@ class Visualiser:
             self.draw_text(820, 834, 'Yaw [Z]')
             self.draw_text(358, 995, 'IMU - Gyroscopic')
             self.draw_text(1330, 500, 'Vehicle Velocity Direction')
-            self.draw_text(1400, 995, 'Trajectory')
             self.draw_text(373, 47, 'time (seconds)')
+            glColor3f(0.01, 0.01, 0.01)
+            self.draw_text(1400, 995, 'Top-Down View')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(795, 80, '0s')
-            self.draw_text(645, 80, '-2s')
-            self.draw_text(505, 80, '-4s')
-            self.draw_text(364, 80, '-6s')
-            self.draw_text(223, 80, '-8s')
-            self.draw_text(84, 80, '-10s')
+            self.draw_text(645, 80, '-1s')
+            self.draw_text(505, 80, '-2s')
+            self.draw_text(364, 80, '-3s')
+            self.draw_text(223, 80, '-4s')
+            self.draw_text(84, 80, '-5s')
             self.draw_text(44, 231, '0')
             self.draw_text(44, 531, '0')
             self.draw_text(44, 831, '0')
@@ -2200,9 +2210,12 @@ class Visualiser:
             self.draw_text(30, 657, '2.5')
             self.draw_text(20, 708, '-2.5')
             self.draw_text(30, 957, '2.5')
-            self.draw_text(1810, 451, '22.5 deg')
-            self.draw_text(1810, 252, '11.25 deg')
+            self.draw_text(1810, 451, '-22.5 deg')
+            self.draw_text(1810, 252, '-11.2 deg')
             self.draw_text(1810, 55, 'Fwd')
+            if self.is_final_display == True:
+                self.draw_text(spike3_x - 135, 20, 'DOUBLE LANE CHANGE: START')
+                self.draw_text(1110, 100, 'VELOCITY DIRECTION CHANGING ACROSS VEHICLE >>>>')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -2305,11 +2318,11 @@ class Visualiser:
             self.draw_text(1400, 1040, 'Side Camera')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(795, 80, '0s')
-            self.draw_text(645, 80, '-0.1s')
-            self.draw_text(505, 80, '-0.2s')
-            self.draw_text(364, 80, '-0.3s')
-            self.draw_text(223, 80, '-0.4s')
-            self.draw_text(84, 80, '-0.5s')
+            self.draw_text(645, 80, '-1.s')
+            self.draw_text(505, 80, '-2s')
+            self.draw_text(364, 80, '-3s')
+            self.draw_text(223, 80, '-4s')
+            self.draw_text(84, 80, '-5s')
             self.draw_text(44, 231, '0')
             self.draw_text(44, 531, '0')
             self.draw_text(44, 831, '0')
@@ -2428,7 +2441,7 @@ class Visualiser:
             self.draw_text(358, 995, 'IMU - Acceleration')
             self.draw_text(1330, 500, 'Force Distribution')
             self.draw_text(373, 47, 'time (seconds)')
-            glColor3f(0.1, 0.1, 0.1)
+            glColor3f(0.01, 0.01, 0.01)
             self.draw_text(1400, 1040, 'Side Camera')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(795, 80, '0s')
