@@ -19,7 +19,7 @@ class Mesh_View:
             force: The force distribution across the vehicle. This is averaged for each beam, and we show the force vector magnitude.
             velocity: The velocity distribution across the vehicle.  This is averaged for each beam, and we show the velocity vector magnitude.
             vel_dir: The velocity direction distrubution.  This is the dot product between the vehicle forward direction and the mean velocity on the beam.
-            beam stress: The stress distribution across the vehicle. This is a scalar value for each beam, and is smoothed with exponential smoothing.
+            beam stress: The stress distribution across the vehicle. This is a scalar value for each beam.
         On construction, the basic display properties are set, then when new data is generated, this can be updated using the 'update()' method.
         When we want to render the mesh plots, we call the 'display()' method to fetch the latest geometric data (rectangles and colored lines, here).
         The vehicle mesh visualizer can be paused using the 'pause()' method, which will freeze data on the screen until pause is unset using the same method.
@@ -51,9 +51,9 @@ class Mesh_View:
         # The mesh data structures.
         self.mesh = mesh                                                                    # The Mesh sensor class instance.
         self.mesh_data = {}                                                                 # The latest physical property readings at each node and beam.
-        self.top_coords = { 'nodes' : [], 'beams' : [] }                                    # The 2D projections of the nodes/beams in each view (top, front, right).
-        self.front_coords = { 'nodes' : [], 'beams' : [] }
-        self.right_coords = { 'nodes' : [], 'beams' : [] }
+        self.top_coords = { 'nodes' : {}, 'beams' : [] }                                    # The 2D projections of the nodes/beams in each view (top, front, right).
+        self.front_coords = { 'nodes' : {}, 'beams' : [] }
+        self.right_coords = { 'nodes' : {}, 'beams' : [] }
         self.beam_colors = []                                                               # The color list for the beams (depends on which data is being visualized).
         self.map = []                                                                       # A map from beams to node indices, eg { beam i = [node a, node b], ... }
 
@@ -102,14 +102,13 @@ class Mesh_View:
         Returns:
             Dict: The projected node coordinates and projected beam line coordinates.
         """
-        projected_points = []
-        num_nodes = len(nodes)
-        for i in range(num_nodes):
-            node = nodes[i]['pos']
+        projected_points = {}
+        for k, v in nodes.items():
+            node = v['pos']
             p = vec3(node['x'], node['y'], node['z'])
             x = p.dot(unit_x)
             y = p.dot(unit_n.cross(unit_x))
-            projected_points.append([(x * scale.x) + center.x, (y * scale.y) + center.y])
+            projected_points[k] = [(x * scale.x) + center.x, (y * scale.y) + center.y]
 
         lines = []
         for _, v in beams.items():
@@ -176,7 +175,7 @@ class Mesh_View:
         Args:
             mode (str): The mode to set this vehicle mesh visualizer to.
         """
-        self.top_coords, self.front_coords, self.right_coords = {'nodes' : [], 'beams' : []}, {'nodes' : [], 'beams' : []}, {'nodes' : [], 'beams' : []}
+        self.top_coords, self.front_coords, self.right_coords = {'nodes' : {}, 'beams' : []}, {'nodes' : {}, 'beams' : []}, {'nodes' : {}, 'beams' : []}
         self.data_mode = mode
 
     def update(self, dir=vec3(0.0, -1.0, 0.0)):
@@ -261,7 +260,7 @@ class Mesh_View:
             else:
                 beam_data = self.mesh_data['beams']
                 for i in range(num_lines):
-                    self.beam_colors.append(self._get_color(beam_data[i]['stress_norm'], self.stress_min, self.stress_max, self.stress_range_inv))
+                    self.beam_colors.append(self._get_color(beam_data[i]['stress'], self.stress_min, self.stress_max, self.stress_range_inv))
 
     def display(self):
         """

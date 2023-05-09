@@ -644,7 +644,7 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
 
         elif demo == 'mesh':
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001, groups_list=['sbr_suspension_F', 'sbr_suspension_R'])
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=300.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=200.0,
                 top_center=vec3(600.0, 840.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1340.0, 200.0),
                 right_scale=vec3(150.0, 150.0), is_top=True, is_front=True, is_right=True)
@@ -715,7 +715,7 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
                 resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_suspension_F', 'sbr_suspension_R'])
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=600.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
                 is_top=False, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
@@ -1782,13 +1782,11 @@ class Visualiser:
 
             # Draw nodes.
             glColor3f(0.75, 0.75, 0.60)
-            num_nodes = len(top['nodes'])
-            for i in range(num_nodes):
-                node = top['nodes'][i]
+            for _, node in top['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
-                node = front['nodes'][i]
+            for _, node in front['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
-                node = right['nodes'][i]
+            for _, node in right['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
 
             # View-division lines.
@@ -2017,6 +2015,14 @@ class Visualiser:
             self.draw_line(ax3[0])
             self.draw_line(ax3[1])
 
+            # Draw final display markups.
+            spike2_x = 0.0
+            if self.is_final_display == True:
+                glColor3f(1.0, 1.0, 0.0)
+                glLineWidth(2.0)
+                spike2_x = self.time_series1.find_first_spike(tol=0.09)
+                self.draw_line([spike2_x, 50, spike2_x, 1000])
+
             # Mesh render.
             mesh_data = self.mesh_view.display()
             top, front, colors = mesh_data['top'], mesh_data['front'], mesh_data['colors']
@@ -2034,11 +2040,9 @@ class Visualiser:
 
             # Draw nodes.
             glColor3f(0.75, 0.75, 0.60)
-            num_nodes = len(top['nodes'])
-            for i in range(num_nodes):
-                node = top['nodes'][i]
+            for _, node in top['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
-                node = front['nodes'][i]
+            for _, node in front['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
 
             # Draw Text.
@@ -2070,6 +2074,8 @@ class Visualiser:
             self.draw_text(1840, 456, '300 N')
             self.draw_text(1840, 257, '150 N')
             self.draw_text(1840, 60, '0 N')
+            if self.is_final_display == True:
+                self.draw_text(spike2_x - 66, 20, 'BRAKING: START')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -2144,9 +2150,7 @@ class Visualiser:
 
             # Draw nodes.
             glColor3f(0.75, 0.75, 0.60)
-            num_nodes = len(top['nodes'])
-            for i in range(num_nodes):
-                node = top['nodes'][i]
+            for _, node in top['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
 
             # Plot the trajectory.
@@ -2277,9 +2281,7 @@ class Visualiser:
 
             # Draw nodes.
             glColor3f(0.75, 0.75, 0.60)
-            num_nodes = len(front['nodes'])
-            for i in range(num_nodes):
-                node = front['nodes'][i]
+            for _, node in front['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
 
             # View-division lines.
@@ -2398,9 +2400,7 @@ class Visualiser:
 
             # Draw nodes.
             glColor3f(0.75, 0.75, 0.60)
-            num_nodes = len(front['nodes'])
-            for i in range(num_nodes):
-                node = front['nodes'][i]
+            for _, node in front['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
 
             # View-division lines.
@@ -2409,6 +2409,14 @@ class Visualiser:
             glLineWidth(3.0)
             self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
             self.draw_line([self.half_width, 0, self.half_width, self.height])
+
+            # Draw final display markups.
+            spike2_x = 0.0
+            if self.is_final_display == True:
+                glColor3f(1.0, 1.0, 0.0)
+                glLineWidth(2.0)
+                spike2_x = self.time_series2.find_first_spike(tol=0.15)
+                self.draw_line([spike2_x, 50, spike2_x, 1000])
 
             # Draw Text.
             glEnable( GL_TEXTURE_2D )
@@ -2441,6 +2449,8 @@ class Visualiser:
             self.draw_text(1810, 451, '1000 N')
             self.draw_text(1810, 252, '500 N')
             self.draw_text(1810, 55, '0 N')
+            if self.is_final_display == True:
+                self.draw_text(spike2_x - 66, 20, 'VERTICAL IMPACT')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -2506,12 +2516,12 @@ class Visualiser:
             self.draw_line(ax3[1])
 
             # Draw final display markups.
-            spike1_x = 0.0
+            spike2_x = 0.0
             if self.is_final_display == True:
                 glColor3f(1.0, 1.0, 0.0)
                 glLineWidth(2.0)
-                spike1_x = self.time_series2.find_first_spike(tol=0.35)
-                self.draw_line([spike1_x, 50, spike1_x, 1000])
+                spike2_x = self.time_series2.find_first_spike(tol=0.35)
+                self.draw_line([spike2_x, 50, spike2_x, 1000])
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
@@ -2530,11 +2540,9 @@ class Visualiser:
 
             # Draw nodes.
             glColor3f(0.75, 0.75, 0.60)
-            num_nodes = len(front['nodes'])
-            for i in range(num_nodes):
-                node = front['nodes'][i]
+            for _, node in front['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
-                node = right['nodes'][i]
+            for _, node in right['nodes'].items():
                 glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
 
             # Draw Text.
@@ -2569,7 +2577,7 @@ class Visualiser:
             self.draw_text(1840, 257, '150 N')
             self.draw_text(1840, 60, '0 N')
             if self.is_final_display == True:
-                self.draw_text(spike1_x - 66, 20, 'TYRE BLOW OUT')
+                self.draw_text(spike2_x - 66, 20, 'TYRE BLOW OUT')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.

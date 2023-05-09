@@ -26,44 +26,81 @@ class Mesh:
     """
     An automated 'sensor' to retrieve mesh data in real time.
     Args:
-        name: A unique name for this mesh sensor.
-        bng: The BeamNGpy instance, with which to communicate to the simulation.
-        vehicle: The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the mesh sensor.
-        gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
-        physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
-        is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
+        name (str): A unique name for this mesh sensor.
+        bng (BeamNG): The BeamNGpy instance, with which to communicate to the simulation.
+        vehicle (Vehicle): The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the mesh sensor.
+        gfx_update_time (float): The gfx-step time which should pass between sensor reading updates to the user, in seconds.
+        groups_list (list): A list of mesh groups which are to be considered. Optional.  If empty, we include all mesh nodes/beams.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, groups_list = []):
         sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
         self.logger.setLevel(DEBUG)
 
+        # BeamNG properties.
         self.name = name
         self.vehicle = vehicle
         self.vid = vehicle.vid
         self.bng = bng
 
+        # Mesh group properties (which parts of mesh to include, if used).
+        # We populate a Boolean dictionary of all groups to be included, for fast lookup.
+        self.groups = {}
+        for g in groups_list:
+            self.groups[g] = True
+        self.is_full_mesh = len(groups_list) == 0
+
         # Create and initialise this sensor in the simulation.
         self._open_mesh(name, vehicle, gfx_update_time)
 
-        # Fetch the unique Id number (in the simulator) for this mesh sensor.  We will need this later.
+        # Fetch the unique Id number (in the simulator) for this mesh sensor. We will need this later.
         self.sensorId = self._get_mesh_id()
 
-        self.node_positions = {}
+        # Node/Beam relevance mapping properties. These maps are computed once for efficiency in all later iterations of polling this sensor.
+        self.is_node_relevance_map_computed = False
+        self.node_relevance_map = {}
+        self.is_beam_relevance_map_computed = False
+        self.beam_relevance_map = {}
 
-        # Populate the list of triangles for this sensor.
-        triangle_data = self._send_sensor_request('GetFullTriangleData', ack='CompletedGetFullTriangleData', vid=self.vid)['data']
-        self.triangles = {}
-        for key, value in triangle_data.items():
-            self.triangles[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
+        # Mesh related properties.
+        self.raw_data = {}
+        self.node_positions = {}
 
         # Populate the list of beams for this sensor.
         self.beams = self._get_active_beams()
-        self.avg_stress = {}
 
         self.logger.debug('Mesh - sensor created: 'f'{self.name}')
+
+    def _is_node_relevant(self, v):
+        """
+        Determines whether a given node is in one of the selected mesh groups, or not.
+
+        Args:
+            v (dict): A node instance (from the simulator).
+
+        Returns:
+            True if the node is in one of the selected mesh groups, otherwise false
+        """
+        if 'partOrigin' not in v:
+            return False
+
+        return v['partOrigin'] in self.groups
+
+    def _is_beam_relevant(self, b0, b1):
+        """
+        Determines whether a given beam is connected to one of the selected mesh groups, or not.
+        If the node at only one end of the beam is within a mesh group, we do not include this as being relevant.
+
+        Args:
+            b0 (int): The index of the beams first node (in the node list).
+            b1 (int): The index of the beams second node (in the node list).
+
+        Returns:
+            True if the beam is in one of the selected mesh groups, otherwise false
+        """
+        return self._is_node_relevant(self.raw_data['nodes'][b0]) and self._is_node_relevant(self.raw_data['nodes'][b1])
 
     def _get_active_beams(self):
         """
@@ -71,19 +108,28 @@ class Mesh:
         """
         beam_data = self._send_sensor_request('GetBeamData', ack='CompletedGetBeamData', vid=self.vid)['data']
         self.beams = {}
-        for key, value in beam_data.items():
-            if int(value[3]) != 5:                                                                      # We do not include any broken beams.
-                self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
 
-    def _update_avg_stresses(self):
-        for k, v in self.raw_data['beams'].items():
-            if k in self.avg_stress:
-                ds = v['stress'] - self.avg_stress[k]
-                self.avg_stress[k] = self.avg_stress[k] + 0.5 * ds                                      # Simple exponential moving average.
-                v['stress_norm'] = ds                                                                   # Store the normalized stress (difference with exp moving avg).
-            else:
-                self.avg_stress[k] = 0.0
-                v['stress_norm'] = 0.0
+        if self.is_beam_relevance_map_computed == True:
+            for key, value in beam_data.items():
+                if key not in self.beam_relevance_map or int(value[3]) == 5:                            # We do not include any irrelevent beams or broken beams.
+                    continue
+                b0, b1, b2 = int(value[0]), int(value[1]), int(value[2])
+                self.beams[int(key)] = [b0, b1, b2]
+            return
+
+        if 'nodes' not in self.raw_data:
+            return
+
+        # We have not yet computed the beam relevance map, so compute it now. We only need to do this once.
+        self.beam_relevance_map = {}
+        for key, value in beam_data.items():
+            if int(value[3]) == 5:                                                                      # We do not include any broken beams.
+                continue
+            b0, b1, b2 = int(value[0]), int(value[1]), int(value[2])
+            if self.is_full_mesh == True or self._is_beam_relevant(b0, b1) == True:                     # We do not include beams which are not requested.
+                self.beams[int(key)] = [b0, b1, b2]
+                self.beam_relevance_map[key] = True
+        self.is_beam_relevance_map_computed = True
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
         if not self.bng.connection:
@@ -111,17 +157,33 @@ class Mesh:
             A dictionary containing the sensor readings data.
         """
 
-        # Get the latest beams from the simulator.
-        self._get_active_beams()
-
         # Send and receive a request for readings data from this sensor.
         self.raw_data = self._poll_mesh_VE()
-        self._update_avg_stresses()
 
         # Convert dict indices to int.
         self.node_positions = {}
-        for k, v in self.raw_data['nodes'].items():
-            self.node_positions[int(k)] = v
+
+        if self.is_node_relevance_map_computed == True:
+            for k in self.node_relevance_map.keys():
+                self.node_positions[k] = self.raw_data['nodes'][k]
+        else:
+            # The node relevance map has not been computed, so compute it now.  This only needs to be computed once.
+            self.node_relevance_map = {}
+            if self.is_full_mesh == True:
+                for k, v in self.raw_data['nodes'].items():
+                    key = int(k)
+                    self.node_positions[key] = v
+                    self.node_relevance_map[key] = True
+            else:
+                for k, v in self.raw_data['nodes'].items():
+                    if self._is_node_relevant(v) == True:                          # Only include beams which are requested.
+                        key = int(k)
+                        self.node_positions[key] = v
+                        self.node_relevance_map[key] = True
+            self.is_node_relevance_map_computed = True
+
+        # Get the latest beams from the simulator.
+        self._get_active_beams()
 
         self.logger.debug('Mesh - sensor readings received from simulation: 'f'{self.name}')
         return self.raw_data
@@ -136,9 +198,7 @@ class Mesh:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Mesh - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request(
-            'SendAdHocRequestMesh', ack='CompletedSendAdHocRequestMesh', name=self.name,
-            vid=self.vehicle.vid)['data'])
+        return int(self._send_sensor_request('SendAdHocRequestMesh', ack='CompletedSendAdHocRequestMesh', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -151,8 +211,7 @@ class Mesh:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Mesh - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyMesh',
-                                         ack='CompletedIsAdHocPollRequestReadyMesh', requestId=request_id)['data']
+        return self._send_sensor_request('IsAdHocPollRequestReadyMesh', ack='CompletedIsAdHocPollRequestReadyMesh', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -164,8 +223,7 @@ class Mesh:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestMesh',
-                                             ack='CompletedCollectAdHocPollRequestMesh', requestId=request_id)['data']
+        readings = self._send_sensor_request('CollectAdHocPollRequestMesh', ack='CompletedCollectAdHocPollRequestMesh', requestId=request_id)['data']
         self.logger.debug('Mesh - ad-hoc polling request returned and processed: 'f'{self.name}')
         return readings
 
@@ -176,9 +234,7 @@ class Mesh:
         Args:
             requested_update_time: The new requested update time.
         """
-        self._set_sensor(
-            'SetMeshRequestedUpdateTime', ack='CompletedSetMeshRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
-            GFXUpdateTime=requested_update_time)
+        self._set_sensor('SetMeshRequestedUpdateTime', ack='CompletedSetMeshRequestedUpdateTime', name=self.name, vid=self.vehicle.vid, GFXUpdateTime=requested_update_time)
 
     def _get_mesh_id(self) -> int:
         return int(self._send_sensor_request('GetMeshId', ack='CompletedGetMeshId', name=self.name)['data'])
@@ -204,38 +260,8 @@ class Mesh:
             raise BNGError('The vehicle is not connected!')
         return send_sensor_request(self.vehicle.connection, 'PollMeshVE', name=self.name, sensorId=self.sensorId)['data']
 
-    def get_triangle_data(self):
-        return self.triangles
-
-    def get_wheel_mesh(self, wheel_id):
-        d = self._send_sensor_request(
-            'GetWheelTriangleData',
-            ack='CompletedGetWheelTriangleData',
-            vid=self.vid,
-            wheelIndex=wheel_id)['data']
-        mesh = {}
-        for key, value in d.items():
-            mesh[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
-        return mesh
-
     def get_node_positions(self):
         return self.node_positions
-
-    def get_closest_mesh_point_to_point(self, point):
-        return self._send_sensor_request(
-            'GetClosestMeshPointToGivenPoint',
-            ack='CompletedGetClosestMeshPointToGivenPoint',
-            vid=self.vid,
-            point=point)['data']
-
-    def get_closest_vehicle_triangle_to_point(self, point, is_include_wheels):
-        d = self._send_sensor_request(
-            'GetClosestTriangle',
-            ack='CompletedGetClosestTriangle',
-            vid=self.vid,
-            point=point,
-            includeWheelNodes=is_include_wheels)['data']
-        return [int(d['nodeIndex1']), int(d['nodeIndex2']), int(d['nodeIndex3'])]
 
     def compute_beam_line_segments(self):
         lines1 = []
