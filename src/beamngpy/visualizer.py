@@ -106,6 +106,7 @@ class Visualiser:
         self.scenario4_key = b'4'
         self.scenario5_key = b'5'
         self.scenario6_key = b'6'
+        self.scenario7_key = b'7'
         self.ai_key = b' '                                                                              # Switch between AI-driven and human-driven.
 
         # Dedicated scenario target initialization.
@@ -130,6 +131,10 @@ class Visualiser:
         self.scenario6_is_target_hit = False
         self.scenario6_hit_time = 1e12
         self.is_scenario_6_paused = False
+        self.scenario7_target = vec3(-972.4352, -636.335896, 106.9540274)                               # scenario 7.
+        self.scenario7_is_target_hit = False
+        self.scenario7_hit_time = 1e12
+        self.is_scenario_7_paused = False
 
         # RGB colorbar.
         rgb_colorbar_img = Image.open('rgb_colorbar.png')
@@ -246,7 +251,7 @@ class Visualiser:
             self.vehicles['vehicle_8'].ai.set_mode('span')
             self.vehicles['vehicle_9'].ai.set_mode('span')
             self.vehicles['vehicle_10'].ai.set_mode('span')
-            self.bng.set_relative_camera(pos=(0, -6, 2), dir=(0.0, -1.0, -0.3))
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 7})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_first_time = False
             self.is_sensor_mode_demo = True
@@ -285,7 +290,7 @@ class Visualiser:
             self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
             self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
             self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
-            self.bng.set_relative_camera(pos=(0, -7, 2.5), dir=(0.0, -1.0, -0.3))
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 7})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '1'
@@ -326,7 +331,7 @@ class Visualiser:
             self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
             self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
             self.bng.teleport_vehicle(self.vehicles['vehicle_11'], pos=(-772.6274979914087, -387.2534139925265, 103.49886869300644), reset=True) # Move c-box to original pos.
-            self.bng.set_relative_camera(pos=(0, -8, 2), dir=(0.0, -1.0, -0.2))
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 7})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '2'
@@ -367,7 +372,7 @@ class Visualiser:
             self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
             self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
             self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
-            self.bng.set_relative_camera(pos=(-10, -8, 5), dir=(-0.7, -1.0, -0.4))
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 4, 'offset' : (-5, -4, 4)})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '3'
@@ -404,7 +409,7 @@ class Visualiser:
             self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
             self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
             self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
-            self.bng.set_relative_camera(pos=(1, 6, 0.8), dir=(0.1, 1.0, 0.0))
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 4, 'offset' : (0, 6, 0.8)})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '4'
@@ -442,7 +447,7 @@ class Visualiser:
             self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
             self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9, start_delay=6.5)
             self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
-            self.bng.set_relative_camera(pos=(-4, -6, 3), dir=(-0.7, -1.0, -0.4))
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 4, 'offset' : (-1, 3, 1)})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '5'
@@ -471,13 +476,53 @@ class Visualiser:
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
             self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
-            self.bng.set_relative_camera(pos=(-1, -7, 2), dir=(0, -1.0, -0.4))
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 7})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
             self.demo = '6'
             self._set_up_sensors(self.demo)
             self.scenario6_is_target_hit = False
             self.is_scenario_6_paused = False
+            self.is_final_display = False
+        elif name == self.scenario7_key:
+            script_vehicle1, script_vehicle2, script_vehicle3, script_vehicle4, script_vehicle5 = None, None, None, None, None
+            script_vehicle6, script_vehicle7, script_vehicle8, script_vehicle9, script_vehicle10 = None, None, None, None, None
+            with open('vehicle1_sc7.json', 'r') as j:
+                script_vehicle1 = json.loads(j.read())
+            with open('vehicle2_sc7.json', 'r') as j:
+                script_vehicle2 = json.loads(j.read())
+            with open('vehicle3_sc7.json', 'r') as j:
+                script_vehicle3 = json.loads(j.read())
+            with open('vehicle4_sc7.json', 'r') as j:
+                script_vehicle4 = json.loads(j.read())
+            with open('vehicle5_sc7.json', 'r') as j:
+                script_vehicle5 = json.loads(j.read())
+            with open('vehicle6_sc7.json', 'r') as j:
+                script_vehicle6 = json.loads(j.read())
+            with open('vehicle7_sc7.json', 'r') as j:
+                script_vehicle7 = json.loads(j.read())
+            with open('vehicle8_sc7.json', 'r') as j:
+                script_vehicle8 = json.loads(j.read())
+            with open('vehicle9_sc7.json', 'r') as j:
+                script_vehicle9 = json.loads(j.read())
+            with open('vehicle10_sc7.json', 'r') as j:
+                script_vehicle10 = json.loads(j.read())
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
+            self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
+            self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
+            self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6, 21.0)
+            self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
+            self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
+            self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
+            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
+            self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 7})
+            self.scenario.set_initial_focus('vehicle_1')
+            self.is_sensor_mode_demo = False
+            self.demo = '7'
+            self._set_up_sensors(self.demo)
+            self.scenario7_is_target_hit = False
             self.is_final_display = False
 
         if self.is_sensor_mode_demo == False:                                           # Do not check sensor mode buttons if we are running a dedicated scenario.
@@ -500,7 +545,7 @@ class Visualiser:
         elif name == self.radar_key:                                                    # Sensor Mode:  RADAR.
             if self.demo == 'radar':
                 self.toggle = self.toggle + 1
-                if self.toggle > 1:
+                if self.toggle > 2:
                     self.toggle = 0
             else:
                 self.toggle = 2
@@ -783,6 +828,12 @@ class Visualiser:
             self.camera2 = Camera('camera2', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0.0, -1.5, 3.0), dir=(0.0, 0.1, -1),
                 resolution=(370, 370), near_far_planes=(0.1, 30), is_render_annotations=False, is_render_depth=False, is_streaming=True)
 
+        elif demo == '7':
+            self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
+                field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
+                range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
+                is_streaming=True)
+
     def on_drag(self, x, y):
         if self.follow:
             return
@@ -867,7 +918,14 @@ class Visualiser:
                 ppi_data = self.radar.stream_ppi()
                 self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
                 self.radar_ppi_img = ppi_data
+            elif self.toggle == 1:
+                rvv_data = self.radar.stream_range_doppler()
+                self.radar_rvv_size = [self.radar_bins[0], self.radar_bins[2]]
+                self.radar_rvv_img = rvv_data
             else:
+                ppi_data = self.radar.stream_ppi()
+                self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
+                self.radar_ppi_img = ppi_data
                 rvv_data = self.radar.stream_range_doppler()
                 self.radar_rvv_size = [self.radar_bins[0], self.radar_bins[2]]
                 self.radar_rvv_img = rvv_data
@@ -1195,6 +1253,11 @@ class Visualiser:
             if self.is_final_display == False and self.time_series1.is_marker_at_target == True and self.time_series2.is_marker_at_target and self.time_series3.is_marker_at_target:
                 self.is_final_display = True
 
+        elif self.demo == '7':
+            ppi_data = self.radar.stream_ppi()
+            self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
+            self.radar_ppi_img = ppi_data
+
         glutPostRedisplay()
 
     def _on_display(self):
@@ -1521,21 +1584,18 @@ class Visualiser:
             # Render RADAR images.
             if self.toggle == 0:                                                                                # Range-Doppler-Azimuth.
                 if len(self.radar_ppi_size) > 0:
-                    glViewport(0, 0, self.width, self.height)
-
-                    # Render the colorbar.
-                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-
                     glViewport(0, 0, self.width * 2, self.height * 2)
                     self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
+
+                    glViewport(0, 0, self.width, self.height)
+                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                     glEnable(GL_BLEND)
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-                    # Draw the PPI scope frame.
-                    glViewport(0, 0, self.width, self.height)
+                    # Draw the frame.
                     glLineWidth(2.0)
                     glColor3f(0.3, 0.3, 0.3)
                     self.draw_line([673, 25, 181, 875])                     # left grid line.
@@ -1581,7 +1641,7 @@ class Visualiser:
                     self.draw_text(44, 490, 'Velocity')
                     glDisable( GL_TEXTURE_2D )
 
-            else:
+            elif self.toggle == 1:
                 if len(self.radar_rvv_size) > 0:
                     glViewport(0, 0, self.width * 2, self.height * 2)
                     self.render_img(175, 22.5, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
@@ -1629,11 +1689,116 @@ class Visualiser:
                         self.draw_text(1320, y, txt2[i])                        # vertical text.
                         x = 332 + dv
                         self.draw_text(x, 22, txt[i])                           # horizontal text.
-                    self.draw_text(120, 60, '0 m/s')
-                    self.draw_text(120, 257, '25 m/s')
+                    self.draw_text(120, 60, '0')
+                    self.draw_text(120, 257, '40')
+                    self.draw_text(120, 455, '80+')
+                    glColor3f(0.5, 0.5, 0.5)
+                    self.draw_text(44, 490, 'Intensity')
+                    glColor3f(0.75, 0.75, 0.75)
+                    self.draw_text(1420, 525, 'Velocity')
+                    self.draw_text(796, 75, 'Range')
+                    glDisable( GL_TEXTURE_2D )
+
+            else:                                                                                # Both RADAR plots together
+                if len(self.radar_ppi_size) > 0 and len(self.radar_rvv_size) > 0:
+                    glViewport(0, 0, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
+                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+                    glViewport(0, 0, self.width + 400, self.height + 400)
+                    self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
+
+                    glViewport(self.half_width, 0, self.width + 400, self.height + 400)                                                         # Range-doppler image + colorbar.
+                    self.render_img(175, 22.5, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
+                    glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)
+                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                    # PPI frame.
+                    glViewport(0, 0, self.half_width + 200, self.half_height + 200)
+                    glLineWidth(2.0)
+                    glColor3f(0.3, 0.3, 0.3)
+                    self.draw_line([673, 25, 181, 875])                     # left grid line.
+                    self.draw_line([673, 25, 1166, 875])                    # right grid line.
+                    self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
+                    self.draw_line([722.3, 110.0, 737.3, 101.0])
+                    self.draw_line([771.6, 195.0, 786.6, 186.0])
+                    self.draw_line([820.9, 280.0, 835.9, 271.0])
+                    self.draw_line([870.2, 365.0, 885.2, 356.0])
+                    self.draw_line([919.5, 450.0, 934.5, 441.0])
+                    self.draw_line([968.8, 535.0, 983.8, 526.0])
+                    self.draw_line([1018.1, 620.0, 1033.1, 611.0])
+                    self.draw_line([1067.4, 705.0, 1082.4, 696.0])
+                    self.draw_line([1116.7, 790.0, 1131.7, 781.0])
+                    self.draw_line([1166.0, 875.0, 1181.0, 866.0])
+                    # Title underline.
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([25, 1020, 475, 1020])
+
+                    # Range-Doppler frame.
+                    glViewport(self.width, 0, self.half_width + 200, self.half_height + 200)
+                    glLineWidth(2.0)
+                    glColor3f(0.3, 0.3, 0.3)
+                    self.draw_line([350, 45, 1300, 45])                     # bottom frame line.
+                    self.draw_line([350, 995, 1300, 995])                   # bottom frame line.
+                    self.draw_line([350, 45, 350, 995])                     # left frame line.
+                    self.draw_line([1300, 45, 1300, 995])                   # right frame line.
+                    div = 95
+                    for i in range(11):
+                        dv = i * div
+                        y = 45 + dv
+                        self.draw_line([1300, y, 1310, y])                  # vertical grooves.
+                        x = 350 + dv
+                        self.draw_line([x, 45, x, 35])                      # horizontal grooves.
+                    # Title underline.
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_line([25, 1020, 290, 1020])
+
+                    # Draw Text.
+                    glEnable( GL_TEXTURE_2D )
+                    glBindTexture( GL_TEXTURE_2D, texid )
+                    glViewport(0, 0, self.half_width + 200, self.half_height + 200)                      # PPI text.
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(35, 1040, 'RADAR Sensor:  Range-Azimuth-Doppler')
+                    glColor3f(0.4, 0.4, 0.4)
+                    self.draw_text(700, 21, '0 m')
+                    self.draw_text(745.3, 106.3, '10 m')
+                    self.draw_text(796.6, 191.6, '20 m')
+                    self.draw_text(843.9, 276.9, '30 m')
+                    self.draw_text(893.2, 361.2, '40 m')
+                    self.draw_text(942.5, 446.5, '50 m')
+                    self.draw_text(991.8, 531.8, '60 m')
+                    self.draw_text(1041.1, 616.1, '70 m')
+                    self.draw_text(1090.4, 701.4, '80 m')
+                    self.draw_text(1140.7, 786.7, '90 m')
+                    self.draw_text(1189, 871, '100 m')
+                    self.draw_text(120, 60, '-50 m/s')
+                    self.draw_text(120, 257, '0 m/s')
                     self.draw_text(120, 455, '50 m/s')
                     glColor3f(0.5, 0.5, 0.5)
                     self.draw_text(44, 490, 'Velocity')
+
+                    glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)             # range-Doppler text.
+                    glColor3f(0.85, 0.85, 0.70)
+                    self.draw_text(35, 1040, 'RADAR: Range - Doppler')
+                    glColor3f(0.4, 0.4, 0.4)
+                    txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
+                    txt2 = ['-50 m/s', '-40 m/s', '-30 m/s', '-20 m/s', '-10 m/s', '0 m/s', '10 m/s', '20 m/s', '30 m/s', '40 m/s', '50 m/s']
+                    for i in range(11):
+                        dv = i * div
+                        y = 52 + dv
+                        self.draw_text(1320, y, txt2[i])                                # vertical text.
+                        x = 332 + dv
+                        self.draw_text(x, 22, txt[i])                                   # horizontal text.
+                    self.draw_text(120, 60, '0')
+                    self.draw_text(120, 257, '40')
+                    self.draw_text(120, 455, '80+')
+                    glColor3f(0.5, 0.5, 0.5)
+                    self.draw_text(44, 490, 'Intensity')
                     glColor3f(0.75, 0.75, 0.75)
                     self.draw_text(1420, 525, 'Velocity')
                     self.draw_text(796, 75, 'Range')
@@ -2463,7 +2628,7 @@ class Visualiser:
             self.draw_text(1810, 252, '500 N')
             self.draw_text(1810, 55, '0 N')
             if self.is_final_display == True:
-                self.draw_text(spike2_x - 66, 20, 'VERTICAL IMPACT')
+                self.draw_text(spike2_x - 80, 20, 'VERTICAL IMPACT')
             glDisable( GL_TEXTURE_2D )
 
             # Restore matrices.
@@ -2740,6 +2905,83 @@ class Visualiser:
             glPopMatrix()
             glMatrixMode(GL_MODELVIEW)
             glPopMatrix()
+
+        elif self.demo == '7':
+            if len(self.radar_ppi_size) > 0:
+                # Save and set model view and projection matrix.
+                glMatrixMode(GL_PROJECTION)
+                glPushMatrix()
+                glLoadIdentity()
+                glOrtho(0, self.width, 0, self.height, -1, 1)
+                glMatrixMode(GL_MODELVIEW)
+                glPushMatrix()
+                glLoadIdentity()
+
+                glViewport(0, 0, self.width, self.height)
+
+                # Render the colorbar.
+                self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+                glViewport(0, 0, self.width * 2, self.height * 2)
+                self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
+
+                glEnable(GL_LINE_SMOOTH)
+                glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                glEnable(GL_BLEND)
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+                # Draw the frame.
+                glViewport(0, 0, self.width, self.height)
+                glLineWidth(2.0)
+                glColor3f(0.3, 0.3, 0.3)
+                self.draw_line([673, 25, 181, 875])                     # left grid line.
+                self.draw_line([673, 25, 1166, 875])                    # right grid line.
+                self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
+                self.draw_line([722.3, 110.0, 737.3, 101.0])
+                self.draw_line([771.6, 195.0, 786.6, 186.0])
+                self.draw_line([820.9, 280.0, 835.9, 271.0])
+                self.draw_line([870.2, 365.0, 885.2, 356.0])
+                self.draw_line([919.5, 450.0, 934.5, 441.0])
+                self.draw_line([968.8, 535.0, 983.8, 526.0])
+                self.draw_line([1018.1, 620.0, 1033.1, 611.0])
+                self.draw_line([1067.4, 705.0, 1082.4, 696.0])
+                self.draw_line([1116.7, 790.0, 1131.7, 781.0])
+                self.draw_line([1166.0, 875.0, 1181.0, 866.0])
+
+                # Title underline.
+                glColor3f(0.25, 0.25, 0.15)
+                glLineWidth(2.0)
+                self.draw_line([25, 1020, 475, 1020])
+
+                # Draw Text.
+                glEnable( GL_TEXTURE_2D )
+                glBindTexture( GL_TEXTURE_2D, texid )
+                glColor3f(0.85, 0.85, 0.70)
+                self.draw_text(35, 1040, 'RADAR Sensor:  Range-Azimuth-Doppler')
+                glColor3f(0.4, 0.4, 0.4)
+                self.draw_text(700, 21, '0 m')
+                self.draw_text(745.3, 106.3, '10 m')
+                self.draw_text(796.6, 191.6, '20 m')
+                self.draw_text(843.9, 276.9, '30 m')
+                self.draw_text(893.2, 361.2, '40 m')
+                self.draw_text(942.5, 446.5, '50 m')
+                self.draw_text(991.8, 531.8, '60 m')
+                self.draw_text(1041.1, 616.1, '70 m')
+                self.draw_text(1090.4, 701.4, '80 m')
+                self.draw_text(1140.7, 786.7, '90 m')
+                self.draw_text(1189, 871, '100 m')
+                self.draw_text(120, 60, '0 m/s')
+                self.draw_text(120, 257, '25 m/s')
+                self.draw_text(120, 455, '50 m/s')
+                glColor3f(0.5, 0.5, 0.5)
+                self.draw_text(44, 490, 'Velocity')
+                glDisable( GL_TEXTURE_2D )
+
+                # Restore matrices.
+                glMatrixMode(GL_PROJECTION)
+                glPopMatrix()
+                glMatrixMode(GL_MODELVIEW)
+                glPopMatrix()
 
         # Final tidy up for frame data, before going to next update/display.
         self.radar_ppi_size, self.radar_bscope_size, self.radar_rvv_size = [], [], []

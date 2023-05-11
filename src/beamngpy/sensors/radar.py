@@ -45,8 +45,8 @@ class Radar:
         vel_bins: The number of bins to use in the velocity dimension, for RADAR post-processing (range-Doppler plots).
         range_min: The minimum range to display in the post-processing.
         range_max: The maximum range to display in the post-processing.
-        vel_min: The minimum velocity to display in the post-processing (range-Doppler images).
-        vel_max: The maximum velocity to display in the post-processing (range-Doppler images).
+        vel_min: The minimum velocity to display in the post-processing (range-Doppler images), in m/s.
+        vel_max: The maximum velocity to display in the post-processing (range-Doppler images), in m/s.
         half_angle_deg: On the PPI plot, this is half the azimuthal range (angle between the vertical and cone edge), in degrees.
         size: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
         field_of_view_y: The sensor vertical field of view parameter.
