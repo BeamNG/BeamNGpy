@@ -1257,6 +1257,9 @@ class Visualiser:
             ppi_data = self.radar.stream_ppi()
             self.radar_ppi_size = [self.radar_bins[0], self.radar_bins[1]]
             self.radar_ppi_img = ppi_data
+            rvv_data = self.radar.stream_range_doppler()
+            self.radar_rvv_size = [self.radar_bins[0], self.radar_bins[2]]
+            self.radar_rvv_img = rvv_data
 
         glutPostRedisplay()
 
@@ -1288,25 +1291,33 @@ class Visualiser:
                 glColor3f(0.7, 0.35, 0.7)
                 glLineWidth(2.0)
                 traj_lines = self.trajectory_view.display()
-                for line in traj_lines:
-                    self.draw_line(line)
-                if len(traj_lines) > 0:
-                    car_x, car_y = traj_lines[-1][2], traj_lines[-1][3]                                             # The car rectangle.
-                    glColor3f(0.9, 0.05, 0.05)
-                    glRectf(car_x - 10, car_y - 10, car_x + 10, car_y + 10)
-                    glColor3f(0.0, 0.0, 0.0)
-                    glRectf(car_x - 8, car_y - 8, car_x + 8, car_y + 8)
+                self.draw_lines(traj_lines)
 
+                # The car rectangle.
+                if len(traj_lines) > 0:
+                    rects = []
+                    car_x, car_y = traj_lines[-1][2], traj_lines[-1][3]
+                    rects.append([
+                        car_x - 10, car_y - 10, car_x - 10, car_y + 10,
+                        car_x + 10, car_y - 10, car_x + 10, car_y + 10,
+                        car_x - 10, car_y + 10, car_x + 10, car_y + 10,
+                        car_x - 10, car_y - 10, car_x + 10, car_y - 10,
+                        0.9, 0.05, 0.05 ])
+                    rects.append([
+                        car_x - 8, car_y - 8, car_x - 8, car_y + 8,
+                        car_x + 8, car_y - 8, car_x + 8, car_y + 8,
+                        car_x - 8, car_y + 8, car_x + 8, car_y + 8,
+                        car_x - 8, car_y - 8, car_x + 8, car_y - 8,
+                        0.0, 0.0, 0.0 ])
+                    self.draw_colored_rects(rects)
+
+                self.draw_line([40, 1040, 300, 1040])    # Screen title underline.
+
+                # Draw Text.
                 glEnable(GL_LINE_SMOOTH)
                 glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                 glEnable(GL_BLEND)
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-                # Screen title underline.
-                glLineWidth(2.0)
-                self.draw_line([40, 1040, 300, 1040])
-
-                # Draw Text.
                 glEnable( GL_TEXTURE_2D )
                 glBindTexture( GL_TEXTURE_2D, texid )
                 glColor3f(0.85, 0.85, 0.70)
@@ -1335,18 +1346,16 @@ class Visualiser:
                     glViewport(0, 0, self.width, self.height)
                     self.render_img(50, 50, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
-                    # Now deal with the 2D top bar (title etc).
-                    glEnable(GL_LINE_SMOOTH)
-                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
                     self.draw_line([75, 1000, 400, 1000])
 
                     # Draw Text.
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
@@ -1358,22 +1367,12 @@ class Visualiser:
                     glViewport(0, 0, self.annot_width, self.annot_height)
                     self.render_img(50, 50, self.camera_annot_img, self.camera_annot_size[0], self.camera_annot_size[1], 1, 1, 1, 0)
 
-                    # Now deal with the 2D top bar (title etc).
+                    # Title underline / View division lines.
                     glViewport(0, 0, self.width, self.height)
-                    glEnable(GL_LINE_SMOOTH)
-                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-                    # Title underline.
-                    glColor3f(0.25, 0.25, 0.15)
-                    glLineWidth(2.0)
-                    self.draw_line([75, 985, 460, 985])
-
-                    # View-division lines.
-                    glLineWidth(3.0)
-                    self.draw_line([0, self.annot_height, self.annot_width, self.annot_height])
-                    self.draw_line([self.annot_width, 0, self.annot_width, self.height])
+                    lines, rects = [], []
+                    lines.append([75, 985, 460, 985])
+                    lines.append([0, self.annot_height, self.annot_width, self.annot_height])
+                    lines.append([self.annot_width, 0, self.annot_width, self.height])
 
                     # Draw the colour rectangles for each class key.
                     glLineWidth(1.0)
@@ -1385,13 +1384,26 @@ class Visualiser:
                         box_y0, box_y1 = y_pos - 2, y_pos + 18
                         glColor3f(val[0] * self.rgb2f, val[1] * self.rgb2f, val[2] * self.rgb2f)
                         glRectf(box_x0, box_y0, box_x0 + 20, box_y0 + 20)
-                        glColor3f(0.5, 0.5, 0.5)
-                        self.draw_line([box_x0, box_y0, box_x1, box_y0])
-                        self.draw_line([box_x0, box_y1, box_x1, box_y1])
-                        self.draw_line([box_x0, box_y0, box_x0, box_y1])
-                        self.draw_line([box_x1, box_y0, box_x1, box_y1])
+                        rects.append([
+                            box_x0, box_y0, box_x0 + 20, box_y0,
+                            box_x0, box_y0 + 20, box_x0 + 20, box_y0 + 20,
+                            box_x0, box_y0, box_x0, box_y0 + 20,
+                            box_x0 + 20, box_y0, box_x0 + 20, box_y0 + 20,
+                            val[0] * self.rgb2f, val[1] * self.rgb2f, val[2] * self.rgb2f ])
+                        lines.append([box_x0, box_y0, box_x1, box_y0])
+                        lines.append([box_x0, box_y1, box_x1, box_y1])
+                        lines.append([box_x0, box_y0, box_x0, box_y1])
+                        lines.append([box_x1, box_y0, box_x1, box_y1])
+                    glLineWidth(1.0)
+                    glColor3f(0.5, 0.5, 0.5)
+                    self.draw_lines(lines)
+                    self.draw_colored_rects(rects)
 
                     # Draw Text.
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
@@ -1412,18 +1424,16 @@ class Visualiser:
                     glViewport(0, 0, self.width, self.height)
                     self.render_img(50, 50, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
 
-                    # Now deal with the 2D top bar (title etc).
-                    glEnable(GL_LINE_SMOOTH)
-                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
                     self.draw_line([75, 1000, 400, 1000])
 
                     # Draw Text.
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                     glEnable(GL_TEXTURE_2D)
                     glBindTexture(GL_TEXTURE_2D, texid)
                     glColor3f(0.85, 0.85, 0.70)
@@ -1441,24 +1451,20 @@ class Visualiser:
                     glViewport(0, self.half_height, self.half_width, self.half_height)
                     self.render_img(50, 50, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
 
+                    # View-division lines / Title underline.
                     glViewport(0, 0, self.width, self.height)
+                    glColor3f(0.25, 0.25, 0.15)
+                    glLineWidth(2.0)
+                    self.draw_lines([
+                        [0, self.half_height, self.width, self.half_height],
+                        [self.half_width, 0, self.half_width, self.height],
+                        [1000, 1000, 1185, 1000]])
+
+                    # Draw Text.
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                     glEnable(GL_BLEND)
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-                    # View-division lines.
-                    glColor3f(0.25, 0.25, 0.15)
-                    glLineWidth(3.0)
-                    self.draw_line([0, self.half_height, self.width, self.half_height])
-                    self.draw_line([self.half_width, 0, self.half_width, self.height])
-
-                    # Title underline.
-                    glColor3f(0.25, 0.25, 0.15)
-                    glLineWidth(2.0)
-                    self.draw_line([1000, 1000, 1185, 1000])
-
-                    # Draw Text.
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
@@ -1476,10 +1482,6 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == 'lidar':
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             if self.points_count > 0:
                 glViewport(0, 0, self.width, self.height)
                 glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
@@ -1508,6 +1510,10 @@ class Visualiser:
             self.draw_line([75, 1000, 375, 1000])
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
@@ -1521,8 +1527,6 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == 'ultrasonic':
-            glViewport(0, 0, self.width, self.height)
-            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The car image.
 
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
@@ -1533,32 +1537,62 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glViewport(0, 0, self.width, self.height)
+            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The car image.
 
             # Render each of the display bars.
             rects = self.us_view.display()
-            glColor3f(0.1, 0.1, 0.1)
+            d_rects = []
             for r in rects['grey']:
-                glRectf(r[0], r[1], r[2], r[3])
-            glColor3f(1.0, 1.0, 1.0)
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(0.1, 0.1, 0.1)
+            self.draw_rects(d_rects)
+            d_rects = []
             for r in rects['white']:
-                glRectf(r[0], r[1], r[2], r[3])
-            glColor3f(1.0, 1.0, 0.0)
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(1.0, 1.0, 1.0)
+            self.draw_rects(d_rects)
+            d_rects = []
             for r in rects['yellow']:
-                glRectf(r[0], r[1], r[2], r[3])
-            glColor3f(1.0, 0.0, 0.0)
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(1.0, 1.0, 0.0)
+            self.draw_rects(d_rects)
+            d_rects = []
             for r in rects['red']:
-                glRectf(r[0], r[1], r[2], r[3])
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(1.0, 0.0, 0.0)
+            self.draw_rects(d_rects)
 
             # Title underline.
             glColor3f(0.25, 0.25, 0.15)
             glLineWidth(2.0)
-            self.draw_line([55, 1040, 320, 1040])
+            self.draw_line([55, 1010, 320, 1010])
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
@@ -1590,34 +1624,31 @@ class Visualiser:
                     glViewport(0, 0, self.width, self.height)
                     self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
+                    # Draw the title bar / frame.
+                    lines = []
+                    lines.append([25, 1020, 475, 1020])                   # title bar.
+                    lines.append([673, 25, 181, 875])                     # left grid line.
+                    lines.append([673, 25, 1166, 875])                    # right grid line.
+                    lines.append([673.0, 25.0, 688.0, 16.0])              # grooves.
+                    lines.append([722.3, 110.0, 737.3, 101.0])
+                    lines.append([771.6, 195.0, 786.6, 186.0])
+                    lines.append([820.9, 280.0, 835.9, 271.0])
+                    lines.append([870.2, 365.0, 885.2, 356.0])
+                    lines.append([919.5, 450.0, 934.5, 441.0])
+                    lines.append([968.8, 535.0, 983.8, 526.0])
+                    lines.append([1018.1, 620.0, 1033.1, 611.0])
+                    lines.append([1067.4, 705.0, 1082.4, 696.0])
+                    lines.append([1116.7, 790.0, 1131.7, 781.0])
+                    lines.append([1166.0, 875.0, 1181.0, 866.0])
+                    glLineWidth(2.0)
+                    glColor3f(0.3, 0.3, 0.3)
+                    self.draw_lines(lines)
+
+                    # Draw Text.
                     glEnable(GL_LINE_SMOOTH)
                     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                     glEnable(GL_BLEND)
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-                    # Draw the frame.
-                    glLineWidth(2.0)
-                    glColor3f(0.3, 0.3, 0.3)
-                    self.draw_line([673, 25, 181, 875])                     # left grid line.
-                    self.draw_line([673, 25, 1166, 875])                    # right grid line.
-                    self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
-                    self.draw_line([722.3, 110.0, 737.3, 101.0])
-                    self.draw_line([771.6, 195.0, 786.6, 186.0])
-                    self.draw_line([820.9, 280.0, 835.9, 271.0])
-                    self.draw_line([870.2, 365.0, 885.2, 356.0])
-                    self.draw_line([919.5, 450.0, 934.5, 441.0])
-                    self.draw_line([968.8, 535.0, 983.8, 526.0])
-                    self.draw_line([1018.1, 620.0, 1033.1, 611.0])
-                    self.draw_line([1067.4, 705.0, 1082.4, 696.0])
-                    self.draw_line([1116.7, 790.0, 1131.7, 781.0])
-                    self.draw_line([1166.0, 875.0, 1181.0, 866.0])
-
-                    # Title underline.
-                    glColor3f(0.25, 0.25, 0.15)
-                    glLineWidth(2.0)
-                    self.draw_line([25, 1020, 475, 1020])
-
-                    # Draw Text.
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
@@ -1650,32 +1681,29 @@ class Visualiser:
                     glViewport(0, 0, self.width, self.height)
                     self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
-                    glEnable(GL_LINE_SMOOTH)
-                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-                    # Draw the PPI scope frame.
-                    glLineWidth(2.0)
-                    glColor3f(0.3, 0.3, 0.3)
-                    self.draw_line([350, 45, 1300, 45])                     # bottom frame line.
-                    self.draw_line([350, 995, 1300, 995])                   # bottom frame line.
-                    self.draw_line([350, 45, 350, 995])                     # left frame line.
-                    self.draw_line([1300, 45, 1300, 995])                   # right frame line.
+                    # Draw the range-Doppler frame.
+                    lines = []
+                    lines.append([350, 45, 1300, 45])                       # bottom frame line.
+                    lines.append([350, 995, 1300, 995])                     # bottom frame line.
+                    lines.append([350, 45, 350, 995])                       # left frame line.
+                    lines.append([1300, 45, 1300, 995])                     # right frame line.
                     div = 95
                     for i in range(11):
                         dv = i * div
                         y = 45 + dv
-                        self.draw_line([1300, y, 1310, y])                  # vertical grooves.
+                        lines.append([1300, y, 1310, y])                    # vertical grooves.
                         x = 350 + dv
-                        self.draw_line([x, 45, x, 35])                      # horizontal grooves.
-
-                    # Title underline.
-                    glColor3f(0.25, 0.25, 0.15)
+                        lines.append([x, 45, x, 35])                        # horizontal grooves.
+                    lines.append([25, 1020, 290, 1020])                     # title underline.
                     glLineWidth(2.0)
-                    self.draw_line([25, 1020, 290, 1020])
+                    glColor3f(0.3, 0.3, 0.3)
+                    self.draw_lines(lines)
 
                     # Draw Text.
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
@@ -1711,54 +1739,49 @@ class Visualiser:
                     glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)
                     self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
-                    glEnable(GL_LINE_SMOOTH)
-                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-                    glEnable(GL_BLEND)
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
                     # PPI frame.
                     glViewport(0, 0, self.half_width + 200, self.half_height + 200)
+                    lines = []
+                    lines.append([25, 1020, 475, 1020])                     # title bar.
+                    lines.append([673, 25, 181, 875])                       # left grid line.
+                    lines.append([673, 25, 1166, 875])                      # right grid line.
+                    lines.append([673.0, 25.0, 688.0, 16.0])                # grooves.
+                    lines.append([722.3, 110.0, 737.3, 101.0])
+                    lines.append([771.6, 195.0, 786.6, 186.0])
+                    lines.append([820.9, 280.0, 835.9, 271.0])
+                    lines.append([870.2, 365.0, 885.2, 356.0])
+                    lines.append([919.5, 450.0, 934.5, 441.0])
+                    lines.append([968.8, 535.0, 983.8, 526.0])
+                    lines.append([1018.1, 620.0, 1033.1, 611.0])
+                    lines.append([1067.4, 705.0, 1082.4, 696.0])
+                    lines.append([1116.7, 790.0, 1131.7, 781.0])
+                    lines.append([1166.0, 875.0, 1181.0, 866.0])
                     glLineWidth(2.0)
                     glColor3f(0.3, 0.3, 0.3)
-                    self.draw_line([673, 25, 181, 875])                     # left grid line.
-                    self.draw_line([673, 25, 1166, 875])                    # right grid line.
-                    self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
-                    self.draw_line([722.3, 110.0, 737.3, 101.0])
-                    self.draw_line([771.6, 195.0, 786.6, 186.0])
-                    self.draw_line([820.9, 280.0, 835.9, 271.0])
-                    self.draw_line([870.2, 365.0, 885.2, 356.0])
-                    self.draw_line([919.5, 450.0, 934.5, 441.0])
-                    self.draw_line([968.8, 535.0, 983.8, 526.0])
-                    self.draw_line([1018.1, 620.0, 1033.1, 611.0])
-                    self.draw_line([1067.4, 705.0, 1082.4, 696.0])
-                    self.draw_line([1116.7, 790.0, 1131.7, 781.0])
-                    self.draw_line([1166.0, 875.0, 1181.0, 866.0])
-                    # Title underline.
-                    glColor3f(0.25, 0.25, 0.15)
-                    glLineWidth(2.0)
-                    self.draw_line([25, 1020, 475, 1020])
+                    self.draw_lines(lines)
 
                     # Range-Doppler frame.
                     glViewport(self.width, 0, self.half_width + 200, self.half_height + 200)
-                    glLineWidth(2.0)
-                    glColor3f(0.3, 0.3, 0.3)
-                    self.draw_line([350, 45, 1300, 45])                     # bottom frame line.
-                    self.draw_line([350, 995, 1300, 995])                   # bottom frame line.
-                    self.draw_line([350, 45, 350, 995])                     # left frame line.
-                    self.draw_line([1300, 45, 1300, 995])                   # right frame line.
+                    lines = []
+                    lines.append([350, 45, 1300, 45])                       # bottom frame line.
+                    lines.append([350, 995, 1300, 995])                     # bottom frame line.
+                    lines.append([350, 45, 350, 995])                       # left frame line.
+                    lines.append([1300, 45, 1300, 995])                     # right frame line.
                     div = 95
                     for i in range(11):
                         dv = i * div
                         y = 45 + dv
-                        self.draw_line([1300, y, 1310, y])                  # vertical grooves.
+                        lines.append([1300, y, 1310, y])                    # vertical grooves.
                         x = 350 + dv
-                        self.draw_line([x, 45, x, 35])                      # horizontal grooves.
-                    # Title underline.
-                    glColor3f(0.25, 0.25, 0.15)
-                    glLineWidth(2.0)
-                    self.draw_line([25, 1020, 290, 1020])
+                        lines.append([x, 45, x, 35])                        # horizontal grooves.
+                    lines.append([25, 1020, 290, 1020])                     # title underline.
+                    self.draw_lines(lines)
 
                     # Draw Text.
+                    glEnable(GL_LINE_SMOOTH)
+                    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+                    glEnable(GL_BLEND)
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glViewport(0, 0, self.half_width + 200, self.half_height + 200)                      # PPI text.
@@ -1817,11 +1840,6 @@ class Visualiser:
 
             glViewport(0, 0, self.width, self.height)
 
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -1835,12 +1853,10 @@ class Visualiser:
             grid1, grid2, grid3, grid4, grid5, grid6 = disp1['grid'], disp2['grid'], disp3['grid'], disp4['grid'], disp5['grid'], disp6['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
-            for i in grid1['thin'] + grid2['thin'] + grid3['thin'] + grid4['thin'] + grid5['thin'] + grid6['thin']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thin'] + grid2['thin'] + grid3['thin'] + grid4['thin'] + grid5['thin'] + grid6['thin'])           # Thin lines.
             glColor3f(0.2, 0.2, 0.2)
             glLineWidth(2.0)
-            for i in grid1['thick'] + grid2['thick'] + grid3['thick'] + grid4['thick'] + grid5['thick'] + grid6['thick']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thick'] + grid2['thick'] + grid3['thick'] + grid4['thick'] + grid5['thick'] + grid6['thick'])     # Thick lines.
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
@@ -1854,21 +1870,13 @@ class Visualiser:
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3, ax4, ax5, ax6 = disp1['axes'], disp2['axes'], disp3['axes'], disp4['axes'], disp5['axes'], disp6['axes']
-            self.draw_line(ax1[0])
-            self.draw_line(ax1[1])
-            self.draw_line(ax2[0])
-            self.draw_line(ax2[1])
-            self.draw_line(ax3[0])
-            self.draw_line(ax3[1])
-            self.draw_line(ax4[0])
-            self.draw_line(ax4[1])
-            self.draw_line(ax5[0])
-            self.draw_line(ax5[1])
-            self.draw_line(ax6[0])
-            self.draw_line(ax6[1])
+            self.draw_lines(disp1['axes'] + disp2['axes'] + disp3['axes'] + disp4['axes'] + disp5['axes'] + disp6['axes'])      # Axes lines.
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
@@ -1927,11 +1935,6 @@ class Visualiser:
             # Render the colorbar.
             self.render_img(1780, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -1941,39 +1944,59 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
+            # View-division / Title underline lines.
+            glColor3f(0.25, 0.25, 0.15)
+            glLineWidth(2.0)
+            self.draw_lines([
+                [1020, 928, 1400, 930],
+                [0, self.half_height, self.width, self.half_height],
+                [self.half_width, 0, self.half_width, self.height]])
+
             # Draw beams.
+            lines = []
             glLineWidth(1.0)
             num_beams = len(top['beams'])
             for i in range(num_beams):
                 color = colors[i]
-                glColor3f(color[0], color[1], color[2])
                 line = top['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
                 line = front['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
                 line = right['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
+            self.draw_colored_lines(lines)
 
             # Draw nodes.
+            rects = []
             glColor3f(0.75, 0.75, 0.60)
             for _, node in top['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
             for _, node in front['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
             for _, node in right['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
-
-            # View-division lines.
-            glColor3f(0.25, 0.25, 0.15)
-            glLineWidth(3.0)
-            self.draw_line([0, self.half_height, self.width, self.half_height])
-            self.draw_line([self.half_width, 0, self.half_width, self.height])
-
-            # Screen title underline.
-            glLineWidth(2.0)
-            self.draw_line([1020, 928, 1400, 930])
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
+            self.draw_rects(rects)
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
@@ -2021,24 +2044,6 @@ class Visualiser:
 
         elif self.demo == 'multi':
 
-            if len(self.camera_color_size) > 0:                                                                                         # camera - color image.
-                glViewport(0, self.half_height, self.half_width * 2, self.half_height * 2)	# TL
-                self.render_img(25, 25, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
-
-            glViewport(self.half_width, 0, self.half_width, self.half_height)
-            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)                             # The Ultrasonic .png image.
-
-            if len(self.radar_ppi_size) > 0:
-                glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
-                # Render the colorbar.
-                self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-                glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
-                self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
-
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             if self.points_count > 0:
                 glViewport(0, 0, self.half_width, self.half_height)
                 glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
@@ -2061,52 +2066,104 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
+            if len(self.camera_color_size) > 0:                                                                                         # camera - color image.
+                glViewport(0, self.half_height, self.half_width * 2, self.half_height * 2)	# TL
+                self.render_img(25, 25, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+            glViewport(self.half_width, 0, self.half_width, self.half_height)
+            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)                             # The Ultrasonic .png image.
+
+            if len(self.radar_ppi_size) > 0:
+                glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
+                # Render the colorbar.
+                self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+                glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
+                self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
+
             if len(self.radar_ppi_size) > 0:
                 glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
 
                 # Draw the PPI scope frame.
+                lines = []
+                lines.append([25, 1020, 475, 1020])                   # RADAR title bar.
+                lines.append([673, 25, 181, 875])                     # left grid line.
+                lines.append([673, 25, 1166, 875])                    # right grid line.
+                lines.append([673.0, 25.0, 688.0, 16.0])              # grooves.
+                lines.append([722.3, 110.0, 737.3, 101.0])
+                lines.append([771.6, 195.0, 786.6, 186.0])
+                lines.append([820.9, 280.0, 835.9, 271.0])
+                lines.append([870.2, 365.0, 885.2, 356.0])
+                lines.append([919.5, 450.0, 934.5, 441.0])
+                lines.append([968.8, 535.0, 983.8, 526.0])
+                lines.append([1018.1, 620.0, 1033.1, 611.0])
+                lines.append([1067.4, 705.0, 1082.4, 696.0])
+                lines.append([1116.7, 790.0, 1131.7, 781.0])
+                lines.append([1166.0, 875.0, 1181.0, 866.0])
                 glLineWidth(2.0)
                 glColor3f(0.3, 0.3, 0.3)
-                self.draw_line([673, 25, 181, 875])                     # left grid line.
-                self.draw_line([673, 25, 1166, 875])                    # right grid line.
-                self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
-                self.draw_line([722.3, 110.0, 737.3, 101.0])
-                self.draw_line([771.6, 195.0, 786.6, 186.0])
-                self.draw_line([820.9, 280.0, 835.9, 271.0])
-                self.draw_line([870.2, 365.0, 885.2, 356.0])
-                self.draw_line([919.5, 450.0, 934.5, 441.0])
-                self.draw_line([968.8, 535.0, 983.8, 526.0])
-                self.draw_line([1018.1, 620.0, 1033.1, 611.0])
-                self.draw_line([1067.4, 705.0, 1082.4, 696.0])
-                self.draw_line([1116.7, 790.0, 1131.7, 781.0])
-                self.draw_line([1166.0, 875.0, 1181.0, 866.0])
+                self.draw_lines(lines)
+
+            # View division lines.
+            glViewport(0, 0, self.width, self.height)
+            lines = []
+            lines.append([0, self.half_height, self.width, self.half_height])
+            lines.append([self.half_width, 0, self.half_width, self.height])
+            glLineWidth(2.0)
+            glColor3f(0.3, 0.3, 0.3)
+            self.draw_lines(lines)
 
             # Ultrasonic.
             glViewport(self.half_width, 0, self.half_width, self.half_height)
             rects = self.us_view.display()
-            glColor3f(0.1, 0.1, 0.1)
+            d_rects = []
             for r in rects['grey']:
-                glRectf(r[0], r[1], r[2], r[3])
-            glColor3f(1.0, 1.0, 1.0)
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(0.1, 0.1, 0.1)
+            self.draw_rects(d_rects)
+            d_rects = []
             for r in rects['white']:
-                glRectf(r[0], r[1], r[2], r[3])
-            glColor3f(1.0, 1.0, 0.0)
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(1.0, 1.0, 1.0)
+            self.draw_rects(d_rects)
+            d_rects = []
             for r in rects['yellow']:
-                glRectf(r[0], r[1], r[2], r[3])
-            glColor3f(1.0, 0.0, 0.0)
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(1.0, 1.0, 0.0)
+            self.draw_rects(d_rects)
+            d_rects = []
             for r in rects['red']:
-                glRectf(r[0], r[1], r[2], r[3])
-
-            # View-division lines.
-            glViewport(0, 0, self.width, self.height)
-            glColor3f(0.25, 0.25, 0.15)
-            glLineWidth(3.0)
-            self.draw_line([0, self.half_height, self.width, self.half_height])
-            self.draw_line([self.half_width, 0, self.half_width, self.height])
+                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
+                d_rects.append([
+                    r0, r1, r0, r3,
+                    r2, r1, r2, r3,
+                    r0, r1, r2, r1,
+                    r0, r3, r2, r3 ])
+            glColor3f(1.0, 0.0, 0.0)
+            self.draw_rects(d_rects)
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
+            glViewport(0, 0, self.width, self.height)
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(450, 565, ' Camera')
             self.draw_text(450, 30, '  LiDAR')
@@ -2139,16 +2196,6 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == '1':
-            glViewport(0, 0, self.width, self.height)
-
-            # Render the colorbar.
-            self.render_img(1800, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -2158,6 +2205,11 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the colorbar.
+            self.render_img(1800, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
             # Accelerometer (IMU) render.
             disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
 
@@ -2165,12 +2217,10 @@ class Visualiser:
             grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
-            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thin'] + grid2['thin'] + grid3['thin'])           # Thin lines.
             glColor3f(0.2, 0.2, 0.2)
             glLineWidth(2.0)
-            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thick'] + grid2['thick'] + grid3['thick'])     # Thick lines.
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
@@ -2181,13 +2231,7 @@ class Visualiser:
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
-            self.draw_line(ax1[0])
-            self.draw_line(ax1[1])
-            self.draw_line(ax2[0])
-            self.draw_line(ax2[1])
-            self.draw_line(ax3[0])
-            self.draw_line(ax3[1])
+            self.draw_lines(disp1['axes'] + disp2['axes'] + disp3['axes'])      # Axes lines.
 
             # Draw final display markups.
             spike2_x = 0.0
@@ -2202,24 +2246,41 @@ class Visualiser:
             top, front, colors = mesh_data['top'], mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
+            lines = []
             glLineWidth(1.0)
             num_beams = len(top['beams'])
             for i in range(num_beams):
                 color = colors[i]
-                glColor3f(color[0], color[1], color[2])
                 line = top['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
                 line = front['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
+            self.draw_colored_lines(lines)
 
             # Draw nodes.
+            rects = []
             glColor3f(0.75, 0.75, 0.60)
             for _, node in top['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
             for _, node in front['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
+            self.draw_rects(rects)
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
@@ -2260,20 +2321,6 @@ class Visualiser:
             glPopMatrix()
 
         if self.demo == '2':
-            glViewport(0, 0, self.width, self.height)
-
-            # Render the Camera colour image.
-            if len(self.camera_color_size) > 0:
-                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
-
-            # Render the colorbar.
-            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -2283,6 +2330,15 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the Camera colour image.
+            if len(self.camera_color_size) > 0:
+                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+            # Render the colorbar.
+            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
             # Gyroscopic (IMU) render.
             disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
 
@@ -2290,12 +2346,10 @@ class Visualiser:
             grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
-            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thin'] + grid2['thin'] + grid3['thin'])           # Thin lines.
             glColor3f(0.2, 0.2, 0.2)
             glLineWidth(2.0)
-            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thick'] + grid2['thick'] + grid3['thick'])     # Thick lines.
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
@@ -2306,31 +2360,33 @@ class Visualiser:
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
-            self.draw_line(ax1[0])
-            self.draw_line(ax1[1])
-            self.draw_line(ax2[0])
-            self.draw_line(ax2[1])
-            self.draw_line(ax3[0])
-            self.draw_line(ax3[1])
+            self.draw_lines(disp1['axes'] + disp2['axes'] + disp3['axes'])      # Axes lines.
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
             front, colors = mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
+            lines = []
             glLineWidth(1.0)
             num_beams = len(front['beams'])
             for i in range(num_beams):
                 color = colors[i]
-                glColor3f(color[0], color[1], color[2])
                 line = front['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
+            self.draw_colored_lines(lines)
 
             # Draw nodes.
+            rects = []
             glColor3f(0.75, 0.75, 0.60)
             for _, node in front['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
+            self.draw_rects(rects)
 
             # View-division lines.
             glViewport(0, 0, self.width, self.height)
@@ -2348,6 +2404,10 @@ class Visualiser:
                 self.draw_line([spike3_x, 45, spike3_x, 1000])
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
@@ -2390,20 +2450,6 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == '3':
-            glViewport(0, 0, self.width, self.height)
-
-            # Render the Camera colour image.
-            if len(self.camera_color_size) > 0:
-                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
-
-            # Render the colorbar.
-            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -2413,6 +2459,15 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the Camera colour image.
+            if len(self.camera_color_size) > 0:
+                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+            # Render the colorbar.
+            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
             # Gyroscopic (IMU) render.
             disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
 
@@ -2420,12 +2475,10 @@ class Visualiser:
             grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
-            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thin'] + grid2['thin'] + grid3['thin'])           # Thin lines.
             glColor3f(0.2, 0.2, 0.2)
             glLineWidth(2.0)
-            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thick'] + grid2['thick'] + grid3['thick'])     # Thick lines.
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
@@ -2436,31 +2489,33 @@ class Visualiser:
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
-            self.draw_line(ax1[0])
-            self.draw_line(ax1[1])
-            self.draw_line(ax2[0])
-            self.draw_line(ax2[1])
-            self.draw_line(ax3[0])
-            self.draw_line(ax3[1])
+            self.draw_lines(disp1['axes'] + disp2['axes'] + disp3['axes'])      # Axes lines.
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
             front, colors = mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
+            lines = []
             glLineWidth(1.0)
             num_beams = len(front['beams'])
             for i in range(num_beams):
                 color = colors[i]
-                glColor3f(color[0], color[1], color[2])
                 line = front['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
+            self.draw_colored_lines(lines)
 
             # Draw nodes.
+            rects = []
             glColor3f(0.75, 0.75, 0.60)
             for _, node in front['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
+            self.draw_rects(rects)
 
             # View-division lines.
             glViewport(0, 0, self.width, self.height)
@@ -2470,6 +2525,10 @@ class Visualiser:
             self.draw_line([self.half_width, 0, self.half_width, self.height])
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
@@ -2509,20 +2568,6 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == '4':
-            glViewport(0, 0, self.width, self.height)
-
-            # Render the Camera colour image.
-            if len(self.camera_color_size) > 0:
-                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
-
-            # Render the colorbar.
-            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -2532,6 +2577,15 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
+            glViewport(0, 0, self.width, self.height)
+
+            # Render the Camera colour image.
+            if len(self.camera_color_size) > 0:
+                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+
+            # Render the colorbar.
+            self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
             # Gyroscopic (IMU) render.
             disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
 
@@ -2539,12 +2593,10 @@ class Visualiser:
             grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
-            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thin'] + grid2['thin'] + grid3['thin'])           # Thin lines.
             glColor3f(0.2, 0.2, 0.2)
             glLineWidth(2.0)
-            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thick'] + grid2['thick'] + grid3['thick'])     # Thick lines.
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
@@ -2555,31 +2607,33 @@ class Visualiser:
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
-            self.draw_line(ax1[0])
-            self.draw_line(ax1[1])
-            self.draw_line(ax2[0])
-            self.draw_line(ax2[1])
-            self.draw_line(ax3[0])
-            self.draw_line(ax3[1])
+            self.draw_lines(disp1['axes'] + disp2['axes'] + disp3['axes'])      # Axes lines.
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
             front, colors = mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
+            lines = []
             glLineWidth(1.0)
             num_beams = len(front['beams'])
             for i in range(num_beams):
                 color = colors[i]
-                glColor3f(color[0], color[1], color[2])
                 line = front['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
+            self.draw_colored_lines(lines)
 
             # Draw nodes.
+            rects = []
             glColor3f(0.75, 0.75, 0.60)
             for _, node in front['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
+            self.draw_rects(rects)
 
             # View-division lines.
             glViewport(0, 0, self.width, self.height)
@@ -2597,6 +2651,10 @@ class Visualiser:
                 self.draw_line([spike2_x, 50, spike2_x, 1000])
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
@@ -2638,6 +2696,15 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == '5':
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
             glViewport(0, 0, self.width, self.height)
 
             # Render the two Camera colour images.
@@ -2648,20 +2715,6 @@ class Visualiser:
             # Render the colorbar.
             self.render_img(1800, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
             # Accelerometer (IMU) render.
             disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
 
@@ -2669,12 +2722,10 @@ class Visualiser:
             grid1, grid2, grid3 = disp1['grid'], disp2['grid'], disp3['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
-            for i in grid1['thin'] + grid2['thin'] + grid3['thin']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thin'] + grid2['thin'] + grid3['thin'])           # Thin lines.
             glColor3f(0.2, 0.2, 0.2)
             glLineWidth(2.0)
-            for i in grid1['thick'] + grid2['thick'] + grid3['thick']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thick'] + grid2['thick'] + grid3['thick'])     # Thick lines.
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
@@ -2685,13 +2736,7 @@ class Visualiser:
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3 = disp1['axes'], disp2['axes'], disp3['axes']
-            self.draw_line(ax1[0])
-            self.draw_line(ax1[1])
-            self.draw_line(ax2[0])
-            self.draw_line(ax2[1])
-            self.draw_line(ax3[0])
-            self.draw_line(ax3[1])
+            self.draw_lines(disp1['axes'] + disp2['axes'] + disp3['axes'])      # Axes lines.
 
             # Draw final display markups.
             spike2_x = 0.0
@@ -2706,24 +2751,41 @@ class Visualiser:
             front, right, colors = mesh_data['front'], mesh_data['right'], mesh_data['colors']
 
             # Draw beams.
+            lines = []
             glLineWidth(1.0)
             num_beams = len(front['beams'])
             for i in range(num_beams):
                 color = colors[i]
-                glColor3f(color[0], color[1], color[2])
                 line = front['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
                 line = right['beams'][i]
-                self.draw_line([line[0], line[1], line[2], line[3]])
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
+            self.draw_colored_lines(lines)
 
             # Draw nodes.
+            rects = []
             glColor3f(0.75, 0.75, 0.60)
             for _, node in front['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
             for _, node in right['nodes'].items():
-                glRectf(node[0] - 2, node[1] - 2, node[0] + 2, node[1] + 2)
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
+            self.draw_rects(rects)
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
@@ -2766,18 +2828,6 @@ class Visualiser:
 
         elif self.demo == '6':
 
-            # Render the two Camera colour images.
-            if len(self.camera_color_size) > 0 and len(self.camera2_color_size) > 0:
-                self.render_img(530, 10, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
-                self.render_img(1150, 10, self.camera2_color_img, self.camera2_color_size[0], self.camera2_color_size[1], 1, 1, 1, 0)
-
-            glViewport(0, 0, self.width, self.height)
-
-            glEnable(GL_LINE_SMOOTH)
-            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
             # Save and set model view and projection matrix.
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -2787,6 +2837,13 @@ class Visualiser:
             glPushMatrix()
             glLoadIdentity()
 
+            # Render the two Camera colour images.
+            if len(self.camera_color_size) > 0 and len(self.camera2_color_size) > 0:
+                self.render_img(530, 10, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+                self.render_img(1150, 10, self.camera2_color_img, self.camera2_color_size[0], self.camera2_color_size[1], 1, 1, 1, 0)
+
+            glViewport(0, 0, self.width, self.height)
+
             # Get display data.
             disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
             disp4, disp5, disp6 = self.time_series4.display(), self.time_series5.display(), self.time_series6.display()
@@ -2795,12 +2852,10 @@ class Visualiser:
             grid1, grid2, grid3, grid4, grid5, grid6 = disp1['grid'], disp2['grid'], disp3['grid'], disp4['grid'], disp5['grid'], disp6['grid']
             glColor3f(0.1, 0.1, 0.1)
             glLineWidth(1.0)
-            for i in grid1['thin'] + grid2['thin'] + grid3['thin'] + grid4['thin'] + grid5['thin'] + grid6['thin']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thin'] + grid2['thin'] + grid3['thin'] + grid4['thin'] + grid5['thin'] + grid6['thin'])           # Thin lines.
             glColor3f(0.2, 0.2, 0.2)
             glLineWidth(2.0)
-            for i in grid1['thick'] + grid2['thick'] + grid3['thick'] + grid4['thick'] + grid5['thick'] + grid6['thick']:
-                self.draw_line(i)
+            self.draw_lines(grid1['thick'] + grid2['thick'] + grid3['thick'] + grid4['thick'] + grid5['thick'] + grid6['thick'])     # Thick lines.
 
             # Draw data polylines.
             glColor3f(1.0, 0.0, 0.0)
@@ -2814,19 +2869,7 @@ class Visualiser:
             # Draw axes.
             glColor3f(1.0, 1.0, 1.0)
             glLineWidth(3.0)
-            ax1, ax2, ax3, ax4, ax5, ax6 = disp1['axes'], disp2['axes'], disp3['axes'], disp4['axes'], disp5['axes'], disp6['axes']
-            self.draw_line(ax1[0])
-            self.draw_line(ax1[1])
-            self.draw_line(ax2[0])
-            self.draw_line(ax2[1])
-            self.draw_line(ax3[0])
-            self.draw_line(ax3[1])
-            self.draw_line(ax4[0])
-            self.draw_line(ax4[1])
-            self.draw_line(ax5[0])
-            self.draw_line(ax5[1])
-            self.draw_line(ax6[0])
-            self.draw_line(ax6[1])
+            self.draw_lines(disp1['axes'] + disp2['axes'] + disp3['axes'] + disp4['axes'] + disp5['axes'] + disp6['axes'])      # Axes lines.
 
             # Draw final display markups.
             spike1_x, spike2_x, spike3_x, spike4_x, spike5_x, spike6_x = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
@@ -2853,6 +2896,10 @@ class Visualiser:
                     self.draw_line([spike3_x, 707, spike6_x, 707])
 
             # Draw Text.
+            glEnable(GL_LINE_SMOOTH)
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
@@ -2863,8 +2910,8 @@ class Visualiser:
             self.draw_text(946, 370, 'time (seconds)')
             self.draw_text(1562, 370, 'time (seconds)')
             glColor3f(0.95, 0.25, 0.70)
-            self.draw_text(10, 1040, '[Left IMU - Accel]')
-            self.draw_text(10, 356, '[Right IMU - Accel]')
+            self.draw_text(10, 1040, '[Front IMU - Accel]')
+            self.draw_text(10, 356, '[Rear IMU - Accel]')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(2, 436, '-300.0')
             self.draw_text(33, 561, '0')
@@ -2907,55 +2954,72 @@ class Visualiser:
             glPopMatrix()
 
         elif self.demo == '7':
-            if len(self.radar_ppi_size) > 0:
-                # Save and set model view and projection matrix.
-                glMatrixMode(GL_PROJECTION)
-                glPushMatrix()
-                glLoadIdentity()
-                glOrtho(0, self.width, 0, self.height, -1, 1)
-                glMatrixMode(GL_MODELVIEW)
-                glPushMatrix()
-                glLoadIdentity()
+            # Save and set model view and projection matrix.
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, self.width, 0, self.height, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
 
-                glViewport(0, 0, self.width, self.height)
-
-                # Render the colorbar.
+            if len(self.radar_ppi_size) > 0 and len(self.radar_rvv_size) > 0:
+                glViewport(0, 0, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
                 self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-
-                glViewport(0, 0, self.width * 2, self.height * 2)
+                glViewport(0, 0, self.width + 400, self.height + 400)
                 self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
+                glViewport(self.half_width, 0, self.width + 400, self.height + 400)                                                         # Range-doppler image + colorbar.
+                self.render_img(175, 22.5, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
+                glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)
+                self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+
+                # PPI frame.
+                glViewport(0, 0, self.half_width + 200, self.half_height + 200)
+                lines = []
+                lines.append([25, 1020, 475, 1020])                     # title bar.
+                lines.append([673, 25, 181, 875])                       # left grid line.
+                lines.append([673, 25, 1166, 875])                      # right grid line.
+                lines.append([673.0, 25.0, 688.0, 16.0])                # grooves.
+                lines.append([722.3, 110.0, 737.3, 101.0])
+                lines.append([771.6, 195.0, 786.6, 186.0])
+                lines.append([820.9, 280.0, 835.9, 271.0])
+                lines.append([870.2, 365.0, 885.2, 356.0])
+                lines.append([919.5, 450.0, 934.5, 441.0])
+                lines.append([968.8, 535.0, 983.8, 526.0])
+                lines.append([1018.1, 620.0, 1033.1, 611.0])
+                lines.append([1067.4, 705.0, 1082.4, 696.0])
+                lines.append([1116.7, 790.0, 1131.7, 781.0])
+                lines.append([1166.0, 875.0, 1181.0, 866.0])
+                glLineWidth(2.0)
+                glColor3f(0.3, 0.3, 0.3)
+                self.draw_lines(lines)
+
+                # Range-Doppler frame.
+                glViewport(self.width, 0, self.half_width + 200, self.half_height + 200)
+                lines = []
+                lines.append([350, 45, 1300, 45])                       # bottom frame line.
+                lines.append([350, 995, 1300, 995])                     # bottom frame line.
+                lines.append([350, 45, 350, 995])                       # left frame line.
+                lines.append([1300, 45, 1300, 995])                     # right frame line.
+                div = 95
+                for i in range(11):
+                    dv = i * div
+                    y = 45 + dv
+                    lines.append([1300, y, 1310, y])                    # vertical grooves.
+                    x = 350 + dv
+                    lines.append([x, 45, x, 35])                        # horizontal grooves.
+                lines.append([25, 1020, 290, 1020])                     # title underline.
+                self.draw_lines(lines)
+
+                # Draw Text.
                 glEnable(GL_LINE_SMOOTH)
                 glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
                 glEnable(GL_BLEND)
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-                # Draw the frame.
-                glViewport(0, 0, self.width, self.height)
-                glLineWidth(2.0)
-                glColor3f(0.3, 0.3, 0.3)
-                self.draw_line([673, 25, 181, 875])                     # left grid line.
-                self.draw_line([673, 25, 1166, 875])                    # right grid line.
-                self.draw_line([673.0, 25.0, 688.0, 16.0])              # grooves.
-                self.draw_line([722.3, 110.0, 737.3, 101.0])
-                self.draw_line([771.6, 195.0, 786.6, 186.0])
-                self.draw_line([820.9, 280.0, 835.9, 271.0])
-                self.draw_line([870.2, 365.0, 885.2, 356.0])
-                self.draw_line([919.5, 450.0, 934.5, 441.0])
-                self.draw_line([968.8, 535.0, 983.8, 526.0])
-                self.draw_line([1018.1, 620.0, 1033.1, 611.0])
-                self.draw_line([1067.4, 705.0, 1082.4, 696.0])
-                self.draw_line([1116.7, 790.0, 1131.7, 781.0])
-                self.draw_line([1166.0, 875.0, 1181.0, 866.0])
-
-                # Title underline.
-                glColor3f(0.25, 0.25, 0.15)
-                glLineWidth(2.0)
-                self.draw_line([25, 1020, 475, 1020])
-
-                # Draw Text.
                 glEnable( GL_TEXTURE_2D )
                 glBindTexture( GL_TEXTURE_2D, texid )
+                glViewport(0, 0, self.half_width + 200, self.half_height + 200)                      # PPI text.
                 glColor3f(0.85, 0.85, 0.70)
                 self.draw_text(35, 1040, 'RADAR Sensor:  Range-Azimuth-Doppler')
                 glColor3f(0.4, 0.4, 0.4)
@@ -2970,18 +3034,39 @@ class Visualiser:
                 self.draw_text(1090.4, 701.4, '80 m')
                 self.draw_text(1140.7, 786.7, '90 m')
                 self.draw_text(1189, 871, '100 m')
-                self.draw_text(120, 60, '0 m/s')
-                self.draw_text(120, 257, '25 m/s')
+                self.draw_text(120, 60, '-50 m/s')
+                self.draw_text(120, 257, '0 m/s')
                 self.draw_text(120, 455, '50 m/s')
                 glColor3f(0.5, 0.5, 0.5)
                 self.draw_text(44, 490, 'Velocity')
+
+                glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)             # range-Doppler text.
+                glColor3f(0.85, 0.85, 0.70)
+                self.draw_text(35, 1040, 'RADAR: Range - Doppler')
+                glColor3f(0.4, 0.4, 0.4)
+                txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
+                txt2 = ['-50 m/s', '-40 m/s', '-30 m/s', '-20 m/s', '-10 m/s', '0 m/s', '10 m/s', '20 m/s', '30 m/s', '40 m/s', '50 m/s']
+                for i in range(11):
+                    dv = i * div
+                    y = 52 + dv
+                    self.draw_text(1320, y, txt2[i])                                # vertical text.
+                    x = 332 + dv
+                    self.draw_text(x, 22, txt[i])                                   # horizontal text.
+                self.draw_text(120, 60, '0')
+                self.draw_text(120, 257, '40')
+                self.draw_text(120, 455, '80+')
+                glColor3f(0.5, 0.5, 0.5)
+                self.draw_text(44, 490, 'Intensity')
+                glColor3f(0.75, 0.75, 0.75)
+                self.draw_text(1420, 525, 'Velocity')
+                self.draw_text(796, 75, 'Range')
                 glDisable( GL_TEXTURE_2D )
 
-                # Restore matrices.
-                glMatrixMode(GL_PROJECTION)
-                glPopMatrix()
-                glMatrixMode(GL_MODELVIEW)
-                glPopMatrix()
+            # Restore matrices.
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
 
         # Final tidy up for frame data, before going to next update/display.
         self.radar_ppi_size, self.radar_bscope_size, self.radar_rvv_size = [], [], []
@@ -3008,13 +3093,13 @@ class Visualiser:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, h, w, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data)
 
         # Save and set model view and projection matrix.
-        glMatrixMode(GL_PROJECTION)
-        glPushMatrix()
-        glLoadIdentity()
-        glOrtho(0, self.width, 0, self.height, -1, 1)
-        glMatrixMode(GL_MODELVIEW)
-        glPushMatrix()
-        glLoadIdentity()
+        #glMatrixMode(GL_PROJECTION)
+        #glPushMatrix()
+        #glLoadIdentity()
+        #glOrtho(0, self.width, 0, self.height, -1, 1)
+        #glMatrixMode(GL_MODELVIEW)
+        #glPushMatrix()
+        #glLoadIdentity()
 
         # Enable blending.
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -3037,10 +3122,10 @@ class Visualiser:
         glDisable(GL_TEXTURE_2D)
 
         # Restore matrices.
-        glMatrixMode(GL_PROJECTION)
-        glPopMatrix()
-        glMatrixMode(GL_MODELVIEW)
-        glPopMatrix()
+        #glMatrixMode(GL_PROJECTION)
+        #glPopMatrix()
+        #glMatrixMode(GL_MODELVIEW)
+        #glPopMatrix()
 
         # Disable blending.
         glDisable(GL_BLEND)
@@ -3055,6 +3140,48 @@ class Visualiser:
         glBegin(GL_LINE_STRIP)
         glVertex2f(v[0], v[1])
         glVertex2f(v[2], v[3])
+        glEnd()
+
+    def draw_colored_lines(self, lines):
+        glBegin(GL_LINES)
+        for l in lines:
+            glColor3f(l[4], l[5], l[6])
+            glVertex2f(l[0], l[1])
+            glVertex2f(l[2], l[3])
+        glEnd()
+
+    def draw_lines(self, lines):
+        glBegin(GL_LINES)
+        for l in lines:
+            glVertex2f(l[0], l[1])
+            glVertex2f(l[2], l[3])
+        glEnd()
+
+    def draw_rects(self, rects):
+        glBegin(GL_QUADS)
+        for l in rects:
+            glVertex2f(l[0], l[1])
+            glVertex2f(l[2], l[3])
+            glVertex2f(l[4], l[5])
+            glVertex2f(l[6], l[7])
+            glVertex2f(l[8], l[9])
+            glVertex2f(l[10], l[11])
+            glVertex2f(l[12], l[13])
+            glVertex2f(l[14], l[15])
+        glEnd()
+
+    def draw_colored_rects(self, rects):
+        glBegin(GL_QUADS)
+        for l in rects:
+            glColor3f(l[16], l[17], l[18])
+            glVertex2f(l[0], l[1])
+            glVertex2f(l[2], l[3])
+            glVertex2f(l[4], l[5])
+            glVertex2f(l[6], l[7])
+            glVertex2f(l[8], l[9])
+            glVertex2f(l[10], l[11])
+            glVertex2f(l[12], l[13])
+            glVertex2f(l[14], l[15])
         glEnd()
 
     def draw_text(self, x, y, txt):
