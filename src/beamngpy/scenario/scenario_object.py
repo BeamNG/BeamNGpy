@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from beamngpy.types import Float3, Quat, StrDict
+from beamngpy.utils.validation import validate_object_name
 
 if TYPE_CHECKING:
     from beamngpy import BeamNGpy
@@ -70,6 +71,9 @@ class ScenarioObject:
         self.scale = scale
         self.opts = options
         self.children = []
+
+        if self.name is not None:
+            validate_object_name(self.name)
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, type(self)):

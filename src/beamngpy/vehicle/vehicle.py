@@ -8,6 +8,7 @@ from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
 from beamngpy.types import Color, Float3, Quat, StrDict
+from beamngpy.utils.validation import validate_object_name
 from beamngpy.vehicle.sensors import Sensors
 
 if TYPE_CHECKING:
@@ -84,6 +85,7 @@ class Vehicle:
         self.logger.setLevel(DEBUG)
 
         self.vid = vid.replace(' ', '_')
+        validate_object_name(self.vid)
         self.model = model
 
         self.port = port
@@ -151,7 +153,7 @@ class Vehicle:
         return False
 
     def __str__(self) -> str:
-        return 'V:{}'.format(self.vid)
+        return f'V:{self.vid}'
 
     def is_connected(self) -> bool:
         """
