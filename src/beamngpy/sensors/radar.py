@@ -169,9 +169,21 @@ class Radar:
         return np.frombuffer(shmem.read(self.shmem2, self.shmem_size), dtype=np.uint8)
 
     def stream_ppi(self):
+        """
+        Gets the latest RADAR PPI image from shared memory (which is being streamed directly).
+
+        Returns:
+            The latest RADAR PPI image from shared memory.
+        """
         return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
 
     def stream_range_doppler(self):
+        """
+        Gets the latest RADAR Range-Doppler image from shared memory (which is being streamed directly).
+
+        Returns:
+            The latest RADAR Range-Doppler image from shared memory.
+        """
         return np.frombuffer(shmem.read(self.shmem2, self.shmem_size), dtype=np.uint8)
 
     def send_ad_hoc_poll_request(self) -> int:

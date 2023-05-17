@@ -15,7 +15,7 @@ class US_View:
         # Set up the geometric coordinates of the primitives.
         gap = 10.0
         ML_x_offset = 500.0                                                                                                         # Top side-bar.
-        ML_y_offset = 665.0
+        ML_y_offset = 650.0
         ML_w = 300.0
         ML_h = 15.0
         ML_h_gap = ML_h + gap
@@ -38,18 +38,21 @@ class US_View:
         loc_MR_4 = [MR_x_offset, MR_y_offset - (4.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (4.0 * MR_h_gap) - MR_h]
         loc_MR_5 = [MR_x_offset, MR_y_offset - (5.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (5.0 * MR_h_gap) - MR_h]
         loc_MR_6 = [MR_x_offset, MR_y_offset - (6.0 * MR_h_gap), MR_x_offset + MR_w, MR_y_offset - (6.0 * MR_h_gap) - MR_h]
-        div = 100
+        div = 50
         half_pi = math.pi * 0.5
         div_f = half_pi / float(div)
         wid = 15
-        cx, cy = 800, 475
-        wid_gap = wid + gap
-        r0, r1, r2, r3, r4, r5, r6 = 190, 190 + wid_gap, 190 + (2 * wid_gap), 190 + (3 * wid_gap), 190 + (4 * wid_gap), 190 + (5 * wid_gap), 190 + (6 * wid_gap)
 
         # Top-right arc.
+        cx, cy = 815, 475
+        wid_gap = wid + gap
+        r0, r1, r2, r3, r4, r5, r6 = 190, 190 + wid_gap, 190 + (2 * wid_gap), 190 + (3 * wid_gap), 190 + (4 * wid_gap), 190 + (5 * wid_gap), 190 + (6 * wid_gap)
+        rr0, rr1, rr2, rr3, rr4, rr5, rr6 = r0 - wid, r1 - wid, r2 - wid, r3 - wid, r4 - wid, r5 - wid, r6 - wid
         TR_tx0, TR_tx1, TR_tx2, TR_tx3, TR_tx4, TR_tx5, TR_tx6 = [], [], [], [], [], [], []
         TR_ty0, TR_ty1, TR_ty2, TR_ty3, TR_ty4, TR_ty5, TR_ty6 = [], [], [], [], [], [], []
-        for i in range(div):
+        TR2_tx0, TR2_tx1, TR2_tx2, TR2_tx3, TR2_tx4, TR2_tx5, TR2_tx6 = [], [], [], [], [], [], []
+        TR2_ty0, TR2_ty1, TR2_ty2, TR2_ty3, TR2_ty4, TR2_ty5, TR2_ty6 = [], [], [], [], [], [], []
+        for i in range(div + 1):
             ang = i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             TR_tx0.append((r0 * ca) + cx)
@@ -67,11 +70,28 @@ class US_View:
             TR_ty5.append((r5 * sa) + cy)
             TR_ty6.append((r6 * sa) + cy)
 
+            TR2_tx0.append((rr0 * ca) + cx)
+            TR2_tx1.append((rr1 * ca) + cx)
+            TR2_tx2.append((rr2 * ca) + cx)
+            TR2_tx3.append((rr3 * ca) + cx)
+            TR2_tx4.append((rr4 * ca) + cx)
+            TR2_tx5.append((rr5 * ca) + cx)
+            TR2_tx6.append((rr6 * ca) + cx)
+            TR2_ty0.append((rr0 * sa) + cy)
+            TR2_ty1.append((rr1 * sa) + cy)
+            TR2_ty2.append((rr2 * sa) + cy)
+            TR2_ty3.append((rr3 * sa) + cy)
+            TR2_ty4.append((rr4 * sa) + cy)
+            TR2_ty5.append((rr5 * sa) + cy)
+            TR2_ty6.append((rr6 * sa) + cy)
+
         # Bottom-right arc.
-        cx, cy = 800, 455
+        cx, cy = 815, 455
         BR_tx0, BR_tx1, BR_tx2, BR_tx3, BR_tx4, BR_tx5, BR_tx6 = [], [], [], [], [], [], []
         BR_ty0, BR_ty1, BR_ty2, BR_ty3, BR_ty4, BR_ty5, BR_ty6 = [], [], [], [], [], [], []
-        for i in range(div):
+        BR2_tx0, BR2_tx1, BR2_tx2, BR2_tx3, BR2_tx4, BR2_tx5, BR2_tx6 = [], [], [], [], [], [], []
+        BR2_ty0, BR2_ty1, BR2_ty2, BR2_ty3, BR2_ty4, BR2_ty5, BR2_ty6 = [], [], [], [], [], [], []
+        for i in range(div + 1):
             ang = -i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             BR_tx0.append((r0 * ca) + cx)
@@ -89,11 +109,28 @@ class US_View:
             BR_ty5.append((r5 * sa) + cy)
             BR_ty6.append((r6 * sa) + cy)
 
+            BR2_tx0.append((rr0 * ca) + cx)
+            BR2_tx1.append((rr1 * ca) + cx)
+            BR2_tx2.append((rr2 * ca) + cx)
+            BR2_tx3.append((rr3 * ca) + cx)
+            BR2_tx4.append((rr4 * ca) + cx)
+            BR2_tx5.append((rr5 * ca) + cx)
+            BR2_tx6.append((rr6 * ca) + cx)
+            BR2_ty0.append((rr0 * sa) + cy)
+            BR2_ty1.append((rr1 * sa) + cy)
+            BR2_ty2.append((rr2 * sa) + cy)
+            BR2_ty3.append((rr3 * sa) + cy)
+            BR2_ty4.append((rr4 * sa) + cy)
+            BR2_ty5.append((rr5 * sa) + cy)
+            BR2_ty6.append((rr6 * sa) + cy)
+
         # Top-left arc.
         cx, cy = 485, 475
         TL_tx0, TL_tx1, TL_tx2, TL_tx3, TL_tx4, TL_tx5, TL_tx6 = [], [], [], [], [], [], []
         TL_ty0, TL_ty1, TL_ty2, TL_ty3, TL_ty4, TL_ty5, TL_ty6 = [], [], [], [], [], [], []
-        for i in range(div):
+        TL2_tx0, TL2_tx1, TL2_tx2, TL2_tx3, TL2_tx4, TL2_tx5, TL2_tx6 = [], [], [], [], [], [], []
+        TL2_ty0, TL2_ty1, TL2_ty2, TL2_ty3, TL2_ty4, TL2_ty5, TL2_ty6 = [], [], [], [], [], [], []
+        for i in range(div + 1):
             ang = i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             TL_tx0.append(cx - (r0 * ca))
@@ -111,11 +148,28 @@ class US_View:
             TL_ty5.append((r5 * sa) + cy)
             TL_ty6.append((r6 * sa) + cy)
 
+            TL2_tx0.append(cx - (rr0 * ca))
+            TL2_tx1.append(cx - (rr1 * ca))
+            TL2_tx2.append(cx - (rr2 * ca))
+            TL2_tx3.append(cx - (rr3 * ca))
+            TL2_tx4.append(cx - (rr4 * ca))
+            TL2_tx5.append(cx - (rr5 * ca))
+            TL2_tx6.append(cx - (rr6 * ca))
+            TL2_ty0.append((rr0 * sa) + cy)
+            TL2_ty1.append((rr1 * sa) + cy)
+            TL2_ty2.append((rr2 * sa) + cy)
+            TL2_ty3.append((rr3 * sa) + cy)
+            TL2_ty4.append((rr4 * sa) + cy)
+            TL2_ty5.append((rr5 * sa) + cy)
+            TL2_ty6.append((rr6 * sa) + cy)
+
         # Bottom-left arc.
         cx, cy = 485, 455
         BL_tx0, BL_tx1, BL_tx2, BL_tx3, BL_tx4, BL_tx5, BL_tx6 = [], [], [], [], [], [], []
         BL_ty0, BL_ty1, BL_ty2, BL_ty3, BL_ty4, BL_ty5, BL_ty6 = [], [], [], [], [], [], []
-        for i in range(div):
+        BL2_tx0, BL2_tx1, BL2_tx2, BL2_tx3, BL2_tx4, BL2_tx5, BL2_tx6 = [], [], [], [], [], [], []
+        BL2_ty0, BL2_ty1, BL2_ty2, BL2_ty3, BL2_ty4, BL2_ty5, BL2_ty6 = [], [], [], [], [], [], []
+        for i in range(div + 1):
             ang = -i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
             BL_tx0.append(cx - (r0 * ca))
@@ -133,25 +187,110 @@ class US_View:
             BL_ty5.append((r5 * sa) + cy)
             BL_ty6.append((r6 * sa) + cy)
 
+            BL2_tx0.append(cx - (rr0 * ca))
+            BL2_tx1.append(cx - (rr1 * ca))
+            BL2_tx2.append(cx - (rr2 * ca))
+            BL2_tx3.append(cx - (rr3 * ca))
+            BL2_tx4.append(cx - (rr4 * ca))
+            BL2_tx5.append(cx - (rr5 * ca))
+            BL2_tx6.append(cx - (rr6 * ca))
+            BL2_ty0.append((rr0 * sa) + cy)
+            BL2_ty1.append((rr1 * sa) + cy)
+            BL2_ty2.append((rr2 * sa) + cy)
+            BL2_ty3.append((rr3 * sa) + cy)
+            BL2_ty4.append((rr4 * sa) + cy)
+            BL2_ty5.append((rr5 * sa) + cy)
+            BL2_ty6.append((rr6 * sa) + cy)
+
         # The rectangles of the middle-left display bar.
         self.ML_rects = []
-        self.ML_rects.append([loc_ML_0[0], loc_ML_0[1], loc_ML_0[2], loc_ML_0[3]])
-        self.ML_rects.append([loc_ML_1[0], loc_ML_1[1], loc_ML_1[2], loc_ML_1[3]])
-        self.ML_rects.append([loc_ML_2[0], loc_ML_2[1], loc_ML_2[2], loc_ML_2[3]])
-        self.ML_rects.append([loc_ML_3[0], loc_ML_3[1], loc_ML_3[2], loc_ML_3[3]])
-        self.ML_rects.append([loc_ML_4[0], loc_ML_4[1], loc_ML_4[2], loc_ML_4[3]])
-        self.ML_rects.append([loc_ML_5[0], loc_ML_5[1], loc_ML_5[2], loc_ML_5[3]])
-        self.ML_rects.append([loc_ML_6[0], loc_ML_6[1], loc_ML_6[2], loc_ML_6[3]])
+        self.ML_rects.append([
+            loc_ML_0[0], loc_ML_0[1], loc_ML_0[0], loc_ML_0[3],
+            loc_ML_0[2], loc_ML_0[1], loc_ML_0[2], loc_ML_0[3],
+            loc_ML_0[0], loc_ML_0[1], loc_ML_0[2], loc_ML_0[1],
+            loc_ML_0[0], loc_ML_0[3], loc_ML_0[2], loc_ML_0[3],
+            ])
+        self.ML_rects.append([
+            loc_ML_1[0], loc_ML_1[1], loc_ML_1[0], loc_ML_1[3],
+            loc_ML_1[2], loc_ML_1[1], loc_ML_1[2], loc_ML_1[3],
+            loc_ML_1[0], loc_ML_1[1], loc_ML_1[2], loc_ML_1[1],
+            loc_ML_1[0], loc_ML_1[3], loc_ML_1[2], loc_ML_1[3],
+            ])
+        self.ML_rects.append([
+            loc_ML_2[0], loc_ML_2[1], loc_ML_2[0], loc_ML_2[3],
+            loc_ML_2[2], loc_ML_2[1], loc_ML_2[2], loc_ML_2[3],
+            loc_ML_2[0], loc_ML_2[1], loc_ML_2[2], loc_ML_2[1],
+            loc_ML_2[0], loc_ML_2[3], loc_ML_2[2], loc_ML_2[3],
+            ])
+        self.ML_rects.append([
+            loc_ML_3[0], loc_ML_3[1], loc_ML_3[0], loc_ML_3[3],
+            loc_ML_3[2], loc_ML_3[1], loc_ML_3[2], loc_ML_3[3],
+            loc_ML_3[0], loc_ML_3[1], loc_ML_3[2], loc_ML_3[1],
+            loc_ML_3[0], loc_ML_3[3], loc_ML_3[2], loc_ML_3[3],
+            ])
+        self.ML_rects.append([
+            loc_ML_4[0], loc_ML_4[1], loc_ML_4[0], loc_ML_4[3],
+            loc_ML_4[2], loc_ML_4[1], loc_ML_4[2], loc_ML_4[3],
+            loc_ML_4[0], loc_ML_4[1], loc_ML_4[2], loc_ML_4[1],
+            loc_ML_4[0], loc_ML_4[3], loc_ML_4[2], loc_ML_4[3],
+            ])
+        self.ML_rects.append([
+            loc_ML_5[0], loc_ML_5[1], loc_ML_5[0], loc_ML_5[3],
+            loc_ML_5[2], loc_ML_5[1], loc_ML_5[2], loc_ML_5[3],
+            loc_ML_5[0], loc_ML_5[1], loc_ML_5[2], loc_ML_5[1],
+            loc_ML_5[0], loc_ML_5[3], loc_ML_5[2], loc_ML_5[3],
+            ])
+        self.ML_rects.append([
+            loc_ML_6[0], loc_ML_6[1], loc_ML_6[0], loc_ML_6[3],
+            loc_ML_6[2], loc_ML_6[1], loc_ML_6[2], loc_ML_6[3],
+            loc_ML_6[0], loc_ML_6[1], loc_ML_6[2], loc_ML_6[1],
+            loc_ML_6[0], loc_ML_6[3], loc_ML_6[2], loc_ML_6[3],
+            ])
 
         # The rectangles of the middle-right display bar.
         self.MR_rects = []
-        self.MR_rects.append([loc_MR_0[0], loc_MR_0[1], loc_MR_0[2], loc_MR_0[3]])
-        self.MR_rects.append([loc_MR_1[0], loc_MR_1[1], loc_MR_1[2], loc_MR_1[3]])
-        self.MR_rects.append([loc_MR_2[0], loc_MR_2[1], loc_MR_2[2], loc_MR_2[3]])
-        self.MR_rects.append([loc_MR_3[0], loc_MR_3[1], loc_MR_3[2], loc_MR_3[3]])
-        self.MR_rects.append([loc_MR_4[0], loc_MR_4[1], loc_MR_4[2], loc_MR_4[3]])
-        self.MR_rects.append([loc_MR_5[0], loc_MR_5[1], loc_MR_5[2], loc_MR_5[3]])
-        self.MR_rects.append([loc_MR_6[0], loc_MR_6[1], loc_MR_6[2], loc_MR_6[3]])
+        self.MR_rects.append([
+            loc_MR_0[0], loc_MR_0[1], loc_MR_0[0], loc_MR_0[3],
+            loc_MR_0[2], loc_MR_0[1], loc_MR_0[2], loc_MR_0[3],
+            loc_MR_0[0], loc_MR_0[1], loc_MR_0[2], loc_MR_0[1],
+            loc_MR_0[0], loc_MR_0[3], loc_MR_0[2], loc_MR_0[3],
+            ])
+        self.MR_rects.append([
+            loc_MR_1[0], loc_MR_1[1], loc_MR_1[0], loc_MR_1[3],
+            loc_MR_1[2], loc_MR_1[1], loc_MR_1[2], loc_MR_1[3],
+            loc_MR_1[0], loc_MR_1[1], loc_MR_1[2], loc_MR_1[1],
+            loc_MR_1[0], loc_MR_1[3], loc_MR_1[2], loc_MR_1[3],
+            ])
+        self.MR_rects.append([
+            loc_MR_2[0], loc_MR_2[1], loc_MR_2[0], loc_MR_2[3],
+            loc_MR_2[2], loc_MR_2[1], loc_MR_2[2], loc_MR_2[3],
+            loc_MR_2[0], loc_MR_2[1], loc_MR_2[2], loc_MR_2[1],
+            loc_MR_2[0], loc_MR_2[3], loc_MR_2[2], loc_MR_2[3],
+            ])
+        self.MR_rects.append([
+            loc_MR_3[0], loc_MR_3[1], loc_MR_3[0], loc_MR_3[3],
+            loc_MR_3[2], loc_MR_3[1], loc_MR_3[2], loc_MR_3[3],
+            loc_MR_3[0], loc_MR_3[1], loc_MR_3[2], loc_MR_3[1],
+            loc_MR_3[0], loc_MR_3[3], loc_MR_3[2], loc_MR_3[3],
+            ])
+        self.MR_rects.append([
+            loc_MR_4[0], loc_MR_4[1], loc_MR_4[0], loc_MR_4[3],
+            loc_MR_4[2], loc_MR_4[1], loc_MR_4[2], loc_MR_4[3],
+            loc_MR_4[0], loc_MR_4[1], loc_MR_4[2], loc_MR_4[1],
+            loc_MR_4[0], loc_MR_4[3], loc_MR_4[2], loc_MR_4[3],
+            ])
+        self.MR_rects.append([
+            loc_MR_5[0], loc_MR_5[1], loc_MR_5[0], loc_MR_5[3],
+            loc_MR_5[2], loc_MR_5[1], loc_MR_5[2], loc_MR_5[3],
+            loc_MR_5[0], loc_MR_5[1], loc_MR_5[2], loc_MR_5[1],
+            loc_MR_5[0], loc_MR_5[3], loc_MR_5[2], loc_MR_5[3],
+            ])
+        self.MR_rects.append([
+            loc_MR_6[0], loc_MR_6[1], loc_MR_6[0], loc_MR_6[3],
+            loc_MR_6[2], loc_MR_6[1], loc_MR_6[2], loc_MR_6[3],
+            loc_MR_6[0], loc_MR_6[1], loc_MR_6[2], loc_MR_6[1],
+            loc_MR_6[0], loc_MR_6[3], loc_MR_6[2], loc_MR_6[3],
+            ])
 
         # The arc rectangles.
         self.FL_rects0, self.FL_rects1, self.FL_rects2, self.FL_rects3, self.FL_rects4, self.FL_rects5, self.FL_rects6 = [], [], [], [], [], [], []
@@ -161,40 +300,152 @@ class US_View:
         for i in range(div):
 
             # The front-left (FL) arc rectangles.
-            self.FL_rects0.append([TR_tx0[i], TR_ty0[i], TR_tx0[i] + wid, TR_ty0[i] + wid])
-            self.FL_rects1.append([TR_tx1[i], TR_ty1[i], TR_tx1[i] + wid, TR_ty1[i] + wid])
-            self.FL_rects2.append([TR_tx2[i], TR_ty2[i], TR_tx2[i] + wid, TR_ty2[i] + wid])
-            self.FL_rects3.append([TR_tx3[i], TR_ty3[i], TR_tx3[i] + wid, TR_ty3[i] + wid])
-            self.FL_rects4.append([TR_tx4[i], TR_ty4[i], TR_tx4[i] + wid, TR_ty4[i] + wid])
-            self.FL_rects5.append([TR_tx5[i], TR_ty5[i], TR_tx5[i] + wid, TR_ty5[i] + wid])
-            self.FL_rects6.append([TR_tx6[i], TR_ty6[i], TR_tx6[i] + wid, TR_ty6[i] + wid])
+            self.FL_rects0.append([
+                TR_tx0[i], TR_ty0[i], TR2_tx0[i], TR2_ty0[i],
+                TR_tx0[i + 1], TR_ty0[i + 1], TR2_tx0[i + 1], TR2_ty0[i + 1],
+                TR_tx0[i], TR_ty0[i], TR_tx0[i + 1], TR_ty0[i + 1],
+                TR2_tx0[i], TR2_ty0[i], TR2_tx0[i + 1], TR2_ty0[i + 1] ])
+            self.FL_rects1.append([
+                TR_tx1[i], TR_ty1[i], TR2_tx1[i], TR2_ty1[i],
+                TR_tx1[i + 1], TR_ty1[i + 1], TR2_tx1[i + 1], TR2_ty1[i + 1],
+                TR_tx1[i], TR_ty1[i], TR_tx1[i + 1], TR_ty1[i + 1],
+                TR2_tx1[i], TR2_ty1[i], TR2_tx1[i + 1], TR2_ty1[i + 1] ])
+            self.FL_rects2.append([
+                TR_tx2[i], TR_ty2[i], TR2_tx2[i], TR2_ty2[i],
+                TR_tx2[i + 1], TR_ty2[i + 1], TR2_tx2[i + 1], TR2_ty2[i + 1],
+                TR_tx2[i], TR_ty2[i], TR_tx2[i + 1], TR_ty2[i + 1],
+                TR2_tx2[i], TR2_ty2[i], TR2_tx2[i + 1], TR2_ty2[i + 1] ])
+            self.FL_rects3.append([
+                TR_tx3[i], TR_ty3[i], TR2_tx3[i], TR2_ty3[i],
+                TR_tx3[i + 1], TR_ty3[i + 1], TR2_tx3[i + 1], TR2_ty3[i + 1],
+                TR_tx3[i], TR_ty3[i], TR_tx3[i + 1], TR_ty3[i + 1],
+                TR2_tx3[i], TR2_ty3[i], TR2_tx3[i + 1], TR2_ty3[i + 1] ])
+            self.FL_rects4.append([
+                TR_tx4[i], TR_ty4[i], TR2_tx4[i], TR2_ty4[i],
+                TR_tx4[i + 1], TR_ty4[i + 1], TR2_tx4[i + 1], TR2_ty4[i + 1],
+                TR_tx4[i], TR_ty4[i], TR_tx4[i + 1], TR_ty4[i + 1],
+                TR2_tx4[i], TR2_ty4[i], TR2_tx4[i + 1], TR2_ty4[i + 1] ])
+            self.FL_rects5.append([
+                TR_tx5[i], TR_ty5[i], TR2_tx5[i], TR2_ty5[i],
+                TR_tx5[i + 1], TR_ty5[i + 1], TR2_tx5[i + 1], TR2_ty5[i + 1],
+                TR_tx5[i], TR_ty5[i], TR_tx5[i + 1], TR_ty5[i + 1],
+                TR2_tx5[i], TR2_ty5[i], TR2_tx5[i + 1], TR2_ty5[i + 1] ])
+            self.FL_rects6.append([
+                TR_tx6[i], TR_ty6[i], TR2_tx6[i], TR2_ty6[i],
+                TR_tx6[i + 1], TR_ty6[i + 1], TR2_tx6[i + 1], TR2_ty6[i + 1],
+                TR_tx6[i], TR_ty6[i], TR_tx6[i + 1], TR_ty6[i + 1],
+                TR2_tx6[i], TR2_ty6[i], TR2_tx6[i + 1], TR2_ty6[i + 1] ])
 
             # The front-right (FR) arc rectangles.
-            self.FR_rects0.append([BR_tx0[i], BR_ty0[i], BR_tx0[i] + wid, BR_ty0[i] + wid])
-            self.FR_rects1.append([BR_tx1[i], BR_ty1[i], BR_tx1[i] + wid, BR_ty1[i] + wid])
-            self.FR_rects2.append([BR_tx2[i], BR_ty2[i], BR_tx2[i] + wid, BR_ty2[i] + wid])
-            self.FR_rects3.append([BR_tx3[i], BR_ty3[i], BR_tx3[i] + wid, BR_ty3[i] + wid])
-            self.FR_rects4.append([BR_tx4[i], BR_ty4[i], BR_tx4[i] + wid, BR_ty4[i] + wid])
-            self.FR_rects5.append([BR_tx5[i], BR_ty5[i], BR_tx5[i] + wid, BR_ty5[i] + wid])
-            self.FR_rects6.append([BR_tx6[i], BR_ty6[i], BR_tx6[i] + wid, BR_ty6[i] + wid])
+            self.FR_rects0.append([
+                BR_tx0[i], BR_ty0[i], BR2_tx0[i], BR2_ty0[i],
+                BR_tx0[i + 1], BR_ty0[i + 1], BR2_tx0[i + 1], BR2_ty0[i + 1],
+                BR_tx0[i], BR_ty0[i], BR_tx0[i + 1], BR_ty0[i + 1],
+                BR2_tx0[i], BR2_ty0[i], BR2_tx0[i + 1], BR2_ty0[i + 1] ])
+            self.FR_rects1.append([
+                BR_tx1[i], BR_ty1[i], BR2_tx1[i], BR2_ty1[i],
+                BR_tx1[i + 1], BR_ty1[i + 1], BR2_tx1[i + 1], BR2_ty1[i + 1],
+                BR_tx1[i], BR_ty1[i], BR_tx1[i + 1], BR_ty1[i + 1],
+                BR2_tx1[i], BR2_ty1[i], BR2_tx1[i + 1], BR2_ty1[i + 1] ])
+            self.FR_rects2.append([
+                BR_tx2[i], BR_ty2[i], BR2_tx2[i], BR2_ty2[i],
+                BR_tx2[i + 1], BR_ty2[i + 1], BR2_tx2[i + 1], BR2_ty2[i + 1],
+                BR_tx2[i], BR_ty2[i], BR_tx2[i + 1], BR_ty2[i + 1],
+                BR2_tx2[i], BR2_ty2[i], BR2_tx2[i + 1], BR2_ty2[i + 1] ])
+            self.FR_rects3.append([
+                BR_tx3[i], BR_ty3[i], BR2_tx3[i], BR2_ty3[i],
+                BR_tx3[i + 1], BR_ty3[i + 1], BR2_tx3[i + 1], BR2_ty3[i + 1],
+                BR_tx3[i], BR_ty3[i], BR_tx3[i + 1], BR_ty3[i + 1],
+                BR2_tx3[i], BR2_ty3[i], BR2_tx3[i + 1], BR2_ty3[i + 1] ])
+            self.FR_rects4.append([
+                BR_tx4[i], BR_ty4[i], BR2_tx4[i], BR2_ty4[i],
+                BR_tx4[i + 1], BR_ty4[i + 1], BR2_tx4[i + 1], BR2_ty4[i + 1],
+                BR_tx4[i], BR_ty4[i], BR_tx4[i + 1], BR_ty4[i + 1],
+                BR2_tx4[i], BR2_ty4[i], BR2_tx4[i + 1], BR2_ty4[i + 1] ])
+            self.FR_rects5.append([
+                BR_tx5[i], BR_ty5[i], BR2_tx5[i], BR2_ty5[i],
+                BR_tx5[i + 1], BR_ty5[i + 1], BR2_tx5[i + 1], BR2_ty5[i + 1],
+                BR_tx5[i], BR_ty5[i], BR_tx5[i + 1], BR_ty5[i + 1],
+                BR2_tx5[i], BR2_ty5[i], BR2_tx5[i + 1], BR2_ty5[i + 1] ])
+            self.FR_rects6.append([
+                BR_tx6[i], BR_ty6[i], BR2_tx6[i], BR2_ty6[i],
+                BR_tx6[i + 1], BR_ty6[i + 1], BR2_tx6[i + 1], BR2_ty6[i + 1],
+                BR_tx6[i], BR_ty6[i], BR_tx6[i + 1], BR_ty6[i + 1],
+                BR2_tx6[i], BR2_ty6[i], BR2_tx6[i + 1], BR2_ty6[i + 1] ])
 
             # The back-left (BL) arc rectangles.
-            self.BL_rects0.append([TL_tx0[i], TL_ty0[i], TL_tx0[i] + wid, TL_ty0[i] + wid])
-            self.BL_rects1.append([TL_tx1[i], TL_ty1[i], TL_tx1[i] + wid, TL_ty1[i] + wid])
-            self.BL_rects2.append([TL_tx2[i], TL_ty2[i], TL_tx2[i] + wid, TL_ty2[i] + wid])
-            self.BL_rects3.append([TL_tx3[i], TL_ty3[i], TL_tx3[i] + wid, TL_ty3[i] + wid])
-            self.BL_rects4.append([TL_tx4[i], TL_ty4[i], TL_tx4[i] + wid, TL_ty4[i] + wid])
-            self.BL_rects5.append([TL_tx5[i], TL_ty5[i], TL_tx5[i] + wid, TL_ty5[i] + wid])
-            self.BL_rects6.append([TL_tx6[i], TL_ty6[i], TL_tx6[i] + wid, TL_ty6[i] + wid])
+            self.BL_rects0.append([
+                TL_tx0[i], TL_ty0[i], TL2_tx0[i], TL2_ty0[i],
+                TL_tx0[i + 1], TL_ty0[i + 1], TL2_tx0[i + 1], TL2_ty0[i + 1],
+                TL_tx0[i], TL_ty0[i], TL_tx0[i + 1], TL_ty0[i + 1],
+                TL2_tx0[i], TL2_ty0[i], TL2_tx0[i + 1], TL2_ty0[i + 1] ])
+            self.BL_rects1.append([
+                TL_tx1[i], TL_ty1[i], TL2_tx1[i], TL2_ty1[i],
+                TL_tx1[i + 1], TL_ty1[i + 1], TL2_tx1[i + 1], TL2_ty1[i + 1],
+                TL_tx1[i], TL_ty1[i], TL_tx1[i + 1], TL_ty1[i + 1],
+                TL2_tx1[i], TL2_ty1[i], TL2_tx1[i + 1], TL2_ty1[i + 1] ])
+            self.BL_rects2.append([
+                TL_tx2[i], TL_ty2[i], TL2_tx2[i], TL2_ty2[i],
+                TL_tx2[i + 1], TL_ty2[i + 1], TL2_tx2[i + 1], TL2_ty2[i + 1],
+                TL_tx2[i], TL_ty2[i], TL_tx2[i + 1], TL_ty2[i + 1],
+                TL2_tx2[i], TL2_ty2[i], TL2_tx2[i + 1], TL2_ty2[i + 1] ])
+            self.BL_rects3.append([
+                TL_tx3[i], TL_ty3[i], TL2_tx3[i], TL2_ty3[i],
+                TL_tx3[i + 1], TL_ty3[i + 1], TL2_tx3[i + 1], TL2_ty3[i + 1],
+                TL_tx3[i], TL_ty3[i], TL_tx3[i + 1], TL_ty3[i + 1],
+                TL2_tx3[i], TL2_ty3[i], TL2_tx3[i + 1], TL2_ty3[i + 1] ])
+            self.BL_rects4.append([
+                TL_tx4[i], TL_ty4[i], TL2_tx4[i], TL2_ty4[i],
+                TL_tx4[i + 1], TL_ty4[i + 1], TL2_tx4[i + 1], TL2_ty4[i + 1],
+                TL_tx4[i], TL_ty4[i], TL_tx4[i + 1], TL_ty4[i + 1],
+                TL2_tx4[i], TL2_ty4[i], TL2_tx4[i + 1], TL2_ty4[i + 1] ])
+            self.BL_rects5.append([
+                TL_tx5[i], TL_ty5[i], TL2_tx5[i], TL2_ty5[i],
+                TL_tx5[i + 1], TL_ty5[i + 1], TL2_tx5[i + 1], TL2_ty5[i + 1],
+                TL_tx5[i], TL_ty5[i], TL_tx5[i + 1], TL_ty5[i + 1],
+                TL2_tx5[i], TL2_ty5[i], TL2_tx5[i + 1], TL2_ty5[i + 1] ])
+            self.BL_rects6.append([
+                TL_tx6[i], TL_ty6[i], TL2_tx6[i], TL2_ty6[i],
+                TL_tx6[i + 1], TL_ty6[i + 1], TL2_tx6[i + 1], TL2_ty6[i + 1],
+                TL_tx6[i], TL_ty6[i], TL_tx6[i + 1], TL_ty6[i + 1],
+                TL2_tx6[i], TL2_ty6[i], TL2_tx6[i + 1], TL2_ty6[i + 1] ])
 
             # The back-right (BR) arc rectangles.
-            self.BR_rects0.append([BL_tx0[i], BL_ty0[i], BL_tx0[i] + wid, BL_ty0[i] + wid])
-            self.BR_rects1.append([BL_tx1[i], BL_ty1[i], BL_tx1[i] + wid, BL_ty1[i] + wid])
-            self.BR_rects2.append([BL_tx2[i], BL_ty2[i], BL_tx2[i] + wid, BL_ty2[i] + wid])
-            self.BR_rects3.append([BL_tx3[i], BL_ty3[i], BL_tx3[i] + wid, BL_ty3[i] + wid])
-            self.BR_rects4.append([BL_tx4[i], BL_ty4[i], BL_tx4[i] + wid, BL_ty4[i] + wid])
-            self.BR_rects5.append([BL_tx5[i], BL_ty5[i], BL_tx5[i] + wid, BL_ty5[i] + wid])
-            self.BR_rects6.append([BL_tx6[i], BL_ty6[i], BL_tx6[i] + wid, BL_ty6[i] + wid])
+            self.BR_rects0.append([
+                BL_tx0[i], BL_ty0[i], BL2_tx0[i], BL2_ty0[i],
+                BL_tx0[i + 1], BL_ty0[i + 1], BL2_tx0[i + 1], BL2_ty0[i + 1],
+                BL_tx0[i], BL_ty0[i], BL_tx0[i + 1], BL_ty0[i + 1],
+                BL2_tx0[i], BL2_ty0[i], BL2_tx0[i + 1], BL2_ty0[i + 1] ])
+            self.BR_rects1.append([
+                BL_tx1[i], BL_ty1[i], BL2_tx1[i], BL2_ty1[i],
+                BL_tx1[i + 1], BL_ty1[i + 1], BL2_tx1[i + 1], BL2_ty1[i + 1],
+                BL_tx1[i], BL_ty1[i], BL_tx1[i + 1], BL_ty1[i + 1],
+                BL2_tx1[i], BL2_ty1[i], BL2_tx1[i + 1], BL2_ty1[i + 1] ])
+            self.BR_rects2.append([
+                BL_tx2[i], BL_ty2[i], BL2_tx2[i], BL2_ty2[i],
+                BL_tx2[i + 1], BL_ty2[i + 1], BL2_tx2[i + 1], BL2_ty2[i + 1],
+                BL_tx2[i], BL_ty2[i], BL_tx2[i + 1], BL_ty2[i + 1],
+                BL2_tx2[i], BL2_ty2[i], BL2_tx2[i + 1], BL2_ty2[i + 1] ])
+            self.BR_rects3.append([
+                BL_tx3[i], BL_ty3[i], BL2_tx3[i], BL2_ty3[i],
+                BL_tx3[i + 1], BL_ty3[i + 1], BL2_tx3[i + 1], BL2_ty3[i + 1],
+                BL_tx3[i], BL_ty3[i], BL_tx3[i + 1], BL_ty3[i + 1],
+                BL2_tx3[i], BL2_ty3[i], BL2_tx3[i + 1], BL2_ty3[i + 1] ])
+            self.BR_rects4.append([
+                BL_tx4[i], BL_ty4[i], BL2_tx4[i], BL2_ty4[i],
+                BL_tx4[i + 1], BL_ty4[i + 1], BL2_tx4[i + 1], BL2_ty4[i + 1],
+                BL_tx4[i], BL_ty4[i], BL_tx4[i + 1], BL_ty4[i + 1],
+                BL2_tx4[i], BL2_ty4[i], BL2_tx4[i + 1], BL2_ty4[i + 1] ])
+            self.BR_rects5.append([
+                BL_tx5[i], BL_ty5[i], BL2_tx5[i], BL2_ty5[i],
+                BL_tx5[i + 1], BL_ty5[i + 1], BL2_tx5[i + 1], BL2_ty5[i + 1],
+                BL_tx5[i], BL_ty5[i], BL_tx5[i + 1], BL_ty5[i + 1],
+                BL2_tx5[i], BL2_ty5[i], BL2_tx5[i + 1], BL2_ty5[i + 1] ])
+            self.BR_rects6.append([
+                BL_tx6[i], BL_ty6[i], BL2_tx6[i], BL2_ty6[i],
+                BL_tx6[i + 1], BL_ty6[i + 1], BL2_tx6[i + 1], BL2_ty6[i + 1],
+                BL_tx6[i], BL_ty6[i], BL_tx6[i + 1], BL_ty6[i + 1],
+                BL2_tx6[i], BL2_ty6[i], BL2_tx6[i + 1], BL2_ty6[i + 1] ])
 
         # Initialize the sensor display bars and default them to their outermost position.
         self.us_bar_FL = 6
@@ -223,9 +474,9 @@ class US_View:
             return
 
         # Get the latest readings from the Ultrasonic sensors.
-        d_FL, d_FR = self.us_FL.poll()['distance'], self.us_FR.poll()['distance']
-        d_BL, d_BR = self.us_BL.poll()['distance'], self.us_BR.poll()['distance']
-        d_ML, d_MR = self.us_ML.poll()['distance'], self.us_MR.poll()['distance']
+        d_FL, d_FR = self.us_FL.stream()[0], self.us_FR.stream()[0]
+        d_BL, d_BR = self.us_BL.stream()[0], self.us_BR.stream()[0]
+        d_ML, d_MR = self.us_ML.stream()[0], self.us_MR.stream()[0]
 
         # Compute the position of the front-left (FL) display bar, in range [0, 6].
         if d_FL > 5.0:

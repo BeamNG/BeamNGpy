@@ -31,9 +31,10 @@ class Mesh:
         vehicle (Vehicle): The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the mesh sensor.
         gfx_update_time (float): The gfx-step time which should pass between sensor reading updates to the user, in seconds.
         groups_list (list): A list of mesh groups which are to be considered. Optional.  If empty, we include all mesh nodes/beams.
+        is_track_beams (bool): A flag which indicates if we should keep updating the beam to node maps. This will track broken beams over time, but is slower.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, groups_list = []):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, groups_list = [], is_track_beams = True):
         sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
@@ -44,6 +45,8 @@ class Mesh:
         self.vehicle = vehicle
         self.vid = vehicle.vid
         self.bng = bng
+
+        self.is_track_beams = is_track_beams
 
         # Mesh group properties (which parts of mesh to include, if used).
         # We populate a Boolean dictionary of all groups to be included, for fast lookup.
@@ -106,6 +109,11 @@ class Mesh:
         """
         Gets the latest collection beams and updates the class state with them.
         """
+
+        # If we are not tracking beams, then we only need to compute the beam structures once, so leave immediately if it has been done in that case.
+        if self.is_track_beams == False and self.is_beam_relevance_map_computed == True:
+            return
+
         beam_data = self._send_sensor_request('GetBeamData', ack='CompletedGetBeamData', vid=self.vid)['data']
         self.beams = {}
 

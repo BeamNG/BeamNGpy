@@ -37,6 +37,9 @@ class Visualiser:
         self.is_ai_driving = True                                   # A flag which indicates if the main vehicle is to be AI-driven (True) or human driven (False).
         self.is_final_display = False                               # A flag which indicates if we are in the final (frozen) display phase of a scenario demo.
 
+        # 3d/2d matrix state.
+        self.is_2d_pushed = False
+
         # General initialization.
         self.width, self.height = width, height
         self.half_width, self.half_height = int(width * 0.5), int(height * 0.5)
@@ -281,7 +284,7 @@ class Visualiser:
             with open('vehicle10.json', 'r') as j:
                 script_vehicle10 = json.loads(j.read())
             self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
-            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, 1.875)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, start_delay = 2.0)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
@@ -320,8 +323,8 @@ class Visualiser:
                 script_vehicle9 = json.loads(j.read())
             with open('vehicle10_sc2.json', 'r') as j:
                 script_vehicle10 = json.loads(j.read())
-            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, 5.0)
-            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, 3.0)
+            self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1, start_delay = 5.0)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, start_delay = 3.0)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
@@ -512,7 +515,7 @@ class Visualiser:
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
-            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6, 21.0)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6, start_delay = 21.0)
             self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
             self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
             self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
@@ -654,25 +657,25 @@ class Visualiser:
                 is_streaming=True)
 
         elif demo == 'ultrasonic':
-            self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+            self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.3), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.3), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.3), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.3), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.3), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.05, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.3), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
             self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5)
 
         elif demo == 'radar':
             self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
-                is_streaming=True)
+                is_streaming=True, is_visualised=False)
 
         elif demo == 'imu':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001,
@@ -691,7 +694,7 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
 
         elif demo == 'mesh':
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001, is_track_beams=True)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=300.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=200.0,
                 top_center=vec3(600.0, 840.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1340.0, 200.0),
                 right_scale=vec3(150.0, 150.0), is_top=True, is_front=True, is_right=True)
@@ -707,19 +710,19 @@ class Visualiser:
             self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
-                is_streaming=True)
-            self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
-            self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.1, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0)
+                is_streaming=True, is_visualised=False)
+            self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 1.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 0.0, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+            self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 0.0, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
             self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5)
 
         elif demo == '1':
@@ -731,7 +734,7 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-18.0, data_max=18.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body', 'sbr_wheeldata_F', 'sbr_wheeldata_R'])
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body', 'sbr_wheeldata_F', 'sbr_wheeldata_R'], is_track_beams=False)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=250.0, top_center=vec3(1500.0, 785.0), top_scale=vec3(190.0, 190.0),
                 front_center=vec3(1500.0, 215.0), front_scale=vec3(190.0, 190.0), is_top=True, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
@@ -747,7 +750,7 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0, -15.0, 15.0), dir=(0.0, 1, -1),
                 resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body'])
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body'], is_track_beams=False)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
                 is_top=False, is_front=True, is_right=False, vel_dir_sensitivity=8.0)
             self.mesh_view.data_mode = 'vel_dir'
@@ -764,7 +767,7 @@ class Visualiser:
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
                 resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005,
-                groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'])
+                groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'], is_track_beams=False)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=600.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
                 is_top=False, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
@@ -781,7 +784,7 @@ class Visualiser:
             self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
                 resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005,
-                groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'])
+                groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'], is_track_beams=False)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=1000.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
                 is_top=False, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
@@ -799,7 +802,7 @@ class Visualiser:
                 resolution=(480, 480), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
             self.camera2 = Camera('camera2', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0.6, -2.0, 0.15), dir=(0, 1, 0),
                 resolution=(480, 480), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body', 'sbr_wheeldata_F', 'sbr_wheeldata_R'])
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body', 'sbr_wheeldata_F', 'sbr_wheeldata_R'], is_track_beams=False)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=250.0,
                 front_center=vec3(1250.0, 185.0), front_scale=vec3(125.0, 125.0),
                 right_center=vec3(1580.0, 185.0), right_scale=vec3(125.0, 125.0),
@@ -832,7 +835,7 @@ class Visualiser:
             self.radar = Radar('radar1', self.bng, self.main_vehicle, requested_update_time=0.05, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1), resolution=(self.radar_res[0], self.radar_res[1]),
                 field_of_view_y=self.radar_fov, near_far_planes=(0.1, self.radar_range_max), range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12,
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
-                is_streaming=True)
+                is_streaming=True, is_visualised=False)
 
     def on_drag(self, x, y):
         if self.follow:
@@ -1276,16 +1279,8 @@ class Visualiser:
         # Individual render data for each demonstration.
         if self.demo == 'trajectory':
             if self.trajectory_view is not None:
+                self._push_2d()
                 glViewport(0, 0, self.width, self.height)
-
-                # Save and set model view and projection matrix.
-                glMatrixMode(GL_PROJECTION)
-                glPushMatrix()
-                glLoadIdentity()
-                glOrtho(0, self.width, 0, self.height, -1, 1)
-                glMatrixMode(GL_MODELVIEW)
-                glPushMatrix()
-                glLoadIdentity()
 
                 # Plot the trajectory.
                 glColor3f(0.7, 0.35, 0.7)
@@ -1323,24 +1318,10 @@ class Visualiser:
                 glColor3f(0.85, 0.85, 0.70)
                 self.draw_text(50, 1060, 'Trajectory')
                 glDisable( GL_TEXTURE_2D )
-
-                # Restore matrices.
-                glMatrixMode(GL_PROJECTION)
-                glPopMatrix()
-                glMatrixMode(GL_MODELVIEW)
-                glPopMatrix()
+                self._pop_2d()
 
         elif self.demo == 'camera':
-
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             if self.toggle == 0:                                                                                                                # colour image only.
                 if len(self.camera_color_size) > 0:
                     glViewport(0, 0, self.width, self.height)
@@ -1474,12 +1455,7 @@ class Visualiser:
                     glColor3f(0.85, 0.85, 0.70)
                     self.draw_text(1020, 1020, 'Camera Sensor')
                     glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == 'lidar':
             if self.points_count > 0:
@@ -1495,14 +1471,7 @@ class Visualiser:
                 glDisableClientState(GL_COLOR_ARRAY)
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
+            self._push_2d()
 
             # Title underline.
             glColor3f(0.25, 0.25, 0.15)
@@ -1519,69 +1488,23 @@ class Visualiser:
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(85, 1020, 'LiDAR Sensor: Point Cloud')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == 'ultrasonic':
-
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             glViewport(0, 0, self.width, self.height)
             self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The car image.
 
             # Render each of the display bars.
             rects = self.us_view.display()
-            d_rects = []
-            for r in rects['grey']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
             glColor3f(0.1, 0.1, 0.1)
-            self.draw_rects(d_rects)
-            d_rects = []
-            for r in rects['white']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
+            self.draw_rects(rects['grey'])
             glColor3f(1.0, 1.0, 1.0)
-            self.draw_rects(d_rects)
-            d_rects = []
-            for r in rects['yellow']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
+            self.draw_rects(rects['white'])
             glColor3f(1.0, 1.0, 0.0)
-            self.draw_rects(d_rects)
-            d_rects = []
-            for r in rects['red']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
+            self.draw_rects(rects['yellow'])
             glColor3f(1.0, 0.0, 0.0)
-            self.draw_rects(d_rects)
+            self.draw_rects(rects['red'])
 
             # Title underline.
             glColor3f(0.25, 0.25, 0.15)
@@ -1598,24 +1521,10 @@ class Visualiser:
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(85, 1045, 'Ultrasonic Sensor')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == 'radar':
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
-            # Render RADAR images.
+            self._push_2d()
             if self.toggle == 0:                                                                                # Range-Doppler-Azimuth.
                 if len(self.radar_ppi_size) > 0:
                     glViewport(0, 0, self.width * 2, self.height * 2)
@@ -1826,28 +1735,15 @@ class Visualiser:
                     self.draw_text(1420, 525, 'Velocity')
                     self.draw_text(796, 75, 'Range')
                     glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == 'imu':
+            self._push_2d()
+            glViewport(0, 0, self.width, self.height)
+
             # Get display data.
             disp1, disp2, disp3 = self.time_series1.display(), self.time_series2.display(), self.time_series3.display()
             disp4, disp5, disp6 = self.time_series4.display(), self.time_series5.display(), self.time_series6.display()
-
-            glViewport(0, 0, self.width, self.height)
-
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
 
             # Draw grid.
             grid1, grid2, grid3, grid4, grid5, grid6 = disp1['grid'], disp2['grid'], disp3['grid'], disp4['grid'], disp5['grid'], disp6['grid']
@@ -1919,14 +1815,10 @@ class Visualiser:
             self.draw_text(920, 708, '-5.0')
             self.draw_text(930, 957, '5.0')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == 'mesh':
+            self._push_2d()
             mesh_data = self.mesh_view.display()
             top, front, right, colors = mesh_data['top'], mesh_data['front'], mesh_data['right'], mesh_data['colors']
 
@@ -1934,15 +1826,6 @@ class Visualiser:
 
             # Render the colorbar.
             self.render_img(1780, 50, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
 
             # View-division / Title underline lines.
             glColor3f(0.25, 0.25, 0.15)
@@ -2035,15 +1918,10 @@ class Visualiser:
             self.draw_text(422, 30, '  Right')
             self.draw_text(1320, 30, '    Front')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == 'multi':
-
+            # Lidar.
             if self.points_count > 0:
                 glViewport(0, 0, self.half_width, self.half_height)
                 glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buf)
@@ -2057,14 +1935,7 @@ class Visualiser:
                 glDisableClientState(GL_COLOR_ARRAY)
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
+            self._push_2d()
 
             if len(self.camera_color_size) > 0:                                                                                         # camera - color image.
                 glViewport(0, self.half_height, self.half_width * 2, self.half_height * 2)	# TL
@@ -2115,46 +1986,14 @@ class Visualiser:
             # Ultrasonic.
             glViewport(self.half_width, 0, self.half_width, self.half_height)
             rects = self.us_view.display()
-            d_rects = []
-            for r in rects['grey']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
             glColor3f(0.1, 0.1, 0.1)
-            self.draw_rects(d_rects)
-            d_rects = []
-            for r in rects['white']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
+            self.draw_rects(rects['grey'])
             glColor3f(1.0, 1.0, 1.0)
-            self.draw_rects(d_rects)
-            d_rects = []
-            for r in rects['yellow']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
+            self.draw_rects(rects['white'])
             glColor3f(1.0, 1.0, 0.0)
-            self.draw_rects(d_rects)
-            d_rects = []
-            for r in rects['red']:
-                r0, r1, r2, r3 = r[0], r[1], r[2], r[3]
-                d_rects.append([
-                    r0, r1, r0, r3,
-                    r2, r1, r2, r3,
-                    r0, r1, r2, r1,
-                    r0, r3, r2, r3 ])
+            self.draw_rects(rects['yellow'])
             glColor3f(1.0, 0.0, 0.0)
-            self.draw_rects(d_rects)
+            self.draw_rects(rects['red'])
 
             # Draw Text.
             glEnable(GL_LINE_SMOOTH)
@@ -2188,23 +2027,10 @@ class Visualiser:
             glColor3f(0.5, 0.5, 0.5)
             self.draw_text(44, 490, 'Velocity')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == '1':
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             glViewport(0, 0, self.width, self.height)
 
             # Render the colorbar.
@@ -2313,23 +2139,10 @@ class Visualiser:
                 self.draw_text(spike2_x - 66, 20, 'BRAKING: START')
                 self.draw_text(1120, 100, 'VEHICLE WEIGHT SHIFTED TO FRONT >>>>>')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         if self.demo == '2':
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             glViewport(0, 0, self.width, self.height)
 
             # Render the Camera colour image.
@@ -2442,23 +2255,10 @@ class Visualiser:
                 self.draw_text(spike3_x - 135, 20, 'DOUBLE LANE CHANGE: START')
                 self.draw_text(1110, 100, 'VELOCITY DIRECTION CHANGING ACROSS VEHICLE >>>>')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == '3':
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             glViewport(0, 0, self.width, self.height)
 
             # Render the Camera colour image.
@@ -2560,23 +2360,10 @@ class Visualiser:
             self.draw_text(1810, 252, '300 N')
             self.draw_text(1810, 55, '0 N')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == '4':
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             glViewport(0, 0, self.width, self.height)
 
             # Render the Camera colour image.
@@ -2688,23 +2475,10 @@ class Visualiser:
             if self.is_final_display == True:
                 self.draw_text(spike2_x - 80, 20, 'VERTICAL IMPACT')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == '5':
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             glViewport(0, 0, self.width, self.height)
 
             # Render the two Camera colour images.
@@ -2819,24 +2593,10 @@ class Visualiser:
             if self.is_final_display == True:
                 self.draw_text(spike2_x - 66, 20, 'TYRE BLOW OUT')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == '6':
-
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             # Render the two Camera colour images.
             if len(self.camera_color_size) > 0 and len(self.camera2_color_size) > 0:
                 self.render_img(530, 10, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
@@ -2946,23 +2706,10 @@ class Visualiser:
                 self.draw_text(spike5_x + 8, 706, 'LAG')
                 self.draw_text(spike6_x + 8, 706, 'LAG')
             glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         elif self.demo == '7':
-            # Save and set model view and projection matrix.
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            glLoadIdentity()
-            glOrtho(0, self.width, 0, self.height, -1, 1)
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-
+            self._push_2d()
             if len(self.radar_ppi_size) > 0 and len(self.radar_rvv_size) > 0:
                 glViewport(0, 0, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
                 self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
@@ -3061,12 +2808,7 @@ class Visualiser:
                 self.draw_text(1420, 525, 'Velocity')
                 self.draw_text(796, 75, 'Range')
                 glDisable( GL_TEXTURE_2D )
-
-            # Restore matrices.
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
-            glPopMatrix()
+            self._pop_2d()
 
         # Final tidy up for frame data, before going to next update/display.
         self.radar_ppi_size, self.radar_bscope_size, self.radar_rvv_size = [], [], []
@@ -3092,15 +2834,6 @@ class Visualiser:
         else:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, h, w, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data)
 
-        # Save and set model view and projection matrix.
-        #glMatrixMode(GL_PROJECTION)
-        #glPushMatrix()
-        #glLoadIdentity()
-        #glOrtho(0, self.width, 0, self.height, -1, 1)
-        #glMatrixMode(GL_MODELVIEW)
-        #glPushMatrix()
-        #glLoadIdentity()
-
         # Enable blending.
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_BLEND)
@@ -3120,12 +2853,6 @@ class Visualiser:
         glVertex2f(x, y + wd)
         glEnd()
         glDisable(GL_TEXTURE_2D)
-
-        # Restore matrices.
-        #glMatrixMode(GL_PROJECTION)
-        #glPopMatrix()
-        #glMatrixMode(GL_MODELVIEW)
-        #glPopMatrix()
 
         # Disable blending.
         glDisable(GL_BLEND)
@@ -3192,6 +2919,23 @@ class Visualiser:
         glCallLists([ord(c) for c in txt])
         glPopMatrix()
         glPopMatrix()
+
+    def _push_2d(self):
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0, self.width, 0, self.height, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        self.is_2d_pushed = True
+
+    def _pop_2d(self):
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPopMatrix()
+        self.is_2d_pushed = False
 
     def makefont(self, filename, size):
         global texid

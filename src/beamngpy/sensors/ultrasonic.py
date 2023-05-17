@@ -12,6 +12,11 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
+import beamngpy.sensors.shmem as shmem
+
+import os
+import numpy as np
+
 __all__ = ['Ultrasonic']
 
 
@@ -44,6 +49,7 @@ class Ultrasonic:
         sensitivity: an ultrasonic sensor sensitivity parameter.
         fixed_window_size: an ultrasonic sensor sensitivity parameter.
         is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
+        is_streaming: Whether or not to stream the data directly to shared memory (no poll required, for efficiency - BeamNGpy won't block.)
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
@@ -55,7 +61,7 @@ class Ultrasonic:
                  field_of_view_y: float = 5.7, near_far_planes: Float2 = (0.1, 5.1),
                  range_roundess: float = -1.15, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.3,
                  range_focus: float = 0.376, range_min_cutoff: float = 0.1, range_direct_max_cutoff: float = 5.0,
-                 sensitivity: float = 3.0, fixed_window_size: float = 10, is_visualised: bool = True, is_static: bool = False,
+                 sensitivity: float = 3.0, fixed_window_size: float = 10, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
                  is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
         self.logger.setLevel(DEBUG)
@@ -64,11 +70,17 @@ class Ultrasonic:
         self.bng = bng
         self.name = name
 
+        # Shared memory for velocity data streaming.
+        pid = os.getpid()
+        self.shmem_size = 4
+        self.shmem_handle = f'{pid}.{name}.Ultrasonic'
+        self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
+
         # Create and initialise this sensor in the simulation.
         self._open_ultrasonic(
-            name, vehicle, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
+            name, vehicle, self.shmem_handle, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
             near_far_planes, range_roundess, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
-            range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_static, is_snapping_desired,
+            range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_streaming, is_static, is_snapping_desired,
             is_force_inside_triangle)
         self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')
 
@@ -104,6 +116,15 @@ class Ultrasonic:
         self.logger.debug('Ultrasonic - sensor readings received from simulation: 'f'{self.name}')
 
         return distance_measurement
+
+    def stream(self):
+        """
+        Gets the latest Ultrasonic distance reading from shared memory (which is being streamed directly).
+
+        Returns:
+            The latest Ultrasonic distance reading from shared memory.
+        """
+        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -254,13 +275,15 @@ class Ultrasonic:
                          name=self.name, isVisualised=is_visualised)
 
     def _open_ultrasonic(
-            self, name: str, vehicle: Vehicle | None, requested_update_time: float, update_priority: float, pos: Float3,
+            self, name: str, vehicle: Vehicle | None, shmem_handle: str | None, shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3,
             dir: Float3, up: Float3, size: Int2, field_of_view_y: float, near_far_planes: Float2,
             range_roundness: float, range_cutoff_sensitivity: float, range_shape: float, range_focus: float,
             range_min_cutoff: float, range_direct_max_cutoff: float, sensitivity: float, fixed_window_size: float,
-            is_visualised: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+            is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
         data: StrDict = dict(type='OpenUltrasonic')
         data['name'] = name
+        data['shmemHandle'] = shmem_handle
+        data['shmemSize'] = shmem_size
         data['vid'] = 0
         if vehicle is not None:
             data['vid'] = vehicle.vid
@@ -281,6 +304,7 @@ class Ultrasonic:
         data['sensitivity'] = sensitivity
         data['fixed_window_size'] = fixed_window_size
         data['isVisualised'] = is_visualised
+        data['isStreaming'] = is_streaming
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
