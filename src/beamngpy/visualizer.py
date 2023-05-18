@@ -284,7 +284,7 @@ class Visualiser:
             with open('vehicle10.json', 'r') as j:
                 script_vehicle10 = json.loads(j.read())
             self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
-            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, start_delay = 2.0)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, start_delay = 1.9)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
@@ -748,11 +748,9 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(0, -15.0, 15.0), dir=(0.0, 1, -1),
-                resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
-            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body'], is_track_beams=False)
-            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
-                is_top=False, is_front=True, is_right=False, vel_dir_sensitivity=8.0)
+            self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005, groups_list=['sbr_body', 'sbr_wheeldata_F', 'sbr_wheeldata_R'], is_track_beams=False)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, top_center=vec3(1500.0, 785.0), top_scale=vec3(190.0, 190.0),
+                front_center=vec3(1500.0, 215.0), front_scale=vec3(190.0, 190.0), is_top=True, is_front=True, is_right=False, vel_dir_sensitivity=8.0)
             self.mesh_view.data_mode = 'vel_dir'
 
         elif demo == '3':
@@ -764,12 +762,10 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-2.5, data_max=2.5,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
-                resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005,
                 groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'], is_track_beams=False)
-            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=600.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
-                is_top=False, is_front=True, is_right=False)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=600.0, top_center=vec3(1500.0, 785.0), top_scale=vec3(190.0, 190.0),
+                front_center=vec3(1500.0, 215.0), front_scale=vec3(190.0, 190.0), is_top=True, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
 
         elif demo == '4':
@@ -781,12 +777,10 @@ class Visualiser:
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
             self.time_series3 = Time_Series(size=10000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-40.0, data_max=40.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.camera = Camera('camera1', self.bng, self.main_vehicle, requested_update_time=0.05, is_using_shared_memory=True, pos=(-2.5, 0, 0.35), dir=(1, 0, 0),
-                resolution=(910, 490), near_far_planes=(0.1, 100), is_render_annotations=False, is_render_depth=False, is_streaming=True)
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.0005,
                 groups_list=['sbr_suspension_F', 'sbr_suspension_R', 'sbr_wheeldata_F', 'sbr_wheeldata_R', 'sbr_body'], is_track_beams=False)
-            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=1000.0, front_center=vec3(1525.0, 200.0), front_scale=vec3(170.0, 170.0),
-                is_top=False, is_front=True, is_right=False)
+            self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=1000.0, top_center=vec3(1500.0, 785.0), top_scale=vec3(190.0, 190.0),
+                front_center=vec3(1500.0, 215.0), front_scale=vec3(190.0, 190.0), is_top=True, is_front=True, is_right=False)
             self.mesh_view.data_mode = 'force'
 
         elif demo == '5':
@@ -1050,11 +1044,6 @@ class Visualiser:
             self.time_series2.update(gyroY)
             self.time_series3.update(gyroZ)
             self.mesh_view.update(dir=current_dir)                                          # update Mesh sensor.
-            if self.is_scenario_2_paused == False:
-                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensor (unless it has been paused).
-                camera_data1 = self.camera.stream_colour(cam_width * cam_height * 4)
-                self.camera_color_size = [cam_width, cam_height]
-                self.camera_color_img = camera_data1
 
             p = vec3(current_pos[0], current_pos[1], current_pos[2])
             d = p.distance(self.scenario2_target)
@@ -1103,11 +1092,6 @@ class Visualiser:
             self.time_series2.update(gyroY)
             self.time_series3.update(gyroZ)
             self.mesh_view.update(dir=current_dir)                                              # update Mesh sensor.
-            if self.is_scenario_3_paused == False:
-                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensor (unless it has been paused).
-                camera_data1 = self.camera.stream_colour(cam_width * cam_height * 4)
-                self.camera_color_size = [cam_width, cam_height]
-                self.camera_color_img = camera_data1
 
             pos = vec3(current_pos[0], current_pos[1], current_pos[2])
             p = vec3(pos[0], pos[1], pos[2])
@@ -1135,11 +1119,6 @@ class Visualiser:
             self.time_series2.update(accY)
             self.time_series3.update(accZ)
             self.mesh_view.update(dir=current_dir)                                              # update Mesh sensor.
-            if self.is_scenario_4_paused == False:
-                cam_width, cam_height = self.camera.resolution[0], self.camera.resolution[1]    # update Camera sensor (unless it has been paused).
-                camera_data1 = self.camera.stream_colour(cam_width * cam_height * 4)
-                self.camera_color_size = [cam_width, cam_height]
-                self.camera_color_img = camera_data1
 
             pos = vec3(current_pos[0], current_pos[1], current_pos[2])
             p = vec3(pos[0], pos[1], pos[2])
@@ -2178,10 +2157,6 @@ class Visualiser:
             self._push_2d()
             glViewport(0, 0, self.width, self.height)
 
-            # Render the Camera colour image.
-            if len(self.camera_color_size) > 0:
-                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
-
             # Render the colorbar.
             self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
@@ -2210,14 +2185,16 @@ class Visualiser:
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
-            front, colors = mesh_data['front'], mesh_data['colors']
+            top, front, colors = mesh_data['top'], mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
             lines = []
             glLineWidth(1.0)
-            num_beams = len(front['beams'])
+            num_beams = len(top['beams'])
             for i in range(num_beams):
                 color = colors[i]
+                line = top['beams'][i]
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
                 line = front['beams'][i]
                 lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
             self.draw_colored_lines(lines)
@@ -2225,6 +2202,13 @@ class Visualiser:
             # Draw nodes.
             rects = []
             glColor3f(0.75, 0.75, 0.60)
+            for _, node in top['nodes'].items():
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
             for _, node in front['nodes'].items():
                 x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
                 rects.append([
@@ -2233,13 +2217,6 @@ class Visualiser:
                     x0, y0, x1, y0,
                     x0, y1, x1, y1])
             self.draw_rects(rects)
-
-            # View-division lines.
-            glViewport(0, 0, self.width, self.height)
-            glColor3f(0.25, 0.25, 0.15)
-            glLineWidth(3.0)
-            self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
-            self.draw_line([self.half_width, 0, self.half_width, self.height])
 
             # Draw final display markups.
             spike3_x = 0.0
@@ -2261,7 +2238,7 @@ class Visualiser:
             self.draw_text(820, 534, 'Pitch [Y]')
             self.draw_text(820, 834, 'Yaw [Z]')
             self.draw_text(358, 995, 'IMU - Gyroscopic')
-            self.draw_text(1330, 500, 'Vehicle Velocity Direction')
+            self.draw_text(1160, 985, 'Vehicle Velocity Direction')
             self.draw_text(373, 47, 'time (seconds)')
             glColor3f(0.01, 0.01, 0.01)
             self.draw_text(1400, 995, 'Top-Down View')
@@ -2286,17 +2263,13 @@ class Visualiser:
             self.draw_text(1810, 55, 'Fwd')
             if self.is_final_display == True:
                 self.draw_text(spike3_x - 135, 20, 'DOUBLE LANE CHANGE: START')
-                self.draw_text(1110, 100, 'VELOCITY DIRECTION CHANGING ACROSS VEHICLE >>>>')
+                self.draw_text(1090, 100, 'VELOCITY DIRECTION CHANGING ACROSS VEHICLE >>>>')
             glDisable( GL_TEXTURE_2D )
             self._pop_2d()
 
         elif self.demo == '3':
             self._push_2d()
             glViewport(0, 0, self.width, self.height)
-
-            # Render the Camera colour image.
-            if len(self.camera_color_size) > 0:
-                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
             # Render the colorbar.
             self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
@@ -2326,14 +2299,16 @@ class Visualiser:
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
-            front, colors = mesh_data['front'], mesh_data['colors']
+            top, front, colors = mesh_data['top'], mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
             lines = []
             glLineWidth(1.0)
-            num_beams = len(front['beams'])
+            num_beams = len(top['beams'])
             for i in range(num_beams):
                 color = colors[i]
+                line = top['beams'][i]
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
                 line = front['beams'][i]
                 lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
             self.draw_colored_lines(lines)
@@ -2341,6 +2316,13 @@ class Visualiser:
             # Draw nodes.
             rects = []
             glColor3f(0.75, 0.75, 0.60)
+            for _, node in top['nodes'].items():
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
             for _, node in front['nodes'].items():
                 x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
                 rects.append([
@@ -2349,13 +2331,6 @@ class Visualiser:
                     x0, y0, x1, y0,
                     x0, y1, x1, y1])
             self.draw_rects(rects)
-
-            # View-division lines.
-            glViewport(0, 0, self.width, self.height)
-            glColor3f(0.25, 0.25, 0.15)
-            glLineWidth(3.0)
-            self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
-            self.draw_line([self.half_width, 0, self.half_width, self.height])
 
             # Draw Text.
             glEnable(GL_LINE_SMOOTH)
@@ -2369,7 +2344,7 @@ class Visualiser:
             self.draw_text(820, 534, 'Pitch [Y]')
             self.draw_text(820, 834, 'Yaw [Z]')
             self.draw_text(358, 995, 'IMU - Gyroscopic')
-            self.draw_text(1330, 500, 'Force Distribution')
+            self.draw_text(1160, 985, 'Vehicle Force Distribution')
             self.draw_text(373, 47, 'time (seconds)')
             glColor3f(0.1, 0.1, 0.1)
             self.draw_text(1400, 1040, 'Side Camera')
@@ -2399,10 +2374,6 @@ class Visualiser:
             self._push_2d()
             glViewport(0, 0, self.width, self.height)
 
-            # Render the Camera colour image.
-            if len(self.camera_color_size) > 0:
-                self.render_img(985, 565, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
-
             # Render the colorbar.
             self.render_img(1770, 45, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
@@ -2431,14 +2402,16 @@ class Visualiser:
 
             # Mesh render.
             mesh_data = self.mesh_view.display()
-            front, colors = mesh_data['front'], mesh_data['colors']
+            top, front, colors = mesh_data['top'], mesh_data['front'], mesh_data['colors']
 
             # Draw beams.
             lines = []
             glLineWidth(1.0)
-            num_beams = len(front['beams'])
+            num_beams = len(top['beams'])
             for i in range(num_beams):
                 color = colors[i]
+                line = top['beams'][i]
+                lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
                 line = front['beams'][i]
                 lines.append([line[0], line[1], line[2], line[3], color[0], color[1], color[2]])
             self.draw_colored_lines(lines)
@@ -2446,6 +2419,13 @@ class Visualiser:
             # Draw nodes.
             rects = []
             glColor3f(0.75, 0.75, 0.60)
+            for _, node in top['nodes'].items():
+                x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
+                rects.append([
+                    x0, y0, x0, y1,
+                    x1, y0, x1, y1,
+                    x0, y0, x1, y0,
+                    x0, y1, x1, y1])
             for _, node in front['nodes'].items():
                 x0, x1, y0, y1 = node[0] - 2, node[0] + 2, node[1] - 2, node[1] + 2
                 rects.append([
@@ -2454,13 +2434,6 @@ class Visualiser:
                     x0, y0, x1, y0,
                     x0, y1, x1, y1])
             self.draw_rects(rects)
-
-            # View-division lines.
-            glViewport(0, 0, self.width, self.height)
-            glColor3f(0.25, 0.25, 0.15)
-            glLineWidth(3.0)
-            self.draw_line([self.half_width, self.half_height, self.width, self.half_height])
-            self.draw_line([self.half_width, 0, self.half_width, self.height])
 
             # Draw final display markups.
             spike2_x = 0.0
@@ -2482,7 +2455,7 @@ class Visualiser:
             self.draw_text(820, 534, 'Y')
             self.draw_text(820, 834, 'Z')
             self.draw_text(358, 995, 'IMU - Acceleration')
-            self.draw_text(1330, 500, 'Force Distribution')
+            self.draw_text(1160, 985, 'Vehicle Force Distribution')
             self.draw_text(373, 47, 'time (seconds)')
             glColor3f(0.01, 0.01, 0.01)
             self.draw_text(1400, 1040, 'Side Camera')
@@ -2696,19 +2669,19 @@ class Visualiser:
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
-            self.draw_text(369, 1017, 'X')
-            self.draw_text(1008, 1017, 'Y')
-            self.draw_text(1621, 1017, 'Z')
+            self.draw_text(369, 1007, 'X')
+            self.draw_text(1008, 1007, 'Y')
+            self.draw_text(1621, 1007, 'Z')
             self.draw_text(307, 370, 'time (seconds)')
             self.draw_text(946, 370, 'time (seconds)')
             self.draw_text(1562, 370, 'time (seconds)')
             glColor3f(0.95, 0.25, 0.70)
-            self.draw_text(10, 1040, '[Front IMU - Accel]')
-            self.draw_text(10, 356, '[Rear IMU - Accel]')
+            self.draw_text(10, 1007, '[Front IMU - Accel]')
+            self.draw_text(10, 375, '[Rear IMU - Accel]')
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(2, 436, '-300.0')
             self.draw_text(33, 561, '0')
-            self.draw_text(7, 692, '300.0')
+            self.draw_text(7, 689, '300.0')
             self.draw_text(2, 736, '-300.0')
             self.draw_text(33, 863, '0')
             self.draw_text(7, 987, '300.0')
