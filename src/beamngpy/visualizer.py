@@ -680,24 +680,24 @@ class Visualiser:
         elif demo == 'imu':
             self.imu1 = AdvancedIMU('imu1', self.bng, self.main_vehicle, pos=(0.0, 0.0, 0.5), dir=(0, -1, 0), up=(1, 0, 0), gfx_update_time=0.0001, physics_update_time=0.0001,
                 is_using_gravity=True, is_visualised=False, is_snapping_desired=True, is_force_inside_triangle=True, accel_window_width=200)
-            self.time_series1 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
+            self.time_series1 = Time_Series(size=2000, x_min=130.0, x_max=830, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series2 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
+            self.time_series2 = Time_Series(size=2000, x_min=130.0, x_max=830, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series3 = Time_Series(size=2000, x_min=100.0, x_max=800, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
+            self.time_series3 = Time_Series(size=2000, x_min=130.0, x_max=830, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-25.0, data_max=25.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series4 = Time_Series(size=2000, x_min=1000.0, x_max=1700, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
+            self.time_series4 = Time_Series(size=2000, x_min=1030.0, x_max=1730, y_min=100.0, y_max=350.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series5 = Time_Series(size=2000, x_min=1000.0, x_max=1700, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
+            self.time_series5 = Time_Series(size=2000, x_min=1030.0, x_max=1730, y_min=400.0, y_max=650.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
-            self.time_series6 = Time_Series(size=2000, x_min=1000.0, x_max=1700, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
+            self.time_series6 = Time_Series(size=2000, x_min=1030.0, x_max=1730, y_min=700.0, y_max=950.0, grid_spacing_x=10, grid_spacing_y=4, data_min=-5.0, data_max=5.0,
                 axes_overlap_x=10.0, axes_overlap_y=10.0, grid_notch_x=5.0, grid_notch_y=5.0)
 
         elif demo == 'mesh':
             self.mesh = Mesh('mesh', self.bng, self.main_vehicle, gfx_update_time=0.001, is_track_beams=True)
             self.mesh_view = Mesh_View(self.mesh, mass_min=0.0, mass_max=10.0, force_min=0.0, force_max=300.0, vel_min=0.0, vel_max=50.0, stress_min=0.0, stress_max=200.0,
-                top_center=vec3(600.0, 840.0), top_scale=vec3(150.0, 150.0), front_center=vec3(600.0, 200.0), front_scale=vec3(150.0, 150.0), right_center=vec3(1340.0, 200.0),
-                right_scale=vec3(150.0, 150.0), is_top=True, is_front=True, is_right=True)
+                top_center=vec3(630.0, 840.0), top_scale=vec3(170.0, 170.0), front_center=vec3(630.0, 200.0), front_scale=vec3(170.0, 170.0), right_center=vec3(1340.0, 200.0),
+                right_scale=vec3(170.0, 170.0), is_top=True, is_front=True, is_right=True)
 
         elif demo == 'trajectory':
             self.trajectory_view = Trajectory(memory=10000, x_min=0, x_max=self.width, y_min=0, y_max=self.height, origin_x=self.width * 0.5, origin_y=self.height * 0.5)
@@ -1325,12 +1325,12 @@ class Visualiser:
             if self.toggle == 0:                                                                                                                # colour image only.
                 if len(self.camera_color_size) > 0:
                     glViewport(0, 0, self.width, self.height)
-                    self.render_img(50, 50, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
+                    self.render_img(50, 0, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([75, 1000, 400, 1000])
+                    self.draw_line([75, 985, 400, 985])
 
                     # Draw Text.
                     glEnable(GL_LINE_SMOOTH)
@@ -1340,7 +1340,7 @@ class Visualiser:
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(85, 1020, 'Camera Sensor - Color Image')
+                    self.draw_text(85, 1000, 'Camera Sensor - Color Image')
                     glDisable( GL_TEXTURE_2D )
 
             elif self.toggle == 1:                                                                                                              # annotation image only.
@@ -1349,6 +1349,7 @@ class Visualiser:
                     self.render_img(50, 50, self.camera_annot_img, self.camera_annot_size[0], self.camera_annot_size[1], 1, 1, 1, 0)
 
                     # Title underline / View division lines.
+                    glColor3f(0.5, 0.5, 0.5)
                     glViewport(0, 0, self.width, self.height)
                     lines, rects = [], []
                     lines.append([75, 985, 460, 985])
@@ -1390,6 +1391,9 @@ class Visualiser:
                     glColor3f(0.85, 0.85, 0.70)
                     self.draw_text(85, 1000, 'Camera Sensor - Class Annotations')
                     self.draw_text(85, 900, 'Map: ')
+                    self.draw_text(85, 870, 'Mode I:  Class Annotations [unique color for each type].')
+                    self.draw_text(85, 840, 'Mode II: Instance Annotations [unique color for each item].')
+                    self.draw_text(85, 810, 'Fast creation of large data sets for training (no human burden).')
                     self.draw_text(1440, 971, 'Color -> Class Map:')
                     glColor3f(0.85, 0.35, 0.70)
                     self.draw_text(85, 900, '     ' + self.map_name)
@@ -1403,12 +1407,12 @@ class Visualiser:
             elif self.toggle == 2:                                                                                                              # depth image only.
                 if len(self.camera_depth_size) > 0:
                     glViewport(0, 0, self.width, self.height)
-                    self.render_img(50, 50, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
+                    self.render_img(50, 00, self.camera_depth_img, self.camera_depth_size[0], self.camera_depth_size[1], 1, 1, 1, 2)
 
                     # Title underline.
                     glColor3f(0.25, 0.25, 0.15)
                     glLineWidth(2.0)
-                    self.draw_line([75, 1000, 400, 1000])
+                    self.draw_line([75, 985, 400, 985])
 
                     # Draw Text.
                     glEnable(GL_LINE_SMOOTH)
@@ -1418,7 +1422,7 @@ class Visualiser:
                     glEnable(GL_TEXTURE_2D)
                     glBindTexture(GL_TEXTURE_2D, texid)
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(85, 1020, 'Camera Sensor - Depth Image')
+                    self.draw_text(85, 1000, 'Camera Sensor - Depth Image')
                     glDisable(GL_TEXTURE_2D)
 
             else:                                                                                                                               # all images.
@@ -1439,7 +1443,7 @@ class Visualiser:
                     self.draw_lines([
                         [0, self.half_height, self.width, self.half_height],
                         [self.half_width, 0, self.half_width, self.height],
-                        [1000, 1000, 1185, 1000]])
+                        [1000, 985, 1185, 985]])
 
                     # Draw Text.
                     glEnable(GL_LINE_SMOOTH)
@@ -1452,8 +1456,12 @@ class Visualiser:
                     self.draw_text(410, 565, ' Depth Camera')
                     self.draw_text(1310, 25, '  Semantic Annotations')
                     self.draw_text(420, 25, 'Color Camera')
-                    glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(1020, 1020, 'Camera Sensor')
+                    self.draw_text(1020, 1000, 'Camera Sensor')
+                    glColor3f(0.85, 0.75, 0.40)
+                    self.draw_text(1020, 950, 'Supports HD streaming > 20 FPS.')
+                    self.draw_text(1020, 920, 'Depth camera - provides distance to each pixel.')
+                    self.draw_text(1020, 890, 'Class/Instance annotations available.')
+                    self.draw_text(1020, 860, 'All raw data available for processing.')
                     glDisable( GL_TEXTURE_2D )
             self._pop_2d()
 
@@ -1476,7 +1484,7 @@ class Visualiser:
             # Title underline.
             glColor3f(0.25, 0.25, 0.15)
             glLineWidth(2.0)
-            self.draw_line([75, 1000, 375, 1000])
+            self.draw_line([75, 985, 375, 985])
 
             # Draw Text.
             glEnable(GL_LINE_SMOOTH)
@@ -1486,14 +1494,14 @@ class Visualiser:
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(85, 1020, 'LiDAR Sensor: Point Cloud')
+            self.draw_text(85, 1000, 'LiDAR Sensor: Point Cloud')
             glDisable( GL_TEXTURE_2D )
             self._pop_2d()
 
         elif self.demo == 'ultrasonic':
             self._push_2d()
             glViewport(0, 0, self.width, self.height)
-            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The car image.
+            self.render_img(453, 200, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The car image.
 
             # Render each of the display bars.
             rects = self.us_view.display()
@@ -1509,7 +1517,7 @@ class Visualiser:
             # Title underline.
             glColor3f(0.25, 0.25, 0.15)
             glLineWidth(2.0)
-            self.draw_line([55, 1010, 320, 1010])
+            self.draw_line([65, 982, 305, 982])
 
             # Draw Text.
             glEnable(GL_LINE_SMOOTH)
@@ -1519,7 +1527,12 @@ class Visualiser:
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(85, 1045, 'Ultrasonic Sensor')
+            self.draw_text(85, 1000, 'Ultrasonic Sensor')
+            glColor3f(0.85, 0.75, 0.40)
+            self.draw_text(85, 950, 'Measures distance to close proximity objects.')
+            self.draw_text(85, 920, 'Commonly used in parking assistance.')
+            self.draw_text(85, 890, 'Beam Shape: controlled by 6 shaping parameters.')
+            self.draw_text(85, 860, 'Sensitivity: controlled by 2 parameters.')
             glDisable( GL_TEXTURE_2D )
             self._pop_2d()
 
@@ -1535,10 +1548,10 @@ class Visualiser:
 
                     # Draw the title bar / frame.
                     lines = []
-                    lines.append([25, 1020, 475, 1020])                   # title bar.
-                    lines.append([673, 25, 181, 875])                     # left grid line.
-                    lines.append([673, 25, 1166, 875])                    # right grid line.
-                    lines.append([673.0, 25.0, 688.0, 16.0])              # grooves.
+                    lines.append([25, 983, 475, 983])                       # title bar.
+                    lines.append([673, 25, 181, 875])                       # left grid line.
+                    lines.append([673, 25, 1166, 875])                      # right grid line.
+                    lines.append([673.0, 25.0, 688.0, 16.0])                # grooves.
                     lines.append([722.3, 110.0, 737.3, 101.0])
                     lines.append([771.6, 195.0, 786.6, 186.0])
                     lines.append([820.9, 280.0, 835.9, 271.0])
@@ -1561,7 +1574,7 @@ class Visualiser:
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(35, 1040, 'RADAR Sensor:  Range-Azimuth-Doppler')
+                    self.draw_text(35, 1000, 'RADAR Sensor:  Range-Azimuth-Doppler')
                     glColor3f(0.4, 0.4, 0.4)
                     self.draw_text(700, 21, '0 m')
                     self.draw_text(745.3, 106.3, '10 m')
@@ -1603,7 +1616,7 @@ class Visualiser:
                         lines.append([1300, y, 1310, y])                    # vertical grooves.
                         x = 350 + dv
                         lines.append([x, 45, x, 35])                        # horizontal grooves.
-                    lines.append([25, 1020, 290, 1020])                     # title underline.
+                    lines.append([25, 983, 290, 983])                       # title underline.
                     glLineWidth(2.0)
                     glColor3f(0.3, 0.3, 0.3)
                     self.draw_lines(lines)
@@ -1616,7 +1629,7 @@ class Visualiser:
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(35, 1040, 'RADAR: Range - Doppler')
+                    self.draw_text(35, 1000, 'RADAR: Range - Doppler')
                     glColor3f(0.4, 0.4, 0.4)
                     txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
                     txt2 = ['-50 m/s', '-40 m/s', '-30 m/s', '-20 m/s', '-10 m/s', '0 m/s', '10 m/s', '20 m/s', '30 m/s', '40 m/s', '50 m/s']
@@ -1638,20 +1651,19 @@ class Visualiser:
 
             else:                                                                                # Both RADAR plots together
                 if len(self.radar_ppi_size) > 0 and len(self.radar_rvv_size) > 0:
-                    glViewport(0, 0, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
+                    glViewport(0, 150, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
                     self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-                    glViewport(0, 0, self.width + 400, self.height + 400)
+                    glViewport(0, 150, self.width + 400, self.height + 400)
                     self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
-                    glViewport(self.half_width, 0, self.width + 400, self.height + 400)                                                         # Range-doppler image + colorbar.
+                    glViewport(self.half_width, 150, self.width + 400, self.height + 400)                                                         # Range-doppler image + colorbar.
                     self.render_img(175, 22.5, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
-                    glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)
+                    glViewport(self.half_width, 150, self.half_width + 200, self.half_height + 200)
                     self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
                     # PPI frame.
-                    glViewport(0, 0, self.half_width + 200, self.half_height + 200)
+                    glViewport(0, 150, self.half_width + 200, self.half_height + 200)
                     lines = []
-                    lines.append([25, 1020, 475, 1020])                     # title bar.
                     lines.append([673, 25, 181, 875])                       # left grid line.
                     lines.append([673, 25, 1166, 875])                      # right grid line.
                     lines.append([673.0, 25.0, 688.0, 16.0])                # grooves.
@@ -1670,7 +1682,7 @@ class Visualiser:
                     self.draw_lines(lines)
 
                     # Range-Doppler frame.
-                    glViewport(self.width, 0, self.half_width + 200, self.half_height + 200)
+                    glViewport(self.width, 150, self.half_width + 200, self.half_height + 200)
                     lines = []
                     lines.append([350, 45, 1300, 45])                       # bottom frame line.
                     lines.append([350, 995, 1300, 995])                     # bottom frame line.
@@ -1683,7 +1695,13 @@ class Visualiser:
                         lines.append([1300, y, 1310, y])                    # vertical grooves.
                         x = 350 + dv
                         lines.append([x, 45, x, 35])                        # horizontal grooves.
-                    lines.append([25, 1020, 290, 1020])                     # title underline.
+                    self.draw_lines(lines)
+
+                    # Draw title bars.
+                    glViewport(0, 0, self.width, self.height)
+                    lines = []
+                    lines.append([25, 983, 320, 983])                     # title bar (left).
+                    lines.append([985, 983, 1180, 983])                   # title bar (right).
                     self.draw_lines(lines)
 
                     # Draw Text.
@@ -1693,9 +1711,12 @@ class Visualiser:
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                     glEnable( GL_TEXTURE_2D )
                     glBindTexture( GL_TEXTURE_2D, texid )
-                    glViewport(0, 0, self.half_width + 200, self.half_height + 200)                      # PPI text.
+
                     glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(35, 1040, 'RADAR Sensor:  Range-Azimuth-Doppler')
+                    self.draw_text(35, 1000, 'Range - Azimuth - Doppler')
+                    self.draw_text(995, 1000, 'Range - Doppler')
+
+                    glViewport(0, 150, self.half_width + 200, self.half_height + 200)                           # PPI text.
                     glColor3f(0.4, 0.4, 0.4)
                     self.draw_text(700, 21, '0 m')
                     self.draw_text(745.3, 106.3, '10 m')
@@ -1714,9 +1735,7 @@ class Visualiser:
                     glColor3f(0.5, 0.5, 0.5)
                     self.draw_text(44, 490, 'Velocity')
 
-                    glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)             # range-Doppler text.
-                    glColor3f(0.85, 0.85, 0.70)
-                    self.draw_text(35, 1040, 'RADAR: Range - Doppler')
+                    glViewport(self.half_width, 150, self.half_width + 200, self.half_height + 200)             # range-Doppler text.
                     glColor3f(0.4, 0.4, 0.4)
                     txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
                     txt2 = ['-50 m/s', '-40 m/s', '-30 m/s', '-20 m/s', '-10 m/s', '0 m/s', '10 m/s', '20 m/s', '30 m/s', '40 m/s', '50 m/s']
@@ -1776,44 +1795,44 @@ class Visualiser:
             glEnable( GL_TEXTURE_2D )
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.65, 0.65, 0.3)
-            self.draw_text(1710, 275, 'X [roll]')
-            self.draw_text(1710, 570, 'Y [pitch]')
-            self.draw_text(1710, 875, 'Z [yaw]')
-            self.draw_text(300, 985, 'IMU - TRI-AXIAL ACCELERATION')
-            self.draw_text(1200, 985, ' IMU - TRI-AXIAL GYROSCOPIC')
-            self.draw_text(1300, 45, 'time (seconds)')
-            self.draw_text(400, 45, 'time (seconds)')
+            self.draw_text(1740, 255, 'X [roll]')
+            self.draw_text(1740, 550, 'Y [pitch]')
+            self.draw_text(1740, 855, 'Z [yaw]')
+            self.draw_text(300, 985, 'IMU - Tri-Axial Acceleration (ms^-2)')
+            self.draw_text(1200, 985, ' IMU - Tri-Axial Gyroscopic (rad/s)')
+            self.draw_text(1315, 45, 'time (seconds)')
+            self.draw_text(415, 45, 'time (seconds)')
             glColor3f(0.85, 0.85, 0.70)
-            self.draw_text(790, 80, '0s')
+            self.draw_text(820, 80, '0s')
             self.draw_text(690, 80, '-0.4s')
             self.draw_text(540, 80, '-0.8s')
-            self.draw_text(390, 80, '-1.2s')
-            self.draw_text(240, 80, '-1.6s')
-            self.draw_text(90, 80, '-2.0s')
-            self.draw_text(44, 231, '0')
-            self.draw_text(44, 531, '0')
-            self.draw_text(44, 831, '0')
-            self.draw_text(20, 107, '-25.0')
-            self.draw_text(30, 357, '25.0')
-            self.draw_text(20, 408, '-25.0')
-            self.draw_text(30, 657, '25.0')
-            self.draw_text(20, 708, '-25.0')
-            self.draw_text(30, 957, '25.0')
-            self.draw_text(1690, 80, '0s')
+            self.draw_text(400, 80, '-1.2s')
+            self.draw_text(255, 80, '-1.6s')
+            self.draw_text(110, 80, '-2.0s')
+            self.draw_text(74, 231, '0')
+            self.draw_text(74, 531, '0')
+            self.draw_text(74, 831, '0')
+            self.draw_text(50, 107, '-25.0')
+            self.draw_text(60, 357, '25.0')
+            self.draw_text(50, 408, '-25.0')
+            self.draw_text(60, 657, '25.0')
+            self.draw_text(50, 708, '-25.0')
+            self.draw_text(60, 957, '25.0')
+            self.draw_text(1723, 80, '0s')
             self.draw_text(1590, 80, '-0.4s')
-            self.draw_text(1440, 80, '-0.8s')
-            self.draw_text(1290, 80, '-1.2s')
-            self.draw_text(1140, 80, '-1.6s')
-            self.draw_text(990, 80, '-2s')
-            self.draw_text(944, 231, '0')
-            self.draw_text(944, 531, '0')
-            self.draw_text(944, 831, '0')
-            self.draw_text(920, 107, '-5.0')
-            self.draw_text(930, 357, '5.0')
-            self.draw_text(920, 408, '-5.0')
-            self.draw_text(930, 657, '5.0')
-            self.draw_text(920, 708, '-5.0')
-            self.draw_text(930, 957, '5.0')
+            self.draw_text(1450, 80, '-0.8s')
+            self.draw_text(1300, 80, '-1.2s')
+            self.draw_text(1155, 80, '-1.6s')
+            self.draw_text(1018, 80, '-2s')
+            self.draw_text(974, 231, '0')
+            self.draw_text(974, 531, '0')
+            self.draw_text(974, 831, '0')
+            self.draw_text(950, 107, '-5.0')
+            self.draw_text(960, 357, '5.0')
+            self.draw_text(950, 408, '-5.0')
+            self.draw_text(960, 657, '5.0')
+            self.draw_text(950, 708, '-5.0')
+            self.draw_text(960, 957, '5.0')
             glDisable( GL_TEXTURE_2D )
             self._pop_2d()
 
@@ -1831,7 +1850,7 @@ class Visualiser:
             glColor3f(0.25, 0.25, 0.15)
             glLineWidth(2.0)
             self.draw_lines([
-                [1020, 928, 1400, 930],
+                [1040, 930, 1140, 930],
                 [0, self.half_height, self.width, self.half_height],
                 [self.half_width, 0, self.half_width, self.height]])
 
@@ -1884,31 +1903,46 @@ class Visualiser:
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
             if self.toggle == 0:
-                self.draw_text(1050, 950, 'Vehicle Mass Distribution')
+                self.draw_text(1050, 950, 'Mass')
+                glColor3f(0.85, 0.75, 0.40)
+                self.draw_text(1050, 900, 'The mass distribution across any vehicle, fixed for all time.')
                 self.draw_text(1822, 51, '0 kg')
                 self.draw_text(1822, 251, '5 kg')
                 self.draw_text(1822, 451, '10 kg')
 
             elif self.toggle == 1:
-                self.draw_text(1050, 950, 'Vehicle Force Distribution')
+                self.draw_text(1050, 950, 'Force')
+                glColor3f(0.85, 0.75, 0.40)
+                self.draw_text(1050, 900, 'The force distribution across any vehicle, over time.')
+                self.draw_text(1050, 870, 'Can measure where weight is on vehicle during eg braking, turning, etc.')
                 self.draw_text(1822, 51, '0 N')
                 self.draw_text(1822, 251, '150 N')
                 self.draw_text(1822, 451, '300 N')
 
             elif self.toggle == 2:
-                self.draw_text(1050, 950, 'Velocity (Size) Distribution')
+                self.draw_text(1050, 950, 'Velocity')
+                glColor3f(0.85, 0.75, 0.40)
+                self.draw_text(1050, 900, 'The vehicle velocity magnitude, distributed across any vehicle, over time.')
+                self.draw_text(1050, 870, 'Indicates parts of vehicle moving independently of main body, eg wheels.')
                 self.draw_text(1822, 51, '0 m/s')
                 self.draw_text(1822, 251, '25 m/s')
                 self.draw_text(1822, 451, '50 m/s')
 
             elif self.toggle == 3:
-                self.draw_text(1050, 950, 'Vehicle Velocity (Direction)')
+                self.draw_text(1050, 950, 'Velocity')
+                glColor3f(0.85, 0.75, 0.40)
+                self.draw_text(1050, 900, 'The vehicle velocity direction, distributed across any vehicle, over time.')
+                self.draw_text(1050, 870, 'Indicates/Measures twisting/turning across the vehicle.')
                 self.draw_text(1822, 51, 'Fwds')
                 self.draw_text(1822, 251, 'Lat')
                 self.draw_text(1822, 451, 'Bwds')
 
             else:
-                self.draw_text(1050, 950, 'Beam Stress Distribution')
+                self.draw_text(1050, 950, 'Stress')
+                glColor3f(0.85, 0.75, 0.40)
+                self.draw_text(1050, 900, 'Shows individual stress in each beam, over time.')
+                self.draw_text(1050, 870, 'If vehicle at rest: can indicate vibrations from engine.')
+                self.draw_text(1050, 840, 'If vehicle moving: can indicate stress hot-spots.')
                 self.draw_text(1822, 51, '-200 Nm-2')
                 self.draw_text(1822, 251, '0 Nm-2')
                 self.draw_text(1822, 451, '200 Nm-2')
@@ -1916,7 +1950,7 @@ class Visualiser:
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(442, 570, ' Top')
             self.draw_text(422, 30, '  Right')
-            self.draw_text(1320, 30, '    Front')
+            self.draw_text(1335, 30, '    Front')
             glDisable( GL_TEXTURE_2D )
             self._pop_2d()
 
@@ -1942,12 +1976,12 @@ class Visualiser:
                 self.render_img(25, 25, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
             glViewport(self.half_width, 0, self.half_width, self.half_height)
-            self.render_img(153, 150, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)                             # The Ultrasonic .png image.
+            self.render_img(453, 200, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)                             # The Ultrasonic .png image.
 
             if len(self.radar_ppi_size) > 0:
                 glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
                 # Render the colorbar.
-                self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+                self.render_img(569, 119, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
                 glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
                 self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
@@ -1956,7 +1990,6 @@ class Visualiser:
 
                 # Draw the PPI scope frame.
                 lines = []
-                lines.append([25, 1020, 475, 1020])                   # RADAR title bar.
                 lines.append([673, 25, 181, 875])                     # left grid line.
                 lines.append([673, 25, 1166, 875])                    # right grid line.
                 lines.append([673.0, 25.0, 688.0, 16.0])              # grooves.

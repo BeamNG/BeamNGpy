@@ -14,8 +14,8 @@ class US_View:
 
         # Set up the geometric coordinates of the primitives.
         gap = 10.0
-        ML_x_offset = 500.0                                                                                                         # Top side-bar.
-        ML_y_offset = 650.0
+        ML_x_offset = 800.0                                                                                                         # Top side-bar.
+        ML_y_offset = 700.0
         ML_w = 300.0
         ML_h = 15.0
         ML_h_gap = ML_h + gap
@@ -26,8 +26,8 @@ class US_View:
         loc_ML_4 = [ML_x_offset, ML_y_offset + (4.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (4.0 * ML_h_gap) + ML_h]
         loc_ML_5 = [ML_x_offset, ML_y_offset + (5.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (5.0 * ML_h_gap) + ML_h]
         loc_ML_6 = [ML_x_offset, ML_y_offset + (6.0 * ML_h_gap), ML_x_offset + ML_w, ML_y_offset + (6.0 * ML_h_gap) + ML_h]
-        MR_x_offset = 500.0                                                                                                         # Bottom side-bar.
-        MR_y_offset = 280.0
+        MR_x_offset = 800.0                                                                                                         # Bottom side-bar.
+        MR_y_offset = 330.0
         MR_w = 300.0
         MR_h = 15.0
         MR_h_gap = MR_h + gap
@@ -44,7 +44,7 @@ class US_View:
         wid = 15
 
         # Top-right arc.
-        cx, cy = 815, 475
+        cx, cy = 1115, 525
         wid_gap = wid + gap
         r0, r1, r2, r3, r4, r5, r6 = 190, 190 + wid_gap, 190 + (2 * wid_gap), 190 + (3 * wid_gap), 190 + (4 * wid_gap), 190 + (5 * wid_gap), 190 + (6 * wid_gap)
         rr0, rr1, rr2, rr3, rr4, rr5, rr6 = r0 - wid, r1 - wid, r2 - wid, r3 - wid, r4 - wid, r5 - wid, r6 - wid
@@ -86,7 +86,7 @@ class US_View:
             TR2_ty6.append((rr6 * sa) + cy)
 
         # Bottom-right arc.
-        cx, cy = 815, 455
+        cx, cy = 1115, 505
         BR_tx0, BR_tx1, BR_tx2, BR_tx3, BR_tx4, BR_tx5, BR_tx6 = [], [], [], [], [], [], []
         BR_ty0, BR_ty1, BR_ty2, BR_ty3, BR_ty4, BR_ty5, BR_ty6 = [], [], [], [], [], [], []
         BR2_tx0, BR2_tx1, BR2_tx2, BR2_tx3, BR2_tx4, BR2_tx5, BR2_tx6 = [], [], [], [], [], [], []
@@ -125,7 +125,7 @@ class US_View:
             BR2_ty6.append((rr6 * sa) + cy)
 
         # Top-left arc.
-        cx, cy = 485, 475
+        cx, cy = 785, 525
         TL_tx0, TL_tx1, TL_tx2, TL_tx3, TL_tx4, TL_tx5, TL_tx6 = [], [], [], [], [], [], []
         TL_ty0, TL_ty1, TL_ty2, TL_ty3, TL_ty4, TL_ty5, TL_ty6 = [], [], [], [], [], [], []
         TL2_tx0, TL2_tx1, TL2_tx2, TL2_tx3, TL2_tx4, TL2_tx5, TL2_tx6 = [], [], [], [], [], [], []
@@ -164,7 +164,7 @@ class US_View:
             TL2_ty6.append((rr6 * sa) + cy)
 
         # Bottom-left arc.
-        cx, cy = 485, 455
+        cx, cy = 785, 505
         BL_tx0, BL_tx1, BL_tx2, BL_tx3, BL_tx4, BL_tx5, BL_tx6 = [], [], [], [], [], [], []
         BL_ty0, BL_ty1, BL_ty2, BL_ty3, BL_ty4, BL_ty5, BL_ty6 = [], [], [], [], [], [], []
         BL2_tx0, BL2_tx1, BL2_tx2, BL2_tx3, BL2_tx4, BL2_tx5, BL2_tx6 = [], [], [], [], [], [], []
