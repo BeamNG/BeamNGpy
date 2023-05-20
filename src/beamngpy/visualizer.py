@@ -1480,7 +1480,7 @@ class Visualiser:
         elif self.demo == 'ultrasonic':
             self._push_2d()
             glViewport(0, 0, self.width, self.height)
-            self.render_img(453, 200, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The car image.
+            self.render_img(600, 295, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)  # The car image.
 
             # Render each of the display bars.
             rects = self.us_view.display()
@@ -1955,12 +1955,12 @@ class Visualiser:
                 self.render_img(25, 25, self.camera_color_img, self.camera_color_size[0], self.camera_color_size[1], 1, 1, 1, 0)
 
             glViewport(self.half_width, 0, self.half_width, self.half_height)
-            self.render_img(453, 200, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)                             # The Ultrasonic .png image.
+            self.render_img(600, 295, self.car_img, self.car_img_size[0], self.car_img_size[1], 1, 1, 1, 1)                             # The Ultrasonic .png image.
 
             if len(self.radar_ppi_size) > 0:
                 glViewport(self.half_width, self.half_height, self.half_width, self.half_height)
                 # Render the colorbar.
-                self.render_img(569, 119, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+                self.render_img(185, 27, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
                 glViewport(self.half_width, self.half_height, self.half_width * 2, self.half_height * 2)
                 self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
