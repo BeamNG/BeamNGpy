@@ -169,9 +169,15 @@ class AIApi(VehicleApi):
         data['filename'] = filename
         self._send(data).ack('CompletedStopRecording')
 
-    def execute_script(self, script, cling: bool = True, start_delay: float = 0.0) -> None:
+    def execute_script(self, script, cling: bool = True, start_delay: float = 0.0, no_reset: bool = False) -> None:
         data = dict(type='ExecuteScript')
         data['script'] = script
         data['cling'] = cling
         data['startDelay'] = start_delay
+        data['noReset'] = no_reset
         self._send(data).ack('CompletedExecuteScript')
+
+    def get_initial_spawn_position_orientation(self, script):
+        data = dict(type='GetInitialSpawnPositionOrientation')
+        data['script'] = script
+        return self._send(data).recv()['data']
