@@ -73,11 +73,12 @@ class US_View:
         cx, cy = 1115, 525
         wid_gap = wid + gap
         r0, r1, r2, r3, r4, r5, r6 = 190, 190 + wid_gap, 190 + (2 * wid_gap), 190 + (3 * wid_gap), 190 + (4 * wid_gap), 190 + (5 * wid_gap), 190 + (6 * wid_gap)
-        rr0, rr1, rr2, rr3, rr4, rr5, rr6 = r0 - wid, r1 - wid, r2 - wid, r3 - wid, r4 - wid, r5 - wid, r6 - wid
-        TR_tx0, TR_tx1, TR_tx2, TR_tx3, TR_tx4, TR_tx5, TR_tx6 = [], [], [], [], [], [], []
-        TR_ty0, TR_ty1, TR_ty2, TR_ty3, TR_ty4, TR_ty5, TR_ty6 = [], [], [], [], [], [], []
-        TR2_tx0, TR2_tx1, TR2_tx2, TR2_tx3, TR2_tx4, TR2_tx5, TR2_tx6 = [], [], [], [], [], [], []
-        TR2_ty0, TR2_ty1, TR2_ty2, TR2_ty3, TR2_ty4, TR2_ty5, TR2_ty6 = [], [], [], [], [], [], []
+        r7, r8, r9 = 190 + (7 * wid_gap), 190 + (8 * wid_gap), 190 + (9 * wid_gap)
+        rr0, rr1, rr2, rr3, rr4, rr5, rr6, rr7, rr8, rr9 = r0 - wid, r1 - wid, r2 - wid, r3 - wid, r4 - wid, r5 - wid, r6 - wid, r7 - wid, r8 - wid, r9 - wid
+        TR_tx0, TR_tx1, TR_tx2, TR_tx3, TR_tx4, TR_tx5, TR_tx6, TR_tx7, TR_tx8, TR_tx9 = [], [], [], [], [], [], [], [], [], []
+        TR_ty0, TR_ty1, TR_ty2, TR_ty3, TR_ty4, TR_ty5, TR_ty6, TR_ty7, TR_ty8, TR_ty9 = [], [], [], [], [], [], [], [], [], []
+        TR2_tx0, TR2_tx1, TR2_tx2, TR2_tx3, TR2_tx4, TR2_tx5, TR2_tx6, TR2_tx7, TR2_tx8, TR2_tx9 = [], [], [], [], [], [], [], [], [], []
+        TR2_ty0, TR2_ty1, TR2_ty2, TR2_ty3, TR2_ty4, TR2_ty5, TR2_ty6, TR2_ty7, TR2_ty8, TR2_ty9 = [], [], [], [], [], [], [], [], [], []
         for i in range(div + 1):
             ang = i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
@@ -88,6 +89,9 @@ class US_View:
             TR_tx4.append((r4 * ca) + cx)
             TR_tx5.append((r5 * ca) + cx)
             TR_tx6.append((r6 * ca) + cx)
+            TR_tx7.append((r7 * ca) + cx)
+            TR_tx8.append((r8 * ca) + cx)
+            TR_tx9.append((r9 * ca) + cx)
             TR_ty0.append((r0 * sa) + cy)
             TR_ty1.append((r1 * sa) + cy)
             TR_ty2.append((r2 * sa) + cy)
@@ -95,6 +99,9 @@ class US_View:
             TR_ty4.append((r4 * sa) + cy)
             TR_ty5.append((r5 * sa) + cy)
             TR_ty6.append((r6 * sa) + cy)
+            TR_ty7.append((r7 * sa) + cy)
+            TR_ty8.append((r8 * sa) + cy)
+            TR_ty9.append((r9 * sa) + cy)
 
             TR2_tx0.append((rr0 * ca) + cx)
             TR2_tx1.append((rr1 * ca) + cx)
@@ -103,6 +110,9 @@ class US_View:
             TR2_tx4.append((rr4 * ca) + cx)
             TR2_tx5.append((rr5 * ca) + cx)
             TR2_tx6.append((rr6 * ca) + cx)
+            TR2_tx7.append((rr7 * ca) + cx)
+            TR2_tx8.append((rr8 * ca) + cx)
+            TR2_tx9.append((rr9 * ca) + cx)
             TR2_ty0.append((rr0 * sa) + cy)
             TR2_ty1.append((rr1 * sa) + cy)
             TR2_ty2.append((rr2 * sa) + cy)
@@ -110,6 +120,9 @@ class US_View:
             TR2_ty4.append((rr4 * sa) + cy)
             TR2_ty5.append((rr5 * sa) + cy)
             TR2_ty6.append((rr6 * sa) + cy)
+            TR2_ty7.append((rr7 * sa) + cy)
+            TR2_ty8.append((rr8 * sa) + cy)
+            TR2_ty9.append((rr9 * sa) + cy)
 
         T2R_tx0, T2R_tx1, T2R_tx2, T2R_tx3, T2R_tx4, T2R_tx5, T2R_tx6 = [], [], [], [], [], [], []
         T2R_ty0, T2R_ty1, T2R_ty2, T2R_ty3, T2R_ty4, T2R_ty5, T2R_ty6 = [], [], [], [], [], [], []
@@ -150,10 +163,10 @@ class US_View:
 
         # Bottom-right arc.
         cx, cy = 1115, 505
-        BR_tx0, BR_tx1, BR_tx2, BR_tx3, BR_tx4, BR_tx5, BR_tx6 = [], [], [], [], [], [], []
-        BR_ty0, BR_ty1, BR_ty2, BR_ty3, BR_ty4, BR_ty5, BR_ty6 = [], [], [], [], [], [], []
-        BR2_tx0, BR2_tx1, BR2_tx2, BR2_tx3, BR2_tx4, BR2_tx5, BR2_tx6 = [], [], [], [], [], [], []
-        BR2_ty0, BR2_ty1, BR2_ty2, BR2_ty3, BR2_ty4, BR2_ty5, BR2_ty6 = [], [], [], [], [], [], []
+        BR_tx0, BR_tx1, BR_tx2, BR_tx3, BR_tx4, BR_tx5, BR_tx6, BR_tx7, BR_tx8, BR_tx9 = [], [], [], [], [], [], [], [], [], []
+        BR_ty0, BR_ty1, BR_ty2, BR_ty3, BR_ty4, BR_ty5, BR_ty6, BR_ty7, BR_ty8, BR_ty9 = [], [], [], [], [], [], [], [], [], []
+        BR2_tx0, BR2_tx1, BR2_tx2, BR2_tx3, BR2_tx4, BR2_tx5, BR2_tx6, BR2_tx7, BR2_tx8, BR2_tx9 = [], [], [], [], [], [], [], [], [], []
+        BR2_ty0, BR2_ty1, BR2_ty2, BR2_ty3, BR2_ty4, BR2_ty5, BR2_ty6, BR2_ty7, BR2_ty8, BR2_ty9 = [], [], [], [], [], [], [], [], [], []
         for i in range(div + 1):
             ang = -i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
@@ -164,6 +177,9 @@ class US_View:
             BR_tx4.append((r4 * ca) + cx)
             BR_tx5.append((r5 * ca) + cx)
             BR_tx6.append((r6 * ca) + cx)
+            BR_tx7.append((r7 * ca) + cx)
+            BR_tx8.append((r8 * ca) + cx)
+            BR_tx9.append((r9 * ca) + cx)
             BR_ty0.append((r0 * sa) + cy)
             BR_ty1.append((r1 * sa) + cy)
             BR_ty2.append((r2 * sa) + cy)
@@ -171,6 +187,9 @@ class US_View:
             BR_ty4.append((r4 * sa) + cy)
             BR_ty5.append((r5 * sa) + cy)
             BR_ty6.append((r6 * sa) + cy)
+            BR_ty7.append((r7 * sa) + cy)
+            BR_ty8.append((r8 * sa) + cy)
+            BR_ty9.append((r9 * sa) + cy)
 
             BR2_tx0.append((rr0 * ca) + cx)
             BR2_tx1.append((rr1 * ca) + cx)
@@ -179,6 +198,9 @@ class US_View:
             BR2_tx4.append((rr4 * ca) + cx)
             BR2_tx5.append((rr5 * ca) + cx)
             BR2_tx6.append((rr6 * ca) + cx)
+            BR2_tx7.append((rr7 * ca) + cx)
+            BR2_tx8.append((rr8 * ca) + cx)
+            BR2_tx9.append((rr9 * ca) + cx)
             BR2_ty0.append((rr0 * sa) + cy)
             BR2_ty1.append((rr1 * sa) + cy)
             BR2_ty2.append((rr2 * sa) + cy)
@@ -186,6 +208,9 @@ class US_View:
             BR2_ty4.append((rr4 * sa) + cy)
             BR2_ty5.append((rr5 * sa) + cy)
             BR2_ty6.append((rr6 * sa) + cy)
+            BR2_ty7.append((rr7 * sa) + cy)
+            BR2_ty8.append((rr8 * sa) + cy)
+            BR2_ty9.append((rr9 * sa) + cy)
 
         B2R_tx0, B2R_tx1, B2R_tx2, B2R_tx3, B2R_tx4, B2R_tx5, B2R_tx6 = [], [], [], [], [], [], []
         B2R_ty0, B2R_ty1, B2R_ty2, B2R_ty3, B2R_ty4, B2R_ty5, B2R_ty6 = [], [], [], [], [], [], []
@@ -226,10 +251,10 @@ class US_View:
 
         # Top-left arc.
         cx, cy = 785, 525
-        TL_tx0, TL_tx1, TL_tx2, TL_tx3, TL_tx4, TL_tx5, TL_tx6 = [], [], [], [], [], [], []
-        TL_ty0, TL_ty1, TL_ty2, TL_ty3, TL_ty4, TL_ty5, TL_ty6 = [], [], [], [], [], [], []
-        TL2_tx0, TL2_tx1, TL2_tx2, TL2_tx3, TL2_tx4, TL2_tx5, TL2_tx6 = [], [], [], [], [], [], []
-        TL2_ty0, TL2_ty1, TL2_ty2, TL2_ty3, TL2_ty4, TL2_ty5, TL2_ty6 = [], [], [], [], [], [], []
+        TL_tx0, TL_tx1, TL_tx2, TL_tx3, TL_tx4, TL_tx5, TL_tx6, TL_tx7, TL_tx8, TL_tx9 = [], [], [], [], [], [], [], [], [], []
+        TL_ty0, TL_ty1, TL_ty2, TL_ty3, TL_ty4, TL_ty5, TL_ty6, TL_ty7, TL_ty8, TL_ty9 = [], [], [], [], [], [], [], [], [], []
+        TL2_tx0, TL2_tx1, TL2_tx2, TL2_tx3, TL2_tx4, TL2_tx5, TL2_tx6, TL2_tx7, TL2_tx8, TL2_tx9 = [], [], [], [], [], [], [], [], [], []
+        TL2_ty0, TL2_ty1, TL2_ty2, TL2_ty3, TL2_ty4, TL2_ty5, TL2_ty6, TL2_ty7, TL2_ty8, TL2_ty9 = [], [], [], [], [], [], [], [], [], []
         for i in range(div + 1):
             ang = i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
@@ -240,6 +265,9 @@ class US_View:
             TL_tx4.append(cx - (r4 * ca))
             TL_tx5.append(cx - (r5 * ca))
             TL_tx6.append(cx - (r6 * ca))
+            TL_tx7.append(cx - (r7 * ca))
+            TL_tx8.append(cx - (r8 * ca))
+            TL_tx9.append(cx - (r9 * ca))
             TL_ty0.append((r0 * sa) + cy)
             TL_ty1.append((r1 * sa) + cy)
             TL_ty2.append((r2 * sa) + cy)
@@ -247,6 +275,9 @@ class US_View:
             TL_ty4.append((r4 * sa) + cy)
             TL_ty5.append((r5 * sa) + cy)
             TL_ty6.append((r6 * sa) + cy)
+            TL_ty7.append((r7 * sa) + cy)
+            TL_ty8.append((r8 * sa) + cy)
+            TL_ty9.append((r9 * sa) + cy)
 
             TL2_tx0.append(cx - (rr0 * ca))
             TL2_tx1.append(cx - (rr1 * ca))
@@ -255,6 +286,9 @@ class US_View:
             TL2_tx4.append(cx - (rr4 * ca))
             TL2_tx5.append(cx - (rr5 * ca))
             TL2_tx6.append(cx - (rr6 * ca))
+            TL2_tx7.append(cx - (rr7 * ca))
+            TL2_tx8.append(cx - (rr8 * ca))
+            TL2_tx9.append(cx - (rr9 * ca))
             TL2_ty0.append((rr0 * sa) + cy)
             TL2_ty1.append((rr1 * sa) + cy)
             TL2_ty2.append((rr2 * sa) + cy)
@@ -262,6 +296,9 @@ class US_View:
             TL2_ty4.append((rr4 * sa) + cy)
             TL2_ty5.append((rr5 * sa) + cy)
             TL2_ty6.append((rr6 * sa) + cy)
+            TL2_ty7.append((rr7 * sa) + cy)
+            TL2_ty8.append((rr8 * sa) + cy)
+            TL2_ty9.append((rr9 * sa) + cy)
 
         T2L_tx0, T2L_tx1, T2L_tx2, T2L_tx3, T2L_tx4, T2L_tx5, T2L_tx6 = [], [], [], [], [], [], []
         T2L_ty0, T2L_ty1, T2L_ty2, T2L_ty3, T2L_ty4, T2L_ty5, T2L_ty6 = [], [], [], [], [], [], []
@@ -302,10 +339,10 @@ class US_View:
 
         # Bottom-left arc.
         cx, cy = 785, 505
-        BL_tx0, BL_tx1, BL_tx2, BL_tx3, BL_tx4, BL_tx5, BL_tx6 = [], [], [], [], [], [], []
-        BL_ty0, BL_ty1, BL_ty2, BL_ty3, BL_ty4, BL_ty5, BL_ty6 = [], [], [], [], [], [], []
-        BL2_tx0, BL2_tx1, BL2_tx2, BL2_tx3, BL2_tx4, BL2_tx5, BL2_tx6 = [], [], [], [], [], [], []
-        BL2_ty0, BL2_ty1, BL2_ty2, BL2_ty3, BL2_ty4, BL2_ty5, BL2_ty6 = [], [], [], [], [], [], []
+        BL_tx0, BL_tx1, BL_tx2, BL_tx3, BL_tx4, BL_tx5, BL_tx6, BL_tx7, BL_tx8, BL_tx9 = [], [], [], [], [], [], [], [], [], []
+        BL_ty0, BL_ty1, BL_ty2, BL_ty3, BL_ty4, BL_ty5, BL_ty6, BL_ty7, BL_ty8, BL_ty9 = [], [], [], [], [], [], [], [], [], []
+        BL2_tx0, BL2_tx1, BL2_tx2, BL2_tx3, BL2_tx4, BL2_tx5, BL2_tx6, BL2_tx7, BL2_tx8, BL2_tx9 = [], [], [], [], [], [], [], [], [], []
+        BL2_ty0, BL2_ty1, BL2_ty2, BL2_ty3, BL2_ty4, BL2_ty5, BL2_ty6, BL2_ty7, BL2_ty8, BL2_ty9 = [], [], [], [], [], [], [], [], [], []
         for i in range(div + 1):
             ang = -i * div_f
             ca, sa = math.cos(ang), math.sin(ang)
@@ -316,6 +353,9 @@ class US_View:
             BL_tx4.append(cx - (r4 * ca))
             BL_tx5.append(cx - (r5 * ca))
             BL_tx6.append(cx - (r6 * ca))
+            BL_tx7.append(cx - (r7 * ca))
+            BL_tx8.append(cx - (r8 * ca))
+            BL_tx9.append(cx - (r9 * ca))
             BL_ty0.append((r0 * sa) + cy)
             BL_ty1.append((r1 * sa) + cy)
             BL_ty2.append((r2 * sa) + cy)
@@ -323,6 +363,9 @@ class US_View:
             BL_ty4.append((r4 * sa) + cy)
             BL_ty5.append((r5 * sa) + cy)
             BL_ty6.append((r6 * sa) + cy)
+            BL_ty7.append((r7 * sa) + cy)
+            BL_ty8.append((r8 * sa) + cy)
+            BL_ty9.append((r9 * sa) + cy)
 
             BL2_tx0.append(cx - (rr0 * ca))
             BL2_tx1.append(cx - (rr1 * ca))
@@ -331,6 +374,9 @@ class US_View:
             BL2_tx4.append(cx - (rr4 * ca))
             BL2_tx5.append(cx - (rr5 * ca))
             BL2_tx6.append(cx - (rr6 * ca))
+            BL2_tx7.append(cx - (rr7 * ca))
+            BL2_tx8.append(cx - (rr8 * ca))
+            BL2_tx9.append(cx - (rr9 * ca))
             BL2_ty0.append((rr0 * sa) + cy)
             BL2_ty1.append((rr1 * sa) + cy)
             BL2_ty2.append((rr2 * sa) + cy)
@@ -338,6 +384,9 @@ class US_View:
             BL2_ty4.append((rr4 * sa) + cy)
             BL2_ty5.append((rr5 * sa) + cy)
             BL2_ty6.append((rr6 * sa) + cy)
+            BL2_ty7.append((rr7 * sa) + cy)
+            BL2_ty8.append((rr8 * sa) + cy)
+            BL2_ty9.append((rr9 * sa) + cy)
 
         B2L_tx0, B2L_tx1, B2L_tx2, B2L_tx3, B2L_tx4, B2L_tx5, B2L_tx6 = [], [], [], [], [], [], []
         B2L_ty0, B2L_ty1, B2L_ty2, B2L_ty3, B2L_ty4, B2L_ty5, B2L_ty6 = [], [], [], [], [], [], []
@@ -556,9 +605,13 @@ class US_View:
 
         # The arc rectangles.
         self.FL_rects0, self.FL_rects1, self.FL_rects2, self.FL_rects3, self.FL_rects4, self.FL_rects5, self.FL_rects6 = [], [], [], [], [], [], []
+        self.FL_rects7, self.FL_rects8, self.FL_rects9 = [], [], []
         self.FR_rects0, self.FR_rects1, self.FR_rects2, self.FR_rects3, self.FR_rects4, self.FR_rects5, self.FR_rects6 = [], [], [], [], [], [], []
+        self.FR_rects7, self.FR_rects8, self.FR_rects9 = [], [], []
         self.BL_rects0, self.BL_rects1, self.BL_rects2, self.BL_rects3, self.BL_rects4, self.BL_rects5, self.BL_rects6 = [], [], [], [], [], [], []
+        self.BL_rects7, self.BL_rects8, self.BL_rects9 = [], [], []
         self.BR_rects0, self.BR_rects1, self.BR_rects2, self.BR_rects3, self.BR_rects4, self.BR_rects5, self.BR_rects6 = [], [], [], [], [], [], []
+        self.BR_rects7, self.BR_rects8, self.BR_rects9 = [], [], []
         self.FL2_rects0, self.FL2_rects1, self.FL2_rects2, self.FL2_rects3, self.FL2_rects4, self.FL2_rects5, self.FL2_rects6 = [], [], [], [], [], [], []
         self.FR2_rects0, self.FR2_rects1, self.FR2_rects2, self.FR2_rects3, self.FR2_rects4, self.FR2_rects5, self.FR2_rects6 = [], [], [], [], [], [], []
         self.BL2_rects0, self.BL2_rects1, self.BL2_rects2, self.BL2_rects3, self.BL2_rects4, self.BL2_rects5, self.BL2_rects6 = [], [], [], [], [], [], []
@@ -601,6 +654,21 @@ class US_View:
                 TR_tx6[i + 1], TR_ty6[i + 1], TR2_tx6[i + 1], TR2_ty6[i + 1],
                 TR_tx6[i], TR_ty6[i], TR_tx6[i + 1], TR_ty6[i + 1],
                 TR2_tx6[i], TR2_ty6[i], TR2_tx6[i + 1], TR2_ty6[i + 1] ])
+            self.FL_rects7.append([
+                TR_tx7[i], TR_ty7[i], TR2_tx7[i], TR2_ty7[i],
+                TR_tx7[i + 1], TR_ty7[i + 1], TR2_tx7[i + 1], TR2_ty7[i + 1],
+                TR_tx7[i], TR_ty7[i], TR_tx7[i + 1], TR_ty7[i + 1],
+                TR2_tx7[i], TR2_ty7[i], TR2_tx7[i + 1], TR2_ty7[i + 1] ])
+            self.FL_rects8.append([
+                TR_tx8[i], TR_ty8[i], TR2_tx8[i], TR2_ty8[i],
+                TR_tx8[i + 1], TR_ty8[i + 1], TR2_tx8[i + 1], TR2_ty8[i + 1],
+                TR_tx8[i], TR_ty8[i], TR_tx8[i + 1], TR_ty8[i + 1],
+                TR2_tx8[i], TR2_ty8[i], TR2_tx8[i + 1], TR2_ty8[i + 1] ])
+            self.FL_rects9.append([
+                TR_tx9[i], TR_ty9[i], TR2_tx9[i], TR2_ty9[i],
+                TR_tx9[i + 1], TR_ty9[i + 1], TR2_tx9[i + 1], TR2_ty9[i + 1],
+                TR_tx9[i], TR_ty9[i], TR_tx9[i + 1], TR_ty9[i + 1],
+                TR2_tx9[i], TR2_ty9[i], TR2_tx9[i + 1], TR2_ty9[i + 1] ])
 
             self.FL2_rects0.append([
                 T2R_tx0[i], T2R_ty0[i], T2R2_tx0[i], T2R2_ty0[i],
@@ -674,6 +742,21 @@ class US_View:
                 BR_tx6[i + 1], BR_ty6[i + 1], BR2_tx6[i + 1], BR2_ty6[i + 1],
                 BR_tx6[i], BR_ty6[i], BR_tx6[i + 1], BR_ty6[i + 1],
                 BR2_tx6[i], BR2_ty6[i], BR2_tx6[i + 1], BR2_ty6[i + 1] ])
+            self.FR_rects7.append([
+                BR_tx7[i], BR_ty7[i], BR2_tx7[i], BR2_ty7[i],
+                BR_tx7[i + 1], BR_ty7[i + 1], BR2_tx7[i + 1], BR2_ty7[i + 1],
+                BR_tx7[i], BR_ty7[i], BR_tx7[i + 1], BR_ty7[i + 1],
+                BR2_tx7[i], BR2_ty7[i], BR2_tx7[i + 1], BR2_ty7[i + 1] ])
+            self.FR_rects8.append([
+                BR_tx8[i], BR_ty8[i], BR2_tx8[i], BR2_ty8[i],
+                BR_tx8[i + 1], BR_ty8[i + 1], BR2_tx8[i + 1], BR2_ty8[i + 1],
+                BR_tx8[i], BR_ty8[i], BR_tx8[i + 1], BR_ty8[i + 1],
+                BR2_tx8[i], BR2_ty8[i], BR2_tx8[i + 1], BR2_ty8[i + 1] ])
+            self.FR_rects9.append([
+                BR_tx9[i], BR_ty9[i], BR2_tx9[i], BR2_ty9[i],
+                BR_tx9[i + 1], BR_ty9[i + 1], BR2_tx9[i + 1], BR2_ty9[i + 1],
+                BR_tx9[i], BR_ty9[i], BR_tx9[i + 1], BR_ty9[i + 1],
+                BR2_tx9[i], BR2_ty9[i], BR2_tx9[i + 1], BR2_ty9[i + 1] ])
 
             self.FR2_rects0.append([
                 B2R_tx0[i], B2R_ty0[i], B2R2_tx0[i], B2R2_ty0[i],
@@ -747,6 +830,21 @@ class US_View:
                 TL_tx6[i + 1], TL_ty6[i + 1], TL2_tx6[i + 1], TL2_ty6[i + 1],
                 TL_tx6[i], TL_ty6[i], TL_tx6[i + 1], TL_ty6[i + 1],
                 TL2_tx6[i], TL2_ty6[i], TL2_tx6[i + 1], TL2_ty6[i + 1] ])
+            self.BL_rects7.append([
+                TL_tx7[i], TL_ty7[i], TL2_tx7[i], TL2_ty7[i],
+                TL_tx7[i + 1], TL_ty7[i + 1], TL2_tx7[i + 1], TL2_ty7[i + 1],
+                TL_tx7[i], TL_ty7[i], TL_tx7[i + 1], TL_ty7[i + 1],
+                TL2_tx7[i], TL2_ty7[i], TL2_tx7[i + 1], TL2_ty7[i + 1] ])
+            self.BL_rects8.append([
+                TL_tx8[i], TL_ty8[i], TL2_tx8[i], TL2_ty8[i],
+                TL_tx8[i + 1], TL_ty8[i + 1], TL2_tx8[i + 1], TL2_ty8[i + 1],
+                TL_tx8[i], TL_ty8[i], TL_tx8[i + 1], TL_ty8[i + 1],
+                TL2_tx8[i], TL2_ty8[i], TL2_tx8[i + 1], TL2_ty8[i + 1] ])
+            self.BL_rects9.append([
+                TL_tx9[i], TL_ty9[i], TL2_tx9[i], TL2_ty9[i],
+                TL_tx9[i + 1], TL_ty9[i + 1], TL2_tx9[i + 1], TL2_ty9[i + 1],
+                TL_tx9[i], TL_ty9[i], TL_tx9[i + 1], TL_ty9[i + 1],
+                TL2_tx9[i], TL2_ty9[i], TL2_tx9[i + 1], TL2_ty9[i + 1] ])
 
             self.BL2_rects0.append([
                 T2L_tx0[i], T2L_ty0[i], T2L2_tx0[i], T2L2_ty0[i],
@@ -820,6 +918,21 @@ class US_View:
                 BL_tx6[i + 1], BL_ty6[i + 1], BL2_tx6[i + 1], BL2_ty6[i + 1],
                 BL_tx6[i], BL_ty6[i], BL_tx6[i + 1], BL_ty6[i + 1],
                 BL2_tx6[i], BL2_ty6[i], BL2_tx6[i + 1], BL2_ty6[i + 1] ])
+            self.BR_rects7.append([
+                BL_tx7[i], BL_ty7[i], BL2_tx7[i], BL2_ty7[i],
+                BL_tx7[i + 1], BL_ty7[i + 1], BL2_tx7[i + 1], BL2_ty7[i + 1],
+                BL_tx7[i], BL_ty7[i], BL_tx7[i + 1], BL_ty7[i + 1],
+                BL2_tx7[i], BL2_ty7[i], BL2_tx7[i + 1], BL2_ty7[i + 1] ])
+            self.BR_rects8.append([
+                BL_tx8[i], BL_ty8[i], BL2_tx8[i], BL2_ty8[i],
+                BL_tx8[i + 1], BL_ty8[i + 1], BL2_tx8[i + 1], BL2_ty8[i + 1],
+                BL_tx8[i], BL_ty8[i], BL_tx8[i + 1], BL_ty8[i + 1],
+                BL2_tx8[i], BL2_ty8[i], BL2_tx8[i + 1], BL2_ty8[i + 1] ])
+            self.BR_rects9.append([
+                BL_tx9[i], BL_ty9[i], BL2_tx9[i], BL2_ty9[i],
+                BL_tx9[i + 1], BL_ty9[i + 1], BL2_tx9[i + 1], BL2_ty9[i + 1],
+                BL_tx9[i], BL_ty9[i], BL_tx9[i + 1], BL_ty9[i + 1],
+                BL2_tx9[i], BL2_ty9[i], BL2_tx9[i + 1], BL2_ty9[i + 1] ])
 
             self.BR2_rects0.append([
                 B2L_tx0[i], B2L_ty0[i], B2L2_tx0[i], B2L2_ty0[i],
@@ -858,10 +971,10 @@ class US_View:
                 B2L2_tx6[i], B2L2_ty6[i], B2L2_tx6[i + 1], B2L2_ty6[i + 1] ])
 
         # Initialize the sensor display bars and default them to their outermost position.
-        self.us_bar_FL = 6
-        self.us_bar_FR = 6
-        self.us_bar_BL = 6
-        self.us_bar_BR = 6
+        self.us_bar_FL = 9
+        self.us_bar_FR = 9
+        self.us_bar_BL = 9
+        self.us_bar_BR = 9
         self.us_bar_ML = 6
         self.us_bar_MR = 6
         self.us_bar_FL2 = 6
@@ -898,32 +1011,32 @@ class US_View:
         d_ML2, d_MR2 = self.us_ML2.stream()[0], self.us_MR2.stream()[0]
 
         # Compute the position of the front-left (FL) display bar, in range [0, 6]. LEFT
-        if d_FL > 5.0:
-            self.us_bar_FL = 6
+        if d_FL > 8.0:
+            self.us_bar_FL = 9
         elif d_FL < 0.5:
             self.us_bar_FL = 0
         else:
             self.us_bar_FL = int(np.floor(d_FL)) + 1
 
         # Compute the position of the front-right (FR) display bar, in range [0, 6]. LEFT
-        if d_FR > 5.0:
-            self.us_bar_FR = 6
+        if d_FR > 8.0:
+            self.us_bar_FR = 9
         elif d_FR < 0.5:
             self.us_bar_FR = 0
         else:
             self.us_bar_FR = int(np.floor(d_FR)) + 1
 
         # Compute the position of the back-left (BL) display bar, in range [0, 6]. LEFT
-        if d_BL > 5.0:
-            self.us_bar_BL = 6
+        if d_BL > 8.0:
+            self.us_bar_BL = 9
         elif d_BL < 0.5:
             self.us_bar_BL = 0
         else:
             self.us_bar_BL = int(np.floor(d_BL)) + 1
 
         # Compute the position of the back-right (BR) display bar, in range [0, 6]. LEFT
-        if d_BR > 5.0:
-            self.us_bar_BR = 6
+        if d_BR > 8.0:
+            self.us_bar_BR = 9
         elif d_BR < 0.5:
             self.us_bar_BR = 0
         else:
@@ -1231,37 +1344,52 @@ class US_View:
         if self.us_bar_FL == 0:
             for r in self.FL_rects0:
                 rects['red'].append(r)
-            for r in self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6:
+            for r in self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6 + self.FL_rects7 + self.FL_rects8 + self.FL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FL == 1:
             for r in self.FL_rects1:
-                rects['yellow'].append(r)
-            for r in self.FL_rects0 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6:
+                rects['red'].append(r)
+            for r in self.FL_rects0 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6 + self.FL_rects7 + self.FL_rects8 + self.FL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FL == 2:
             for r in self.FL_rects2:
                 rects['yellow'].append(r)
-            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6:
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6 + self.FL_rects7 + self.FL_rects8 + self.FL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FL == 3:
             for r in self.FL_rects3:
                 rects['yellow'].append(r)
-            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6:
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6 + self.FL_rects7 + self.FL_rects8 + self.FL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FL == 4:
             for r in self.FL_rects4:
-                rects['white'].append(r)
-            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects5 + self.FL_rects6:
+                rects['yellow'].append(r)
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects5 + self.FL_rects6 + self.FL_rects7 + self.FL_rects8 + self.FL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FL == 5:
             for r in self.FL_rects5:
-                rects['white'].append(r)
-            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects6:
+                rects['yellow'].append(r)
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects6 + self.FL_rects7 + self.FL_rects8 + self.FL_rects9:
                 rects['grey'].append(r)
-        else:
+        elif self.us_bar_FL == 6:
             for r in self.FL_rects6:
                 rects['white'].append(r)
-            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5:
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects7 + self.FL_rects8 + self.FL_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_FL == 7:
+            for r in self.FL_rects7:
+                rects['white'].append(r)
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6 + self.FL_rects8 + self.FL_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_FL == 8:
+            for r in self.FL_rects8:
+                rects['white'].append(r)
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6 + self.FL_rects7 + self.FL_rects9:
+                rects['grey'].append(r)
+        else:
+            for r in self.FL_rects9:
+                rects['white'].append(r)
+            for r in self.FL_rects0 + self.FL_rects1 + self.FL_rects2 + self.FL_rects3 + self.FL_rects4 + self.FL_rects5 + self.FL_rects6 + self.FL_rects7 + self.FL_rects8:
                 rects['grey'].append(r)
 
         if self.us_bar_FL2 == 0:
@@ -1304,37 +1432,52 @@ class US_View:
         if self.us_bar_FR == 0:
             for r in self.FR_rects0:
                 rects['red'].append(r)
-            for r in self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6:
+            for r in self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6 + self.FR_rects7 + self.FR_rects8 + self.FR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FR == 1:
             for r in self.FR_rects1:
-                rects['yellow'].append(r)
-            for r in self.FR_rects0 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6:
+                rects['red'].append(r)
+            for r in self.FR_rects0 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6 + self.FR_rects7 + self.FR_rects8 + self.FR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FR == 2:
             for r in self.FR_rects2:
                 rects['yellow'].append(r)
-            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6:
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6 + self.FR_rects7 + self.FR_rects8 + self.FR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FR == 3:
             for r in self.FR_rects3:
                 rects['yellow'].append(r)
-            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6:
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6 + self.FR_rects7 + self.FR_rects8 + self.FR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FR == 4:
             for r in self.FR_rects4:
-                rects['white'].append(r)
-            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects5 + self.FR_rects6:
+                rects['yellow'].append(r)
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects5 + self.FR_rects6 + self.FR_rects7 + self.FR_rects8 + self.FR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_FR == 5:
             for r in self.FR_rects5:
-                rects['white'].append(r)
-            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects6:
+                rects['yellow'].append(r)
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects6 + self.FR_rects7 + self.FR_rects8 + self.FR_rects9:
                 rects['grey'].append(r)
-        else:
+        elif self.us_bar_FR == 6:
             for r in self.FR_rects6:
                 rects['white'].append(r)
-            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5:
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects7 + self.FR_rects8 + self.FR_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_FR == 7:
+            for r in self.FR_rects7:
+                rects['white'].append(r)
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6 + self.FR_rects8 + self.FR_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_FR == 8:
+            for r in self.FR_rects8:
+                rects['white'].append(r)
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6 + self.FR_rects7 + self.FR_rects9:
+                rects['grey'].append(r)
+        else:
+            for r in self.FR_rects9:
+                rects['white'].append(r)
+            for r in self.FR_rects0 + self.FR_rects1 + self.FR_rects2 + self.FR_rects3 + self.FR_rects4 + self.FR_rects5 + self.FR_rects6 + self.FR_rects7 + self.FR_rects8:
                 rects['grey'].append(r)
 
         if self.us_bar_FR2 == 0:
@@ -1377,37 +1520,52 @@ class US_View:
         if self.us_bar_BL == 0:
             for r in self.BL_rects0:
                 rects['red'].append(r)
-            for r in self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6:
+            for r in self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6 + self.BL_rects7 + self.BL_rects8 + self.BL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BL == 1:
             for r in self.BL_rects1:
-                rects['yellow'].append(r)
-            for r in self.BL_rects0 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6:
+                rects['red'].append(r)
+            for r in self.BL_rects0 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6 + self.BL_rects7 + self.BL_rects8 + self.BL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BL == 2:
             for r in self.BL_rects2:
                 rects['yellow'].append(r)
-            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6:
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6 + self.BL_rects7 + self.BL_rects8 + self.BL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BL == 3:
             for r in self.BL_rects3:
                 rects['yellow'].append(r)
-            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6:
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6 + self.BL_rects7 + self.BL_rects8 + self.BL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BL == 4:
             for r in self.BL_rects4:
-                rects['white'].append(r)
-            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects5 + self.BL_rects6:
+                rects['yellow'].append(r)
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects5 + self.BL_rects6 + self.BL_rects7 + self.BL_rects8 + self.BL_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BL == 5:
             for r in self.BL_rects5:
-                rects['white'].append(r)
-            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects6:
+                rects['yellow'].append(r)
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects6 + self.BL_rects7 + self.BL_rects8 + self.BL_rects9:
                 rects['grey'].append(r)
-        else:
+        elif self.us_bar_BL == 6:
             for r in self.BL_rects6:
                 rects['white'].append(r)
-            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5:
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects7 + self.BL_rects8 + self.BL_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_BL == 7:
+            for r in self.BL_rects7:
+                rects['white'].append(r)
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6 + self.BL_rects8 + self.BL_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_BL == 8:
+            for r in self.BL_rects8:
+                rects['white'].append(r)
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6 + self.BL_rects7 + self.BL_rects9:
+                rects['grey'].append(r)
+        else:
+            for r in self.BL_rects9:
+                rects['white'].append(r)
+            for r in self.BL_rects0 + self.BL_rects1 + self.BL_rects2 + self.BL_rects3 + self.BL_rects4 + self.BL_rects5 + self.BL_rects6 + self.BL_rects7 + self.BL_rects8:
                 rects['grey'].append(r)
 
         if self.us_bar_BL2 == 0:
@@ -1450,37 +1608,52 @@ class US_View:
         if self.us_bar_BR == 0:
             for r in self.BR_rects0:
                 rects['red'].append(r)
-            for r in self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6:
+            for r in self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6 + self.BR_rects7 + self.BR_rects8 + self.BR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BR == 1:
             for r in self.BR_rects1:
-                rects['yellow'].append(r)
-            for r in self.BR_rects0 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6:
+                rects['red'].append(r)
+            for r in self.BR_rects0 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6 + self.BR_rects7 + self.BR_rects8 + self.BR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BR == 2:
             for r in self.BR_rects2:
                 rects['yellow'].append(r)
-            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6:
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6 + self.BR_rects7 + self.BR_rects8 + self.BR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BR == 3:
             for r in self.BR_rects3:
                 rects['yellow'].append(r)
-            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6:
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6 + self.BR_rects7 + self.BR_rects8 + self.BR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BR == 4:
             for r in self.BR_rects4:
-                rects['white'].append(r)
-            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects5 + self.BR_rects6:
+                rects['yellow'].append(r)
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects5 + self.BR_rects6 + self.BR_rects7 + self.BR_rects8 + self.BR_rects9:
                 rects['grey'].append(r)
         elif self.us_bar_BR == 5:
             for r in self.BR_rects5:
-                rects['white'].append(r)
-            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects6:
+                rects['yellow'].append(r)
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects6 + self.BR_rects7 + self.BR_rects8 + self.BR_rects9:
                 rects['grey'].append(r)
-        else:
+        elif self.us_bar_BR == 6:
             for r in self.BR_rects6:
                 rects['white'].append(r)
-            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5:
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects7 + self.BR_rects8 + self.BR_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_BR == 7:
+            for r in self.BR_rects7:
+                rects['white'].append(r)
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6 + self.BR_rects8 + self.BR_rects9:
+                rects['grey'].append(r)
+        elif self.us_bar_BR == 8:
+            for r in self.BR_rects8:
+                rects['white'].append(r)
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6 + self.BR_rects7 + self.BR_rects9:
+                rects['grey'].append(r)
+        else:
+            for r in self.BR_rects9:
+                rects['white'].append(r)
+            for r in self.BR_rects0 + self.BR_rects1 + self.BR_rects2 + self.BR_rects3 + self.BR_rects4 + self.BR_rects5 + self.BR_rects6 + self.BR_rects7 + self.BR_rects8:
                 rects['grey'].append(r)
 
         if self.us_bar_BR2 == 0:

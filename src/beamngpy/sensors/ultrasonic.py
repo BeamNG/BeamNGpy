@@ -59,7 +59,7 @@ class Ultrasonic:
                  update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
                  dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (200, 200),
                  field_of_view_y: float = 5.7, near_far_planes: Float2 = (0.1, 5.1),
-                 range_roundess: float = -1.15, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.3,
+                 range_roundness: float = -1.15, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.3,
                  range_focus: float = 0.376, range_min_cutoff: float = 0.1, range_direct_max_cutoff: float = 5.0,
                  sensitivity: float = 3.0, fixed_window_size: float = 10, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
                  is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
@@ -79,7 +79,7 @@ class Ultrasonic:
         # Create and initialise this sensor in the simulation.
         self._open_ultrasonic(
             name, vehicle, self.shmem_handle, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
-            near_far_planes, range_roundess, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
+            near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
             range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_streaming, is_static, is_snapping_desired,
             is_force_inside_triangle)
         self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')

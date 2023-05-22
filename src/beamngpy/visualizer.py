@@ -658,30 +658,34 @@ class Visualiser:
 
         elif demo == 'ultrasonic':
             self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(0.5, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-0.5, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(0.5, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-0.5, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, -0.7, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, -0.7, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
 
             self.us6 = Ultrasonic('us_FL2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us7 = Ultrasonic('us_FR2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us8 = Ultrasonic('us_BL2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us9 = Ultrasonic('us_BR2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us10 = Ultrasonic('us_ML2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 0.7, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us11 = Ultrasonic('us_MR2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 0.7, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
 
             self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5, self.us6, self.us7, self.us8, self.us9, self.us10, self.us11)
 
@@ -726,30 +730,34 @@ class Visualiser:
                 range_min_cutoff=0.5, range_direct_max_cutoff=self.radar_range_max, range_bins=self.radar_bins[0], azimuth_bins=self.radar_bins[1], vel_bins=self.radar_bins[2],
                 is_streaming=True, is_visualised=False)
             self.us0 = Ultrasonic('us_FL', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(0.5, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us1 = Ultrasonic('us_FR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-0.5, -1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us2 = Ultrasonic('us_BL', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(0.5, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us3 = Ultrasonic('us_BR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-0.5, 1.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, is_streaming=True, near_far_planes=(0.1, 9.9),
+                range_roundness=-70.0, range_shape=0.2, range_focus=0.38, range_direct_max_cutoff=11.1)
             self.us4 = Ultrasonic('us_ML', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, -0.7, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us5 = Ultrasonic('us_MR', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, -0.7, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
 
             self.us6 = Ultrasonic('us_FL2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, -10.0, 0.5), dir=(1.0, -0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us7 = Ultrasonic('us_FR2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, -10.0, 0.5), dir=(-1.0, -0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us8 = Ultrasonic('us_BL2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 10.0, 0.5), dir=(1.0, 0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us9 = Ultrasonic('us_BR2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 10.0, 0.5), dir=(-1.0, 0.5, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us10 = Ultrasonic('us_ML2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(10.0, 0.7, 0.5), dir=(1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
             self.us11 = Ultrasonic('us_MR2', self.bng, self.main_vehicle, requested_update_time=0.25, is_visualised=False, pos=(-10.0, 0.7, 0.5), dir=(-1.0, 0.0, 0.1), resolution=(50, 50),
-                is_snapping_desired=True, is_force_inside_triangle=True, range_roundess=-125.0, is_streaming=True)
+                is_snapping_desired=True, is_force_inside_triangle=True, range_roundness=-125.0, is_streaming=True)
 
             self.us_view = US_View(self.bng, self.main_vehicle, self.us0, self.us1, self.us2, self.us3, self.us4, self.us5, self.us6, self.us7, self.us8, self.us9, self.us10, self.us11)
 
@@ -1522,9 +1530,22 @@ class Visualiser:
             self.draw_rects(rects['red'])
 
             # Title underline.
-            glColor3f(0.25, 0.25, 0.15)
-            glLineWidth(2.0)
-            self.draw_line([65, 982, 305, 982])
+            glColor3f(0.1, 0.1, 0.1)
+            glLineWidth(1.0)
+            lines = []
+            lines.append([70, 980, 290, 980])       # title bar.
+            gg = 28
+            lines.append([1723, 384, 1265+gg+gg+gg+gg+gg+gg+gg+gg+gg, 400])
+            lines.append([1723, 344, 1265+gg+gg+gg+gg+gg+gg+gg+gg, 400])
+            lines.append([1723, 304, 1265+gg+gg+gg+gg+gg+gg+gg, 400])
+            lines.append([1723, 264, 1265+gg+gg+gg+gg+gg+gg, 400])
+            lines.append([1723, 224, 1265+gg+gg+gg+gg+gg, 400])
+            lines.append([1723, 184, 1265+gg+gg+gg+gg, 400])
+            lines.append([1723, 144, 1265+gg+gg+gg, 400])
+            lines.append([1723, 104, 1265+gg+gg, 400])
+            lines.append([1723, 64, 1265+gg, 400])
+            lines.append([1723, 24, 1265, 400])
+            self.draw_lines(lines)
 
             # Draw Text.
             glEnable(GL_LINE_SMOOTH)
@@ -1535,11 +1556,22 @@ class Visualiser:
             glBindTexture( GL_TEXTURE_2D, texid )
             glColor3f(0.85, 0.85, 0.70)
             self.draw_text(85, 1000, 'Ultrasonic Sensor')
+            self.draw_text(1730, 430, '  Bar Ranges:')
             glColor3f(0.85, 0.75, 0.40)
             self.draw_text(85, 950, 'Measures distance to close proximity objects.')
-            self.draw_text(85, 920, 'Commonly used in parking assistance.')
-            self.draw_text(85, 890, 'Beam Shape: controlled by 6 shaping parameters.')
+            self.draw_text(85, 920, 'Applications: ADAS, parking assistance.')
+            self.draw_text(85, 890, 'Beam Shaping: controlled by 6 parameters.')
             self.draw_text(85, 860, 'Sensitivity: controlled by 2 parameters.')
+            self.draw_text(1730, 390, '[ 8.0m - 9.0m ]')
+            self.draw_text(1730, 350, '[ 7.0m - 8.0m ]')
+            self.draw_text(1730, 310, '[ 6.0m - 7.0m ]')
+            self.draw_text(1730, 270, '[ 5.0m - 6.0m ]')
+            self.draw_text(1730, 230, '[ 4.0m - 5.0m ]')
+            self.draw_text(1730, 190, '[ 3.0m - 4.0m ]')
+            self.draw_text(1730, 150, '[ 2.0m - 3.0m ]')
+            self.draw_text(1730, 110, '[ 1.0m - 2.0m ]')
+            self.draw_text(1730, 70, '[ 0.5m - 1.0m ]')
+            self.draw_text(1730, 30, '[ 0.0m - 0.5m ]')
             glDisable( GL_TEXTURE_2D )
             self._pop_2d()
 
