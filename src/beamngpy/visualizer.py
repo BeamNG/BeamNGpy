@@ -284,7 +284,7 @@ class Visualiser:
             with open('vehicle10.json', 'r') as j:
                 script_vehicle10 = json.loads(j.read())
             self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
-            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, start_delay = 1.9)
+            self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2, start_delay = 1.57)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
@@ -508,18 +508,15 @@ class Visualiser:
                 script_vehicle8 = json.loads(j.read())
             with open('vehicle9_sc7.json', 'r') as j:
                 script_vehicle9 = json.loads(j.read())
-            with open('vehicle10_sc7.json', 'r') as j:
-                script_vehicle10 = json.loads(j.read())
             self.vehicles['vehicle_1'].ai.execute_script(script_vehicle1)
             self.vehicles['vehicle_2'].ai.execute_script(script_vehicle2)
             self.vehicles['vehicle_3'].ai.execute_script(script_vehicle3)
             self.vehicles['vehicle_4'].ai.execute_script(script_vehicle4)
             self.vehicles['vehicle_5'].ai.execute_script(script_vehicle5)
-            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6, start_delay = 21.0)
+            self.vehicles['vehicle_6'].ai.execute_script(script_vehicle6)
             self.vehicles['vehicle_7'].ai.execute_script(script_vehicle7)
             self.vehicles['vehicle_8'].ai.execute_script(script_vehicle8)
             self.vehicles['vehicle_9'].ai.execute_script(script_vehicle9)
-            self.vehicles['vehicle_10'].ai.execute_script(script_vehicle10)
             self.bng.camera.set_player_mode(self.main_vehicle, 'orbit', {'distance': 7})
             self.scenario.set_initial_focus('vehicle_1')
             self.is_sensor_mode_demo = False
@@ -2777,20 +2774,19 @@ class Visualiser:
         elif self.demo == '7':
             self._push_2d()
             if len(self.radar_ppi_size) > 0 and len(self.radar_rvv_size) > 0:
-                glViewport(0, 0, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
+                glViewport(0, 150, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
                 self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
-                glViewport(0, 0, self.width + 400, self.height + 400)
+                glViewport(0, 150, self.width + 400, self.height + 400)
                 self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
-                glViewport(self.half_width, 0, self.width + 400, self.height + 400)                                                         # Range-doppler image + colorbar.
+                glViewport(self.half_width, 150, self.width + 400, self.height + 400)                                                         # Range-doppler image + colorbar.
                 self.render_img(175, 22.5, self.radar_rvv_img, self.radar_rvv_size[0], self.radar_rvv_size[1], 1, 1, 1, 0)
-                glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)
+                glViewport(self.half_width, 150, self.half_width + 200, self.half_height + 200)
                 self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
 
                 # PPI frame.
-                glViewport(0, 0, self.half_width + 200, self.half_height + 200)
+                glViewport(0, 150, self.half_width + 200, self.half_height + 200)
                 lines = []
-                lines.append([25, 1020, 475, 1020])                     # title bar.
                 lines.append([673, 25, 181, 875])                       # left grid line.
                 lines.append([673, 25, 1166, 875])                      # right grid line.
                 lines.append([673.0, 25.0, 688.0, 16.0])                # grooves.
@@ -2809,7 +2805,7 @@ class Visualiser:
                 self.draw_lines(lines)
 
                 # Range-Doppler frame.
-                glViewport(self.width, 0, self.half_width + 200, self.half_height + 200)
+                glViewport(self.width, 150, self.half_width + 200, self.half_height + 200)
                 lines = []
                 lines.append([350, 45, 1300, 45])                       # bottom frame line.
                 lines.append([350, 995, 1300, 995])                     # bottom frame line.
@@ -2822,7 +2818,13 @@ class Visualiser:
                     lines.append([1300, y, 1310, y])                    # vertical grooves.
                     x = 350 + dv
                     lines.append([x, 45, x, 35])                        # horizontal grooves.
-                lines.append([25, 1020, 290, 1020])                     # title underline.
+                self.draw_lines(lines)
+
+                # Draw title bars.
+                glViewport(0, 0, self.width, self.height)
+                lines = []
+                lines.append([25, 983, 320, 983])                     # title bar (left).
+                lines.append([985, 983, 1180, 983])                   # title bar (right).
                 self.draw_lines(lines)
 
                 # Draw Text.
@@ -2832,9 +2834,12 @@ class Visualiser:
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
                 glEnable( GL_TEXTURE_2D )
                 glBindTexture( GL_TEXTURE_2D, texid )
-                glViewport(0, 0, self.half_width + 200, self.half_height + 200)                      # PPI text.
+
                 glColor3f(0.85, 0.85, 0.70)
-                self.draw_text(35, 1040, 'RADAR Sensor:  Range-Azimuth-Doppler')
+                self.draw_text(35, 1000, 'Range - Azimuth - Doppler')
+                self.draw_text(995, 1000, 'Range - Doppler')
+
+                glViewport(0, 150, self.half_width + 200, self.half_height + 200)                           # PPI text.
                 glColor3f(0.4, 0.4, 0.4)
                 self.draw_text(700, 21, '0 m')
                 self.draw_text(745.3, 106.3, '10 m')
@@ -2853,9 +2858,7 @@ class Visualiser:
                 glColor3f(0.5, 0.5, 0.5)
                 self.draw_text(44, 490, 'Velocity')
 
-                glViewport(self.half_width, 0, self.half_width + 200, self.half_height + 200)             # range-Doppler text.
-                glColor3f(0.85, 0.85, 0.70)
-                self.draw_text(35, 1040, 'RADAR: Range - Doppler')
+                glViewport(self.half_width, 150, self.half_width + 200, self.half_height + 200)             # range-Doppler text.
                 glColor3f(0.4, 0.4, 0.4)
                 txt = ['0 m', '10 m', '20 m', '30 m', '40 m', '50 m', '60 m', '70 m', '80 m', '90 m', '100 m']
                 txt2 = ['-50 m/s', '-40 m/s', '-30 m/s', '-20 m/s', '-10 m/s', '0 m/s', '10 m/s', '20 m/s', '30 m/s', '40 m/s', '50 m/s']
