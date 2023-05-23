@@ -139,10 +139,13 @@ class Visualiser:
         self.scenario7_hit_time = 1e12
         self.is_scenario_7_paused = False
 
-        # RGB colorbar.
-        rgb_colorbar_img = Image.open('rgb_colorbar.png')
+        # colorbars.
+        rgb_colorbar_img = Image.open('rgb_colorbar.png')                                               # Red -> Green -> Blue colorbar.
         self.rgb_colorbar = np.array(rgb_colorbar_img)
         self.rgb_colorbar_size = [rgb_colorbar_img.size[1], rgb_colorbar_img.size[0]]
+        bbr_colorbar_img = Image.open('bbr_colorbar.png')                                               # Blue -> Black -> Red colorbar.
+        self.bbr_colorbar = np.array(bbr_colorbar_img)
+        self.bbr_colorbar_size = [bbr_colorbar_img.size[1], bbr_colorbar_img.size[0]]
 
         # Trajectory initialization.
         self.trajectory_view = None
@@ -1580,7 +1583,7 @@ class Visualiser:
                     self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
                     glViewport(0, 0, self.width, self.height)
-                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+                    self.render_img(69, 49, self.bbr_colorbar, self.bbr_colorbar_size[0], self.bbr_colorbar_size[1], 1, 1, 1, 1)
 
                     # Draw the title bar / frame.
                     lines = []
@@ -1688,7 +1691,7 @@ class Visualiser:
             else:                                                                                # Both RADAR plots together
                 if len(self.radar_ppi_size) > 0 and len(self.radar_rvv_size) > 0:
                     glViewport(0, 150, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
-                    self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+                    self.render_img(69, 49, self.bbr_colorbar, self.bbr_colorbar_size[0], self.bbr_colorbar_size[1], 1, 1, 1, 1)
                     glViewport(0, 150, self.width + 400, self.height + 400)
                     self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
@@ -2775,7 +2778,7 @@ class Visualiser:
             self._push_2d()
             if len(self.radar_ppi_size) > 0 and len(self.radar_rvv_size) > 0:
                 glViewport(0, 150, self.half_width + 200, self.half_height + 200)                                                                      # PPI image + colorbar.
-                self.render_img(69, 49, self.rgb_colorbar, self.rgb_colorbar_size[0], self.rgb_colorbar_size[1], 1, 1, 1, 1)
+                self.render_img(69, 49, self.bbr_colorbar, self.bbr_colorbar_size[0], self.bbr_colorbar_size[1], 1, 1, 1, 1)
                 glViewport(0, 150, self.width + 400, self.height + 400)
                 self.render_img(100, 12.5, self.radar_ppi_img, self.radar_ppi_size[0], self.radar_ppi_size[1], 1, 1, 1, 0)
 
