@@ -144,7 +144,7 @@ class ScenarioApi(Api):
         resp = self._send(data).recv('ScenarioName')
         return resp['name']
 
-    def load(self, scenario: Scenario, precompile_shaders: bool = True) -> None:
+    def load(self, scenario: Scenario, precompile_shaders: bool = True, connect_existing_vehicles: bool = True) -> None:
         """
         Loads the given scenario in the simulation and returns once loading
         is finished.
@@ -155,6 +155,8 @@ class ScenarioApi(Api):
                                 If False, the first load of a map will take a longer time, but disabling
                                 the precompilation can lead to issues with the :class:`Camera` sensor.
                                 Defaults to True.
+            connect_existing_vehicles: Whether vehicles spawned already in the scenario should be connected
+                                       to this (:class:``.Scenario``) instance. Defaults to True.
         """
         # clean up the vehicle connections if the `scenario` object is reused multiple times
         for vehicle in scenario.vehicles.values():
@@ -165,9 +167,10 @@ class ScenarioApi(Api):
         self._send(data).ack('MapLoaded')
         self._logger.info('Loaded map.')
         self._beamng._scenario = scenario
-        self._beamng._scenario.connect(self._beamng)
+        self._beamng._scenario.connect(self._beamng, connect_existing_vehicles)
 
-    def teleport_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
+
+   def teleport_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
         """
         Teleports the given scenario object to the given position with the
         given rotation.
