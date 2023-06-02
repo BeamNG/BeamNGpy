@@ -144,28 +144,6 @@ class AdvancedIMU:
         self.logger.debug('Advanced IMU - ad-hoc polling request returned and processed: 'f'{self.name}')
         return readings
 
-    def get_position(self) -> Float3:
-        """
-        Gets the current world-space position of this sensor.
-
-        Returns:
-            The sensor position.
-        """
-        table = self._send_sensor_request('GetAdvancedIMUSensorPosition',
-                                          'CompletedGetAdvancedIMUSensorPosition', name=self.name)['data']
-        return (table['x'], table['y'], table['z'])
-
-    def get_direction(self) -> Float3:
-        """
-        Gets the current direction vector of this sensor.
-
-        Returns:
-            The sensor direction.
-        """
-        table = self._send_sensor_request('GetAdvancedIMUSensorDirection',
-                                          'CompletedGetAdvancedIMUSensorDirection', name=self.name)['data']
-        return (table['x'], table['y'], table['z'])
-
     def set_requested_update_time(self, requested_update_time: float) -> None:
         """
         Sets the current 'requested update time' value for this sensor.
