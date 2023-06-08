@@ -459,7 +459,7 @@ class Scenario:
         assert scenetree['class'] == 'SimGroup'
         self.scene = self._convert_scene_object(scenetree)
 
-    def connect(self, bng: BeamNGpy, connect_player: bool = True, connect_existing: bool = False) -> None:
+    def connect(self, bng: BeamNGpy, connect_player: bool = True, connect_existing: bool = True) -> None:
         """
         Connects this scenario to the simulator, hooking up any cameras to
         their counterpart in the simulator.
@@ -469,7 +469,7 @@ class Scenario:
             connect_player: Whether the player vehicle should be connected
                             to this (:class:``.Scenario``) instance. Defaults to True.
             connect_existing: Whether ALL vehicles spawned already in the scenario should be connected
-                              to this (:class:``.Scenario``) instance. Defaults to False.
+                              to this (:class:``.Scenario``) instance. Defaults to True.
         """
         self.bng = bng
 
