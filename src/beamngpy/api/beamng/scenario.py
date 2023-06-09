@@ -145,7 +145,7 @@ class ScenarioApi(Api):
         return resp['name']
 
     def load(self, scenario: Scenario, precompile_shaders: bool = True,
-             connect_player_vehicle: bool = True, connect_existing_vehicles: bool = False) -> None:
+             connect_player_vehicle: bool = True, connect_existing_vehicles: bool = True) -> None:
         """
         Loads the given scenario in the simulation and returns once loading
         is finished.
@@ -159,7 +159,7 @@ class ScenarioApi(Api):
             connect_player_vehicle: Whether the player vehicle should be connected
                                     to this (:class:``.Scenario``) instance. Defaults to True.
             connect_existing_vehicles: Whether ALL vehicles spawned already in the scenario should be connected
-                                       to this (:class:``.Scenario``) instance. Defaults to False.
+                                       to this (:class:``.Scenario``) instance. Defaults to True.
         """
         # clean up the vehicle connections if the `scenario` object is reused multiple times
         for vehicle in scenario.vehicles.values():
