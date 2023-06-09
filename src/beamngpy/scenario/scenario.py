@@ -479,7 +479,10 @@ class Scenario:
 
         if connect_existing or connect_player:
             self._load_existing_vehicles()
-        player_vid = bng.vehicles.get_player_vehicle_id()['vid']
+        try:
+            player_vid = bng.vehicles.get_player_vehicle_id()['vid']
+        except BNGError:
+            player_vid = None
 
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles.values():
