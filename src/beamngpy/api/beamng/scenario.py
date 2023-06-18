@@ -169,8 +169,7 @@ class ScenarioApi(Api):
         self._beamng._scenario = scenario
         self._beamng._scenario.connect(self._beamng, connect_existing_vehicles)
 
-
-   def teleport_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
+    def teleport_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
         """
         Teleports the given scenario object to the given position with the
         given rotation.
