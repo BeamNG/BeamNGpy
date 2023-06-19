@@ -17,7 +17,7 @@ import csv
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import img2pdf
+from PyPDF2 import PdfMerger, PdfReader
 from datetime import datetime
 
 import seaborn as sns
@@ -481,7 +481,7 @@ class Vehicle_Feeder:
             vy = vel[i].y
             #plt.arrow(x, y, vx, vy, width = 0.05, ec = 'red')                                           # Silence to remove velocities.
 
-        plt.savefig('trajectory.png')
+        plt.savefig('trajectory.pdf')
 
     def plotSTWAMapping(self, xx, theirSTWAFL, ourSTWAFL, theirSTWAFR, ourSTWAFR):
 
@@ -511,7 +511,7 @@ class Vehicle_Feeder:
         ax.set_title("Elevation of Their Data")
         ax.set_xlabel("t (s)")
         ax.set_ylabel("m")
-        plt.savefig('elevation.png')
+        plt.savefig('elevation.pdf')
 
         # STWA.
         ddd = [x * -1 for x in dOurs['STWA']]
@@ -523,7 +523,7 @@ class Vehicle_Feeder:
         ax.set_xlabel("t (s)")
         ax.set_ylabel("rad")
 
-        plt.savefig('stwa.png')
+        plt.savefig('stwa.pdf')
 
         # DRIVE TORQUES:
         fig, ax = plt.subplots(2, 2,  sharey=True, figsize=(15, 15))
@@ -556,7 +556,7 @@ class Vehicle_Feeder:
         ax[1, 1].set_xlabel("t (s)")
         ax[1, 1].set_ylabel("N-m")
 
-        plt.savefig('drive_torques.png')
+        plt.savefig('drive_torques.pdf')
 
         # BRAKE TORQUES:
         fig, ax = plt.subplots(2, 2, sharey=True, figsize=(15, 15))
@@ -589,7 +589,7 @@ class Vehicle_Feeder:
         ax[1, 1].set_xlabel("t (s)")
         ax[1, 1].set_ylabel("N-m")
 
-        plt.savefig('brake_torques.png')
+        plt.savefig('brake_torques.pdf')
 
         # SMOOTHED ACCELERATION.
         fig, ax = plt.subplots(3, 1, sharey=True, figsize=(15, 15))
@@ -619,7 +619,7 @@ class Vehicle_Feeder:
         ax[2].set_xlabel("t (s)")
         ax[2].legend(loc="upper right")
 
-        plt.savefig('acceleration.png')
+        plt.savefig('acceleration.pdf')
 
         # SMOOTHED GYROSCOPIC DATA.
         fig, ax = plt.subplots(3, 1, sharey=True,  figsize=(15, 15))
@@ -649,7 +649,7 @@ class Vehicle_Feeder:
         ax[2].set_xlabel("t (s)")
         ax[2].legend(loc="upper right")
 
-        plt.savefig('gyroscopic.png')
+        plt.savefig('gyroscopic.pdf')
 
         # WHEEL SPEEDS:
         fig, ax = plt.subplots(2, 2, sharey=True,  figsize=(15, 15))
@@ -686,7 +686,7 @@ class Vehicle_Feeder:
         ax[1, 1].set_ylabel("kmph")
         ax[1, 1].legend(loc="upper right")
 
-        plt.savefig('wheel_speeds.png')
+        plt.savefig('wheel_speeds.pdf')
 
         # WHEELS ANGULAR VELOCITY:
         fig, ax = plt.subplots(2, 2, sharey=True,  figsize=(15, 15))
@@ -727,7 +727,7 @@ class Vehicle_Feeder:
         ax[1, 1].set_ylabel("rad/s")
         ax[1, 1].legend(loc="upper right")
 
-        plt.savefig('wheel_angular_velocities.png')
+        plt.savefig('wheel_angular_velocities.pdf')
 
     def _readData(self, filename):
         with open(filename, newline='') as csvfile:
@@ -890,18 +890,19 @@ class Vehicle_Feeder:
         pdf_path = 'comparison_' + test_string + "_" + dt_string + ".pdf"
 
         img = []
-        img.append("trajectory.png")
-        img.append("stwa.png")
-        img.append("elevation.png")
-        img.append("acceleration.png")
-        img.append("gyroscopic.png")
-        img.append("drive_torques.png")
-        img.append("wheel_angular_velocities.png")
-        img.append("wheel_speeds.png")
+        img.append("trajectory.pdf")
+        img.append("stwa.pdf")
+        img.append("elevation.pdf")
+        img.append("acceleration.pdf")
+        img.append("gyroscopic.pdf")
+        img.append("drive_torques.pdf")
+        img.append("wheel_angular_velocities.pdf")
+        img.append("wheel_speeds.pdf")
 
-        with open(pdf_path, 'wb') as f:
-            bb = img2pdf.convert(img)
-            f.write(bb)
+        mergedObject = PdfMerger()
+        for j in range(8):
+            mergedObject.append(PdfReader(img[j], 'rb'))
+        mergedObject.write(pdf_path)
         print("pdf created.")
 
 
