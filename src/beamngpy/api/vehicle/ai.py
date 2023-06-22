@@ -170,7 +170,7 @@ class AIApi(VehicleApi):
         self._send(data).ack('CompletedStopRecording')
 
     def execute_script(self, script, cling: bool = True, start_delay: float = 0.0, no_reset: bool = False) -> None:
-        data = dict(type='ExecuteScript')
+        data: StrDict = dict(type='ExecuteScript')
         data['script'] = script
         data['cling'] = cling
         data['startDelay'] = start_delay
