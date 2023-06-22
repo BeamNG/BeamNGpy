@@ -52,6 +52,14 @@ class Scenario:
                 as a string or as an instance of :class:`.Level`
         name: The name of this scenario. Should be unique for the
                     level it's taking place in to avoid file collisions.
+        path: The path to an already existing scenario file (relative to
+              the home folder / user folder). If set, then :func:`Scenario.make`
+              should not be called, as the scenario is already made.
+        human_name: The human-readable name of the scenario. If None, it
+                    will be set to `name`.
+        description: The description of the scenario displayed in the simulator.
+        difficulty: The difficulty of the scenario displayed in the simulator.
+        authors: Names of the authors. Defaults to `BeamNGpy`.
     """
 
     game_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
@@ -83,11 +91,16 @@ class Scenario:
 
         return scenario
 
-    def __init__(self, level: str | Level, name: str, path: str | None = None, **options: Any):
+    def __init__(self, level: str | Level, name: str, path: str | None = None,
+                 human_name: str | None = None, description: str | None = None,
+                 difficulty: int = 0, authors: str = 'BeamNGpy'):
         self.level = level
         self.name = name
         self.path = path
-        self.options = options
+        self.human_name = human_name if human_name is not None else self.name
+        self.description = description
+        self.difficulty = difficulty
+        self.authors = authors
 
         self.vehicles: Dict[str, Vehicle] = {}
         self.transient_vehicles: Dict[str, Vehicle] = {}  # Vehicles added during scenario
@@ -143,12 +156,13 @@ class Scenario:
             Dictionary of information to write into the scenario files of the
             simulator.
         """
-        info: StrDict = dict()
-        info['name'] = self.options.get('human_name', self.name)
-        info['description'] = self.options.get('description', None)
-        info['difficulty'] = self.options.get('difficulty', 0)
-        info['authors'] = self.options.get('authors', 'BeamNGpy')
-        info['lapConfig'] = self.checkpoints
+        info: StrDict = dict(
+            name=self.human_name,
+            description=self.description,
+            difficulty=self.difficulty,
+            authors=self.authors,
+            lapConfig=self.checkpoints
+        )
 
         vehicles_dict = dict()
         for vid in self.vehicles:
