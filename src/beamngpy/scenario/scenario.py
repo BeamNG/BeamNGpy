@@ -93,7 +93,7 @@ class Scenario:
 
     def __init__(self, level: str | Level, name: str, path: str | None = None,
                  human_name: str | None = None, description: str | None = None,
-                 difficulty: int = 0, authors: str = 'BeamNGpy'):
+                 difficulty: int = 0, authors: str = 'BeamNGpy', **options: Any):
         self.level = level
         self.name = name
         self.path = path
@@ -101,6 +101,7 @@ class Scenario:
         self.description = description
         self.difficulty = difficulty
         self.authors = authors
+        self.options = options
 
         self.vehicles: Dict[str, Vehicle] = {}
         self.transient_vehicles: Dict[str, Vehicle] = {}  # Vehicles added during scenario
