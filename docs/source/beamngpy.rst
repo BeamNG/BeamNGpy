@@ -169,7 +169,7 @@ Logging
 Tools
 =====
 
-.. autoclass:: beamngpy.tools.RoadNetworkExporter
+.. autoclass:: beamngpy.tools.Road_Network_Exporter
    :members:
    :undoc-members:
 

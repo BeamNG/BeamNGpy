@@ -8,14 +8,14 @@ Version 1.26
 
   - Sensor currently works with static scenery but not vehicles.  Will be added in later update.
   - Sensor comes with standard Lua API and BeamNGpy API.
-  - Example scripts `provided <https://github.com/BeamNG/BeamNGpy/blob/master/examples/radar_analysis.ipynb>`_ in BeamNGpy.
+  - Example scripts `provided <https://github.com/BeamNG/BeamNGpy/blob/master/examples/radar_analysis.ipynb>`__ in BeamNGpy.
 - Vehicle meshes now available in BeamNGpy
 
   - Can provide data up to 2000 times per second.
   - Vehicle nodes and physics triangle data available in BeamNGpy, including for individual vehicle wheels.
   - Comes with standard Lua API and BeamNGpy API.
   - Post-processing written in BeamNGpy to compute mesh connectivity data and analyse the mesh data (position, mass, force, velocity).
-  - Example scripts `provided <https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_mesh_data.py>`_ in BeamNGpy.
+  - Example scripts `provided <https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_mesh_data.py>`__ in BeamNGpy.
 - IMU sensor
 
   - Added ability to filter gyroscopic readings (as well as acceleration readings). Separate data filtering is used for each.

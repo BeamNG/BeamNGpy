@@ -15,12 +15,12 @@ you must have the following softwares/packages installed:
 
 1.  `Compatible Python <https://www.mathworks.com/support/requirements/python-compatibility.html>`_
 
-2. `BeamNGpy <https://pypi.org/project/beamngpy/>`_
+2. `BeamNGpy <https://pypi.org/project/beamngpy/>`__
 
 3. `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_
 
 
-The `BeamNG-MATLAB-integration bridge <https://github.com/BeamNG/BeamNG-MATLAB-integration>`_ is depending on `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_ and `BeamNGpy <https://documentation.beamng.com/beamng_tech/beamngpy/>`_. Make sure that you have the license for BeamNG.Tech. The Github repository of the BeamNG-MATLAB has some basic examples of scripts that run a vehicle with some sensors ex. Lidar, Camera, and state sensor.
+The `BeamNG-MATLAB-integration bridge <https://github.com/BeamNG/BeamNG-MATLAB-integration>`_ is depending on `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_ and `BeamNGpy <https://documentation.beamng.com/beamng_tech/beamngpy/>`__. Make sure that you have the license for BeamNG.Tech. The Github repository of the BeamNG-MATLAB has some basic examples of scripts that run a vehicle with some sensors ex. Lidar, Camera, and state sensor.
 
 Compatibility
 =============
