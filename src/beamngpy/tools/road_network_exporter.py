@@ -19,10 +19,10 @@ from beamngpy.types import StrDict
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
-__all__ = ['Road_Network_Exporter']
+__all__ = ['RoadNetworkExporter']
 
 
-class explicit_cubic:
+class ExplicitCubic:
     """
     A class for representing explicit cubic polynomials of the form: [ u(p) := a + b*p + c*p^2 + d*p^3 ].
     """
@@ -43,7 +43,7 @@ class explicit_cubic:
         self.d = d
 
 
-class parametric_cubic:
+class ParametricCubic:
     """
     A class for representing parametric cubic polynomials of the form:
     [ u(x) := Bu*x + Cu^2 + Du^3; v(x) := Bv*x + Cv^2 + Dv^3 ].
@@ -127,7 +127,7 @@ class parametric_cubic:
         Cv = (3.0 * y2) - tan.y
         Dv = tan.y - (2.0 * y2)
 
-        return parametric_cubic(Bu, Cu, Du, Cv, Dv)
+        return ParametricCubic(Bu, Cu, Du, Cv, Dv)
 
 
 class Road:
@@ -184,7 +184,7 @@ class Junction:
         self.is_end_point = is_end_point
 
 
-class Connection_Road:
+class ConnectionRoad:
     """
     A class for storing connectivity information between a road and a junction.
 
@@ -198,7 +198,7 @@ class Connection_Road:
         self.contact_point = contact_point
 
 
-class Road_Network_Exporter:
+class RoadNetworkExporter:
     """
     A class for retrieving and exporting BeamNG road network data.
     """
@@ -294,7 +294,7 @@ class Road_Network_Exporter:
             seg = path_segments[i]
             key1 = seg[0]
             # If this node is a dead-end, we do not include it as a junction.
-            if len(self.graph[key1].keys) < 2:
+            if len(self.graph[key1].keys()) < 2:
                 continue
             # The first node in a path segment is a junction node. Store it if we have not already found it.
             if key1 not in junction_map:
@@ -302,7 +302,7 @@ class Road_Network_Exporter:
                 ctr = ctr + 1
             key2 = seg[-1]
             # If this node is a dead-end, we do not include it as a junction.
-            if len(self.graph[key2].keys) < 2:
+            if len(self.graph[key2].keys()) < 2:
                 continue
             # The last node in a path segment is also a junction node. Store it if we have not already found it.
             if key2 not in junction_map:
@@ -413,7 +413,7 @@ class Road_Network_Exporter:
                 p2 = self.coords[key2]
 
                 # Compute the parametric cubic which describes the reference line of this road section.
-                ref_line_cubic = parametric_cubic.fit(p1, p2, tangents[j], tangents[j + 1])
+                ref_line_cubic = ParametricCubic.fit(p1, p2, tangents[j], tangents[j + 1])
 
                 # Create the road section.
                 heading_angle = math.atan2(tangents[j].y, tangents[j].x)
@@ -461,9 +461,9 @@ class Road_Network_Exporter:
                     continue
                 r = roads[i]
                 if k == r.start:
-                    connection_roads.append(Connection_Road(i, 'start'))
+                    connection_roads.append(ConnectionRoad(i, 'start'))
                 elif k == r.end:
-                    connection_roads.append(Connection_Road(i, 'end'))
+                    connection_roads.append(ConnectionRoad(i, 'end'))
             is_end_point = len(connection_roads) == 0
             junctions.append(Junction(junction_map[k], connection_roads, is_end_point))
 
