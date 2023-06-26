@@ -13,4 +13,4 @@ def run_before_tests():
 
 @pytest.fixture(scope='session')
 def beamng() -> BeamNGpy:
-    return BeamNGpy('localhost', 64256, quit_on_close=False)
+    return BeamNGpy('localhost', 64256, quit_on_close=False, crash_lua_on_error=True)
