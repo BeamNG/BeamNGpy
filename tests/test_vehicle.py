@@ -11,12 +11,6 @@ from beamngpy.logging import BNGValueError
 from beamngpy.types import Float3
 
 
-@pytest.fixture()
-def beamng():
-    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
-    return beamng
-
-
 def test_get_available_vehicles(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'spawn_test')

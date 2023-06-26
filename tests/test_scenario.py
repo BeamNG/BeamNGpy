@@ -13,12 +13,6 @@ if TYPE_CHECKING:
     from beamngpy.scenario.scenario_object import SceneObject
 
 
-@pytest.fixture
-def beamng():
-    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
-    return beamng
-
-
 def test_new_scenario(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario('smallgrid', 'test_scenario')
