@@ -109,17 +109,18 @@ def test_vehicle_ai(beamng: BeamNGpy):
         assert_continued_movement(bng, vehicle, pos)
 
         bng.scenario.restart()
+        vehicle.teleport((-719.19, 106.10, 118.53), rot_quat=angle_to_quat((0, 0, 45)), reset=False)
         bng.control.pause()
 
         script = [
-            {'x': -735, 'y': 86.7, 'z': 119, 't': 0},
-            {'x': -752, 'y': 70, 'z': 119, 't': 5},
-            {'x': -762, 'y': 60, 'z': 119, 't': 8},
+            {'x': -719., 'y': 106., 'z': 118., 't': 0.},
+            {'x': -758., 'y': 67., 'z': 118., 't': 5.},
+            {'x': -825., 'y': 0., 'z': 117., 't': 12.}
         ]
         vehicle.ai.set_script(script)
         bng.control.step(600, wait=True)
         vehicle.sensors.poll()
-        ref = (script[1]['x'], script[1]['y'], script[1]['z'])
+        ref = (script[2]['x'], script[2]['y'], script[2]['z'])
         pos = vehicle.sensors['state']['pos']
         ref, pos = np.array(ref), np.array(pos)
         assert np.linalg.norm(ref - pos) < 2.5
