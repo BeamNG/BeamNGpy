@@ -456,13 +456,8 @@ class Vehicle:
 
         Args:
             pos: The target position as an (x,y,z) tuple containing world-space coordinates.
-            rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion
+            rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion.
             reset: Specifies if the vehicle will be reset to its initial state during teleport (including its velocity).
-
-        Notes:
-            The ``reset=False`` option is incompatible with setting rotation of
-            the vehicle. With the current implementation, it is not possible to
-            set the rotation of the vehicle and to keep its velocity during teleport.
         """
         return self._ge_api.teleport(pos, rot_quat, reset)
 
