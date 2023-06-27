@@ -3,7 +3,7 @@ Changelog
 =========
 
 Version 1.26.1
-============
+==============
 - TODO
 
 Version 1.26
