@@ -1,21 +1,33 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from matplotlib import colors
 
-from beamngpy.types import Color, Float4
+if TYPE_CHECKING:
+    from beamngpy.types import Color, Float4
 
 
 def rgba_to_str(color: Float4) -> str:
+    """
+    Converts an ``(R, G, B, A)`` tuple of floats to a string format parsable by BeamNG.
+
+    Returns:
+        The converted string of format 'R G B A'.
+    """
     return ' '.join(map(str, color))
 
 
-def coerce_vehicle_color(color: Color, alpha=0.0) -> Float4:
+def coerce_color(color: Color, alpha=0.0) -> Float4:
     """
-    Tries to coerce a vehicle color to a format parsable by BeamNG.
+    Tries to coerce a color to a 4-tuple of floats.
 
     Args:
         color: A vehicle color.
         alpha: The alpha (transparency) value of the color. Defaults to 0.0.
+
+    Returns:
+        An ``(R, G, B, A)`` tuple of floats.
     """
     if isinstance(color, str):
         try:

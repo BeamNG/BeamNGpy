@@ -46,7 +46,7 @@ class Vehicle:
             The API module to control the AI behavior of the vehicle.
             See :class:`.AIApi` for details.
         logging: LoggingApi
-            The API module to control the in-game logging behavior of the vehicle.
+            The API module to control the logging behavior of the vehicle inside the simulator.
             See :class:`.LoggingApi` for details.
     """
 

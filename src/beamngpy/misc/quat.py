@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy import ndarray
 
-from beamngpy.types import Float3, Quat
+if TYPE_CHECKING:
+    from beamngpy.types import Float3, Quat
 
 
 def angle_to_quat(angle: Float3) -> Quat:

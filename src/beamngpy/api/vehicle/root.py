@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from beamngpy.logging import BNGValueError
+from beamngpy.misc.colors import coerce_color
 from beamngpy.types import Color, Float3, StrDict
-from beamngpy.vehicle.colors import coerce_vehicle_color
 
 from .base import VehicleApi
 
@@ -52,7 +52,7 @@ class RootApi(VehicleApi):
 
     def set_color(self, rgba: Color = (1., 1., 1., 1.)) -> None:
         data: StrDict = dict(type='SetColor')
-        color = coerce_vehicle_color(rgba)
+        color = coerce_color(rgba)
         data['r'] = color[0]
         data['g'] = color[1]
         data['b'] = color[2]

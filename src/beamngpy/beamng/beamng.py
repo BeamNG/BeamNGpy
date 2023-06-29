@@ -59,7 +59,7 @@ class BeamNGpy:
     Attributes
     ----------
         camera: CameraApi
-            The API module to control the in-game camera.
+            The API module to control the camera in the simulator.
             See :class:`.CameraApi` for details.
         control: ControlApi
             The API module to control the flow of the simulation.

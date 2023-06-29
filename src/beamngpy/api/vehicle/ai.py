@@ -66,8 +66,8 @@ class AIApi(VehicleApi):
 
         Args:
             target: ID of the target vehicle as a string.
-            mode: How the target should be treated. `chase` to chase the
-                       target, `flee` to flee from it.
+            mode: How the target should be treated. ``chase`` to chase the
+                       target, ``flee`` to flee from it.
         """
         self.set_mode(mode)
         data = dict(type='SetAiTarget')
@@ -102,13 +102,13 @@ class AIApi(VehicleApi):
     def set_line(self, line: List[Dict[str, Float3 | float]], cling: bool = True) -> None:
         """
         Makes the AI follow a given polyline. The line is specified as a list
-        of dictionaries where each dictionary has a `pos` entry specifying the
-        supposed position as an (x, y, z) triplet and a `speed` entry
+        of dictionaries where each dictionary has a ``pos`` entry specifying the
+        supposed position as an ``(x, y, z)`` triplet and a ``speed`` entry
         specifying the speed in m/s.
 
         Args:
             line: Polyline as list of dicts as described above.
-            cling: Whether or not to align the z coordinate of
+            cling: Whether or not to align the ``z`` coordinate of the polyline to the ground.
         """
         data: StrDict = dict(type='SetAiLine')
         data['line'] = line
@@ -124,8 +124,8 @@ class AIApi(VehicleApi):
 
         Args:
             script: A list of nodes in the script. Each node is expected to be a
-                    dict-like that has `x`, `y`, and `z` entries for the supposed
-                    position of the vehicle, and a `t` entry for the time of the
+                    dict-like that has ``x``, ``y``, and ``z`` entries for the supposed
+                    position of the vehicle, and a ``t`` entry for the time of the
                     node along the path. Time values are in seconds relative to the
                     time when script playback is started.
             cling: A flag that makes the simulator cling z-coordinates to the ground.

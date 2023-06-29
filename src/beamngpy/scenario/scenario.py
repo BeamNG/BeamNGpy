@@ -19,7 +19,7 @@ from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.quat import quat_as_rotation_mat_str
+from beamngpy.misc.quat import quat_as_rotation_mat_str
 from beamngpy.scenario.road import DecalRoad
 from beamngpy.scenario.scenario_object import ScenarioObject, SceneObject
 from beamngpy.types import Float3, Quat, StrDict
@@ -56,13 +56,13 @@ class Scenario:
               the home folder / user folder). If set, then :func:`Scenario.make`
               should not be called, as the scenario is already made.
         human_name: The human-readable name of the scenario. If None, it
-                    will be set to `name`.
+                    will be set to ``name``.
         description: The description of the scenario displayed in the simulator.
         difficulty: The difficulty of the scenario displayed in the simulator.
-        authors: Names of the authors. Defaults to `BeamNGpy`.
+        authors: Names of the authors. Defaults to ``BeamNGpy``.
     """
 
-    game_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
+    scenetree_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
         'MissionGroup': lambda d: SceneObject(d),
         'DecalRoad': lambda d: DecalRoad(d),
     }
@@ -353,7 +353,7 @@ class Scenario:
             vehicle_id: The ID of the vehicle to find.
 
         Returns:
-            The :class:`.Vehicle` with the given ID. None if it wasn't found.
+            The :class:`.Vehicle` with the given ID. ``None`` if it wasn't found.
         """
         if vehicle_id in self.vehicles:
             return self.vehicles[vehicle_id]
@@ -450,8 +450,8 @@ class Scenario:
         assert self.bng
         data = self.bng._message('GetObject', id=obj['id'])
         clazz = data['class']
-        if clazz in Scenario.game_classes:
-            converted = Scenario.game_classes[clazz](data)
+        if clazz in Scenario.scenetree_classes:
+            converted = Scenario.scenetree_classes[clazz](data)
         else:
             converted = SceneObject(data)
 
