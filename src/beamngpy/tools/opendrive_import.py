@@ -23,9 +23,8 @@ class exp_cubic:
 
 # A container for storing line segments.
 class line_segment:
-    def __init__(self, id, total_length,  s, x, y, hdg, length, elev = None, width = None, lane_offset = None):
+    def __init__(self, id, s, x, y, hdg, length, elev = None, width = None, lane_offset = None):
         self.id = int(id)
-        self.total_length = float(total_length)
         self.s = float(s)
         self.x, self.y = float(x), float(y)
         self.hdg = float(hdg)
@@ -44,6 +43,7 @@ class line_segment:
         for i in range(eval_range):                                                                     # Will evaluate each parametric cubic, discretized at the chosen granularity.
             q = i * granularity_inv * length                                                            # The parameter q, in [0, geodesic_length], mapped from p.
             world = start + (s * q)                                                                     # The linearly-interpolated point, in world space (x, y).
+            dd = (world - start).length()
             ep = OpenDrive_Importer.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
             ds = self.s - ep.s + q
             ds2 = ds * ds
@@ -55,9 +55,8 @@ class line_segment:
 
 # A container for storing circlular arcs (constant curvature).
 class arc:
-    def __init__(self, id, total_length,  s, x, y, hdg, length, curvature, elev = None, width = None, lane_offset = None):
+    def __init__(self, id,  s, x, y, hdg, length, curvature, elev = None, width = None, lane_offset = None):
         self.id = int(id)
-        self.total_length = float(total_length)
         self.s = float(s)
         self.x, self.y = float(x), float(y)
         self.hdg = float(hdg)
@@ -88,9 +87,8 @@ class arc:
 
 # A class for representing and processing clothoid spirals (linear curvature).
 class spiral:
-    def __init__(self, id, total_length,  s, x, y, hdg, length, start_k, end_k, elev = None, width = None, lane_offset = None):
+    def __init__(self, id, s, x, y, hdg, length, start_k, end_k, elev = None, width = None, lane_offset = None):
         self.id = int(id)
-        self.total_length = float(total_length)
         self.s = float(s)
         self.x, self.y = float(x), float(y)
         self.hdg = float(hdg)
@@ -122,9 +120,8 @@ class spiral:
 
 # A container for storing explicit cubic polynomials.
 class poly3:
-    def __init__(self, id, total_length,  s, x, y, hdg, length, a, b, c, d, elev = None, width = None, lane_offset = None):
+    def __init__(self, id, s, x, y, hdg, length, a, b, c, d, elev = None, width = None, lane_offset = None):
         self.id = int(id)
-        self.total_length = float(total_length)
         self.s = float(s)
         self.x, self.y = float(x), float(y)
         self.hdg = float(hdg)
@@ -161,9 +158,8 @@ class poly3:
 
 # A container for storing parametric cubic polynomials.
 class param_poly3:
-    def __init__(self, id, total_length,  s, x, y, hdg, length, aU, bU, cU, dU, aV, bV, cV, dV, pRange, elev = None, width = None, lane_offset = None):
+    def __init__(self, id,  s, x, y, hdg, length, aU, bU, cU, dU, aV, bV, cV, dV, pRange, elev = None, width = None, lane_offset = None):
         self.id = int(id)
-        self.total_length = float(total_length)
         self.s = float(s)
         self.x, self.y = float(x), float(y)
         self.hdg = float(hdg)
@@ -463,7 +459,7 @@ class OpenDrive_Importer:
     @staticmethod
     def compute_width_sum(s, q, width_data, lane_offset):
         lane_groups = {}
-        profile_s = 0.0
+        profile_s = 99999999999999999
         closest_so_far = 1e24
         for k in width_data.keys():                                         # From the width data, find the appropriate lane group.
             d = s - k + q
@@ -472,18 +468,18 @@ class OpenDrive_Importer:
                 profile_s = k
                 closest_so_far = d
 
-        ds = s - profile_s + q
-        ds2 = ds * ds
-        ds3 = ds2 * ds
         sum, left_sum, right_sum = 0.0, 0.0, 0.0
         for k, wp_list in lane_groups.items():                              # Sum over all the relevant profiles (one for each lane) to get the final summed width of the entire road, at q.
-            profile_id = 0                                                  # Find the profile from the list which is closest below the given s value. This is the relevant profile.
+            profile_id = 999999999999                                       # Find the profile from the list which is closest below the given s value. This is the relevant profile.
             closest_so_far = 1e24
             for i in range(len(wp_list)):
-                d = ds - wp_list[i].s
+                d = s + q - profile_s - wp_list[i].s
                 if d >= 0.0 and d < closest_so_far:
                     profile_id, closest_so_far = i, d
             wp = wp_list[profile_id]
+            ds = s - profile_s + q - wp_list[profile_id].s
+            ds2 = ds * ds
+            ds3 = ds2 * ds
             lane_width = wp.a + (ds * wp.b) + (ds2 * wp.c) + (ds3 * wp.d)
             sum = sum + lane_width
             if k < 0:                                                       # Sum also the left and right sides of the road, separately.
@@ -493,13 +489,16 @@ class OpenDrive_Importer:
 
         encoded_lo = 0.0                                                    # Compute the encoded lane offset from the .xodr file. We add this to our own computed offset.
         if len(lane_offset) > 0:
-            profile_id = 0
+            profile_id = 0.0
             closest_so_far = 1e24
             for i in range(len(lane_offset)):
-                d = s - lane_offset[i].s
+                d = s + q - lane_offset[i].s
                 if d >= 0.0 and d < closest_so_far:
                     profile_id, closest_so_far = i, d
             lo = lane_offset[profile_id]
+            ds = s - lo.s + q
+            ds2 = ds * ds
+            ds3 = ds2 * ds
             encoded_lo = lo.a + (ds * lo.b) + (ds2 * lo.c) + (ds3 * lo.d)
 
         signed_offset = -encoded_lo - (left_sum + right_sum) * 0.5          # The midpoint of interval [left_sum, right_sum] is the offset by which the reference line needs to shift laterally.
@@ -528,7 +527,6 @@ class OpenDrive_Importer:
                 widths_data = {}
                 lane_offsets = []
                 id = child.attrib['id']                                     # The unique road id number.
-                total_length = child.attrib['length']                       # The total length of the road
                 for i in child:
 
                     # Take all elevation information.
@@ -568,18 +566,18 @@ class OpenDrive_Importer:
                                 length = j.attrib['length']                 # The geodesic length of the curve (straight line from start to end), in world space.
                                 for k in j:
                                     if k.tag == 'line':
-                                        lines.append(line_segment(id, total_length, s, x, y, hdg, length))
+                                        lines.append(line_segment(id, s, x, y, hdg, length))
                                     elif k.tag == 'arc':
-                                        arcs.append(arc(id, total_length,  s, x, y, hdg, length, k.attrib['curvature']))
+                                        arcs.append(arc(id, s, x, y, hdg, length, k.attrib['curvature']))
                                     elif k.tag == 'spiral':
-                                        spirals.append(spiral(id, total_length,  s, x, y, hdg, length, k.attrib['curvStart'], k.attrib['curvEnd']))
+                                        spirals.append(spiral(id, s, x, y, hdg, length, k.attrib['curvStart'], k.attrib['curvEnd']))
                                     elif k.tag == 'poly3':
-                                        polys.append(poly3(id, total_length,  s, x, y, hdg, length, k.attrib['a'], k.attrib['b'], k.attrib['c'], k.attrib['d']))
+                                        polys.append(poly3(id, s, x, y, hdg, length, k.attrib['a'], k.attrib['b'], k.attrib['c'], k.attrib['d']))
                                     elif k.tag == 'paramPoly3':
                                         pRange = 'normalized'
                                         if 'pRange' in k.attrib:
                                             pRange = k.attrib['pRange']
-                                        cubics.append(param_poly3(id, total_length,  s, x, y, hdg, length, k.attrib['aU'], k.attrib['bU'], k.attrib['cU'], k.attrib['dU'], k.attrib['aV'], k.attrib['bV'],
+                                        cubics.append(param_poly3(id, s, x, y, hdg, length, k.attrib['aU'], k.attrib['bU'], k.attrib['cU'], k.attrib['dU'], k.attrib['aV'], k.attrib['bV'],
                                             k.attrib['cV'], k.attrib['dV'], pRange))
 
                 # Combine all the data which was collected for this road into single structures based on the primitive type.
