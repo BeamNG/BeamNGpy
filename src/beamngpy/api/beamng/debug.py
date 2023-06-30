@@ -32,7 +32,7 @@ class DebugApi(Api):
             rgba_colors: Either a single color or list of colors of the debug spheres,
                          in the format of ``(R, G, B, A)``. An ``A`` of 1.0 means full visibility,
                          0.0 means full transparency. Can also be instances of any type that the
-                         :func:`coerce_vehicle_color` function accepts.
+                         :func:`coerce_color <beamngpy.misc.colors.coerce_color>` function accepts.
             cling: Whether or not to align the ``z`` coordinate of the spheres to the ground.
             offset: The z-axis offset of the sphere coordinates. Can only be used together with
                     ``cling=True`` to spawn spheres an exact amount above the ground.
@@ -79,10 +79,9 @@ class DebugApi(Api):
 
         Args:
             coordinates: List of ``(x, y, z)`` coordinates of the debug spheres.
-            radii: List of radii of the debug spheres in meters.
-            rgba_color: A single color of the points of the  debug polyline, in the format of ``(R, G, B, A)``.
+            rgba_color: A single color of the points of the debug polyline, in the format of ``(R, G, B, A)``.
                         An ``A`` of 1.0 means full visibility, 0.0 means full transparency. Can also be instance
-                        of any type that the :func:`coerce_vehicle_color` function accepts.
+                        of any type that the :func:`coerce_color <beamngpy.misc.colors.coerce_color>` function accepts.
             cling: Whether or not to align the ``z`` coordinate of the spheres to the ground.
             offset: The z-axis offset of the sphere coordinates. Can only be used together with
                     ``cling=True`` to spawn spheres an exact amount above the ground.

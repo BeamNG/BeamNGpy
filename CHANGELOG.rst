@@ -4,7 +4,17 @@ Changelog
 
 Version 1.26.1
 ==============
-- TODO
+- BeamNGpy fixes / improvements
+
+  - invalid vehicle and scene object names produced error in the simulation, now the validation is done on BeamNGpy side
+
+    - name cannot start with the ``%`` character or a digit
+    - name cannot contain the ``/`` character
+  - Added new options to ``BeamNGpy.scenario.load`` called ``connect_player_vehicle`` and ``connect_existing_vehicles``
+
+    - ``connect_player_vehicle`` is ``True`` by default and it connects the player vehicle to the simulation after scenario load
+    - ``connect_existing_vehicles`` is ``True`` by default and it connects all the already existing vehicles to the simulation after scenario load
+    - setting these options to ``False`` can reduce the loading time by skipping the connection-establishing part, and these vehicles can still be connected manually using ``Vehicle.connect``
 
 Version 1.26
 ============
