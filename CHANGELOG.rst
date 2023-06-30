@@ -4,6 +4,23 @@ Changelog
 
 Version 1.26.1
 ==============
+
+- New features
+
+  - OpenDrive (.xodr) importer added, and new example created in Examples folder.
+
+  - OpenStreetMap importer and exporter added, and new examples created in Examples folder.
+
+  - Eclipse Sumo importer and exporter added, and new examples created in Examples folder.
+
+  - Camera, LiDAR, and RADAR sensors can now be streamed directly to shared memory in BeamNGpy, without polling required.
+
+  - Function added to the vehicle class to deflate vehicle tires, eg to simulate tire blowout.
+
+  - Beam stresses added as a mode to the Advanced_IMU sensor.
+
+  - Relative camera interface changed to use vectors instead of quaternions.
+
 - BeamNGpy fixes / improvements
 
   - Improved/added `documentation <https://beamngpy.readthedocs.io/en/latest/>__`
@@ -30,6 +47,18 @@ Version 1.26.1
   - Added ``crash_lua_on_error`` option to the BeamNGpy constructor
 
     - behaves in the same way as the option of the same name in ``BeamNGpy.open``
+
+  - Bug fixed when using multiple ultrasonic sensors, where the first sensor would not update in simulator.
+
+  - Bug fixed when using ultrasonic sensor, relating to failure to detect at some angles to surfaces
+
+  - Bug fixed with ultrasonic sensor, relating to typos in parameter names, rendering some parameters unusable from BeamNGpy.
+
+  - Bug fixed with Advanced_IMU sensor, when using gravity.  Did not work from BeamNGpy before.
+
+  - Bug fixed with Advanced_IMU sensor, relating to the smoothing not working from BeamNGpy.
+
+  - Bug fixed with the relative camera, which was not operating correctly.
 
 
 Version 1.26
