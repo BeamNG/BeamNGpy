@@ -25,7 +25,7 @@ def main():
     script = []
 
     points = []
-    point_color = [0, 0, 0, 0.1]
+    point_color = (0, 0, 0, 0.1)
     sphere_coordinates = []
     sphere_radii = []
     sphere_colors = []
@@ -34,7 +34,7 @@ def main():
         node = {
             #  Calculate the position as a sine curve that makes the vehicle
             #  drive from left to right. The z-coordinate is not calculated in
-            #  any way because `ai_set_script` by default makes the polyline to
+            #  any way because `ai.set_script` by default makes the polyline to
             #  follow cling to the ground, meaning the z-coordinate will be
             #  filled in automatically.
             'x': 4 * np.sin(np.radians(i)) + orig[0],
