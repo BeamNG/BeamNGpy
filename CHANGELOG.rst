@@ -6,7 +6,18 @@ Version 1.26.1
 ==============
 - BeamNGpy fixes / improvements
 
-  - invalid vehicle and scene object names produced error in the simulation, now the validation is done on BeamNGpy side
+  - Improved/added `documentation <https://beamngpy.readthedocs.io/en/latest/>__`
+
+    - ``Scenario`` class now has all parameters documented.
+    - ``BeamNGpy.debug`` API methods are now documented
+    - ``BeamNGpy.env`` now contains more information about the 'time of day' object
+    - Added documentation for RADAR and Mesh sensors
+
+  - ``Vehicle.set_part_config`` now does not recreate the existing connection to the simulator, as it was not needed
+
+  - Small refactor of unit tests, the automated sensor scripts are now also runnable under the ``pytest`` framework
+
+  - Invalid vehicle and scene object names produced error in the simulation, now the validation is done on BeamNGpy side
 
     - name cannot start with the ``%`` character or a digit
     - name cannot contain the ``/`` character
@@ -15,6 +26,11 @@ Version 1.26.1
     - ``connect_player_vehicle`` is ``True`` by default and it connects the player vehicle to the simulation after scenario load
     - ``connect_existing_vehicles`` is ``True`` by default and it connects all the already existing vehicles to the simulation after scenario load
     - setting these options to ``False`` can reduce the loading time by skipping the connection-establishing part, and these vehicles can still be connected manually using ``Vehicle.connect``
+
+  - Added ``crash_lua_on_error`` option to the BeamNGpy constructor
+
+    - behaves in the same way as the option of the same name in ``BeamNGpy.open``
+
 
 Version 1.26
 ============

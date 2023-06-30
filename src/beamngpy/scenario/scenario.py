@@ -60,6 +60,7 @@ class Scenario:
         description: The description of the scenario displayed in the simulator.
         difficulty: The difficulty of the scenario displayed in the simulator.
         authors: Names of the authors. Defaults to ``BeamNGpy``.
+        options: Other pptions of the scenario object, not used at the moment.
     """
 
     scenetree_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
