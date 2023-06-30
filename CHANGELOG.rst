@@ -9,9 +9,9 @@ Version 1.26.1
 
   - OpenDrive (.xodr) importer added, and new example created in Examples folder.
 
-  - OpenStreetMap importer and exporter added, and new examples created in Examples folder.
+  - OpenStreetMap (.osm) importer and exporter added, and new examples created in Examples folder.
 
-  - Eclipse Sumo importer and exporter added, and new examples created in Examples folder.
+  - Eclipse Sumo (.nod.xml and .edg.xml) importer and exporter added, and new examples created in Examples folder.
 
   - RADAR sensor now reads the Doppler velocity from vehicles in the simulation as well as static objects.
 
