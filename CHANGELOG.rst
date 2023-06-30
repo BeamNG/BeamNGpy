@@ -13,6 +13,8 @@ Version 1.26.1
 
   - Eclipse Sumo importer and exporter added, and new examples created in Examples folder.
 
+  - RADAR sensor now reads the Doppler velocity from vehicles in the simulation as well as static objects.
+
   - Camera, LiDAR, and RADAR sensors can now be streamed directly to shared memory in BeamNGpy, without polling required.
 
   - Function added to the vehicle class to deflate vehicle tires, eg to simulate tire blowout.
