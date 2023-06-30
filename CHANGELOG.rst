@@ -15,14 +15,6 @@ Version 1.26.1
 
   - RADAR sensor now reads the Doppler velocity from vehicles in the simulation as well as static objects.
 
-  - Camera, LiDAR, and RADAR sensors can now be streamed directly to shared memory in BeamNGpy, without polling required.
-
-  - Function added to the vehicle class to deflate vehicle tires, eg to simulate tire blowout.
-
-  - Beam stresses added as a mode to the Advanced_IMU sensor.
-
-  - Relative camera interface changed to use vectors instead of quaternions.
-
 - BeamNGpy fixes / improvements
 
   - Improved/added `documentation <https://beamngpy.readthedocs.io/en/latest/>__`
@@ -49,6 +41,14 @@ Version 1.26.1
   - Added ``crash_lua_on_error`` option to the BeamNGpy constructor
 
     - behaves in the same way as the option of the same name in ``BeamNGpy.open``
+
+  - Camera, LiDAR, and RADAR sensors can now be streamed directly to shared memory in BeamNGpy, without any polling required.
+
+  - Function added to the vehicle class to deflate vehicle tires, eg to simulate tire blowout.
+
+  - Beam stresses added as a mode to the Advanced_IMU sensor.
+
+  - Relative camera interface changed to use vectors instead of quaternions.
 
   - Bug fixed when using multiple ultrasonic sensors, where the first sensor would not update in simulator.
 
