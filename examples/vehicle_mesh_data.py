@@ -21,18 +21,18 @@ def main():
     # Get the mesh data for the vehicle.
     mesh = Mesh('mesh1', bng, vehicle)
 
-    print("Driving around, polling the mesh data every 15 seconds...")
+    print("Driving around, polling the mesh data every 5 seconds...")
     vehicle.ai.set_mode('span')
     for _ in range(100000):
-        sleep(15)
+        sleep(5)
         data = mesh.poll()
-        print("data time: ", data[0]['time'])       # Note: there may be other readings in indices > 0, depending on mesh sensor update rates.
+        print("data time: ", data['time'])       # Note: there may be other readings in indices > 0, depending on mesh sensor update rates.
         mesh.mesh_plot()
-        mesh.mass_distribution_plot(data[0]['nodes'])
-        mesh.force_distribution_plot(data[0]['nodes'])
-        mesh.force_direction_plot(data[0]['nodes'])
-        mesh.velocity_distribution_plot(data[0]['nodes'])
-        mesh.velocity_direction_plot(data[0]['nodes'])
+        mesh.mass_distribution_plot(data['nodes'])
+        mesh.force_distribution_plot(data['nodes'])
+        mesh.force_direction_plot(data['nodes'])
+        mesh.velocity_distribution_plot(data['nodes'])
+        mesh.velocity_direction_plot(data['nodes'])
 
     bng.close()
 
