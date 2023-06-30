@@ -23,7 +23,7 @@ class way:
 
 class OpenStreetMap_Importer:
 
-    # Extracts the road data, per OpenDrive primitive.
+    # Extracts the road data from the OpenStreetMap file.
     @staticmethod
     def extract_road_data(filename):
         tree = ET.parse(filename)
@@ -36,12 +36,12 @@ class OpenStreetMap_Importer:
             if i.tag == 'bounds':
                 minLat, maxLat, minLon, maxLon = float(i.attrib['minlat']), float(i.attrib['maxlat']), float(i.attrib['minlon']), float(i.attrib['maxlon'])
             elif i.tag == 'node':
-                nodes[int(i.attrib['id'])] = vec3(float(i.attrib['lon']), float(i.attrib['lat']))
+                nodes[i.attrib['id']] = vec3(float(i.attrib['lon']), float(i.attrib['lat']))
             elif i.tag == 'way':
                 nd = []
                 for j in i:
                     if j.tag == 'nd':
-                        nd.append(int(j.attrib['ref']))
+                        nd.append(j.attrib['ref'])
                     elif j.tag == 'tag' and j.attrib['k'] == 'width':
                         width = float(j.attrib['v'])
                 ways[int(i.attrib['id'])] = way(nd, width)
@@ -50,7 +50,7 @@ class OpenStreetMap_Importer:
     @staticmethod
     def import_osm(filename, scenario):
 
-        # Extract the road data primitives from the OpenDrive file.
+        # Extract the road data primitives from the OpenStreetMap file.
         print("Extracting road data from file...")
         nodes, ways, minLat, maxLat, minLon, maxLon = OpenStreetMap_Importer.extract_road_data(filename)
         print("Primitives to import:  nodes:", len(nodes), "; ways:", len(ways))
@@ -63,7 +63,7 @@ class OpenStreetMap_Importer:
             n.x = n.x * 1000
             n.y = n.y * 1000
 
-        # Create the road polylines from the 'ways' data.
+        # Create the road polylines from the OpenStreetMap 'ways' data.
         roads = []
         for id, w in ways.items():
             nds = []
@@ -72,7 +72,7 @@ class OpenStreetMap_Importer:
                 nds.append([nd.x, nd.y, DEFAULT_ELEVATION, w.width, DEFAULT_DEPTH])
             roads.append(road('imported_' + str(id), nds))
 
-        # Create the all the roads from the road polyline data (which came from various OpenDrive primitive evaluators).
+        # Create the all the roads from the road polyline data.
         print("Loading import in scenario...")
         for r in roads:
             mesh_road = MeshRoad(r.name)

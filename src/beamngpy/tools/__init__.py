@@ -6,3 +6,4 @@ from .sumo_export import Sumo_Exporter
 
 from .opendrive_import import OpenDrive_Importer
 from .osm_import import OpenStreetMap_Importer
+from .sumo_import import Sumo_Importer

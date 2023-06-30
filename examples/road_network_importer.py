@@ -1,5 +1,5 @@
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.tools import OpenDrive_Importer, OpenStreetMap_Importer
+from beamngpy.tools import OpenDrive_Importer, OpenStreetMap_Importer, Sumo_Importer
 
 def main():
     set_up_simple_logging()
@@ -14,11 +14,14 @@ def main():
 
     # Import OpenDrive (.xodr).
     filename = 'Ex_LHT-Complex-X-Junction.xodr'
-    OpenDrive_Importer.import_xodr(filename, scenario)                      # import an OpenDrive (.xodr) file.
+    OpenDrive_Importer.import_xodr(filename, scenario)                      # import an OpenDrive file (.xodr).
 
     # Import OpenStreetMap (.osm).
     #filename = 'map.osm'
-    #OpenStreetMap_Importer.import_osm(filename, scenario)                   # import an OpenStreetMap (.osm) file.
+    #OpenStreetMap_Importer.import_osm(filename, scenario)                  # import an OpenStreetMap file (.osm).
+
+    #prefix = 'back'                                                        # Import Sumo files (.nod.xml, .edg.xml).
+    #Sumo_Importer.import_sumo(prefix, scenario)
 
     # Start up BeamNG with the imported road network.
     print("Making scenario...")
