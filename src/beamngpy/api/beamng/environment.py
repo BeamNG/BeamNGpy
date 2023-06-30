@@ -15,11 +15,18 @@ class EnvironmentApi(Api):
 
     def get_tod(self) -> StrDict:
         """
-        Gets the current 'time of day' object. That includes a TODO
+        Gets the current 'time of day' object. That is a dictionary with the following keys:
+
+            * ``time``: Time of day on a scale from 0 to 1. 0/1 is midday, 0.5 is midnight.
+            * ``timeStr``: Time of day as a string in the format 'HH:MM:SS'.
+            * ``nightScale``: How fast should the night be.
+            * ``dayScale``: How fast should the day be.
+            * ``azimuthOverride``: Used to specify an azimuth that will stay constant throughout the day cycle.
+            * ``startTime``: Time of day when the scenario started.
+            * ``dayLength``: Length of the day (24 hours).
 
         Returns:
-            A dictionary with the following keys:
-            TODO
+            The dictionary with keys specified above.
         """
         data: StrDict = dict(type='GetTimeOfDay')
         resp = self._send(data).recv('TimeOfDay')
@@ -32,13 +39,13 @@ class EnvironmentApi(Api):
         between 0 and 1. How this value affects the lighting of the scene is
         dependant on the map's TimeOfDay object.
 
-        Args (TODO better docs):
+        Args:
             tod: Time of day. Can be provided as a float between 0.0 and 1.0, or as a string in the format 'HH:MM:SS'.
             play: False by default.
             day_scale: How fast should the day be.
             night_scale: How fast should the night be.
             day_length: Length of the day (24 hours).
-            azimuth_override: TODO
+            azimuth_override: Used to specify an azimuth that will stay constant throughout the day cycle.
         """
         data: StrDict = dict(
             type='TimeOfDayChange',
