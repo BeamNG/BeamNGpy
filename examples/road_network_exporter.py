@@ -1,5 +1,5 @@
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.tools import OpenDrive_Exporter, OpenStreetMap_Exporter
+from beamngpy.tools import OpenDrive_Exporter, OpenStreetMap_Exporter, Sumo_Exporter
 
 def main():
     set_up_simple_logging()
@@ -16,10 +16,13 @@ def main():
     bng.scenario.start()
 
     # Export OpenDrive (.xodr).
-    OpenDrive_Exporter.export('test_od', bng)                   # export to OpenDrive (.xodr) format.
+    OpenDrive_Exporter.export('test_od', bng)
 
     # Export OpenStreetMap (.osm).
     #OpenStreetMap_Exporter.export('test_osm', bng)
+
+    # Export Sumo (.nod.xml and .edg.xml).
+    #Sumo_Exporter.export('test', bng)
 
     # Execute the simulation until user is finished.  The data file(s) have been written.
     vehicle.ai.set_mode('span')
