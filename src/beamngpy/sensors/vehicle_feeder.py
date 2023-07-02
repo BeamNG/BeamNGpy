@@ -481,6 +481,8 @@ class Vehicle_Feeder:
             vy = vel[i].y
             #plt.arrow(x, y, vx, vy, width = 0.05, ec = 'red')                                           # Silence to remove velocities.
 
+        ax.locator_params(axis='x', nbins=30)
+        ax.locator_params(axis='y', nbins=30)
         plt.savefig('trajectory.pdf')
 
     def plotSTWAMapping(self, xx, theirSTWAFL, ourSTWAFL, theirSTWAFR, ourSTWAFR):
@@ -511,6 +513,8 @@ class Vehicle_Feeder:
         ax.set_title("Elevation of Their Data")
         ax.set_xlabel("t (s)")
         ax.set_ylabel("m")
+        ax.locator_params(axis='x', nbins=25)
+        ax.locator_params(axis='y', nbins=25)
         plt.savefig('elevation.pdf')
 
         # STWA.
@@ -522,12 +526,14 @@ class Vehicle_Feeder:
         ax.set_title("STWA")
         ax.set_xlabel("t (s)")
         ax.set_ylabel("rad")
-
+        ax.locator_params(axis='x', nbins=25)
+        ax.locator_params(axis='y', nbins=25)
         plt.savefig('stwa.pdf')
 
         # DRIVE TORQUES:
         fig, ax = plt.subplots(2, 2,  sharey=True, figsize=(15, 15))
-
+        ax[0, 0].locator_params(axis='x', nbins=15)
+        ax[0, 0].locator_params(axis='y', nbins=15)
         ax[0, 0].plot(tTheirs, dTheirs['y_signal_preprocess_drv_wh_trq_drv_0_'], "-b", label="theirs")
         ax[0, 0].plot(tOurs, dOurs['Wh1DrvTorque'], "-r", label="ours")
         ax[0, 0].legend(loc="upper right")
@@ -535,6 +541,8 @@ class Vehicle_Feeder:
         ax[0, 0].set_xlabel("t (s)")
         ax[0, 0].set_ylabel("N-m")
 
+        ax[0, 1].locator_params(axis='x', nbins=15)
+        ax[0, 1].locator_params(axis='y', nbins=15)
         ax[0, 1].plot(tTheirs, dTheirs['y_signal_preprocess_drv_wh_trq_drv_1_'], "-b", label="theirs")
         ax[0, 1].plot(tOurs, dOurs['Wh2DrvTorque'], "-r", label="ours")
         ax[0, 1].legend(loc="upper right")
@@ -542,6 +550,8 @@ class Vehicle_Feeder:
         ax[0, 1].set_xlabel("t (s)")
         ax[0, 1].set_ylabel("N-m")
 
+        ax[1, 0].locator_params(axis='x', nbins=15)
+        ax[1, 0].locator_params(axis='y', nbins=15)
         ax[1, 0].plot(tTheirs, dTheirs['y_signal_preprocess_drv_wh_trq_drv_2_'], "-b", label="theirs")
         ax[1, 0].plot(tOurs, dOurs['Wh3DrvTorque'], "-r", label="ours")
         ax[1, 0].legend(loc="upper right")
@@ -549,6 +559,8 @@ class Vehicle_Feeder:
         ax[1, 0].set_xlabel("t (s)")
         ax[1, 0].set_ylabel("N-m")
 
+        ax[1, 1].locator_params(axis='x', nbins=15)
+        ax[1, 1].locator_params(axis='y', nbins=15)
         ax[1, 1].plot(tTheirs, dTheirs['y_signal_preprocess_drv_wh_trq_drv_3_'], "-b", label="theirs")
         ax[1, 1].plot(tOurs, dOurs['Wh4DrvTorque'], "-r", label="ours")
         ax[1, 1].legend(loc="upper right")
@@ -560,7 +572,8 @@ class Vehicle_Feeder:
 
         # BRAKE TORQUES:
         fig, ax = plt.subplots(2, 2, sharey=True, figsize=(15, 15))
-
+        ax[0, 0].locator_params(axis='x', nbins=15)
+        ax[0, 0].locator_params(axis='y', nbins=15)
         ax[0, 0].plot(tTheirs, dTheirs['y_signal_preprocess_brk_wh_trq_brk_0_'], "-b", label="theirs")
         ax[0, 0].plot(tOurs, dOurs['Wh1BrkTorque'], "-r", label="ours")
         ax[0, 0].legend(loc="upper right")
@@ -568,6 +581,8 @@ class Vehicle_Feeder:
         ax[0, 0].set_xlabel("t (s)")
         ax[0, 0].set_ylabel("N-m")
 
+        ax[0, 1].locator_params(axis='x', nbins=15)
+        ax[0, 1].locator_params(axis='y', nbins=15)
         ax[0, 1].plot(tTheirs, dTheirs['y_signal_preprocess_brk_wh_trq_brk_1_'], "-b", label="theirs")
         ax[0, 1].plot(tOurs, dOurs['Wh2BrkTorque'], "-r", label="ours")
         ax[0, 1].legend(loc="upper right")
@@ -575,6 +590,8 @@ class Vehicle_Feeder:
         ax[0, 1].set_xlabel("t (s)")
         ax[0, 1].set_ylabel("N-m")
 
+        ax[1, 0].locator_params(axis='x', nbins=15)
+        ax[1, 0].locator_params(axis='y', nbins=15)
         ax[1, 0].plot(tTheirs, dTheirs['y_signal_preprocess_brk_wh_trq_brk_2_'], "-b", label="theirs")
         ax[1, 0].plot(tOurs, dOurs['Wh3BrkTorque'], "-r", label="ours")
         ax[1, 0].legend(loc="upper right")
@@ -582,6 +599,8 @@ class Vehicle_Feeder:
         ax[1, 0].set_xlabel("t (s)")
         ax[1, 0].set_ylabel("N-m")
 
+        ax[1, 1].locator_params(axis='x', nbins=15)
+        ax[1, 1].locator_params(axis='y', nbins=15)
         ax[1, 1].plot(tTheirs, dTheirs['y_signal_preprocess_brk_wh_trq_brk_3_'], "-b", label="theirs")
         ax[1, 1].plot(tOurs, dOurs['Wh4BrkTorque'], "-r", label="ours")
         ax[1, 1].legend(loc="upper right")
@@ -593,6 +612,9 @@ class Vehicle_Feeder:
 
         # SMOOTHED ACCELERATION.
         fig, ax = plt.subplots(3, 1, sharey=True, figsize=(15, 15))
+        ax[0].locator_params(axis='x', nbins=38)
+        ax[1].locator_params(axis='x', nbins=38)
+        ax[2].locator_params(axis='x', nbins=38)
 
         ax[0].plot(tTheirs, dTheirs['acc_x_smoothed_both_ways'], "-b", label="theirs")
         #ax[0].plot(tOurs, dOurs['IMUAccelSmooth0'], "-r", label="ours")
@@ -623,6 +645,9 @@ class Vehicle_Feeder:
 
         # SMOOTHED GYROSCOPIC DATA.
         fig, ax = plt.subplots(3, 1, sharey=True,  figsize=(15, 15))
+        ax[0].locator_params(axis='x', nbins=38)
+        ax[1].locator_params(axis='x', nbins=38)
+        ax[2].locator_params(axis='x', nbins=38)
 
         ax[0].plot(tTheirs, dTheirs['gyro_x_smoothed_both_ways'], "-b", label="theirs")
         #ax[0].plot(tOurs, dOurs['IMUAngVelSmoothX'], "-r", label="ours")
@@ -653,7 +678,8 @@ class Vehicle_Feeder:
 
         # WHEEL SPEEDS:
         fig, ax = plt.subplots(2, 2, sharey=True,  figsize=(15, 15))
-
+        ax[0, 0].locator_params(axis='x', nbins=15)
+        ax[0, 0].locator_params(axis='y', nbins=15)
         ax[0, 0].plot(tTheirs, dTheirs['wh_spd_kph_0'], "-b", label="theirs")
         #ax[0, 0].plot(tOurs, dOurs['Wh1Speed'], "-r", label="ours")
         ax[0, 0].plot(tOurs, dOurs['Wh1SpeedSmooth'], "-r", label="ours")
@@ -662,6 +688,8 @@ class Vehicle_Feeder:
         ax[0, 0].set_ylabel("kmph")
         ax[0, 0].legend(loc="upper right")
 
+        ax[0, 1].locator_params(axis='x', nbins=15)
+        ax[0, 1].locator_params(axis='y', nbins=15)
         ax[0, 1].plot(tTheirs, dTheirs['wh_spd_kph_1'], "-b", label="theirs")
         #ax[0, 1].plot(tOurs, dOurs['Wh2Speed'], "-r", label="ours")
         ax[0, 1].plot(tOurs, dOurs['Wh2SpeedSmooth'], "-r", label="ours")
@@ -670,6 +698,8 @@ class Vehicle_Feeder:
         ax[0, 1].set_ylabel("kmph")
         ax[0, 1].legend(loc="upper right")
 
+        ax[1, 0].locator_params(axis='x', nbins=15)
+        ax[1, 0].locator_params(axis='y', nbins=15)
         ax[1, 0].plot(tTheirs, dTheirs['wh_spd_kph_2'], "-b", label="theirs")
         #ax[1, 0].plot(tOurs, dOurs['Wh3Speed'], "-r", label="ours")
         ax[1, 0].plot(tOurs, dOurs['Wh3SpeedSmooth'], "-r", label="ours")
@@ -678,6 +708,8 @@ class Vehicle_Feeder:
         ax[1, 0].set_ylabel("kmph")
         ax[1, 0].legend(loc="upper right")
 
+        ax[1, 1].locator_params(axis='x', nbins=15)
+        ax[1, 1].locator_params(axis='y', nbins=15)
         ax[1, 1].plot(tTheirs, dTheirs['wh_spd_kph_3'], "-b", label="theirs")
         #ax[1, 1].plot(tOurs, dOurs['Wh4Speed'], "-r", label="ours")
         ax[1, 1].plot(tOurs, dOurs['Wh4SpeedSmooth'], "-r", label="ours")
@@ -690,7 +722,8 @@ class Vehicle_Feeder:
 
         # WHEELS ANGULAR VELOCITY:
         fig, ax = plt.subplots(2, 2, sharey=True,  figsize=(15, 15))
-
+        ax[0, 0].locator_params(axis='x', nbins=15)
+        ax[0, 0].locator_params(axis='y', nbins=15)
         #ax[0, 0].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_0_'], "-b", label="theirs")
         ax[0, 0].plot(tTheirs, dTheirs['wh_spd_kph_smooth_0'], "-b", label="theirs")
         #ax[0, 0].plot(tOurs, dOurs['Wh1AngVel'], "-r", label="ours")
@@ -700,6 +733,8 @@ class Vehicle_Feeder:
         ax[0, 0].set_ylabel("rad/s")
         ax[0, 0].legend(loc="upper right")
 
+        ax[0, 1].locator_params(axis='x', nbins=15)
+        ax[0, 1].locator_params(axis='y', nbins=15)
         #ax[0, 1].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_1_'], "-b", label="theirs")
         ax[0, 1].plot(tTheirs, dTheirs['wh_spd_kph_smooth_1'], "-b", label="theirs")
         #ax[0, 1].plot(tOurs, dOurs['Wh2AngVel'], "-r", label="ours")
@@ -709,6 +744,8 @@ class Vehicle_Feeder:
         ax[0, 1].set_ylabel("rad/s")
         ax[0, 1].legend(loc="upper right")
 
+        ax[1, 0].locator_params(axis='x', nbins=15)
+        ax[1, 0].locator_params(axis='y', nbins=15)
         #ax[1, 0].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_2_'], "-b", label="theirs")
         ax[1, 0].plot(tTheirs, dTheirs['wh_spd_kph_smooth_2'], "-b", label="theirs")
         #ax[1, 0].plot(tOurs, dOurs['Wh3AngVel'], "-r", label="ours")
@@ -718,6 +755,8 @@ class Vehicle_Feeder:
         ax[1, 0].set_ylabel("rad/s")
         ax[1, 0].legend(loc="upper right")
 
+        ax[1, 1].locator_params(axis='x', nbins=15)
+        ax[1, 1].locator_params(axis='y', nbins=15)
         #ax[1, 1].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_3_'], "-b", label="theirs")
         ax[1, 1].plot(tTheirs, dTheirs['wh_spd_kph_smooth_3'], "-b", label="theirs")
         #ax[1, 1].plot(tOurs, dOurs['Wh4AngVel'], "-r", label="ours")
