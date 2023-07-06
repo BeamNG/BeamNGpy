@@ -181,6 +181,30 @@ Logging
 Tools
 =====
 
+.. autoclass:: beamngpy.tools.OpenDriveExporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.OpenStreetMapExporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.SumoExporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.OpenDriveImporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.OpenStreetMapImporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.SumoImporter
+   :members:
+   :undoc-members:
+
 Miscellaneous
 =============
 
