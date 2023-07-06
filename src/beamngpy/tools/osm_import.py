@@ -1,27 +1,35 @@
 import math
 import xml.etree.ElementTree as ET
 
-from beamngpy import MeshRoad, Road
-from beamngpy import vec3
+from beamngpy import MeshRoad
+from beamngpy.misc import vec3
 
 # User control parameters
-DEFAULT_WIDTH = 1.0                                                                             # The default road width value (when no width is supplied to a 'way').
-DEFAULT_ELEVATION = 0.1                                                                         # The default elevation value (height above sea level).
-DEFAULT_DEPTH = 1.0                                                                             # The depth (from bottom to top) of the generated mesh roads in BeamNG.
+# The default road width value (when no width is supplied to a 'way').
+DEFAULT_WIDTH = 1.0
+# The default elevation value (height above sea level).
+DEFAULT_ELEVATION = 0.1
+# The depth (from bottom to top) of the generated mesh roads in BeamNG.
+DEFAULT_DEPTH = 1.0
 
 # A container for storing a road polyline, before rendering in BeamNG.
+
+
 class road:
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
 
 # A container for storing an OpenStreetMap way, with any relevant metadata.
+
+
 class way:
     def __init__(self, nodes, width):
         self.nodes = nodes
         self.width = width
 
-class OpenStreetMap_Importer:
+
+class OpenStreetMapImporter:
 
     # Extracts the road data from the OpenStreetMap file.
     @staticmethod
@@ -34,7 +42,8 @@ class OpenStreetMap_Importer:
         width = DEFAULT_WIDTH
         for i in root:
             if i.tag == 'bounds':
-                minLat, maxLat, minLon, maxLon = float(i.attrib['minlat']), float(i.attrib['maxlat']), float(i.attrib['minlon']), float(i.attrib['maxlon'])
+                minLat, maxLat, minLon, maxLon = float(i.attrib['minlat']), float(
+                    i.attrib['maxlat']), float(i.attrib['minlon']), float(i.attrib['maxlon'])
             elif i.tag == 'node':
                 nodes[i.attrib['id']] = vec3(float(i.attrib['lon']), float(i.attrib['lat']))
             elif i.tag == 'way':
@@ -52,7 +61,7 @@ class OpenStreetMap_Importer:
 
         # Extract the road data primitives from the OpenStreetMap file.
         print("Extracting road data from file...")
-        nodes, ways, minLat, maxLat, minLon, maxLon = OpenStreetMap_Importer.extract_road_data(filename)
+        nodes, ways, minLat, maxLat, minLon, maxLon = OpenStreetMapImporter.extract_road_data(filename)
         print("Primitives to import:  nodes:", len(nodes), "; ways:", len(ways))
 
         # Convert from lattitude/longitude to metres, with world origin (0, 0) at the (minLon, minLat) position.
@@ -80,5 +89,3 @@ class OpenStreetMap_Importer:
             scenario.add_mesh_road(mesh_road)
 
         print("Import complete.")
-
-

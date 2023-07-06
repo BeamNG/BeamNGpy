@@ -1,28 +1,38 @@
 import xml.etree.ElementTree as ET
 
-from beamngpy import MeshRoad, Road
-from beamngpy import vec3
+from beamngpy import MeshRoad
+from beamngpy.misc import vec3
 
 # User control parameters
-DEFAULT_WIDTH = 1.0                                                                             # The default road width value (when no width is supplied to a 'way').
-DEFAULT_ELEVATION = 0.1                                                                         # The default elevation value (height above sea level), if no elevation data supplied.
-DEFAULT_NUM_LANES = 2                                                                           # The default number of lanes to assume for a road, if it is not provided.
-LANE_WIDTH = 1.0                                                                                # The width to use for each lane.
-DEFAULT_DEPTH = 1.0                                                                             # The depth (from bottom to top) of the generated mesh roads in BeamNG.
+# The default road width value (when no width is supplied to a 'way').
+DEFAULT_WIDTH = 1.0
+# The default elevation value (height above sea level), if no elevation data supplied.
+DEFAULT_ELEVATION = 0.1
+# The default number of lanes to assume for a road, if it is not provided.
+DEFAULT_NUM_LANES = 2
+# The width to use for each lane.
+LANE_WIDTH = 1.0
+# The depth (from bottom to top) of the generated mesh roads in BeamNG.
+DEFAULT_DEPTH = 1.0
 
 # A container for storing a road polyline, before rendering in BeamNG.
+
+
 class road:
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
 
 # A container for storing a Sumo 'edge'.
+
+
 class edge:
     def __init__(self, a, b, num_lanes):
         self.a, self.b = a, b
         self.num_lanes = num_lanes
 
-class Sumo_Importer:
+
+class SumoImporter:
 
     # Extracts the node data from the Sumo files (.nod.xml).
     @staticmethod
@@ -71,9 +81,9 @@ class Sumo_Importer:
 
         # Extract the road data primitives from the Sumo files.
         print("Extracting road data from Sumo files...")
-        nodes = Sumo_Importer.extract_node_data(prefix + '.nod.xml')
-        unprocessed_edges = Sumo_Importer.extract_edge_data(prefix + '.edg.xml')
-        edges = Sumo_Importer.remove_duplicate_edges(unprocessed_edges)
+        nodes = SumoImporter.extract_node_data(prefix + '.nod.xml')
+        unprocessed_edges = SumoImporter.extract_edge_data(prefix + '.edg.xml')
+        edges = SumoImporter.remove_duplicate_edges(unprocessed_edges)
         print("Primitives to import:  nodes:", len(nodes), "; edges:", len(edges))
 
         # Create the road polylines from the 'edge' and 'node' data.
@@ -83,7 +93,7 @@ class Sumo_Importer:
             width = e.num_lanes * LANE_WIDTH
             nds = [
                 [n1.x, n1.y, n1.z, width, DEFAULT_DEPTH],
-                [n2.x, n2.y, n2.z, width, DEFAULT_DEPTH] ]
+                [n2.x, n2.y, n2.z, width, DEFAULT_DEPTH]]
             roads.append(road('imported_' + str(id), nds))
 
         # Create the all the roads from the road polyline data.
@@ -94,5 +104,3 @@ class Sumo_Importer:
             scenario.add_mesh_road(mesh_road)
 
         print("Import complete.")
-
-

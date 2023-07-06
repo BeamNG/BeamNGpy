@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from beamngpy.tools.navigraph_data import Navigraph_Data
-from beamngpy import vec3
+from beamngpy.misc import vec3
+from beamngpy.tools.navigraph_data import NavigraphData
 
-__all__ = ['OpenStreetMap_Exporter']
+__all__ = ['OpenStreetMapExporter']
 
 
-class OpenStreetMap_Exporter:
+class OpenStreetMapExporter:
 
     @staticmethod
     def export(name, bng):
@@ -20,7 +20,7 @@ class OpenStreetMap_Exporter:
         """
 
         # Get the navigraph data.
-        navigraph_data = Navigraph_Data(bng)
+        navigraph_data = NavigraphData(bng)
 
         # Compute all the individual path segments from the loaded map.
         path_segments = navigraph_data.compute_path_segments()

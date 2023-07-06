@@ -1,21 +1,24 @@
 from __future__ import annotations
 
+from logging import DEBUG, getLogger
+from typing import TYPE_CHECKING, Any
+
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import collections as mc
 
 from beamngpy.logging import LOGGER_ID, BNGError
-from beamngpy.sensors.communication_utils import (send_sensor_request, set_sensor)
-from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any
+from beamngpy.misc import vec3
+from beamngpy.sensors.communication_utils import (send_sensor_request,
+                                                  set_sensor)
 from beamngpy.types import StrDict
-from beamngpy import vec3
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
-class Navigraph_Data:
+
+class NavigraphData:
 
     def __init__(self, bng: BeamNGpy):
         """

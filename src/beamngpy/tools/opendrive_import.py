@@ -1,9 +1,10 @@
 import math
-import numpy as np
 import xml.etree.ElementTree as ET
 
+import numpy as np
+
 from beamngpy import MeshRoad, Road
-from beamngpy import vec3
+from beamngpy.misc import vec3
 
 # User control parameters
 GRANULARITY = 100                                                                               # The granularity used when evaluating OpenDrive primitives.
@@ -44,12 +45,12 @@ class line_segment:
             q = i * granularity_inv * length                                                            # The parameter q, in [0, geodesic_length], mapped from p.
             world = start + (s * q)                                                                     # The linearly-interpolated point, in world space (x, y).
             dd = (world - start).length()
-            ep = OpenDrive_Importer.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
+            ep = OpenDriveImporter.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
             ds = self.s - ep.s + q
             ds2 = ds * ds
             ds3 = ds2 * ds
             elev = ep.a + (ds * ep.b) + (ds2 * ep.c) + (ds3 * ep.d)                                     # Compute the elevation value (scalar). This is in [0, geodesic_length] range.
-            width, signed_offset = OpenDrive_Importer.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
+            width, signed_offset = OpenDriveImporter.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
             nodes.append([world.x, world.y, elev, width, DEPTH, signed_offset])
         return nodes
 
@@ -75,13 +76,13 @@ class arc:
         nodes = []
         for i in range(eval_range):
             q = i * granularity_inv * length                                                            # The parameter q, in [0, geodesic_length], mapped from p.
-            x, y, tang, k = OpenDrive_Importer.evalClothoid(start.x, start.y, hdg, curvature, 0.0, q)   # Evaluate the arc at parameter q, to get the 2D world space position.
-            ep = OpenDrive_Importer.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
+            x, y, tang, k = OpenDriveImporter.evalClothoid(start.x, start.y, hdg, curvature, 0.0, q)   # Evaluate the arc at parameter q, to get the 2D world space position.
+            ep = OpenDriveImporter.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
             ds = self.s - ep.s + q
             ds2 = ds * ds
             ds3 = ds2 * ds
             elev = ep.a + (ds * ep.b) + (ds2 * ep.c) + (ds3 * ep.d)                                     # Compute the elevation value (scalar). This is in [0, geodesic_length] range.
-            width, signed_offset = OpenDrive_Importer.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
+            width, signed_offset = OpenDriveImporter.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
             nodes.append([x, y, elev, width, DEPTH, signed_offset])
         return nodes
 
@@ -108,13 +109,13 @@ class spiral:
         nodes = []
         for i in range(eval_range):
             q = i * granularity_inv * length                                                                # The parameter q, in [0, geodesic_length], mapped from p.
-            x, y, tang, k = OpenDrive_Importer.evalClothoid(start.x, start.y, hdg, start_k, curv_slope, q)  # Evaluate the clothoid spiral at parameter q, to get the 2D world space position.
-            ep = OpenDrive_Importer.get_elevation_profile(self.s + q, elev_profiles)                        # Get the appropriate elevation polynomial for the current s value.
+            x, y, tang, k = OpenDriveImporter.evalClothoid(start.x, start.y, hdg, start_k, curv_slope, q)  # Evaluate the clothoid spiral at parameter q, to get the 2D world space position.
+            ep = OpenDriveImporter.get_elevation_profile(self.s + q, elev_profiles)                        # Get the appropriate elevation polynomial for the current s value.
             ds = self.s - ep.s + q
             ds2 = ds * ds
             ds3 = ds2 * ds
             elev = ep.a + (ds * ep.b) + (ds2 * ep.c) + (ds3 * ep.d)                                         # Compute the elevation value (scalar). This is in [0, geodesic_length] range.
-            width, signed_offset = OpenDrive_Importer.compute_width_sum(self.s, q, width_profiles, lo)      # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
+            width, signed_offset = OpenDriveImporter.compute_width_sum(self.s, q, width_profiles, lo)      # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
             nodes.append([x, y, elev, width, DEPTH, signed_offset])
         return nodes
 
@@ -147,12 +148,12 @@ class poly3:
             q3 = q2 * q
             v = cA + (q * cB) + (q2 * cC) + (q3 * cD)                                                   # v(q) (the lateral deviation from the reference line).
             world = start + (s * q) + (t * v)                                                           # Project from (s, t) space to world space (x, y).
-            ep = OpenDrive_Importer.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
+            ep = OpenDriveImporter.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
             ds = self.s - ep.s + q
             ds2 = ds * ds
             ds3 = ds2 * ds
             elev = ep.a + (ds * ep.b) + (ds2 * ep.c) + (ds3 * ep.d)                                     # Compute the elevation value (scalar). This is in [0, geodesic_length] range.
-            width, signed_offset = OpenDrive_Importer.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
+            width, signed_offset = OpenDriveImporter.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
             nodes.append([world.x, world.y, elev, width, DEPTH, signed_offset])
         return nodes
 
@@ -196,16 +197,16 @@ class param_poly3:
                 u = aU + (p * bU) + (p2 * cU) + (p3 * dU)                                               # u(p), v(p).
                 v = aV + (p * bV) + (p2 * cV) + (p3 * dV)
             world = start + (s * u) + (t * v)                                                           # Project from (s, t) space to world space (x, y).
-            ep = OpenDrive_Importer.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
+            ep = OpenDriveImporter.get_elevation_profile(self.s + q, elev_profiles)                    # Get the appropriate elevation polynomial for the current s value.
             ds = self.s - ep.s + q
             ds2 = ds * ds
             ds3 = ds2 * ds
             elev = ep.a + (ds * ep.b) + (ds2 * ep.c) + (ds3 * ep.d)                                     # Compute the elevation value (scalar). This is in [0, geodesic_length] range.
-            width, signed_offset = OpenDrive_Importer.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
+            width, signed_offset = OpenDriveImporter.compute_width_sum(self.s, q, width_profiles, lo)  # Compute the sum of the widths at this point. This is in [0, geodesic_length] range.
             nodes.append([world.x, world.y, elev, width, DEPTH, signed_offset])
         return nodes
 
-class OpenDrive_Importer:
+class OpenDriveImporter:
 
     @staticmethod
     def FresnelCS(y):
@@ -368,11 +369,11 @@ class OpenDrive_Importer:
         D   = sb-b*cb
         B   = b*D
         C   = -b2*sb
-        rLa = OpenDrive_Importer.rLommel(m+1/2,3/2,b)
-        rLd = OpenDrive_Importer.rLommel(m+1/2,1/2,b)
+        rLa = OpenDriveImporter.rLommel(m+1/2,3/2,b)
+        rLd = OpenDriveImporter.rLommel(m+1/2,1/2,b)
         for k in range(int(m), 15):
-          rLb    = OpenDrive_Importer.rLommel(k+3/2,1/2,b)
-          rLc    = OpenDrive_Importer.rLommel(k+3/2,3/2,b)
+          rLb    = OpenDriveImporter.rLommel(k+3/2,1/2,b)
+          rLc    = OpenDriveImporter.rLommel(k+3/2,3/2,b)
           X[k+1] = ( k*A*rLa + B*rLb + cb )/(1+k)
           Y[k+1] = ( C*rLc + sb ) / (2+k) + D*rLd
           rLa = rLc
@@ -381,7 +382,7 @@ class OpenDrive_Importer:
 
     @staticmethod
     def evalXYaSmall(a, b):
-      [X0, Y0] = OpenDrive_Importer.evalXYazero(b)
+      [X0, Y0] = OpenDriveImporter.evalXYazero(b)
       tmpX = np.zeros(5)
       tmpY = np.zeros(5)
 
@@ -405,8 +406,8 @@ class OpenDrive_Importer:
         z       = math.sqrt(abs(a)/math.pi)
         ell     = s*b/math.sqrt(abs(a)*math.pi)
         g       = -0.5*s*b*b/abs(a)
-        Cl, Sl = OpenDrive_Importer.FresnelCS(ell)
-        Cz, Sz = OpenDrive_Importer.FresnelCS(ell+z)
+        Cl, Sl = OpenDriveImporter.FresnelCS(ell)
+        Cz, Sz = OpenDriveImporter.FresnelCS(ell+z)
         dC      = Cz - Cl
         dS      = Sz - Sl
         cg      = math.cos(g)/z
@@ -419,9 +420,9 @@ class OpenDrive_Importer:
     def GeneralizedFresnelCS(a, b, c):
         epsi = 1e-2 ;                           # best threshold.
         if abs(a) < epsi:                       # case: 'a' small.
-            [X,Y] = OpenDrive_Importer.evalXYaSmall(a, b)
+            [X,Y] = OpenDriveImporter.evalXYaSmall(a, b)
         else:
-            [X,Y] = OpenDrive_Importer.evalXYaLarge(a, b )
+            [X,Y] = OpenDriveImporter.evalXYaLarge(a, b )
         cc = math.cos(c)
         ss = math.sin(c)
         xx = X
@@ -432,7 +433,7 @@ class OpenDrive_Importer:
 
     @staticmethod
     def evalClothoid(x0, y0, theta0, kappa, dkappa, s):
-        [C, S] = OpenDrive_Importer.GeneralizedFresnelCS(dkappa*s*s, kappa*s, theta0)
+        [C, S] = OpenDriveImporter.GeneralizedFresnelCS(dkappa*s*s, kappa*s, theta0)
         X = x0 + s * C
         Y = y0 + s * S
         th = theta0 + s * (kappa + s * (dkappa/2))
@@ -583,7 +584,7 @@ class OpenDrive_Importer:
                 # Combine all the data which was collected for this road into single structures based on the primitive type.
                 if len(lines) == 0 and len(arcs) == 0 and len(spirals) == 0 and len(polys) == 0 and len(cubics) == 0:
                     continue
-                lines, arcs, spirals, polys, cubics = OpenDrive_Importer.combine_geometry_data(lines, arcs, spirals, polys, cubics, elevations, widths_data, lane_offsets)
+                lines, arcs, spirals, polys, cubics = OpenDriveImporter.combine_geometry_data(lines, arcs, spirals, polys, cubics, elevations, widths_data, lane_offsets)
                 final_lines = final_lines + lines
                 final_arcs = final_arcs + arcs
                 final_spirals = final_spirals + spirals
@@ -633,7 +634,7 @@ class OpenDrive_Importer:
 
         # Extract the road data primitives from the OpenDrive file.
         print("Extracting road data from file...")
-        lines, arcs, spirals, polys, cubics = OpenDrive_Importer.extract_road_data(filename)
+        lines, arcs, spirals, polys, cubics = OpenDriveImporter.extract_road_data(filename)
         print("Primitives to import:  lines:", len(lines), "; arcs:", len(arcs), "; spirals:", len(spirals), "; explicit cubics:", len(polys), "; parametric cubics:", len(cubics))
 
         # Generate separate R^3 road polylines from each imported OpenDrive primitive data.
@@ -644,11 +645,11 @@ class OpenDrive_Importer:
 
         # Perform offset re-computation to get the correct road reference line for BeamNG.
         print("Adding road lateral offsetting...")
-        roads = OpenDrive_Importer.add_lateral_offset(roads)
+        roads = OpenDriveImporter.add_lateral_offset(roads)
 
         # Adjust the elevation of the road polylines so they can be rendered appropriately in the BeamNG world.
         print("Adjusting global elevation...")
-        roads = OpenDrive_Importer.adjust_elevation(roads)
+        roads = OpenDriveImporter.adjust_elevation(roads)
 
         # Create the all the roads from the road polyline data (which came from various OpenDrive primitive evaluators).
         print("Loading import in scenario...")

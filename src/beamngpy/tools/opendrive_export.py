@@ -1,31 +1,36 @@
 from __future__ import annotations
 
 import math
-import numpy as np
 from datetime import datetime
 
-from beamngpy.tools.navigraph_data import Navigraph_Data
-from beamngpy import vec3
+import numpy as np
 
-__all__ = ['OpenDrive_Exporter']
+from beamngpy.misc import vec3
+from beamngpy.tools.navigraph_data import NavigraphData
+
+__all__ = ['OpenDriveExporter']
 
 CACHED_TANGENTS = {}
+
 
 class explicit_cubic:
     """
     A class for representing explicit cubic polynomials of the form: [ u(p) := a + b*p + c*p^2 + d*p^3 ].
     """
+
     def __init__(self, a, b, c, d):
         self.a = a
         self.b = b
         self.c = c
         self.d = d
 
+
 class parametric_cubic:
     """
     A class for representing parametric cubic polynomials of the form:
     [ u(x) := Bu*x + Cu^2 + Du^3; v(x) := Bv*x + Cv^2 + Dv^3 ].
     """
+
     def __init__(self, Au, Bu, Cu, Du, Av, Bv, Cv, Dv):
         self.Au = Au
         self.Bu = Bu
@@ -36,10 +41,12 @@ class parametric_cubic:
         self.Cv = Cv
         self.Dv = Dv
 
+
 class Road:
     """
     A container for storing single sections of roads, which can be represented by a single geometric primitive.
     """
+
     def __init__(self, start, end, p1, length, ref_line_cubic, elev_cubic, width_cubic, super_elev_cubic,
                  predecessor=None, successor=None, junction=None, contact_point=None):
         self.start = start
@@ -70,6 +77,7 @@ class Road:
         self.junction = junction
         self.contact_point = contact_point
 
+
 class Junction:
     """
     A class for storing road network junction information.
@@ -83,6 +91,7 @@ class Junction:
         self.id = id
         self.connection_roads = connection_roads
 
+
 class Connection_Road:
     """
     A class for storing connectivity information between a road and a junction.
@@ -91,11 +100,13 @@ class Connection_Road:
         id: The unique Id of this road, in the roads collection.
         contact_point: Either 'start' or 'end'. This is which part of the road connects to the junction.
     """
+
     def __init__(self, id, contact_point):
         self.id = id
         self.contact_point = contact_point
 
-class OpenDrive_Exporter:
+
+class OpenDriveExporter:
     """
     A class for exporting BeamNG road network data to OpenDrive (.xodr) format.
     """
@@ -116,22 +127,27 @@ class OpenDrive_Exporter:
         for i in range(len(path_segments)):
             seg = path_segments[i]
             key1 = seg[0]
-            if len(graph[key1].keys()) < 2:                     # If this node is a dead-end, we do not include it as a junction.
+            # If this node is a dead-end, we do not include it as a junction.
+            if len(graph[key1].keys()) < 2:
                 continue
-            if key1 not in junction_map:                        # The first node in a path segment is a junction node. Store it if we have not already found it.
+            # The first node in a path segment is a junction node. Store it if we have not already found it.
+            if key1 not in junction_map:
                 junction_map[key1] = ctr
                 ctr = ctr + 1
             key2 = seg[-1]
-            if len(graph[key2].keys()) < 2:                     # If this node is a dead-end, we do not include it as a junction.
+            # If this node is a dead-end, we do not include it as a junction.
+            if len(graph[key2].keys()) < 2:
                 continue
-            if key2 not in junction_map:                        # The last node in a path segment is also a junction node. Store it if we have not already found it.
+            # The last node in a path segment is also a junction node. Store it if we have not already found it.
+            if key2 not in junction_map:
                 junction_map[key2] = ctr
                 ctr = ctr + 1
         return junction_map
 
     @staticmethod
     def _compute_tangents(pn0, pn1, pn2, pn3):
-        d1, d2, d3 = max(math.sqrt(pn0.distance(pn1)), 1e-12), math.sqrt(pn1.distance(pn2)), max(math.sqrt(pn2.distance(pn3)), 1e-12)
+        d1, d2, d3 = max(math.sqrt(pn0.distance(pn1)), 1e-12), math.sqrt(pn1.distance(pn2)
+                                                                         ), max(math.sqrt(pn2.distance(pn3)), 1e-12)
         m = (pn1 - pn0) / d1 + (pn0 - pn2) / (d1 + d2)
         n = (pn1 - pn3) / (d2 + d3) + (pn3 - pn2) / d3
         t1 = d2 * m + pn2 - pn1
@@ -144,7 +160,7 @@ class OpenDrive_Exporter:
 
     @staticmethod
     def _fit_cubic(p0, p1, p2, p3, length):
-        [tang1, tang2] = OpenDrive_Exporter._compute_tangents(p0 - p1, vec3(0.0, 0.0, 0.0), p2 - p1, p3 - p1)
+        [tang1, tang2] = OpenDriveExporter._compute_tangents(p0 - p1, vec3(0.0, 0.0, 0.0), p2 - p1, p3 - p1)
         dz = p2.z - p1.z
         length_sq = length * length
         return explicit_cubic(
@@ -257,37 +273,44 @@ class OpenDrive_Exporter:
                 i0, i2, i3 = max(i1 - 1, 0), i1 + 1, min(i1 + 2, len(seg) - 1)
                 seg0, seg1, seg2, seg3 = seg[i0], seg[i1], seg[i2], seg[i3]
                 p1_2d = navigraph_data.coords2d[seg1]
-                pn0_2d, pn1_2d, pn2_2d, pn3_2d = navigraph_data.coords2d[seg0] - p1_2d, vec3(0.0, 0.0, 0.0), navigraph_data.coords2d[seg2] - p1_2d, navigraph_data.coords2d[seg3] - p1_2d
+                pn0_2d, pn1_2d, pn2_2d, pn3_2d = navigraph_data.coords2d[seg0] - p1_2d, vec3(
+                    0.0, 0.0, 0.0), navigraph_data.coords2d[seg2] - p1_2d, navigraph_data.coords2d[seg3] - p1_2d
                 geodesic_length_2d = pn1_2d.distance(pn2_2d)
-                [tang1, tang2] = OpenDrive_Exporter._compute_tangents(pn0_2d, pn1_2d, pn2_2d, pn3_2d)
+                [tang1, tang2] = OpenDriveExporter._compute_tangents(pn0_2d, pn1_2d, pn2_2d, pn3_2d)
                 if i1 == 0:
-                    tang1 = OpenDrive_Exporter._find_trunk_road_tangent(seg1, tang1)
+                    tang1 = OpenDriveExporter._find_trunk_road_tangent(seg1, tang1)
                 if i1 == len(seg) - 2:
-                    tang2 = OpenDrive_Exporter._find_trunk_road_tangent(seg2, tang2)
+                    tang2 = OpenDriveExporter._find_trunk_road_tangent(seg2, tang2)
                 coeff_C, coeff_D = (-2.0 * tang1) - tang2 + (3.0 * pn2_2d), tang1 + tang2 - (2.0 * pn2_2d)
-                ref_line_cubic = parametric_cubic(pn1_2d.x, tang1.x, coeff_C.x, coeff_D.x, pn1_2d.y, tang1.y, coeff_C.y, coeff_D.y)
+                ref_line_cubic = parametric_cubic(pn1_2d.x, tang1.x, coeff_C.x, coeff_D.x,
+                                                  pn1_2d.y, tang1.y, coeff_C.y, coeff_D.y)
 
                 # Compute the elevation cubic equation (explicit).
-                p0_3d, p1_3d, p2_3d, p3_3d = navigraph_data.coords3d[seg0], navigraph_data.coords3d[seg1], navigraph_data.coords3d[seg2], navigraph_data.coords3d[seg3]
-                elev_cubic = OpenDrive_Exporter._fit_cubic(p0_3d, p1_3d, p2_3d, p3_3d, geodesic_length_2d)
+                p0_3d, p1_3d, p2_3d, p3_3d = navigraph_data.coords3d[seg0], navigraph_data.coords3d[
+                    seg1], navigraph_data.coords3d[seg2], navigraph_data.coords3d[seg3]
+                elev_cubic = OpenDriveExporter._fit_cubic(p0_3d, p1_3d, p2_3d, p3_3d, geodesic_length_2d)
 
                 # Compute the width cubic equation (explicit).
                 w0, w1, w2, w3 = navigraph_data.widths[seg0], navigraph_data.widths[seg1], navigraph_data.widths[seg2], navigraph_data.widths[seg3]
-                width_cubic = OpenDrive_Exporter._fit_cubic(vec3(p0_3d.x, p0_3d.y, w0), vec3(p1_3d.x, p1_3d.y, w1), vec3(p2_3d.x, p2_3d.y, w2), vec3(p3_3d.x, p3_3d.y, w3), geodesic_length_2d)
+                width_cubic = OpenDriveExporter._fit_cubic(vec3(p0_3d.x, p0_3d.y, w0), vec3(
+                    p1_3d.x, p1_3d.y, w1), vec3(p2_3d.x, p2_3d.y, w2), vec3(p3_3d.x, p3_3d.y, w3), geodesic_length_2d)
 
                 # Compute the super-elevation cubic equation (explicit).
-                [roll0, roll1, roll2, roll3] = OpenDrive_Exporter._compute_roll_angles(navigraph_data, seg, i0, i1, i2, i3)
+                [roll0, roll1, roll2, roll3] = OpenDriveExporter._compute_roll_angles(
+                    navigraph_data, seg, i0, i1, i2, i3)
                 roll0 = math.pi / 4
                 roll1 = math.pi / 4
                 roll2 = math.pi / 4
                 roll3 = math.pi / 4
-                super_elev_cubic = OpenDrive_Exporter._fit_cubic(vec3(p0_3d.x, p0_3d.y, roll0), vec3(p1_3d.x, p1_3d.y, roll1), vec3(p2_3d.x, p2_3d.y, roll2), vec3(p3_3d.x, p3_3d.y, roll3), geodesic_length_2d)
+                super_elev_cubic = OpenDriveExporter._fit_cubic(vec3(p0_3d.x, p0_3d.y, roll0), vec3(
+                    p1_3d.x, p1_3d.y, roll1), vec3(p2_3d.x, p2_3d.y, roll2), vec3(p3_3d.x, p3_3d.y, roll3), geodesic_length_2d)
 
                 # Create the road section.
-                roads.append(Road(seg1, seg2, navigraph_data.coords3d[seg1], geodesic_length_2d, ref_line_cubic, elev_cubic, width_cubic, super_elev_cubic))
+                roads.append(Road(
+                    seg1, seg2, navigraph_data.coords3d[seg1], geodesic_length_2d, ref_line_cubic, elev_cubic, width_cubic, super_elev_cubic))
 
         # Create a map between junction key names and unique Id numbers.
-        junction_map = OpenDrive_Exporter._graph_key_to_junction_map(navigraph_data.graph, path_segments)
+        junction_map = OpenDriveExporter._graph_key_to_junction_map(navigraph_data.graph, path_segments)
 
         # Populate the remaining properties in the roads collection (successor road, predecessor road, junction, and contact point).
         for i in range(len(roads)):
@@ -339,13 +362,13 @@ class OpenDrive_Exporter:
         """
 
         # Get the navigraph data.
-        navigraph_data = Navigraph_Data(bng)
+        navigraph_data = NavigraphData(bng)
 
         # Compute all the individual path segments from the loaded map.
         path_segments = navigraph_data.compute_path_segments()
 
         # Get the road data.
-        road_data = OpenDrive_Exporter.compute_roads_and_junctions(navigraph_data, path_segments)
+        road_data = OpenDriveExporter.compute_roads_and_junctions(navigraph_data, path_segments)
 
         # Write the road network data to .xodr format (xml).
         date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -394,7 +417,8 @@ class OpenDrive_Exporter:
                 # Elevation data.
                 Ae, Be, Ce, De = r.elev_cubic.a, r.elev_cubic.b, r.elev_cubic.c, r.elev_cubic.d
                 f.write('\t\t<elevationProfile>\n')
-                f.write('\t\t\t<elevation s="0.0" a="' + str(Ae) + '" b="' + str(Be) + '" c="' + str(Ce) + '" d="' + str(De) + '"/>\n')
+                f.write('\t\t\t<elevation s="0.0" a="' + str(Ae) + '" b="' +
+                        str(Be) + '" c="' + str(Ce) + '" d="' + str(De) + '"/>\n')
                 f.write('\t\t</elevationProfile>\n')
 
                 # Super-elevation data (CURRENTLY NOT USED).
@@ -411,7 +435,8 @@ class OpenDrive_Exporter:
                 f.write('\t\t\t\t\t<lane id="1" type="driving" level="false">\n')
                 f.write('\t\t\t\t\t\t<link>\n')
                 f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) + '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
+                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) +
+                        '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
                 f.write('\t\t\t\t\t</lane>\n')
                 f.write('\t\t\t\t</left>\n')
                 f.write('\t\t\t\t<center>\n')
@@ -429,7 +454,8 @@ class OpenDrive_Exporter:
                 f.write('\t\t\t\t\t<lane id="-1" type="driving" level="false">\n')
                 f.write('\t\t\t\t\t\t<link>\n')
                 f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) + '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
+                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) +
+                        '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
                 f.write('\t\t\t\t\t</lane>\n')
                 f.write('\t\t\t\t</right>\n')
                 f.write('\t\t\t</laneSection>\n')

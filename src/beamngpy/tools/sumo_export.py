@@ -1,12 +1,13 @@
-from beamngpy.tools.navigraph_data import Navigraph_Data
+from beamngpy.tools.navigraph_data import NavigraphData
 
-__all__ = ['Sumo_Exporter']
+__all__ = ['SumoExporter']
 
 NUM_LANES = '2'                             # The number of lanes to use for roads in Sumo's roads.
 PRIORITY = '2'                              # The priority value to use, for all roads.
 SPEED = '14.0'                              # The speed value to use, for all roads.
 
-class Sumo_Exporter:
+
+class SumoExporter:
 
     @staticmethod
     def export(name, bng):
@@ -23,7 +24,7 @@ class Sumo_Exporter:
         """
 
         # Get the navigraph data.
-        navigraph_data = Navigraph_Data(bng)
+        navigraph_data = NavigraphData(bng)
 
         # Compute all the individual path segments from the loaded map.
         path_segments = navigraph_data.compute_path_segments()
@@ -44,7 +45,8 @@ class Sumo_Exporter:
         with open(node_file_name, 'w') as f:
             f.write('<nodes>\n')
             for n in nodes:
-                f.write('\t<node id="' + n[0] + '" x="' + str(n[1]) + '" y="' + str(n[2]) + '" z="' + str(n[3]) + '"/>\n')
+                f.write('\t<node id="' + n[0] + '" x="' + str(n[1]) +
+                        '" y="' + str(n[2]) + '" z="' + str(n[3]) + '"/>\n')
             f.write('</nodes>\n')
 
         # Write the edge data file ('<NAME>.edg.xml').
@@ -54,10 +56,12 @@ class Sumo_Exporter:
             f.write('<edges>\n')
             for e in edges:
                 # First, we create an edge from A to B.
-                f.write('\t<edge id="' + ('e' + str(ctr)) + '" from="' + str(e[0]) + '" to="' + str(e[1]) + '" priority="' + PRIORITY + '" numLanes="' + NUM_LANES + '" speed="' + SPEED + '"/>\n')
+                f.write('\t<edge id="' + ('e' + str(ctr)) + '" from="' + str(e[0]) + '" to="' + str(
+                    e[1]) + '" priority="' + PRIORITY + '" numLanes="' + NUM_LANES + '" speed="' + SPEED + '"/>\n')
                 ctr = ctr + 1
 
                 # Then, we create an edge from B to A.  This is how to produce bi-directional roads.  Silence this if one-way is preferred.
-                f.write('\t<edge id="' + ('e' + str(ctr)) + '" from="' + str(e[1]) + '" to="' + str(e[0]) + '" priority="' + PRIORITY + '" numLanes="' + NUM_LANES + '" speed="' + SPEED + '"/>\n')
+                f.write('\t<edge id="' + ('e' + str(ctr)) + '" from="' + str(e[1]) + '" to="' + str(
+                    e[0]) + '" priority="' + PRIORITY + '" numLanes="' + NUM_LANES + '" speed="' + SPEED + '"/>\n')
                 ctr = ctr + 1
             f.write('</edges>\n')
