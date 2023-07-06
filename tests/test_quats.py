@@ -2,16 +2,8 @@ from __future__ import annotations
 
 import socket
 
-import pytest
-
 from beamngpy import (BeamNGpy, Scenario, ScenarioObject, Vehicle,
                       angle_to_quat, set_up_simple_logging)
-
-
-@pytest.fixture()
-def beamng():
-    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
-    return beamng
 
 
 def test_quats(beamng: BeamNGpy):

@@ -77,8 +77,6 @@ class GEVehiclesApi(Api):
         data['config'] = cfg
         self._send(data)
         self._beamng.await_vehicle_spawn(self.vehicle.vid)
-        self.vehicle.close()
-        self.vehicle.connect(self._beamng)
 
     def set_license_plate(self, text: str) -> None:
         data: StrDict = dict(type='SetLicensePlate')

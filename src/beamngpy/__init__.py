@@ -9,8 +9,8 @@ import os
 
 from beamngpy.beamng import BeamNGpy
 from beamngpy.logging import config_logging, set_up_simple_logging
-from beamngpy.quat import angle_to_quat
-from beamngpy.vec3 import vec3
+from beamngpy.misc import vec3
+from beamngpy.misc.quat import angle_to_quat
 from beamngpy.scenario import Scenario, ScenarioObject, StaticObject
 from beamngpy.scenario.level import Level
 from beamngpy.scenario.procedural import (ProceduralBump, ProceduralCone,

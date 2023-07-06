@@ -8,6 +8,7 @@ from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
 from beamngpy.types import Color, Float3, Quat, StrDict
+from beamngpy.utils.validation import validate_object_name
 from beamngpy.vehicle.sensors import Sensors
 
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ class Vehicle:
             The API module to control the AI behavior of the vehicle.
             See :class:`.AIApi` for details.
         logging: LoggingApi
-            The API module to control the in-game logging behavior of the vehicle.
+            The API module to control the logging behavior of the vehicle inside the simulator.
             See :class:`.LoggingApi` for details.
     """
 
@@ -84,6 +85,7 @@ class Vehicle:
         self.logger.setLevel(DEBUG)
 
         self.vid = vid.replace(' ', '_')
+        validate_object_name(self.vid)
         self.model = model
 
         self.port = port
@@ -151,7 +153,7 @@ class Vehicle:
         return False
 
     def __str__(self) -> str:
-        return 'V:{}'.format(self.vid)
+        return f'V:{self.vid}'
 
     def is_connected(self) -> bool:
         """
@@ -454,13 +456,8 @@ class Vehicle:
 
         Args:
             pos: The target position as an (x,y,z) tuple containing world-space coordinates.
-            rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion
+            rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion.
             reset: Specifies if the vehicle will be reset to its initial state during teleport (including its velocity).
-
-        Notes:
-            The ``reset=False`` option is incompatible with setting rotation of
-            the vehicle. With the current implementation, it is not possible to
-            set the rotation of the vehicle and to keep its velocity during teleport.
         """
         return self._ge_api.teleport(pos, rot_quat, reset)
 

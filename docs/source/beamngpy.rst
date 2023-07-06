@@ -121,6 +121,18 @@ Advanced IMU
    :members:
    :undoc-members:
 
+Radar
+^^^^^
+.. autoclass:: beamngpy.sensors.Radar
+   :members:
+   :undoc-members:
+
+Mesh Sensor
+^^^^^^^^^^^
+.. autoclass:: beamngpy.sensors.Mesh
+   :members:
+   :undoc-members:
+
 Classical Sensors
 -----------------
 
@@ -169,19 +181,52 @@ Logging
 Tools
 =====
 
-.. autoclass:: beamngpy.tools.RoadNetworkExporter
+.. autoclass:: beamngpy.tools.OpenDriveExporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.OpenStreetMapExporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.SumoExporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.OpenDriveImporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.OpenStreetMapImporter
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.SumoImporter
    :members:
    :undoc-members:
 
 Miscellaneous
 =============
 
-Quaternions
------------
-
-.. automodule:: beamngpy.quat
+Colors
+------
+.. automodule:: beamngpy.misc.colors
    :members:
    :undoc-members:
+
+Quaternions
+-----------
+.. automodule:: beamngpy.misc.quat
+   :members:
+   :undoc-members:
+
+Vec3
+----
+.. automodule:: beamngpy.misc
+   :members:
+   :imported-members:
+   :undoc-members:
+   :show-inheritance:
 
 Types
 -----

@@ -6,12 +6,6 @@ from beamngpy import BeamNGpy, Scenario, Vehicle
 from beamngpy.logging import BNGValueError
 
 
-@pytest.fixture
-def beamng():
-    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
-    return beamng
-
-
 def test_multi_vehicle(beamng: BeamNGpy):
     """
     Test that a second client can connect to a running instance, check for

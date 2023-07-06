@@ -28,7 +28,7 @@ class ControlApi(Api):
         Args:
             count: The amount of steps to simulate.
             wait: Optional. Whether to wait for the steps to be
-                    simulated. Defaults to True.
+                  simulated. Defaults to True.
 
         Raises:
             BNGError: If the wait flag is set but the simulator doesn't respond
@@ -97,5 +97,8 @@ class ControlApi(Api):
         self._send(data).ack('ScenarioStopped')
 
     def quit_beamng(self) -> None:
+        """
+        Sends the quit request to the simulator, which also closes the process.
+        """
         data = dict(type='Quit')
         self._send(data).ack('Quit')

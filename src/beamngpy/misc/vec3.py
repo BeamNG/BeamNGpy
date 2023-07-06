@@ -3,7 +3,7 @@ import math
 
 class vec3:
     """
-    A class for storing vectors in R^3. Contains functions for operating within that vector space.
+    A class for storing vectors in :math:`R^3`. Contains functions for operating within that vector space.
     Can also be used as a vec2 class, since the z component is optional.
     """
 
@@ -115,13 +115,13 @@ class vec3:
 
     def distance(self, b) -> float:
         """
-        The L^2 (Euclidean) distance between this vector and a given vector. AKA the distance formula.
+        The :math:`L^2` (Euclidean) distance between this vector and a given vector. AKA the distance formula.
 
         Args:
             b: The given vector.
 
         Returns:
-            This L^2 (Euclidean) distance between the two vectors (a scalar value).
+            This :math:`L^2` (Euclidean) distance between the two vectors (a scalar value).
         """
         dx = b.x - self.x
         dy = b.y - self.y
@@ -130,7 +130,7 @@ class vec3:
 
     def length(self) -> float:
         """
-        The length (magnitude) of this vector. [ ie length := |vector| ]
+        The length (magnitude) of this vector. [ ie :math:`length := |vector|` ]
 
         Returns:
             The length of this vector (a scalar value).
@@ -139,7 +139,7 @@ class vec3:
 
     def normalize(self):
         """
-        Normalizes this vector so that it becomes unit length (length = 1).
+        Normalizes this vector so that it becomes unit length (:math:`length = 1`).
 
         Returns:
             The normalized vector.

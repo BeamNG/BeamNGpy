@@ -234,7 +234,7 @@ class Connection:
         Returns:
             The response received from the simulator as a dictionary.
         """
-        self.logger.debug(f'Sending message of type {req} to BeamNG.tech\'s game engine in blocking mode.')
+        self.logger.debug(f'Sending message of type {req} to BeamNG.tech\'s engine in blocking mode.')
         kwargs['type'] = req
         resp = self.send(kwargs).recv(type=req)
         self.logger.debug(f'Got response for message of type {req}.')

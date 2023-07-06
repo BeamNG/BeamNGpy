@@ -9,7 +9,7 @@ Basic ROS functionality are included i.e., sensors streaming, `Rviz <http://wiki
 
 - Installation Prerequisites:
 
-you must have the following softwares/packages installed i.e., `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_, `BeamNGpy <https://pypi.org/project/beamngpy/>`_,and `WSL2 <https://jack-kawell.com/2020/06/12/ros-wsl2/>`_.
+you must have the following softwares/packages installed i.e., `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_, `BeamNGpy <https://pypi.org/project/beamngpy/>`__,and `WSL2 <https://jack-kawell.com/2020/06/12/ros-wsl2/>`_.
 
 
 ROS packages
@@ -125,7 +125,7 @@ Using it will start up a node that connects to the simulation and starts up a sc
 Running BeamNG.Tech
 ^^^^^^^^^^^^^^^^^^^
 
-After installing `BeamNGpy <https://github.com/BeamNG/BeamNGpy>`_, and setup BeamNG.Tech, you can run BeamNG.py from the Powershell as shown in the picture below.
+After installing `BeamNGpy <https://github.com/BeamNG/BeamNGpy>`__, and setup BeamNG.Tech, you can run BeamNG.py from the Powershell as shown in the picture below.
 
 .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/bngpy.png
   :width: 800

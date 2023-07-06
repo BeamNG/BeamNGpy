@@ -67,7 +67,7 @@ class Sensor(dict):
         Called to retrieve this sensor's data request to the engine as a
         dictionary. The dictionary returned by this method will be bundled
         along the vehicle's other sensors' requests as a SensorRequest to the
-        game's engine.
+        simulator's engine.
 
         Note:
             Sensors require corresponding code in the simulator to handle

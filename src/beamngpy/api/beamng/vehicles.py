@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List
 
+from beamngpy.misc.colors import coerce_color, rgba_to_str
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
-from beamngpy.vehicle.colors import coerce_vehicle_color, rgba_to_str
 
 from .base import Api
 
@@ -53,7 +53,7 @@ class VehiclesApi(Api):
         data['rot'] = rot_quat
         for color in ('color', 'color2', 'color3'):
             if data[color] is not None:
-                data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
+                data[color] = rgba_to_str(coerce_color(data[color]))
 
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success']:
@@ -96,7 +96,7 @@ class VehiclesApi(Api):
         data['replace_vid'] = old_vehicle.vid if isinstance(old_vehicle, Vehicle) else old_vehicle
         for color in ('color', 'color2', 'color3'):
             if data[color] is not None:
-                data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
+                data[color] = rgba_to_str(coerce_color(data[color]))
 
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success'] and connect:

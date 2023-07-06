@@ -19,7 +19,7 @@ from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.quat import quat_as_rotation_mat_str
+from beamngpy.misc.quat import quat_as_rotation_mat_str
 from beamngpy.scenario.road import DecalRoad
 from beamngpy.scenario.scenario_object import ScenarioObject, SceneObject
 from beamngpy.types import Float3, Quat, StrDict
@@ -52,9 +52,18 @@ class Scenario:
                 as a string or as an instance of :class:`.Level`
         name: The name of this scenario. Should be unique for the
                     level it's taking place in to avoid file collisions.
+        path: The path to an already existing scenario file (relative to
+              the home folder / user folder). If set, then :func:`Scenario.make`
+              should not be called, as the scenario is already made.
+        human_name: The human-readable name of the scenario. If None, it
+                    will be set to ``name``.
+        description: The description of the scenario displayed in the simulator.
+        difficulty: The difficulty of the scenario displayed in the simulator.
+        authors: Names of the authors. Defaults to ``BeamNGpy``.
+        options: Other pptions of the scenario object, not used at the moment.
     """
 
-    game_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
+    scenetree_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
         'MissionGroup': lambda d: SceneObject(d),
         'DecalRoad': lambda d: DecalRoad(d),
     }
@@ -83,10 +92,16 @@ class Scenario:
 
         return scenario
 
-    def __init__(self, level: str | Level, name: str, path: str | None = None, **options: Any):
+    def __init__(self, level: str | Level, name: str, path: str | None = None,
+                 human_name: str | None = None, description: str | None = None,
+                 difficulty: int = 0, authors: str = 'BeamNGpy', **options: Any):
         self.level = level
         self.name = name
         self.path = path
+        self.human_name = human_name if human_name is not None else self.name
+        self.description = description
+        self.difficulty = difficulty
+        self.authors = authors
         self.options = options
 
         self.vehicles: Dict[str, Vehicle] = {}
@@ -143,12 +158,13 @@ class Scenario:
             Dictionary of information to write into the scenario files of the
             simulator.
         """
-        info: StrDict = dict()
-        info['name'] = self.options.get('human_name', self.name)
-        info['description'] = self.options.get('description', None)
-        info['difficulty'] = self.options.get('difficulty', 0)
-        info['authors'] = self.options.get('authors', 'BeamNGpy')
-        info['lapConfig'] = self.checkpoints
+        info: StrDict = dict(
+            name=self.human_name,
+            description=self.description,
+            difficulty=self.difficulty,
+            authors=self.authors,
+            lapConfig=self.checkpoints
+        )
 
         vehicles_dict = dict()
         for vid in self.vehicles:
@@ -338,7 +354,7 @@ class Scenario:
             vehicle_id: The ID of the vehicle to find.
 
         Returns:
-            The :class:`.Vehicle` with the given ID. None if it wasn't found.
+            The :class:`.Vehicle` with the given ID. ``None`` if it wasn't found.
         """
         if vehicle_id in self.vehicles:
             return self.vehicles[vehicle_id]
@@ -435,8 +451,8 @@ class Scenario:
         assert self.bng
         data = self.bng._message('GetObject', id=obj['id'])
         clazz = data['class']
-        if clazz in Scenario.game_classes:
-            converted = Scenario.game_classes[clazz](data)
+        if clazz in Scenario.scenetree_classes:
+            converted = Scenario.scenetree_classes[clazz](data)
         else:
             converted = SceneObject(data)
 
@@ -459,15 +475,17 @@ class Scenario:
         assert scenetree['class'] == 'SimGroup'
         self.scene = self._convert_scene_object(scenetree)
 
-    def connect(self, bng: BeamNGpy, connect_existing: bool = True) -> None:
+    def connect(self, bng: BeamNGpy, connect_player: bool = True, connect_existing: bool = True) -> None:
         """
         Connects this scenario to the simulator, hooking up any cameras to
         their counterpart in the simulator.
 
         Args:
             bng: The BeamNGpy instance to generate the scenario for.
-            connect_existing: Whether vehicles spawned already in the scenario
-                              should be connected to this (:class:``.Scenario``) instance.
+            connect_player: Whether the player vehicle should be connected
+                            to this (:class:``.Scenario``) instance. Defaults to True.
+            connect_existing: Whether ALL vehicles spawned already in the scenario should be connected
+                              to this (:class:``.Scenario``) instance. Defaults to True.
         """
         self.bng = bng
 
@@ -475,12 +493,17 @@ class Scenario:
         for mesh in self.proc_meshes.values():
             mesh.place(self.bng)
 
-        if connect_existing:
+        if connect_existing or connect_player:
             self._load_existing_vehicles()
+        try:
+            player_vid = bng.vehicles.get_player_vehicle_id()['vid']
+        except BNGError:
+            player_vid = None
 
         self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
         for vehicle in self.vehicles.values():
-            vehicle.connect(bng)
+            if connect_existing or (connect_player and vehicle.vid == player_vid):
+                vehicle.connect(bng)
 
         self.logger.info(f'Connected to scenario: {self.name}')
 
