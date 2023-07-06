@@ -15,7 +15,7 @@ Version 1.26.1
 
 - BeamNGpy fixes / improvements
 
-  - Improved/added `documentation <https://beamngpy.readthedocs.io/en/latest/>__`
+  - Improved/added documentation
 
     - ``Scenario`` class now has all parameters documented.
     - ``BeamNGpy.debug`` API methods are now documented
