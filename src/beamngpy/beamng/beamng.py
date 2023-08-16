@@ -48,7 +48,6 @@ class BeamNGpy:
         user: Additional optional user path to set. This path can be
               used to set where custom files created during executions
               will be placed if the home folder shall not be touched.
-        remote: Deprecated. The value of this argument is not used anymore.
         quit_on_close: Whether the simulator should be closed when :func:`close()` is called.
                        Defaults to True.
         crash_lua_on_error: If True, then sets BeamNG to not respond to BeamNGpy requests when a Lua error
@@ -88,12 +87,7 @@ class BeamNGpy:
     """
 
     def __init__(self, host: str, port: int, home: str | None = None, binary: str | None = None,
-                 user: str | None = None, remote: bool | None = None, quit_on_close: bool = True,
-                 crash_lua_on_error: bool | None = None):
-        if remote is not None:
-            create_warning('The `remote` argument is deprecated and its value is not used anymore.',
-                           DeprecationWarning)
-
+                 user: str | None = None, quit_on_close: bool = True, crash_lua_on_error: bool | None = None):
         self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
         self.logger.setLevel(logging.DEBUG)
         self.host = host
@@ -124,7 +118,8 @@ class BeamNGpy:
         return self._tech_enabled
 
     def open(self, extensions: List[str] | None = None, *args: str,
-             launch: bool = True, crash_lua_on_error: bool | None = None, **opts: str) -> BeamNGpy:
+             launch: bool = True, crash_lua_on_error: bool | None = None,
+             listen_ip: str = '127.0.0.1', **opts: str) -> BeamNGpy:
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the spawned BeamNG.* process to connect.
         This method blocks until the process started and is ready.
@@ -137,6 +132,8 @@ class BeamNGpy:
                                 happens and prints the stacktrace instead.
                                 Is applicable only when the process is launched by this instance of BeamNGpy,
                                 as it sets a launch argument of the process. Defaults to False.
+            bind_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
+                     Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
         """
         self.connection = Connection(self.host, self.port)
 
@@ -154,6 +151,7 @@ class BeamNGpy:
                 arg_list.append('-tcom-debug')
             elif crash_lua_on_error == False:
                 arg_list.append('-no-tcom-debug')
+            arg_list.extend(('-tcom-listen-ip', listen_ip))
 
             self._start_beamng(extensions, *arg_list, **opts)
             sleep(10)
