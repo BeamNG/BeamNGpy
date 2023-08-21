@@ -8,7 +8,7 @@ from xml.etree.ElementTree import Element, SubElement
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from beamngpy.logging import BNGValueError
+from beamngpy.logging import BNGValueError, create_warning
 from beamngpy.types import Int3, StrDict
 
 
@@ -20,6 +20,7 @@ def extract_bounding_boxes(semantic_image: Image.Image, instance_image: Image.Im
         raise BNGValueError('Error - The given semantic and instance annotation images have different resolutions.')
 
     bounding_boxes: Dict[int, StrDict] = {}
+    issued_warning = False
     for y in range(semantic_data.shape[0]):
         for x in range(semantic_data.shape[1]):
             colour = instance_data[y, x]
@@ -29,7 +30,11 @@ def extract_bounding_boxes(semantic_image: Image.Image, instance_image: Image.Im
 
             clazz = semantic_data[y, x]
             clazz_key = clazz[0] * 65536 + clazz[1] * 256 + clazz[2]
-            if classes[clazz_key] == 'BACKGROUND':
+            if not issued_warning and clazz_key not in classes:
+                create_warning(
+                    f'The color ({clazz[0]}, {clazz[1]}, {clazz[2]}) was not found in the class mapping. This may mean that the annotation image is corrupted or that there is a bug in the annotation system.')
+                issued_warning = True
+            if classes.get(clazz_key, 'BACKGROUND') == 'BACKGROUND':
                 continue
 
             if colour_key in bounding_boxes:
