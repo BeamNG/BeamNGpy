@@ -224,16 +224,14 @@ class Camera:
         Returns:
             The processed intensity values in the range [0, 255].
         """
-        # Sort the depth values, and cache the sorting map.
-        sort_index = np.argsort(raw_depth_values)
-        s_data = raw_depth_values[sort_index]
-
+        # Sort the depth values.
+        s_data = np.sort(raw_depth_values)
         # Compute an array of unique depth values, sensitive to some epsilon.
         eps = 0.01
         rounded_depth = (s_data * (1 // eps)).astype(np.int32)
         _, indices = np.unique(rounded_depth, return_index=True)
         unique = s_data[indices]
-
+        
         # Distribute (mark) the individual intensity values throughout the sorted unique distance array.
         intensity_marks = np.empty((256, ))
         intensity_marks[0] = 0
@@ -242,17 +240,9 @@ class Camera:
         quantiles = quantiles.astype(np.int32)
         intensity_marks[1:255] = unique[quantiles]
 
-        # In the sorted depth values array, convert the depth value array into intensity values.
-        depth_intensity_sorted = np.zeros_like(s_data)
-        last_idx = 0
-        for i in range(1, 256):
-            idx = np.searchsorted(s_data[last_idx:], intensity_marks[i], 'left') + 1 + last_idx
-            depth_intensity_sorted[last_idx:idx] = i - 1
-            last_idx = idx
+        # Convert the depth value array into intensity values.
+        depth_intensity = np.digitize(raw_depth_values, intensity_marks, right=True)
 
-        # Re-map the depth values back to their original order.
-        depth_intensity = np.empty_like(s_data)
-        depth_intensity[sort_index] = depth_intensity_sorted
         if self.is_depth_inverted:
             depth_intensity = 255 - depth_intensity
 
