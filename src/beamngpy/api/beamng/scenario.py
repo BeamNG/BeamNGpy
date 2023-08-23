@@ -35,7 +35,7 @@ class ScenarioApi(Api):
         levels = {l.name: l for l in levels}
         return levels
 
-    def get_scenarios(self, levels: Dict[str, Level] | None = None) -> Dict[str, Scenario]:
+    def get_scenarios(self, levels: Dict[str, Level] | None = None) -> Dict[str, List[Scenario]]:
         """
         Queries the available scenarios and returns them as a mapping of
         paths to :class:`.Scenario` instances. The scenarios are constructed
@@ -46,35 +46,47 @@ class ScenarioApi(Api):
         Args:
             levels: A dictionary of level names to :class:`.Level`
                     instances to fill in the parent level of returned
-                    scenarios.
+                    scenarios. If None, scenarios from all levels
+                    will be returned.
 
         Returns:
-            A mapping of scenario paths to their corresponding
-            :class:`.Scenario` instance.
+            A mapping of level names to lists of :class:`.Scenario` instances.
         """
         if levels is None:
             levels = self.get_levels()
+        # allow case-independent level names in the scenarios
+        levels_lower = {name.lower(): name for name in levels.keys()}
 
         scenarios = self._message('GetScenarios')
-        scenarios = [Scenario.from_dict(s) for s in scenarios]
-        scenarios = {str(s.path): s for s in scenarios if s.level in levels.keys()}
-        for _, scenario in scenarios.items():
-            assert isinstance(scenario.level, str)
-            scenario.level = levels[scenario.level]
+        scenarios_levels = {'unknown': []}
 
-        return scenarios
+        for path, s in scenarios.items():
+            scenario = Scenario.from_dict(s)
+            level_name = str(scenario.level)
+            level_lower = level_name.lower()
+            if not level_lower in levels_lower:
+                continue
+            scenario.level = levels[levels_lower[level_lower]]
 
-    def get_level_scenarios(self, level: str | Level) -> Dict[str, Scenario]:
+            if not level_name in scenarios_levels:
+                scenarios_levels[level_name] = []
+            scenarios_levels[level_name].append(scenario)
+
+        if not scenarios_levels['unknown']:
+            del scenarios_levels['unknown']
+
+        return scenarios_levels
+
+    def get_level_scenarios(self, level: str | Level) -> List[Scenario]:
         """
         Queries the simulator for all scenarios available in the  given level.
 
         Args:
             level: The level to get scenarios for. Can either be the name of
-                    the level as a string or an instance of :class:`.Level`
+                    the level as a string or an instance of :class:`.Level`.
 
         Returns:
-            A mapping of scenario paths to their corresponding
-            :class:`.Scenario` instance.
+            A list of :class:`.Scenario` instances.
         """
         level_name = None
         if isinstance(level, Level):
@@ -82,16 +94,9 @@ class ScenarioApi(Api):
         else:
             level_name = level
 
-        scenarios = self._message('GetScenarios')
-        scenarios = [Scenario.from_dict(s) for s in scenarios]
-        scenarios = {str(s.path): s for s in scenarios if s.level == level_name}
+        return self.get_scenarios().get(level_name, [])
 
-        for scenario in scenarios.values():
-            scenario.level = level
-
-        return scenarios
-
-    def get_levels_and_scenarios(self) -> Tuple[Dict[str, Level], Dict[str, Scenario]]:
+    def get_levels_and_scenarios(self) -> Tuple[Dict[str, Level], Dict[str, List[Scenario]]]:
         """
         Utility method that retrieves all levels and scenarios and returns
         them as a tuple of (levels, scenarios).
@@ -102,19 +107,19 @@ class ScenarioApi(Api):
         levels = self.get_levels()
         scenarios = self.get_scenarios(levels=levels)
 
-        for scenario in scenarios.values():
-            assert isinstance(scenario.level, Level)
-            level_scenarios = scenario.level.scenarios
-            level_scenarios[scenario.path] = scenario
-
         return levels, scenarios
 
-    def get_current(self, levels: Dict[str, Level] | None = None) -> Scenario:
+    def get_current(self, levels: Dict[str, Level] | None = None,
+                    connect: bool = True) -> Scenario:
         """
         Queries the currently loaded scenario from the simulator.
 
         Args:
-            levels: A mapping of level names to :class:`.Level` instances
+            levels: A mapping of level names to :class:`.Level` instances.
+            connect: Whether to connect the returned scenario and the currently
+                     loaded vehicles to BeamNGpy. Defaults to True. If set to
+                     False, you can still manually connect the returned scenario
+                     by running :func:`.Scenario.connect`.
 
         Returns:
             A :class:`.Scenario` instance of the currently-loaded scenario. If
@@ -127,9 +132,11 @@ class ScenarioApi(Api):
             raise BNGValueError('The current scenario could not be retrieved.')
         scenario = Scenario.from_dict(scenario)
 
-        if levels is not None:
-            if scenario.level in levels:
-                scenario.level = levels[scenario.level]
+        if levels and scenario.level in levels:
+            scenario.level = levels[scenario.level]
+
+        if connect:
+            scenario.connect(self._beamng)
 
         return scenario
 

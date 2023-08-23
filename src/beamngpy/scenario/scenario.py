@@ -73,6 +73,9 @@ class Scenario:
         if 'sourceFile' in d:
             path = d['sourceFile']
             del d['sourceFile']
+        elif 'scenarioName' in d:  # mission file
+            path = '/gameplay/missions/' + d['scenarioName'] + '/info.json'
+            del d['scenarioName']
         else:
             path = None
 
@@ -80,7 +83,10 @@ class Scenario:
             level = d['levelName']
             del d['levelName']
         else:
-            level = 'unknown'
+            try:
+                level = d['map'].split('.')[1]
+            except:
+                level = 'unknown'
 
         if 'name' in d:
             name = d['name']
@@ -121,6 +127,9 @@ class Scenario:
 
         self.logger = getLogger(f'{LOGGER_ID}.Scenario')
         self.logger.setLevel(DEBUG)
+
+    def __repr__(self):
+        return f'<Scenario (level=\'{self.level}\', name=\'{self.human_name}\', path=\'{self.path}\')>'
 
     def _get_objects_list(self) -> List[StrDict]:
         """
@@ -200,9 +209,8 @@ class Scenario:
             vehicle_dict['rotationMatrix'] = quat_as_rotation_mat_str(rot)
             vehicles.append(vehicle_dict)
         vehicles = sorted(vehicles, key=lambda v: v['vid'])
-        vehicle_names = list(self.vehicles.keys())
         self.logger.debug(f'The scenario {self.name} has {len(vehicles)} '
-                          f'vehicles: {", ".join(vehicle_names)}')
+                          f'vehicles: {", ".join(self.vehicles.keys())}')
         return vehicles
 
     def _get_roads_list(self) -> List[StrDict]:
@@ -477,8 +485,7 @@ class Scenario:
 
     def connect(self, bng: BeamNGpy, connect_player: bool = True, connect_existing: bool = True) -> None:
         """
-        Connects this scenario to the simulator, hooking up any cameras to
-        their counterpart in the simulator.
+        Connects this scenario to the simulator.
 
         Args:
             bng: The BeamNGpy instance to generate the scenario for.
