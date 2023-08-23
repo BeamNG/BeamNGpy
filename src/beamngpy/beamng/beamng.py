@@ -332,12 +332,9 @@ class BeamNGpy:
         for arg in args:
             call.append(arg)
 
-        call_opts = {'physicsfps': '4000', 'lua': lua}
+        call_opts = {'lua': lua}
         if 'lua' in usr_opts.keys():
             call_opts['lua'] = usr_opts['lua']
-
-        if 'physicsfps' in usr_opts.keys():
-            call_opts['physicsfps'] = usr_opts['physicsfps']
 
         for key, val in call_opts.items():
             call.extend(['-' + key, val])
