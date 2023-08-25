@@ -79,14 +79,14 @@ class Scenario:
         else:
             path = None
 
-        if 'levelName' in d:
+        if 'level' in d:
+            level = Level.from_dict(d['level'])
+            del d['level']
+        elif 'levelName' in d:
             level = d['levelName']
             del d['levelName']
         else:
-            try:
-                level = d['map'].split('.')[1]
-            except:
-                level = 'unknown'
+            level = 'unknown'
 
         if 'name' in d:
             name = d['name']
@@ -129,7 +129,7 @@ class Scenario:
         self.logger.setLevel(DEBUG)
 
     def __repr__(self):
-        return f'<Scenario (level=\'{self.level}\', name=\'{self.human_name}\', path=\'{self.path}\')>'
+        return f'<Scenario(level=\'{self.level}\', name=\'{self.human_name}\', path=\'{self.path}\')>'
 
     def _get_objects_list(self) -> List[StrDict]:
         """
