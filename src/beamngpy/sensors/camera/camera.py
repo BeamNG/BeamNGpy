@@ -10,7 +10,8 @@ from PIL import Image
 
 import beamngpy.sensors.shmem as shmem
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.sensors.communication_utils import (send_sensor_request, set_sensor)
+from beamngpy.sensors.communication_utils import (send_sensor_request,
+                                                  set_sensor)
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 
 from . import utils
@@ -231,7 +232,7 @@ class Camera:
         rounded_depth = (s_data * (1 // eps)).astype(np.int32)
         _, indices = np.unique(rounded_depth, return_index=True)
         unique = s_data[indices]
-        
+
         # Distribute (mark) the individual intensity values throughout the sorted unique distance array.
         intensity_marks = np.empty((256, ))
         intensity_marks[0] = 0
@@ -241,7 +242,7 @@ class Camera:
         intensity_marks[1:255] = unique[quantiles]
 
         # Convert the depth value array into intensity values.
-        depth_intensity = np.digitize(raw_depth_values, intensity_marks, right=True)
+        depth_intensity = np.digitize(raw_depth_values, intensity_marks, right=True).astype(np.int32)
 
         if self.is_depth_inverted:
             depth_intensity = 255 - depth_intensity
