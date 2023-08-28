@@ -61,20 +61,21 @@ def compute_rotation_matrix(quat: Quat) -> ndarray:
     return rot_mat
 
 
-def quat_as_rotation_mat_str(quat: Quat) -> str:
+def quat_as_rotation_mat_str(quat: Quat, delimiter: str = ' ') -> str:
     """
     For a given quaternion, the function computes the corresponding rotation
     matrix and converts it into a string.
 
     Args:
         quat: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
+        delimiter: The string with which the elements of the matrix are divided.
 
     Returns:
         Rotation matrix as a string.
     """
     mat = compute_rotation_matrix(quat)
     mat = mat.reshape(9).astype(str)
-    return ' '.join(mat)
+    return delimiter.join(mat)
 
 
 def quat_multiply(a: Quat, b: Quat) -> Quat:

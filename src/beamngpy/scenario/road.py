@@ -5,6 +5,7 @@ from typing import List
 from beamngpy.logging import BNGValueError
 from beamngpy.scenario.scenario_object import SceneObject
 from beamngpy.types import Float3, Float4, Float5, StrDict
+from beamngpy.utils.id import get_uuid
 
 
 class Road:
@@ -30,6 +31,10 @@ class Road:
                             road's nodes.
         default_width: Default width of the road nodes.
     """
+
+    @property
+    def _uuid(self):
+        return get_uuid(f'Road_{self.rid}')
 
     def __init__(self, material: str, rid: str | None = None, interpolate: bool = True, default_width: float = 10.0,
                  drivability: int = 1, one_way: bool = False, flip_direction: bool = False, over_objects: bool = True,
@@ -101,6 +106,10 @@ class MeshRoad:
         default_width: Default width of the road nodes.
         default_depth: Default depth of the road nodes.
     """
+
+    @property
+    def _uuid(self):
+        return get_uuid(f'MeshRoad_{self.rid}')
 
     def __init__(self, top_material: str, bottom_material: str | None = None, side_material: str | None = None, rid: str |
                  None = None, default_width: float = 10.0, default_depth: float = 5.0, texture_length: float = 5,

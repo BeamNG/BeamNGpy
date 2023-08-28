@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from beamngpy.types import Float3, Quat, StrDict
+from beamngpy.utils.id import get_uuid
 from beamngpy.utils.validation import validate_object_name
 
 if TYPE_CHECKING:
@@ -25,6 +26,10 @@ class ScenarioObject:
         scale: defining the scale along the x,y, and z axis.
         rot_quat: Quaternion describing the initial orientation. Defaults to None.
     """
+
+    @property
+    def _uuid(self):
+        return get_uuid(f'{self.__class__.__name__}_{self.id}')
 
     @staticmethod
     def from_game_dict(d: StrDict) -> ScenarioObject:
@@ -134,9 +139,7 @@ class SceneObject:
         return hash(self.id)
 
     def __str__(self) -> str:
-        s = '{} [{}:{}] @ ({:5.2f}, {:5.2f}, {:5.2f})'
-        s = s.format(self.type, self.id, self.name, *self.pos)
-        return s
+        return f'{self.type} [{self.id}:{self.name}] @ ({self.pos[0]:5.2f}, {self.pos[1]:5.2f}, {self.pos[2]:5.2f})'
 
     def __repr__(self) -> str:
         return str(self)

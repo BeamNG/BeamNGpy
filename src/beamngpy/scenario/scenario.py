@@ -13,16 +13,18 @@ from __future__ import annotations
 
 import copy
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Tuple
 
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
+from beamngpy.misc.colors import coerce_color
 from beamngpy.misc.quat import quat_as_rotation_mat_str
 from beamngpy.scenario.road import DecalRoad
 from beamngpy.scenario.scenario_object import ScenarioObject, SceneObject
 from beamngpy.types import Float3, Quat, StrDict
+from beamngpy.utils.id import get_uuid
 from beamngpy.vehicle import Vehicle
 
 from .level import Level
@@ -36,6 +38,10 @@ TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
 
 module_logger = getLogger(f'{LOGGER_ID}.scenario')
 module_logger.setLevel(DEBUG)
+
+
+def _list_to_str(list: Iterable[Any]) -> str:
+    return '[' + ', '.join([str(p) for p in list]) + ']'
 
 
 class Scenario:
@@ -98,6 +104,10 @@ class Scenario:
 
         return scenario
 
+    @property
+    def _uuid(self):
+        return get_uuid(f'Scenario_{self.name}')
+
     def __init__(self, level: str | Level, name: str, path: str | None = None,
                  human_name: str | None = None, description: str | None = None,
                  difficulty: int = 0, authors: str = 'BeamNGpy', **options: Any):
@@ -145,13 +155,13 @@ class Scenario:
             obj_dict: StrDict = dict(type=obj.type, id=obj.id)
             obj_dict['options'] = copy.deepcopy(obj.opts)
 
-            pos_str = '{} {} {}'.format(*obj.pos)
             assert isinstance(obj.rot, tuple)
-            rot_mat = quat_as_rotation_mat_str(obj.rot)
-            scale_str = '{} {} {}'.format(*obj.scale)
-            obj_dict['options']['position'] = pos_str
-            obj_dict['options']['rotationMatrix'] = rot_mat
-            obj_dict['options']['scale'] = scale_str
+            for option in obj_dict['options']:
+                if isinstance(obj_dict[option], str):
+                    obj_dict[option] = '"' + obj_dict[option] + '"'
+            obj_dict['options']['position'] = _list_to_str(obj.pos)
+            obj_dict['options']['rotationMatrix'] = '[' + quat_as_rotation_mat_str(obj.rot, ', ') + ']'
+            obj_dict['options']['scale'] = _list_to_str(obj.scale)
 
             objs.append(obj_dict)
         self.logger.debug(f'The scenario {self.name} has {len(objs)} '
@@ -186,8 +196,7 @@ class Scenario:
             vehicles_dict[self._focus_vehicle]['startFocus'] = True
 
         info['vehicles'] = vehicles_dict
-        info['prefabs'] = ['levels/{}/scenarios/{}.prefab'.format(self.level,
-                                                                  self.name)]
+        info['prefabs'] = [f'levels/{self.level}/scenarios/{self.name}.prefab.json']
 
         return info
 
@@ -205,8 +214,13 @@ class Scenario:
             pos, rot = self._vehicle_locations[vid]
             vehicle_dict = dict(vid=vid)
             vehicle_dict.update(vehicle.options)
-            vehicle_dict['position'] = ' '.join([str(p) for p in pos])
-            vehicle_dict['rotationMatrix'] = quat_as_rotation_mat_str(rot)
+            vehicle_dict['position'] = _list_to_str(pos)
+            vehicle_dict['rotationMatrix'] = '[' + quat_as_rotation_mat_str(rot, ', ') + ']'
+            vehicle_dict['_uuid'] = vehicle._uuid
+            if vehicle_dict['color'] is None:
+                del vehicle_dict['color']
+            else:
+                vehicle_dict['color'] = _list_to_str(coerce_color(vehicle_dict['color']))
             vehicles.append(vehicle_dict)
         vehicles = sorted(vehicles, key=lambda v: v['vid'])
         self.logger.debug(f'The scenario {self.name} has {len(vehicles)} '
@@ -225,6 +239,8 @@ class Scenario:
         for idx, road in enumerate(self.roads):
             road_dict = dict(**road.__dict__)
             road_dict['road_id'] = f'beamngpy_road_{self.name}_{idx:03}' if road.rid is None else road.rid
+            road.rid = road_dict['road_id']
+            road_dict['_uuid'] = road._uuid
             road_dict['render_priority'] = idx
 
             ret.append(road_dict)
@@ -244,6 +260,8 @@ class Scenario:
         for idx, road in enumerate(self.mesh_roads):
             road_dict = dict(**road.__dict__)
             road_dict['road_id'] = f'beamngpy_mesh_road_{self.name}_{idx:03}' if road.rid is None else road.rid
+            road.rid = road_dict['road_id']
+            road_dict['_uuid'] = road._uuid
             road_dict['render_priority'] = idx
 
             ret.append(road_dict)
@@ -259,14 +277,16 @@ class Scenario:
         Returns:
             Prefab code for the simulator.
         """
-        template = TEMPLATE_ENV.get_template('prefab')
+        template = TEMPLATE_ENV.get_template('prefab.json')
 
         vehicles = self._get_vehicles_list()
         roads = self._get_roads_list()
         mesh_roads = self._get_mesh_roads_list()
         objs = self._get_objects_list()
 
-        return template.render(vehicles=vehicles, roads=roads, mesh_roads=mesh_roads, objects=objs)
+        prefab = template.render(scenario=self, vehicles=vehicles, roads=roads, mesh_roads=mesh_roads, objects=objs)
+        prefab = prefab.replace('\n', '').replace('|---|', '\n')
+        return prefab
 
     def _get_level_name(self) -> str:
         if isinstance(self.level, Level):
@@ -535,7 +555,8 @@ class Scenario:
         self.logger.debug(f'Generated prefab:\n{prefab}\n')
         self.logger.debug(f'Generated scenarios info dict:\n{info}\n')
 
-        self.path = bng._message('CreateScenario', level=level_name, name=self.name, prefab=prefab, info=info)
+        self.path = bng._message('CreateScenario', level=level_name, name=self.name,
+                                 prefab=prefab, info=info, json=True)
 
     def find(self, bng: BeamNGpy) -> str | None:
         """
@@ -550,9 +571,9 @@ class Scenario:
             simulator as a string. None if it could not be found.
         """
         scenarios = bng.scenario.get_level_scenarios(self.level)
-        for path, scenario in scenarios.items():
+        for scenario in scenarios:
             if scenario.name == self.name and scenario.level == self.level:
-                self.path = path
+                self.path = scenario.path
                 return self.path
         return None
 
