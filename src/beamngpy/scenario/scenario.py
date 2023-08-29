@@ -154,12 +154,13 @@ class Scenario:
         objs: List[StrDict] = list()
         for obj in self.objects:
             obj_dict: StrDict = dict(type=obj.type, id=obj.id)
+            obj_dict['_uuid'] = obj._uuid
             obj_dict['options'] = copy.deepcopy(obj.opts)
 
             assert isinstance(obj.rot, tuple)
             for option in obj_dict['options']:
-                if isinstance(obj_dict[option], str):
-                    obj_dict[option] = '"' + obj_dict[option] + '"'
+                if isinstance(obj_dict['options'][option], str):
+                    obj_dict['options'][option] = '"' + obj_dict['options'][option] + '"'
             obj_dict['options']['position'] = _list_to_str(obj.pos)
             obj_dict['options']['rotationMatrix'] = '[' + quat_as_rotation_mat_str(obj.rot, ', ') + ']'
             obj_dict['options']['scale'] = _list_to_str(obj.scale)

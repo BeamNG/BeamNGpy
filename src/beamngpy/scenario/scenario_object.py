@@ -29,7 +29,7 @@ class ScenarioObject:
 
     @property
     def _uuid(self):
-        return get_uuid(f'{self.__class__.__name__}_{self.id}')
+        return get_uuid(f'{self.type}_{self.id}')
 
     @staticmethod
     def from_game_dict(d: StrDict) -> ScenarioObject:
