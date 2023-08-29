@@ -24,7 +24,7 @@ from beamngpy.misc.quat import quat_as_rotation_mat_str
 from beamngpy.scenario.road import DecalRoad
 from beamngpy.scenario.scenario_object import ScenarioObject, SceneObject
 from beamngpy.types import Float3, Quat, StrDict
-from beamngpy.utils.id import get_uuid
+from beamngpy.utils.prefab import bool_to_str, get_uuid
 from beamngpy.vehicle import Vehicle
 
 from .level import Level
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from beamngpy.scenario.road import MeshRoad, Road
 
 TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
+TEMPLATE_ENV.filters['bool'] = bool_to_str
 
 module_logger = getLogger(f'{LOGGER_ID}.scenario')
 module_logger.setLevel(DEBUG)

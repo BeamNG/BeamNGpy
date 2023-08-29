@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from beamngpy.types import Float3, Quat, StrDict
-from beamngpy.utils.id import get_uuid
+from beamngpy.utils.prefab import get_uuid
 from beamngpy.utils.validation import validate_object_name
 
 if TYPE_CHECKING:

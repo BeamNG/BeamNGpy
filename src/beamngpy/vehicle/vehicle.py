@@ -8,7 +8,7 @@ from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
 from beamngpy.types import Color, Float3, Quat, StrDict
-from beamngpy.utils.id import get_uuid
+from beamngpy.utils.prefab import get_uuid
 from beamngpy.utils.validation import validate_object_name
 from beamngpy.vehicle.sensors import Sensors
 
