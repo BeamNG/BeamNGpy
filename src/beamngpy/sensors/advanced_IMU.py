@@ -21,12 +21,6 @@ class AdvancedIMU:
     This sensor must be attached to a vehicle; it cannot be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
     A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
     will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
-    We can set this sensor to poll the send data back in two modes:
-    i) immediate mode: data is sent back as soon as it is available (single readings arrive instantly) - this method is suitable when working with
-    tightly-coupled systems requiring fast feedback, or
-    ii) post-processing mode: we can set it to send the data back in bulk on the simulations graphics step - this method is appropriate for the case when the
-    user wishes simply to post-process the data (such as for plotting graphs etc) and is also more efficient. In this case, the returned data will contain all
-    the individual samples which were measured in the simulations physics step, so the data is the same as in mode i); it just arrives later, in bulk.
 
     Args:
         name: A unique name for this advanced IMU sensor.
@@ -37,8 +31,10 @@ class AdvancedIMU:
         pos: (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
         dir: (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
         up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
-        window_width: The width of the window used in smoothing the data, if required.
-        frequency_cutoff: The filtering cutoff frequency to be used (instead of a window width). of required.
+        accel_window_width: The width of the window used in smoothing the acceleration data, if required.
+        accel_frequency_cutoff: The filtering cutoff frequency to be used for acceleration (instead of a window width), if required.
+        gyro_window_width: The width of the window used in smoothing the gyroscopic data, if required.
+        gyro_frequency_cutoff: The filtering cutoff frequency to be used for gyroscopic (instead of a window width), if required.
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
         is_using_gravity: A flag which indicates whether this sensor should consider acceleration due to gravity in its computations, or not.
         is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
@@ -46,11 +42,10 @@ class AdvancedIMU:
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0,
-                 physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7), dir: Float3 = (0, -1, 0), up: Float3 = (-0, 0, 1),
-                 window_width: float | None = None, frequency_cutoff: float | None = None, is_send_immediately: bool = False,
-                 is_using_gravity: bool = False, is_visualised: bool = True, is_snapping_desired: bool = False,
-                 is_force_inside_triangle: bool = False):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
+        dir: Float3 = (0, -1, 0), up: Float3 = (-0, 0, 1), accel_window_width: float | None = None, gyro_window_width: float | None = None,
+        accel_frequency_cutoff: float | None = None, gyro_frequency_cutoff: float | None = None, is_send_immediately: bool = False, is_using_gravity: bool = False,
+        is_visualised: bool = True, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.Advanced IMU')
         self.logger.setLevel(DEBUG)
 
@@ -61,9 +56,8 @@ class AdvancedIMU:
         self.is_send_immediately = is_send_immediately
 
         # Create and initialise this sensor in the simulation.
-        self._open_advanced_IMU(
-            name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, window_width, is_send_immediately,
-            frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
+        self._open_advanced_IMU(name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, accel_window_width, gyro_window_width, is_send_immediately,
+            accel_frequency_cutoff, gyro_frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
 
         # Fetch the unique Id number (in the simulator) for this advanced IMU sensor.  We will need this later.
         self.sensorId = self._get_advanced_imu_id()
@@ -185,11 +179,9 @@ class AdvancedIMU:
         return int(
             self._send_sensor_request('GetAdvancedImuId', ack='CompletedGetAdvancedImuId', name=self.name)['data'])
 
-    def _open_advanced_IMU(
-        self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3,
-        dir: Float3, up: Float3, window_width: float | None, is_send_immediately: bool, frequency_cutoff: float |
-        None, is_using_gravity: bool, is_visualised: bool, is_snapping_desired: bool,
-            is_force_inside_triangle: bool) -> None:
+    def _open_advanced_IMU(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3, dir: Float3, up: Float3,
+        accel_window_width: float | None, gyro_window_width: float | None, is_send_immediately: bool, accel_frequency_cutoff: float | None, gyro_frequency_cutoff: float | None,
+        is_using_gravity: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
         data: StrDict = dict(type='OpenAdvancedIMU')
         data['name'] = name
         data['vid'] = vehicle.vid
@@ -198,8 +190,10 @@ class AdvancedIMU:
         data['pos'] = pos
         data['dir'] = dir
         data['up'] = up
-        data['windowWidth'] = window_width
-        data['frequencyCutoff'] = frequency_cutoff
+        data['accelWindowWidth'] = accel_window_width
+        data['accelFrequencyCutoff'] = accel_frequency_cutoff
+        data['gyroWindowWidth'] = gyro_window_width
+        data['gyroFrequencyCutoff'] = gyro_frequency_cutoff
         data['isSendImmediately'] = is_send_immediately
         data['isUsingGravity'] = is_using_gravity
         data['isVisualised'] = is_visualised

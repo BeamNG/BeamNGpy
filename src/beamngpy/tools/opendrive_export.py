@@ -5,7 +5,7 @@ from datetime import datetime
 
 import numpy as np
 
-from beamngpy.misc import vec3
+from beamngpy import vec3
 from beamngpy.tools.navigraph_data import NavigraphData
 
 __all__ = ['OpenDriveExporter']
@@ -13,7 +13,7 @@ __all__ = ['OpenDriveExporter']
 CACHED_TANGENTS = {}
 
 
-class explicit_cubic:
+class ExplicitCubic:
     """
     A class for representing explicit cubic polynomials of the form: [ u(p) := a + b*p + c*p^2 + d*p^3 ].
     """
@@ -25,7 +25,7 @@ class explicit_cubic:
         self.d = d
 
 
-class parametric_cubic:
+class ParametricCubic:
     """
     A class for representing parametric cubic polynomials of the form:
     [ u(x) := Bu*x + Cu^2 + Du^3; v(x) := Bv*x + Cv^2 + Dv^3 ].
@@ -92,7 +92,7 @@ class Junction:
         self.connection_roads = connection_roads
 
 
-class Connection_Road:
+class ConnectionRoad:
     """
     A class for storing connectivity information between a road and a junction.
 
@@ -163,7 +163,7 @@ class OpenDriveExporter:
         [tang1, tang2] = OpenDriveExporter._compute_tangents(p0 - p1, vec3(0.0, 0.0, 0.0), p2 - p1, p3 - p1)
         dz = p2.z - p1.z
         length_sq = length * length
-        return explicit_cubic(
+        return ExplicitCubic(
             p1.z,
             tang1.z / length,
             ((-2.0 * tang1.z) - tang2.z + (3.0 * dz)) / length_sq,
@@ -282,8 +282,8 @@ class OpenDriveExporter:
                 if i1 == len(seg) - 2:
                     tang2 = OpenDriveExporter._find_trunk_road_tangent(seg2, tang2)
                 coeff_C, coeff_D = (-2.0 * tang1) - tang2 + (3.0 * pn2_2d), tang1 + tang2 - (2.0 * pn2_2d)
-                ref_line_cubic = parametric_cubic(pn1_2d.x, tang1.x, coeff_C.x, coeff_D.x,
-                                                  pn1_2d.y, tang1.y, coeff_C.y, coeff_D.y)
+                ref_line_cubic = ParametricCubic(pn1_2d.x, tang1.x, coeff_C.x, coeff_D.x,
+                                                 pn1_2d.y, tang1.y, coeff_C.y, coeff_D.y)
 
                 # Compute the elevation cubic equation (explicit).
                 p0_3d, p1_3d, p2_3d, p3_3d = navigraph_data.coords3d[seg0], navigraph_data.coords3d[
@@ -342,9 +342,9 @@ class OpenDriveExporter:
             for i in range(len(roads)):
                 r = roads[i]
                 if key == r.start:
-                    connection_roads.append(Connection_Road(i, 'start'))
+                    connection_roads.append(ConnectionRoad(i, 'start'))
                 if key == r.end:
-                    connection_roads.append(Connection_Road(i, 'end'))
+                    connection_roads.append(ConnectionRoad(i, 'end'))
             if len(connection_roads) > 0:
                 junctions.append(Junction(id, connection_roads))
 

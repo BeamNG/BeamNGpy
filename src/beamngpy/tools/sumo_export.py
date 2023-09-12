@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from beamngpy.tools.navigraph_data import NavigraphData
 
 __all__ = ['SumoExporter']

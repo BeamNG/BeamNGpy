@@ -34,7 +34,7 @@ class CameraApi(Api):
         data['dir'] = direction
         self._send(data).ack('FreeCameraSet')
 
-    def set_relative(self, pos: Float3, rot_quat: Quat | None = None) -> None:
+    def set_relative(self, pos: Float3, dir: Float3, up: Float3 = (0.0, 0.0, 1.0)) -> None:
         """
         Switches the camera mode for the currently-entered vehicle to the
         'relative' mode in which the camera can be placed at an arbitrary point
@@ -43,12 +43,14 @@ class CameraApi(Api):
         Args:
             pos: (x, y, z) tuple of the camera's position relative to
                             the vehicle.
-            rot_quat: The camera's rotation but written as a quat.
+            dir (x, y, z): The cameras direction vector.
+            up (x, y, z): The camera up vector (optional).
         """
         data: StrDict = dict(type='SetRelativeCam')
         data['pos'] = pos
-        if rot_quat:
-            data['rot'] = rot_quat
+        data['up'] = up
+        if dir:
+            data['dir'] = dir
         self._send(data).ack('RelativeCamSet')
 
     def set_player_mode(self, vehicle: str | Vehicle, mode: str, config: StrDict, custom_data: StrDict | None = None) -> None:

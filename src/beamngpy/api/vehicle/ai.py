@@ -159,3 +159,25 @@ class AIApi(VehicleApi):
         data: StrDict = dict(type='SetAiAggression')
         data['aggression'] = aggr
         self._send(data).ack('AiAggressionSet')
+
+    def start_recording(self) -> None:
+        data = dict(type='StartRecording')
+        self._send(data).ack('CompletedStartRecording')
+
+    def stop_recording(self, filename) -> None:
+        data = dict(type='StopRecording')
+        data['filename'] = filename
+        self._send(data).ack('CompletedStopRecording')
+
+    def execute_script(self, script, cling: bool = True, start_delay: float = 0.0, no_reset: bool = False) -> None:
+        data: StrDict = dict(type='ExecuteScript')
+        data['script'] = script
+        data['cling'] = cling
+        data['startDelay'] = start_delay
+        data['noReset'] = no_reset
+        self._send(data).ack('CompletedExecuteScript')
+
+    def get_initial_spawn_position_orientation(self, script):
+        data = dict(type='GetInitialSpawnPositionOrientation')
+        data['script'] = script
+        return self._send(data).recv()['data']

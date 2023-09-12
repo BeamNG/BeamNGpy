@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from datetime import datetime
 
-from beamngpy.misc import vec3
+from beamngpy import vec3
 from beamngpy.tools.navigraph_data import NavigraphData
 
 __all__ = ['OpenStreetMapExporter']

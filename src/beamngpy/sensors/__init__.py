@@ -10,10 +10,11 @@ from .electrics import Electrics
 from .gforces import GForces
 from .imu import IMU
 from .lidar import Lidar
+from .mesh import Mesh
 from .powertrain_sensor import PowertrainSensor
+from .radar import Radar
 from .sensor import Sensor
 from .state import State
 from .timer import Timer
 from .ultrasonic import Ultrasonic
-from .radar import Radar
-from .mesh import Mesh
+from .vehicle_feeder import VehicleFeeder

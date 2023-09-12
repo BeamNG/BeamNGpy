@@ -21,10 +21,10 @@ def main():
     OpenDriveExporter.export('test_od', bng)
 
     # Export OpenStreetMap (.osm).
-    #OpenStreetMapExporter.export('test_osm', bng)
+    # OpenStreetMapExporter.export('test_osm', bng)
 
     # Export Sumo (.nod.xml and .edg.xml).
-    #SumoExporter.export('test', bng)
+    # SumoExporter.export('test', bng)
 
     # Execute the simulation until user is finished.  The data file(s) have been written.
     vehicle.ai.set_mode('span')

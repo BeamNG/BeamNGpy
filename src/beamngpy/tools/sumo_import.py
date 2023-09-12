@@ -1,7 +1,12 @@
-import xml.etree.ElementTree as ET
+from __future__ import annotations
 
-from beamngpy import MeshRoad
-from beamngpy.misc import vec3
+import xml.etree.ElementTree as ET
+from typing import TYPE_CHECKING
+
+from beamngpy import MeshRoad, vec3
+
+if TYPE_CHECKING:
+    from beamngpy import Scenario
 
 # User control parameters
 # The default road width value (when no width is supplied to a 'way').
@@ -18,7 +23,7 @@ DEFAULT_DEPTH = 1.0
 # A container for storing a road polyline, before rendering in BeamNG.
 
 
-class road:
+class Road:
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
@@ -26,7 +31,7 @@ class road:
 # A container for storing a Sumo 'edge'.
 
 
-class edge:
+class Edge:
     def __init__(self, a, b, num_lanes):
         self.a, self.b = a, b
         self.num_lanes = num_lanes
@@ -57,9 +62,9 @@ class SumoImporter:
         for i in root:
             if i.tag == 'edge':
                 if 'numLanes' in i.attrib:
-                    edges[i.attrib['id']] = edge(i.attrib['from'], i.attrib['to'], int(i.attrib['numLanes']))
+                    edges[i.attrib['id']] = Edge(i.attrib['from'], i.attrib['to'], int(i.attrib['numLanes']))
                 else:
-                    edges[i.attrib['id']] = edge(i.attrib['from'], i.attrib['to'], DEFAULT_NUM_LANES)
+                    edges[i.attrib['id']] = Edge(i.attrib['from'], i.attrib['to'], DEFAULT_NUM_LANES)
         return edges
 
     # Remove all duplicate edges (ones where the two nodes are the same, even if in reverse eg A-B and B-A).
@@ -77,7 +82,7 @@ class SumoImporter:
         return new_edges
 
     @staticmethod
-    def import_sumo(prefix, scenario):
+    def import_sumo(prefix, scenario: Scenario):
 
         # Extract the road data primitives from the Sumo files.
         print("Extracting road data from Sumo files...")
@@ -94,7 +99,7 @@ class SumoImporter:
             nds = [
                 [n1.x, n1.y, n1.z, width, DEFAULT_DEPTH],
                 [n2.x, n2.y, n2.z, width, DEFAULT_DEPTH]]
-            roads.append(road('imported_' + str(id), nds))
+            roads.append(Road('imported_' + str(id), nds))
 
         # Create the all the roads from the road polyline data.
         print("Loading import in scenario...")

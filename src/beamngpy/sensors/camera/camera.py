@@ -10,8 +10,7 @@ from PIL import Image
 
 import beamngpy.sensors.shmem as shmem
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.sensors.communication_utils import (send_sensor_request,
-                                                  set_sensor)
+from beamngpy.sensors.communication_utils import (send_sensor_request, set_sensor)
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 
 from . import utils
@@ -47,6 +46,7 @@ class Camera:
         is_render_depth: A flag which indicates if this sensor should render depth data.
         is_depth_inverted: A flag which indicates if the depth values should be shown white->black or black->white, as distance increases.
         is_visualised: A flag which indicates if this LiDAR sensor should appear visualised or not.
+        is_streaming: Whether or not to stream the data directly to shared memory (no poll required, for efficiency - BeamNGpy won't block.)
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
@@ -114,15 +114,12 @@ class Camera:
         """
         return utils.export_bounding_boxes_xml(bounding_boxes, folder, filename, path, database, size)
 
-    def __init__(
-            self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
-            update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
-            dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512),
-            field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
-            is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True,
-            is_render_instance: bool = False, is_render_depth: bool = True, is_depth_inverted: bool = False,
-            is_visualised: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
-            is_force_inside_triangle: bool = False):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1, update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
+        dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512), field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
+        is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True, is_render_instance: bool = False, is_render_depth: bool = True,
+        is_depth_inverted: bool = False, is_visualised: bool = False, is_streaming: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
+        is_force_inside_triangle: bool = False):
+
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
         self.logger.setLevel(DEBUG)
 
@@ -178,7 +175,7 @@ class Camera:
             name, vehicle, requested_update_time, update_priority, self.resolution, field_of_view_y, near_far_planes,
             pos, dir, up, is_using_shared_memory, self.colour_handle, buffer_size, self.annotation_handle, buffer_size,
             self.depth_handle, buffer_size, is_render_colours, is_render_annotations, is_render_instance,
-            is_render_depth, is_visualised, is_static, is_snapping_desired, is_force_inside_triangle)
+            is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
@@ -225,8 +222,10 @@ class Camera:
         Returns:
             The processed intensity values in the range [0, 255].
         """
-        # Sort the depth values.
-        s_data = np.sort(raw_depth_values)
+        # Sort the depth values, and cache the sorting map.
+        sort_index = np.argsort(raw_depth_values)
+        s_data = raw_depth_values[sort_index]
+
         # Compute an array of unique depth values, sensitive to some epsilon.
         eps = 0.01
         rounded_depth = (s_data * (1 // eps)).astype(np.int32)
@@ -241,9 +240,17 @@ class Camera:
         quantiles = quantiles.astype(np.int32)
         intensity_marks[1:255] = unique[quantiles]
 
-        # Convert the depth value array into intensity values.
-        depth_intensity = np.digitize(raw_depth_values, intensity_marks, right=True).astype(np.int32)
+        # In the sorted depth values array, convert the depth value array into intensity values.
+        depth_intensity_sorted = np.zeros_like(s_data)
+        last_idx = 0
+        for i in range(1, 256):
+            idx = np.searchsorted(s_data[last_idx:], intensity_marks[i], 'left') + 1 + last_idx
+            depth_intensity_sorted[last_idx:idx] = i - 1
+            last_idx = idx
 
+        # Re-map the depth values back to their original order.
+        depth_intensity = np.empty_like(s_data)
+        depth_intensity[sort_index] = depth_intensity_sorted
         if self.is_depth_inverted:
             depth_intensity = 255 - depth_intensity
 
@@ -356,6 +363,36 @@ class Camera:
         images = self._binary_to_image(raw_readings)
         self.logger.debug('Camera - raw sensor readings converted to image format: 'f'{self.name}')
         return images
+
+    def poll_shmem_colour(self):
+        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        width = self.resolution[0]
+        height = self.resolution[1]
+        img = np.frombuffer(shmem.read(self.colour_shmem, width * height * 4), dtype=np.uint8)
+        return [img, width, height]
+
+    def poll_shmem_annotation(self):
+        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        width = self.resolution[0]
+        height = self.resolution[1]
+        img= np.frombuffer(shmem.read(self.annotation_shmem, width * height * 4), dtype=np.uint8)
+        return [img, width, height]
+
+    def poll_shmem_depth(self):
+        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        width = self.resolution[0]
+        height = self.resolution[1]
+        img = np.frombuffer(shmem.read(self.depth_shmem, width * height * 4), dtype=np.float32)
+        return [img, width, height]
+
+    def stream_colour(self, size):
+        return np.frombuffer(shmem.read(self.colour_shmem, size), dtype=np.uint8)
+
+    def stream_annotation(self, size):
+        return np.frombuffer(shmem.read(self.annotation_shmem, size), dtype=np.uint8)
+
+    def stream_depth(self, size):
+        return np.frombuffer(shmem.read(self.depth_shmem, size), dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -568,7 +605,7 @@ class Camera:
             is_using_shared_memory: bool, colour_shmem_handle: str | None, colour_shmem_size: int,
             annotation_shmem_handle: str | None, annotation_shmem_size: int, depth_shmem_handle: str | None,
             depth_shmem_size: int, is_render_colours: bool, is_render_annotations: bool, is_render_instance: bool,
-            is_render_depth: bool, is_visualised: bool, is_static: bool, is_snapping_desired: bool,
+            is_render_depth: bool, is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool,
             is_force_inside_triangle: bool) -> None:
         data: StrDict = dict(type='OpenCamera')
         data['vid'] = 0
@@ -595,6 +632,7 @@ class Camera:
         data['renderInstance'] = is_render_instance
         data['renderDepth'] = is_render_depth
         data['isVisualised'] = is_visualised
+        data['isStreaming'] = is_streaming
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle

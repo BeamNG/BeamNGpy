@@ -511,3 +511,12 @@ class Vehicle:
             text: The vehicle plate text to be set.
         """
         return self._ge_api.set_license_plate(text)
+
+    def deflate_tire(self, wheel_id: int) -> None:
+        """
+        Deflates the tire of this vehicle with the given wheel ID.
+
+        Args:
+            wheel_id: The given wheel ID.
+        """
+        return self._root.deflate_tire(wheel_id)

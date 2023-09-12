@@ -29,51 +29,117 @@ class Mesh:
         bng: The BeamNGpy instance, with which to communicate to the simulation.
         vehicle: The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the mesh sensor.
         gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
-        physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
-        is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
+        groups_list: A list of mesh groups which are to be considered. Optional.  If empty, we include all mesh nodes/beams.
+        is_track_beams: A flag which indicates if we should keep updating the beam to node maps. This will track broken beams over time, but is slower.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, is_send_immediately: bool = False):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, groups_list=[], is_track_beams=True):
         sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
         self.logger.setLevel(DEBUG)
 
+        # BeamNG properties.
         self.name = name
         self.vehicle = vehicle
         self.vid = vehicle.vid
         self.bng = bng
-        self.is_send_immediately = is_send_immediately
+
+        self.is_track_beams = is_track_beams
+
+        # Mesh group properties (which parts of mesh to include, if used).
+        # We populate a Boolean dictionary of all groups to be included, for fast lookup.
+        self.groups = {}
+        for g in groups_list:
+            self.groups[g] = True
+        self.is_full_mesh = len(groups_list) == 0
 
         # Create and initialise this sensor in the simulation.
-        self._open_mesh(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
+        self._open_mesh(name, vehicle, gfx_update_time)
 
-        # Fetch the unique Id number (in the simulator) for this mesh sensor.  We will need this later.
+        # Fetch the unique Id number (in the simulator) for this mesh sensor. We will need this later.
         self.sensorId = self._get_mesh_id()
 
-        self.node_positions = []
+        # Node/Beam relevance mapping properties. These maps are computed once for efficiency in all later iterations of polling this sensor.
+        self.is_node_relevance_map_computed = False
+        self.node_relevance_map = {}
+        self.is_beam_relevance_map_computed = False
+        self.beam_relevance_map = {}
 
-        # Populate the list of triangles for this sensor.
-        triangle_data = self._send_sensor_request(
-            'GetFullTriangleData',
-            ack='CompletedGetFullTriangleData',
-            vid=self.vid)['data']
-        self.triangles = {}
-        for key, value in triangle_data.items():
-            self.triangles[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
+        # Mesh related properties.
+        self.raw_data = {}
+        self.node_positions = {}
 
         # Populate the list of beams for this sensor.
-        beam_data = self._send_sensor_request(
-            'GetBeamData',
-            ack='CompletedGetBeamData',
-            vid=self.vid)['data']
-        self.beams = {}
-        for key, value in beam_data.items():
-            self.beams[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
-
-        self.num_nodes = self.get_num_nodes()
+        self.beams = self._get_active_beams()
 
         self.logger.debug('Mesh - sensor created: 'f'{self.name}')
+
+    def _is_node_relevant(self, v):
+        """
+        Determines whether a given node is in one of the selected mesh groups, or not.
+
+        Args:
+            v (dict): A node instance (from the simulator).
+
+        Returns:
+            True if the node is in one of the selected mesh groups, otherwise false
+        """
+        if 'partOrigin' not in v:
+            return False
+
+        return v['partOrigin'] in self.groups
+
+    def _is_beam_relevant(self, b0, b1):
+        """
+        Determines whether a given beam is connected to one of the selected mesh groups, or not.
+        If the node at only one end of the beam is within a mesh group, we do not include this as being relevant.
+
+        Args:
+            b0 (int): The index of the beams first node (in the node list).
+            b1 (int): The index of the beams second node (in the node list).
+
+        Returns:
+            True if the beam is in one of the selected mesh groups, otherwise false
+        """
+        return self._is_node_relevant(self.raw_data['nodes'][b0]) and self._is_node_relevant(self.raw_data['nodes'][b1])
+
+    def _get_active_beams(self):
+        """
+        Gets the latest collection beams and updates the class state with them.
+        """
+
+        # If we are not tracking beams, then we only need to compute the beam structures once, so leave immediately if it has been done in that case.
+        if self.is_track_beams == False and self.is_beam_relevance_map_computed == True:
+            return
+
+        beam_data = self._send_sensor_request('GetBeamData', ack='CompletedGetBeamData', vid=self.vid)['data']
+        self.beams = {}
+
+        if self.is_beam_relevance_map_computed == True:
+            for key, value in beam_data.items():
+                # We do not include any irrelevent beams or broken beams.
+                if key not in self.beam_relevance_map or int(value[3]) == 5:
+                    continue
+                b0, b1, b2 = int(value[0]), int(value[1]), int(value[2])
+                self.beams[int(key)] = [b0, b1, b2]
+            return
+
+        if 'nodes' not in self.raw_data:
+            return
+
+        # We have not yet computed the beam relevance map, so compute it now. We only need to do this once.
+        self.beam_relevance_map = {}
+        for key, value in beam_data.items():
+            # We do not include any broken beams.
+            if int(value[3]) == 5:
+                continue
+            b0, b1, b2 = int(value[0]), int(value[1]), int(value[2])
+            # We do not include beams which are not requested.
+            if self.is_full_mesh == True or self._is_beam_relevant(b0, b1) == True:
+                self.beams[int(key)] = [b0, b1, b2]
+                self.beam_relevance_map[key] = True
+        self.is_beam_relevance_map_computed = True
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
         if not self.bng.connection:
@@ -89,7 +155,6 @@ class Mesh:
         """
         Removes this sensor from the simulation.
         """
-        # Remove this sensor from the simulation.
         self._close_mesh()
         self.logger.debug('Mesh - sensor removed: 'f'{self.name}')
 
@@ -101,17 +166,38 @@ class Mesh:
         Returns:
             A dictionary containing the sensor readings data.
         """
+
         # Send and receive a request for readings data from this sensor.
-        self.node_positions = []
-        if self.is_send_immediately:
-            # Get the most-recent single reading from vlua.
-            self.node_positions = self._poll_mesh_VE()
+        self.raw_data = self._poll_mesh_VE()
+
+        # Convert dict indices to int.
+        self.node_positions = {}
+
+        if self.is_node_relevance_map_computed == True:
+            for k in self.node_relevance_map.keys():
+                self.node_positions[k] = self.raw_data['nodes'][k]
         else:
-            # Get the bulk data from ge lua.
-            self.node_positions = self._poll_mesh_GE()
+            # The node relevance map has not been computed, so compute it now.  This only needs to be computed once.
+            self.node_relevance_map = {}
+            if self.is_full_mesh == True:
+                for k, v in self.raw_data['nodes'].items():
+                    key = int(k)
+                    self.node_positions[key] = v
+                    self.node_relevance_map[key] = True
+            else:
+                for k, v in self.raw_data['nodes'].items():
+                    # Only include beams which are requested.
+                    if self._is_node_relevant(v) == True:
+                        key = int(k)
+                        self.node_positions[key] = v
+                        self.node_relevance_map[key] = True
+            self.is_node_relevance_map_computed = True
+
+        # Get the latest beams from the simulator.
+        self._get_active_beams()
 
         self.logger.debug('Mesh - sensor readings received from simulation: 'f'{self.name}')
-        return self.node_positions
+        return self.raw_data
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -123,9 +209,7 @@ class Mesh:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Mesh - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request(
-            'SendAdHocRequestMesh', ack='CompletedSendAdHocRequestMesh', name=self.name,
-            vid=self.vehicle.vid)['data'])
+        return int(self._send_sensor_request('SendAdHocRequestMesh', ack='CompletedSendAdHocRequestMesh', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -138,8 +222,7 @@ class Mesh:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Mesh - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyMesh',
-                                         ack='CompletedIsAdHocPollRequestReadyMesh', requestId=request_id)['data']
+        return self._send_sensor_request('IsAdHocPollRequestReadyMesh', ack='CompletedIsAdHocPollRequestReadyMesh', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -163,21 +246,18 @@ class Mesh:
         Args:
             requested_update_time: The new requested update time.
         """
-        self._set_sensor(
-            'SetMeshRequestedUpdateTime', ack='CompletedSetMeshRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
-            GFXUpdateTime=requested_update_time)
+        self._set_sensor('SetMeshRequestedUpdateTime', ack='CompletedSetMeshRequestedUpdateTime',
+                         name=self.name, vid=self.vehicle.vid, GFXUpdateTime=requested_update_time)
 
     def _get_mesh_id(self) -> int:
         return int(self._send_sensor_request('GetMeshId', ack='CompletedGetMeshId', name=self.name)['data'])
 
-    def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
+    def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float) -> None:
 
         data: StrDict = dict(type='OpenMesh')
         data['name'] = name
         data['vid'] = vehicle.vid
         data['GFXUpdateTime'] = gfx_update_time
-        data['physicsUpdateTime'] = physics_update_time
-        data['isSendImmediately'] = is_send_immediately
         self.bng._send(data).ack('OpenedMesh')
         self.logger.info(f'Opened Mesh sensor: "{name}"')
 
@@ -188,112 +268,25 @@ class Mesh:
         self.bng._send(data).ack('ClosedMesh')
         self.logger.info(f'Closed Mesh sensor: "{self.name}"')
 
-    def _poll_mesh_GE(self) -> StrDict:
-        return self._send_sensor_request('PollMeshGE', ack='PolledMeshGECompleted', name=self.name)['data']
-
     def _poll_mesh_VE(self) -> StrDict:
         if not self.vehicle.connection:
             raise BNGError('The vehicle is not connected!')
         return send_sensor_request(self.vehicle.connection, 'PollMeshVE', name=self.name, sensorId=self.sensorId)['data']
 
-    def get_triangle_data(self):
-        return self.triangles
-
-    def get_wheel_mesh(self, wheel_id):
-        d = self._send_sensor_request(
-            'GetWheelTriangleData',
-            ack='CompletedGetWheelTriangleData',
-            vid=self.vid,
-            wheelIndex=wheel_id)['data']
-        mesh = {}
-        for key, value in d.items():
-            mesh[int(key)] = [int(value[0]), int(value[1]), int(value[2])]
-        return mesh
-
     def get_node_positions(self):
         return self.node_positions
 
-    def get_closest_mesh_point_to_point(self, point):
-        return self._send_sensor_request(
-            'GetClosestMeshPointToGivenPoint',
-            ack='CompletedGetClosestMeshPointToGivenPoint',
-            vid=self.vid,
-            point=point)['data']
-
-    def get_closest_vehicle_triangle_to_point(self, point, is_include_wheels):
-        d = self._send_sensor_request(
-            'GetClosestTriangle',
-            ack='CompletedGetClosestTriangle',
-            vid=self.vid,
-            point=point,
-            includeWheelNodes=is_include_wheels)['data']
-        return [int(d['nodeIndex1']), int(d['nodeIndex2']), int(d['nodeIndex3'])]
-
-    def get_num_nodes(self):
-        max_idx = -1
-        for _, v in self.triangles.items():
-            if v[0] > max_idx:
-                max_idx = v[0]
-            if v[1] > max_idx:
-                max_idx = v[1]
-            if v[2] > max_idx:
-                max_idx = v[2]
-        return max_idx
-
-    def get_nodes_to_triangles_map(self):
-        map = {}
-        for i in range(self.num_nodes + 1):
-            map[i] = []
-        for k, v in self.triangles.items():
-            map[v[0]].append(k)
-            map[v[1]].append(k)
-            map[v[2]].append(k)
-        return map
-
-    def get_neighbor_nodes(self, node_id):
-        neighbors = []
-        for _, v in self.triangles.items():
-            if node_id == v[0]:
-                neighbors.append(v[1])
-                neighbors.append(v[2])
-            if node_id == v[1]:
-                neighbors.append(v[0])
-                neighbors.append(v[2])
-            if node_id == v[2]:
-                neighbors.append(v[0])
-                neighbors.append(v[1])
-        return neighbors
-
-    def get_neighbor_triangles(self, triangle_id):
-        t = self.triangles[triangle_id]
-        neighbors = []
-        for k, v in self.triangles.items():
-            match0 = t[0] == v[0] or t[0] == v[1] or t[0] == v[2]
-            match1 = t[1] == v[0] or t[1] == v[1] or t[1] == v[2]
-            match2 = t[2] == v[0] or t[2] == v[1] or t[2] == v[2]
-            if match0 or match1 or match2:
-                neighbors.append(k)
-        return neighbors
-
-    def convert_node_indices_to_int(self):
-        raw = self.node_positions[0]['nodes']
-        nodes = {}
-        for k, v in raw.items():
-            nodes[int(k)] = v
-        return nodes
-
     def compute_beam_line_segments(self):
-        nodes = self.convert_node_indices_to_int()
         lines1 = []
         lines2 = []
         lines3 = []
         c = []
         for _, v in self.beams.items():
-            p1 = nodes[v[0]]
-            p2 = nodes[v[1]]
-            lines1.append([(p1['pos'][0], p1['pos'][1]), (p2['pos'][0], p2['pos'][1])])
-            lines2.append([(p1['pos'][0], p1['pos'][2]), (p2['pos'][0], p2['pos'][2])])
-            lines3.append([(p1['pos'][1], p1['pos'][2]), (p2['pos'][1], p2['pos'][2])])
+            p1 = self.node_positions[v[0]]['pos']
+            p2 = self.node_positions[v[1]]['pos']
+            lines1.append([(p1['x'], p1['y']), (p2['x'], p2['y'])])
+            lines2.append([(p1['x'], p1['z']), (p2['x'], p2['z'])])
+            lines3.append([(p1['y'], p1['z']), (p2['y'], p2['z'])])
             c.append((0.3, 0.3, 0.3, 0.1))
         lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
         lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
@@ -301,7 +294,6 @@ class Mesh:
         return lns1, lns2, lns3
 
     def mesh_plot(self):
-        nodes = self.convert_node_indices_to_int()
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -322,10 +314,11 @@ class Mesh:
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
         ax[0, 1].axis('off')
-        for i in range(len(nodes)):
-            ax[0, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][1], 'ro')
-            ax[1, 0].plot(nodes[i]['pos'][0], nodes[i]['pos'][2], 'ro')
-            ax[1, 1].plot(nodes[i]['pos'][1], nodes[i]['pos'][2], 'ro')
+        for i in range(len(self.node_positions)):
+            node = self.node_positions[i]['pos']
+            ax[0, 0].plot(node['x'], node['y'], 'ro')
+            ax[1, 0].plot(node['x'], node['z'], 'ro')
+            ax[1, 1].plot(node['y'], node['z'], 'ro')
 
         lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
@@ -362,9 +355,10 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
             colors.append(data[i]['mass'])
 
         cmap = matplotlib.cm.viridis
@@ -408,12 +402,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            fx = data[i]['force'][0]
-            fy = data[i]['force'][1]
-            fz = data[i]['force'][2]
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            force = data[i]['force']
+            fx = force['x']
+            fy = force['y']
+            fz = force['z']
             colors.append(math.sqrt(fx * fx + fy * fy + fz * fz))
 
         cmap = matplotlib.cm.viridis
@@ -457,12 +453,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            fx = data[i]['force'][0]
-            fy = data[i]['force'][1]
-            fz = data[i]['force'][2]
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            force = data[i]['force']
+            fx = force['x']
+            fy = force['y']
+            fz = force['z']
             mag = math.sqrt(fx * fx + fy * fy + fz * fz)
             colors.append(mag)
             fac = 1/max(1, mag)
@@ -511,12 +509,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            vx = data[i]['vel'][0]
-            vy = data[i]['vel'][1]
-            vz = data[i]['vel'][2]
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            vel = data[i]['vel']
+            vx = vel['x']
+            vy = vel['y']
+            vz = vel['z']
             colors.append(math.sqrt(vx * vx + vy * vy + vz * vz))
 
         cmap = matplotlib.cm.viridis
@@ -560,12 +560,14 @@ class Mesh:
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            x.append(data[i]['pos'][0])
-            y.append(data[i]['pos'][1])
-            z.append(data[i]['pos'][2])
-            vx = data[i]['vel'][0]
-            vy = data[i]['vel'][1]
-            vz = data[i]['vel'][2]
+            node = data[i]['pos']
+            x.append(node['x'])
+            y.append(node['y'])
+            z.append(node['z'])
+            vel = data[i]['vel']
+            vx = vel['x']
+            vy = vel['y']
+            vz = vel['z']
             mag = math.sqrt(vx * vx + vy * vy + vz * vz)
             colors.append(mag)
             fac = 1/max(1, mag)

@@ -37,6 +37,21 @@ def angle_to_quat(angle: Float3) -> Quat:
     return (x, y, z, w)
 
 
+def normalize(q: Quat) -> Quat:
+    """
+    Normalizes the given quaternion.
+
+    Args:
+        q: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
+
+    Returns:
+        The normalized quaternion.
+    """
+    d = math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3])
+    d_inv = 1.0 / max(1e-7, d)
+    return (q[0] * d_inv, q[1] * d_inv, q[2] * d_inv, q[3] * d_inv)
+
+
 def compute_rotation_matrix(quat: Quat) -> ndarray:
     """
     Calculates the rotation matrix for the given quaternion
