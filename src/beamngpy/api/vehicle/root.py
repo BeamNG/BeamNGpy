@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from beamngpy.logging import BNGValueError
-from beamngpy.types import Color, StrDict
-from beamngpy.vehicle.colors import coerce_vehicle_color
+from beamngpy.misc.colors import coerce_color
+from beamngpy.types import Color, Float3, StrDict
 
 from .base import VehicleApi
 
@@ -34,17 +34,17 @@ class RootApi(VehicleApi):
     def control(self, steering: float | None = None, throttle: float | None = None, brake: float | None = None,
                 parkingbrake: float | None = None, clutch: float | None = None, gear: int | None = None) -> None:
         options = {}
-        if steering:
+        if steering is not None:
             options['steering'] = steering
-        if throttle:
+        if throttle is not None:
             options['throttle'] = throttle
-        if brake:
+        if brake is not None:
             options['brake'] = brake
-        if parkingbrake:
+        if parkingbrake is not None:
             options['parkingbrake'] = parkingbrake
-        if clutch:
+        if clutch is not None:
             options['clutch'] = clutch
-        if gear:
+        if gear is not None:
             options['gear'] = gear
 
         data = dict(type='Control', **options)
@@ -52,7 +52,7 @@ class RootApi(VehicleApi):
 
     def set_color(self, rgba: Color = (1., 1., 1., 1.)) -> None:
         data: StrDict = dict(type='SetColor')
-        color = coerce_vehicle_color(rgba)
+        color = coerce_color(rgba)
         data['r'] = color[0]
         data['g'] = color[1]
         data['b'] = color[2]
@@ -126,3 +126,7 @@ class RootApi(VehicleApi):
     def recover(self) -> None:
         data = dict(type='Recover')
         self._send(data).ack('Recovered')
+
+    def get_center_of_gravity(self, without_wheels) -> Float3:
+        data = dict(type='GetCenterOfGravity', withoutWheels=without_wheels)
+        return self._send(data).recv()['data']

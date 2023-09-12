@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List
 
+from beamngpy.misc.colors import coerce_color, rgba_to_str
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
-from beamngpy.vehicle.colors import coerce_vehicle_color, rgba_to_str
 
 from .base import Api
 
@@ -53,18 +53,12 @@ class VehiclesApi(Api):
         data['rot'] = rot_quat
         for color in ('color', 'color2', 'color3'):
             if data[color] is not None:
-                data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
-        license = None
-        if data.get('licenseText'):
-            license = data['licenseText']
-            del data['licenseText']
+                data[color] = rgba_to_str(coerce_color(data[color]))
 
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success']:
             if connect:
                 vehicle.connect(self._beamng)
-            if license:
-                self._beamng.vehicles.set_license_plate(vehicle.vid, license)
         return resp['success']
 
     def despawn(self, vehicle: Vehicle) -> None:
@@ -102,7 +96,7 @@ class VehiclesApi(Api):
         data['replace_vid'] = old_vehicle.vid if isinstance(old_vehicle, Vehicle) else old_vehicle
         for color in ('color', 'color2', 'color3'):
             if data[color] is not None:
-                data[color] = rgba_to_str(coerce_vehicle_color(data[color]))
+                data[color] = rgba_to_str(coerce_color(data[color]))
 
         resp = self._send(data).recv('VehicleSpawned')
         if resp['success'] and connect:
@@ -122,6 +116,7 @@ class VehiclesApi(Api):
             BNGError: If the game is not running to accept a request.
         """
         data = dict(type='GetAvailableVehicles')
+        print("data:", data)
         return self._send(data).recv('AvailableVehicles')
 
     def await_spawn(self, vid: str | Vehicle) -> None:
@@ -236,6 +231,25 @@ class VehiclesApi(Api):
         vehicles = self.get_current_info(include_config=include_config)
         vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
         return vehicles
+
+    def get_player_vehicle_id(self) -> StrDict:
+        """
+        Queries the currently player vehicles in the simulator.
+
+        Returns:
+            A dictionary of the active vehicle in simulator from lua.
+            {'type': 'getPlayerVehicleID', 'id': 10455.0, 'vid': 'vehicleA'}
+            then in python, the return will be only an int value of the 'id' and vehicle's name
+            {'id': 10455, 'vid': 'vehicleA'}
+            data = bng.vehicles.get_player_vehicle_id()
+            for testing you can use the following:
+            id_value = data['id']
+            vid_value = data['vid']
+        """
+        data = dict(type='GetPlayerVehicleID')
+        resp = self._send(data).recv('getPlayerVehicleID')
+        resp = {'id': int(resp['id']), 'vid': resp['vid']}
+        return resp
 
     def set_license_plate(self, vehicle: str | Vehicle, text: str) -> None:
         """

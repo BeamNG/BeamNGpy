@@ -15,3 +15,5 @@ from .sensor import Sensor
 from .state import State
 from .timer import Timer
 from .ultrasonic import Ultrasonic
+from .radar import Radar
+from .mesh import Mesh

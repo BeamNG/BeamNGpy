@@ -256,7 +256,7 @@ class Ultrasonic:
     def _open_ultrasonic(
             self, name: str, vehicle: Vehicle | None, requested_update_time: float, update_priority: float, pos: Float3,
             dir: Float3, up: Float3, size: Int2, field_of_view_y: float, near_far_planes: Float2,
-        range_roundness: float, range_cutoff_sensitivity: float, range_shape: float, range_focus: float,
+            range_roundness: float, range_cutoff_sensitivity: float, range_shape: float, range_focus: float,
             range_min_cutoff: float, range_direct_max_cutoff: float, sensitivity: float, fixed_window_size: float,
             is_visualised: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
         data: StrDict = dict(type='OpenUltrasonic')

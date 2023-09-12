@@ -34,8 +34,7 @@ class ProceduralCylinder(ProceduralMesh):
                         cylinder.
         name: Name for the mesh. Should be unique.
         rot_quat: Quaternion specifying the cylinder's rotation
-        material: Optional material name to use as a texture for the
-                        mesh.
+        material: Optional material name to use as a texture for the mesh.
     """
 
     def __init__(self, pos: Float3, radius: float, height: float, name: str,
@@ -182,6 +181,7 @@ class ProceduralRing(ProceduralMesh):
         material: Optional material name to use as a texture for the
                         mesh.
     """
+
     def __init__(self, pos: Float3, radius: float, thickness: float, name: str,
                  rot_quat: Quat | None = None, material: str | None = None):
         super(ProceduralRing, self).__init__(pos, name, material, rot_quat=rot_quat)

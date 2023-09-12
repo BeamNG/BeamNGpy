@@ -2,6 +2,93 @@
 Changelog
 =========
 
+Version 1.26.1
+==============
+
+- New features
+
+  - OpenDrive (.xodr) importer added, and new example created in Examples folder.
+
+  - OpenStreetMap (.osm) importer and exporter added, and new examples created in Examples folder.
+
+  - Eclipse Sumo (.nod.xml and .edg.xml) importer and exporter added, and new examples created in Examples folder.
+
+- BeamNGpy fixes / improvements
+
+  - Improved/added documentation
+
+    - ``Scenario`` class now has all parameters documented.
+    - ``BeamNGpy.debug`` API methods are now documented
+    - ``BeamNGpy.env`` now contains more information about the 'time of day' object
+    - Added documentation for RADAR and Mesh sensors
+
+  - ``Vehicle.set_part_config`` now does not recreate the existing connection to the simulator, as it was not needed
+
+  - Small refactor of unit tests, the automated sensor scripts are now also runnable under the ``pytest`` framework
+
+  - Invalid vehicle and scene object names produced error in the simulation, now the validation is done on BeamNGpy side
+
+    - name cannot start with the ``%`` character or a digit
+    - name cannot contain the ``/`` character
+  - Added new options to ``BeamNGpy.scenario.load`` called ``connect_player_vehicle`` and ``connect_existing_vehicles``
+
+    - ``connect_player_vehicle`` is ``True`` by default and it connects the player vehicle to the simulation after scenario load
+    - ``connect_existing_vehicles`` is ``True`` by default and it connects all the already existing vehicles to the simulation after scenario load
+    - setting these options to ``False`` can reduce the loading time by skipping the connection-establishing part, and these vehicles can still be connected manually using ``Vehicle.connect``
+
+  - Added ``crash_lua_on_error`` option to the BeamNGpy constructor
+
+    - behaves in the same way as the option of the same name in ``BeamNGpy.open``
+
+
+Version 1.26
+============
+- RADAR sensor
+
+  - Sensor currently works with static scenery but not vehicles.  Will be added in later update.
+  - Sensor comes with standard Lua API and BeamNGpy API.
+  - Example scripts `provided <https://github.com/BeamNG/BeamNGpy/blob/master/examples/radar_analysis.ipynb>`__ in BeamNGpy.
+- Vehicle meshes now available in BeamNGpy
+
+  - Can provide data up to 2000 times per second.
+  - Vehicle nodes and physics triangle data available in BeamNGpy, including for individual vehicle wheels.
+  - Comes with standard Lua API and BeamNGpy API.
+  - Post-processing written in BeamNGpy to compute mesh connectivity data and analyse the mesh data (position, mass, force, velocity).
+  - Example scripts `provided <https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_mesh_data.py>`__ in BeamNGpy.
+- IMU sensor
+
+  - Added ability to filter gyroscopic readings (as well as acceleration readings). Separate data filtering is used for each.
+- Sensor suite bug fixes
+
+  - Fix: problem when changing the requested update times/priority parameters after various sensors were already created, sensor would not update correctly/quickly.
+  - Fix: gravity vector was not being applied correctly in IMU sensor.
+  - Fix: camera images from static sensors were being rendered upside down.
+  - Fix: LiDAR sensor was not returning the whole point cloud in BeamNGpy
+- Export BeamNG maps as .xodr files (OpenDrive)
+
+  - BeamNGpy now provides the option to export our map road networks as .xodr files (OpenDrive). The exported road networks contain elevation and road wideness data, along with junction connectivity. On top of this, BeamNGpy also includes a new `class <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.tools.RoadNetworkExporter>`_ with which to analyse the road network data oneself, and process it as required.
+- BeamNGpy fixes / improvements
+
+  - Optimized the speed of depth camera processing
+  - Added new API:
+
+    - ``BeamNGpy.env.get_tod`` for getting the information about the time of day
+    - ``BeamNGpy.env.set_tod`` for setting the time-of-day information, allowing to control the day/night cycle from Python
+    - ``BeamNGpy.env.get_gravity`` for getting the current value of the strength of gravity in the simulator.
+    - ``Vehicle.get_center_of_gravity`` for getting the center of gravity of a vehicle.
+
+  - Added option to remove procedural meshes
+  - Added new option to ``BeamNGpy.open`` called ``crash_lua_on_error``
+
+    - If ``False`` (the default), then Lua crashes in the simulator will not break the connection between BeamNG.tech and BeamNGpy. Set to ``True`` for getting proper stacktraces and easier debugging.
+  - Added new option to ``BeamNGpy.scenario.load`` called ``precompile_shaders``
+
+    - If ``True`` (the default), asynchronous shader compilation is disabled. That means the first loading of a map will take longer time, but all parts of the map will be preloaded. If ``False``, the camera sensor can have issues shortly after starting the scenario.
+  - Better handling of errors and crashes in the BeamNGpy TCP protocol.
+  - Fixed ``vehicle.control`` with zero integer arguments being ignored.
+  - Re-added ``BeamNGpy.scenario.get_vehicle`` (removed by accident in the last release).
+  - ``BeamNGpy.settings.set_deterministic`` and ``BeamNGpy.settings.set_steps_per_second`` are not persistent anymore and are applied only for a single run of the simulation.
+
 Version 1.25.1
 ==============
 - fixed in BeamNG.tech v0.27.1.0: converted all vehicle rotations sent to BeamNGpy to be consistent with each other

@@ -118,7 +118,7 @@ class Electrics(Sensor):
     @staticmethod
     def _rename_values(vals: StrDict) -> StrDict:
         """
-        The values returned from the game often don't follow any naming
+        The values returned from the simulator often don't follow any naming
         convention and especially don't follow this library's, so we rename
         some of them here to be more consistent.
         """

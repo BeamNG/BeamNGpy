@@ -35,6 +35,8 @@ More quick usage examples can be found in our [test suite][1].
 |[West Coast LiDAR][19]|<ul><li>use the LiDAR sensor</li></ul>|
 |[East Coast Random][20]|<ul><li>create a simple scenario</li><li>use the simulator's AI with BeamNGpy</li></ul>|
 |[Powertrain Analysis][23]|<ul><li>use the Powertrain sensor</li></ul>|
+|[Road Network Exporter][24]|<ul><li>Export BeamNG maps as .xodr files (OpenDRIVE).</li><li>The exported road networks contain elevation and road wideness data, along with junction connectivity.</li><li>BeamNGpy also includes a new class with which to analyse the road network data oneself, and process it as required.</li></ul>|
+
 
 
 [1]: https://github.com/BeamNG/BeamNGpy/tree/master/tests
@@ -60,3 +62,4 @@ More quick usage examples can be found in our [test suite][1].
 [21]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb
 [22]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/advanced_comfort_analysis.ipynb
 [23]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/powertrain_data.ipynb
+[24]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/road_network_exporter.py

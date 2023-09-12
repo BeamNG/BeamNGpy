@@ -9,7 +9,7 @@ Basic ROS functionality are included i.e., sensors streaming, `Rviz <http://wiki
 
 - Installation Prerequisites:
 
-you must have the following softwares/packages installed i.e., `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_, `BeamNGpy <https://pypi.org/project/beamngpy/>`_,and `WSL2 <https://jack-kawell.com/2020/06/12/ros-wsl2/>`_.
+you must have the following softwares/packages installed i.e., `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_, `BeamNGpy <https://pypi.org/project/beamngpy/>`__,and `WSL2 <https://jack-kawell.com/2020/06/12/ros-wsl2/>`_.
 
 
 ROS packages
@@ -31,7 +31,9 @@ Running the BeamNG ROS integration requires three individual software components
 +-------------+----------+------------------------+
 | BeamNG.tech | BeamNGpy | BeamNG ROS Integration |
 +=============+==========+========================+
-| 0.27        | 1.25     | 0.1.2                  |
+| 0.28        | 1.26     | 0.1.3                  |
++-------------+----------+------------------------+
+| 0.27        | 1.25.1   | 0.1.2                  |
 +-------------+----------+------------------------+
 | 0.26        | 1.24     | 0.1.1                  |
 +-------------+----------+------------------------+
@@ -123,7 +125,7 @@ Using it will start up a node that connects to the simulation and starts up a sc
 Running BeamNG.Tech
 ^^^^^^^^^^^^^^^^^^^
 
-After installing `BeamNGpy <https://github.com/BeamNG/BeamNGpy>`_, and setup BeamNG.Tech, you can run BeamNG.py from the Powershell as shown in the picture below.
+After installing `BeamNGpy <https://github.com/BeamNG/BeamNGpy>`__, and setup BeamNG.Tech, you can run BeamNG.py from the Powershell as shown in the picture below.
 
 .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/bngpy.png
   :width: 800
@@ -142,7 +144,7 @@ Running beamng_agent
 * Loading beamng_agent node for enabling the control from ROS side:
     ``roslaunch beamng_agent example.launch``
 
-The folloing topics for move/stop the vehicle in simulation and enable/disable keybard control from the simulation side:
+The folloing topics for move/stop the vehicle in simulation and enable/disable keybard control from the simulation side; using an array of commands as following [steering throttle brake parkingbrake clutch gear], here's some exmaples of the ```VehicleControl``` :
 
 * Driving:
     ``rostopic pub --once control beamng_msgs/VehicleControl 0 1 0 0 0 1``
@@ -230,7 +232,7 @@ Various services to control the state of the simulation are available.
    ``rosservice call /beamng_control/get_loggers``
 
 Note
-^^^^^
+^^^^
 
   - if you got a feedback `success: False` for `resume` or `pause` services, that means your `beamng_agent` node isn't active, and you will getting the following error message in the terminal of `beamng_control` node:
 

@@ -24,9 +24,10 @@ Color = Union[Float3, Float4, str]
 '''
 Vehicle color. Can be either:
 
-    - ``(R, G, B)`` tuple of floats,
-    - ``(R, G, B, A)`` tuple of floats,
-    - string of format ``'R G B'``,
-    - string of format ``'R G B A'``,
+    - ``(R, G, B)`` tuple of floats between 0.0 and 1.0,
+    - ``(R, G, B, A)`` tuple of floats between 0.0 and 1.0,
+    - string of format ``'R G B'``, where ``R``, ``G``, and ``B`` are floats between 0.0 and 1.0,
+    - string of format ``'R G B A'``, where ``R``, ``G``, ``B``, and ``A`` are floats between 0.0 and 1.0,
     - a common color name (parsable by ``matplotlib.colors``).
 '''
+Time = Union[float, str]

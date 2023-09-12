@@ -3,16 +3,9 @@ from __future__ import annotations
 import random
 
 import numpy as np
-import pytest
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat
 from beamngpy.sensors import IMU, Damage, Electrics, State
-
-
-@pytest.fixture()
-def beamng():
-    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
-    return beamng
 
 
 def test_electrics(beamng: BeamNGpy):
@@ -155,6 +148,7 @@ def test_imu(beamng: BeamNGpy):
         for parr, narr in zip([pax, pay, paz, pgx, pgy, pgz],
                               [nax, nay, naz, ngx, ngy, ngz]):
             assert np.mean(parr) != np.mean(narr)
+
 
 if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)

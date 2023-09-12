@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from beamngpy.logging import BNGError, BNGValueError
 from beamngpy.scenario import Scenario, ScenarioObject
@@ -8,6 +8,9 @@ from beamngpy.scenario.level import Level
 from beamngpy.types import Float3, Quat, StrDict
 
 from .base import Api
+
+if TYPE_CHECKING:
+    from beamngpy.vehicle import Vehicle
 
 
 class ScenarioApi(Api):
@@ -141,24 +144,33 @@ class ScenarioApi(Api):
         resp = self._send(data).recv('ScenarioName')
         return resp['name']
 
-    def load(self, scenario: Scenario) -> None:
+    def load(self, scenario: Scenario, precompile_shaders: bool = True,
+             connect_player_vehicle: bool = True, connect_existing_vehicles: bool = True) -> None:
         """
         Loads the given scenario in the simulation and returns once loading
         is finished.
 
         Args:
             scenario: The scenario to load.
+            precompile_shaders: Whether the shaders should be compiled before the start of the scenario.
+                                If False, the first load of a map will take a longer time, but disabling
+                                the precompilation can lead to issues with the :class:`Camera` sensor.
+                                Defaults to True.
+            connect_player_vehicle: Whether the player vehicle should be connected
+                                    to this (:class:``.Scenario``) instance. Defaults to True.
+            connect_existing_vehicles: Whether ALL vehicles spawned already in the scenario should be connected
+                                       to this (:class:``.Scenario``) instance. Defaults to True.
         """
         # clean up the vehicle connections if the `scenario` object is reused multiple times
         for vehicle in scenario.vehicles.values():
             if vehicle.connection:
                 vehicle.disconnect()
 
-        data = {'type': 'LoadScenario', 'path': scenario.path}
+        data = {'type': 'LoadScenario', 'path': scenario.path, 'precompileShaders': precompile_shaders}
         self._send(data).ack('MapLoaded')
         self._logger.info('Loaded map.')
         self._beamng._scenario = scenario
-        self._beamng._scenario.connect(self._beamng)
+        self._beamng._scenario.connect(self._beamng, connect_player_vehicle, connect_existing_vehicles)
 
     def teleport_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
         """
@@ -304,3 +316,20 @@ class ScenarioApi(Api):
                                   **obj['options'])
             ret.append(sobj)
         return ret
+
+    def get_vehicle(self, vehicle_id: str) -> Vehicle | None:
+        """
+        Retrieves the vehicle with the given ID from the currently loaded scenario.
+
+        Args:
+            vehicle_id: The ID of the vehicle to find.
+
+        Returns:
+            The :class:`.Vehicle` with the given ID. None if it wasn't found.
+        """
+        scenario = self._beamng._scenario
+        if not scenario:
+            scenario = self.get_current()
+            scenario._load_existing_vehicles()
+
+        return scenario.get_vehicle(vehicle_id)

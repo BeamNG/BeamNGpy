@@ -6,12 +6,11 @@ from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, List
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 import beamngpy.sensors.shmem as shmem
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.sensors.communication_utils import (send_sensor_request,
-                                                  set_sensor)
+from beamngpy.sensors.communication_utils import (send_sensor_request, set_sensor)
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 
 from . import utils
@@ -119,8 +118,8 @@ class Camera:
             update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
             dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512),
             field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
-            is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = False,
-            is_render_instance: bool = False, is_render_depth: bool = False, is_depth_inverted: bool = False,
+            is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True,
+            is_render_instance: bool = False, is_render_depth: bool = True, is_depth_inverted: bool = False,
             is_visualised: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
             is_force_inside_triangle: bool = False):
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
@@ -212,11 +211,7 @@ class Camera:
         decoded = decoded.reshape(height, width, 4)
 
         # Convert to image format.
-        image = Image.fromarray(decoded)
-        if self.is_static:
-            return image
-        else:
-            return ImageOps.mirror(ImageOps.flip(image))
+        return Image.fromarray(decoded)
 
     def _depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
         """
@@ -229,46 +224,37 @@ class Camera:
         Returns:
             The processed intensity values in the range [0, 255].
         """
-
         # Sort the depth values, and cache the sorting map.
         sort_index = np.argsort(raw_depth_values)
-        s_data = []
-        for i in range(len(raw_depth_values)):
-            s_data.append(raw_depth_values[sort_index[i]])
+        s_data = raw_depth_values[sort_index]
 
         # Compute an array of unique depth values, sensitive to some epsilon.
-        size = len(s_data)
-        unique = []
-        unique.append(s_data[0])
-        current = s_data[0]
-        for i in range(1, size):
-            if abs(s_data[i] - current) > 0.01:
-                unique.append(s_data[i])
-                current = s_data[i]
+        eps = 0.01
+        rounded_depth = (s_data * (1 // eps)).astype(np.int32)
+        _, indices = np.unique(rounded_depth, return_index=True)
+        unique = s_data[indices]
 
         # Distribute (mark) the individual intensity values throughout the sorted unique distance array.
-        intensity_marks = []
-        intensity_marks.append(0)
-        i_reciprocal = 1.0 / 255.0
-        for i in range(254):
-            intensity_marks.append(unique[math.floor(len(unique) * i * i_reciprocal)])
-        intensity_marks.append(1e12)
+        intensity_marks = np.empty((256, ))
+        intensity_marks[0] = 0
+        intensity_marks[-1] = 1e12
+        quantiles = np.arange(254) * (len(unique) / 255.0)
+        quantiles = quantiles.astype(np.int32)
+        intensity_marks[1:255] = unique[quantiles]
 
         # In the sorted depth values array, convert the depth value array into intensity values.
-        depth_intensity_sorted = np.zeros((size))
-        im_index = 0
-        for i in range(size):
-            depth_intensity_sorted[i] = im_index
-            if s_data[i] >= intensity_marks[im_index + 1]:
-                im_index = im_index + 1
+        depth_intensity_sorted = np.zeros_like(s_data)
+        last_idx = 0
+        for i in range(1, 256):
+            idx = np.searchsorted(s_data[last_idx:], intensity_marks[i], 'left') + 1 + last_idx
+            depth_intensity_sorted[last_idx:idx] = i - 1
+            last_idx = idx
 
         # Re-map the depth values back to their original order.
-        depth_intensity = np.zeros((size))
-        for i in range(len(raw_depth_values)):
-            if self.is_depth_inverted:
-                depth_intensity[sort_index[i]] = 255 - depth_intensity_sorted[i]
-            else:
-                depth_intensity[sort_index[i]] = depth_intensity_sorted[i]
+        depth_intensity = np.empty_like(s_data)
+        depth_intensity[sort_index] = depth_intensity_sorted
+        if self.is_depth_inverted:
+            depth_intensity = 255 - depth_intensity
 
         return depth_intensity
 
@@ -302,10 +288,7 @@ class Camera:
                 processed_values = self._depth_buffer_processing(depth)
                 reshaped_data = processed_values.reshape(height, width)
                 image = Image.fromarray(reshaped_data)
-                if self.is_static:
-                    processed_readings['depth'] = image
-                else:
-                    processed_readings['depth'] = ImageOps.mirror(ImageOps.flip(image))
+                processed_readings['depth'] = image
 
         return processed_readings
 
@@ -350,7 +333,6 @@ class Camera:
         # Send and receive a request for readings data from this sensor.
         raw_readings = self._send_sensor_request(
             'PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
-
         self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
 
         # Decode the raw sensor readings into image data. This is handled differently, depending on whether shared memory is used or not.
@@ -491,16 +473,6 @@ class Camera:
         """
         table = self._send_sensor_request('GetCameraSensorDirection',
                                           ack='CompletedGetCameraSensorDirection', name=self.name)['data']
-        return (table['x'], table['y'], table['z'])
-
-    def get_up(self) -> Float3:
-        """
-        Gets the current up direction vector of this sensor.
-
-        Returns:
-            The sensor direction.
-        """
-        table = self._send_sensor_request('GetCameraSensorUp', ack='CompletedGetCameraSensorUp', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_requested_update_time(self) -> float:

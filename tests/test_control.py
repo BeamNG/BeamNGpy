@@ -2,15 +2,7 @@ from __future__ import annotations
 
 import time
 
-import pytest
-
 from beamngpy import BeamNGpy, Scenario, Vehicle
-
-
-@pytest.fixture()
-def beamng():
-    beamng = BeamNGpy('localhost', 64256, quit_on_close=False)
-    return beamng
 
 
 def test_camera_control(beamng: BeamNGpy):

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 __all__ = ['IMU']
 
+
 class IMU(Sensor):
     """
     An IMU measures forces and rotational acceleration at a certain point on a
@@ -59,9 +60,8 @@ class IMU(Sensor):
         regardless of its position in the world. This is to make addition of
         IMUs independent of the vehicle spawn position. To find an appropriate
         position relative to the vehicle's origin, it's recommended to inspect
-        the vehicle's nodes in the vehicle editor ingame and retrieve the
-        original relative positions of nodes close to the desired measurement
-        point.
+        the vehicle's nodes in the vehicle editor and retrieve the original relative
+        positions of nodes close to the desired measurement point.
 
         Args:
             name: The name this IMU is identified by. This is mainly
@@ -81,7 +81,7 @@ class IMU(Sensor):
         """
         Adds an IMU to this vehicle at the given node identified by the given
         name. The node is specified as a number and can be found by inspecting
-        the vehicle using the ingame vehicle editor.
+        the vehicle using the vehicle editor.
 
         Args:
             name: The name this IMU is identified by. This is mainly used to later remove an IMU.

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from beamngpy.types import Float3, Quat, StrDict
+from beamngpy.utils.validation import validate_object_name
+
+if TYPE_CHECKING:
+    from beamngpy import BeamNGpy
 
 
 class ScenarioObject:
@@ -68,6 +72,9 @@ class ScenarioObject:
         self.opts = options
         self.children = []
 
+        if self.name is not None:
+            validate_object_name(self.name)
+
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, type(self)):
             return self.id == other.id
@@ -82,6 +89,10 @@ class ScenarioObject:
 
     def __repr__(self) -> str:
         return str(self)
+
+    def remove(self, bng: BeamNGpy) -> None:
+        data: StrDict = dict(type='RemoveObject', name=self.name)
+        bng._send(data).ack('RemovedObject')
 
 
 class SceneObject:
