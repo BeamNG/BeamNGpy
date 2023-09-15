@@ -119,7 +119,7 @@ class BeamNGpy:
 
     def open(self, extensions: List[str] | None = None, *args: str,
              launch: bool = True, crash_lua_on_error: bool | None = None,
-             listen_ip: str = '127.0.0.1', **opts: str) -> BeamNGpy:
+             listen_ip: str | None = None, **opts: str) -> BeamNGpy:
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the spawned BeamNG.* process to connect.
         This method blocks until the process started and is ready.
@@ -132,8 +132,8 @@ class BeamNGpy:
                                 happens and prints the stacktrace instead.
                                 Is applicable only when the process is launched by this instance of BeamNGpy,
                                 as it sets a launch argument of the process. Defaults to False.
-            bind_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
-                     Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
+            listen_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
+                       Set to ``*`` if you want BeamNG to listen on ALL network interfaces. Defaults to ``self.host``.
         """
         self.connection = Connection(self.host, self.port)
 
@@ -151,6 +151,8 @@ class BeamNGpy:
                 arg_list.append('-tcom-debug')
             elif crash_lua_on_error == False:
                 arg_list.append('-no-tcom-debug')
+            if listen_ip is None:
+                listen_ip = self.host
             arg_list.extend(('-tcom-listen-ip', listen_ip))
 
             self._start_beamng(extensions, *arg_list, **opts)
@@ -291,7 +293,11 @@ class BeamNGpy:
             return
         if os.name == 'nt':
             with open(os.devnull, 'w') as devnull:
-                subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)], stdout=devnull, stderr=devnull)
+                try:
+                    subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)],
+                                    stdout=devnull, stderr=devnull)
+                except ModuleNotFoundError:  # happens when win32 library is not installed
+                    self.logger.info('cannot kill BeamNG.tech process because of missing `win32` library')
         else:
             try:
                 os.kill(self.process.pid, signal.SIGTERM)
