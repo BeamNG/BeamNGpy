@@ -4,6 +4,7 @@ extract data from simulations.
 """
 
 from .advanced_IMU import AdvancedIMU
+from .GPS import GPS
 from .camera import Camera
 from .damage import Damage
 from .electrics import Electrics
