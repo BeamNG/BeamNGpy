@@ -17,10 +17,10 @@ def main():
     vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')
 
     # Create a scenario.
-    scenario = Scenario('smallgrid', 'GPS_Trajectory', description='GPS')
+    scenario = Scenario('italy', 'GPS_Trajectory', description='GPS')
 
     # Add the vehicle to the scenario.
-    scenario.add_vehicle(vehicle)
+    scenario.add_vehicle(vehicle, pos=(245.11, -906.94, 247.46), rot_quat=(0.0010, 0.1242, 0.9884, -0.0872))
     scenario.make(bng)
 
     # Set simulator to 60hz temporal resolution
@@ -30,12 +30,12 @@ def main():
     bng.scenario.start()
 
     # Set the reference longitude and lattitude (this should be where the map origin is on the world spherical surface).
-    refLon, refLat = 8.8017, 53.0793
+    ref_lon, ref_lat = 8.8017, 53.0793
 
     # Create two GPS sensors to sit above the vehicle (for easy visibility) - one towards the front of the car, one towards the rear.
     # Note: we use the same reference longitude and lattitude for both sensors, to sync their positions.
-    gps_front = GPS('front', bng, vehicle, pos=(0, 1.5, 2.0), refLon = refLon, refLat = refLat, is_visualised = True)
-    gps_rear = GPS('rear', bng, vehicle, pos=(0, -1.5, 2.0), refLon = refLon, refLat = refLat, is_visualised = True)
+    gps_front = GPS('front', bng, vehicle, pos=(0, 1.5, 2.0), ref_lon = ref_lon, ref_lat = ref_lat, is_visualised = True)
+    gps_rear = GPS('rear', bng, vehicle, pos=(0, -1.5, 2.0), ref_lon = ref_lon, ref_lat = ref_lat, is_visualised = True)
 
     print("Driving around, storing GPS readings every second, for a few seconds...")
     vehicle.ai.set_mode('span')

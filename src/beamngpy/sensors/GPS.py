@@ -21,7 +21,7 @@ class GPS:
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
-        refLon: float = 0.0, refLat: float = 0.0, is_send_immediately: bool = False, is_visualised: bool = True, is_snapping_desired: bool = False,
+        ref_lon: float = 0.0, ref_lat: float = 0.0, is_send_immediately: bool = False, is_visualised: bool = True, is_snapping_desired: bool = False,
         is_force_inside_triangle: bool = False):
 
         self.logger = getLogger(f'{LOGGER_ID}.GPS')
@@ -34,7 +34,7 @@ class GPS:
         self.is_send_immediately = is_send_immediately
 
         # Create and initialise this sensor in the simulation.
-        self._open_GPS(name, vehicle, gfx_update_time, physics_update_time, pos, refLon, refLat, is_send_immediately,
+        self._open_GPS(name, vehicle, gfx_update_time, physics_update_time, pos, ref_lon, ref_lat, is_send_immediately,
             is_visualised, is_snapping_desired, is_force_inside_triangle)
 
         # Fetch the unique Id number (in the simulator) for this GPS sensor.  We will need this later.
@@ -141,7 +141,7 @@ class GPS:
         return int(
             self._send_sensor_request('GetGPSId', ack='CompletedGetGPSId', name=self.name)['data'])
 
-    def _open_GPS(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3, refLon: float, refLat: float,
+    def _open_GPS(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3, ref_lon: float, ref_lat: float,
         is_send_immediately: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
         data: StrDict = dict(type='OpenGPS')
         data['name'] = name
@@ -149,8 +149,8 @@ class GPS:
         data['GFXUpdateTime'] = gfx_update_time
         data['physicsUpdateTime'] = physics_update_time
         data['pos'] = pos
-        data['refLon'] = refLon
-        data['refLat'] = refLat
+        data['refLon'] = ref_lon
+        data['refLat'] = ref_lat
         data['isSendImmediately'] = is_send_immediately
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
