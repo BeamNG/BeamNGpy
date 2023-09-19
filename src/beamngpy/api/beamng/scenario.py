@@ -243,13 +243,12 @@ class ScenarioApi(Api):
 
     def get_roads(self) -> StrDict:
         """
-        Retrieves the vertex data of all DecalRoads in the current scenario.
-        The vertex data of a DecalRoad is formatted as point triples, where
-        each triplet represents the left, centre, and right points of the edges
-        that make up a DecalRoad.
+        Retrieves the metadata of all DecalRoads in the current scenario.
+        The metadata of a DecalRoad is formatted as a dictionary with the following keys:
+
 
         Returns:
-            A dict mapping DecalRoad IDs to lists of point triples.
+            A dict mapping DecalRoad IDs to their metadata..
         """
         if not self._beamng._scenario:
             raise BNGError('Need to be in a started scenario to get its '
@@ -259,7 +258,7 @@ class ScenarioApi(Api):
         resp = self._send(data).recv('DecalRoadData')
         return resp['data']
 
-    def get_road_edges(self, road: str) -> List[Dict[str, Float3]]:
+    def get_road_edges(self, road: str) -> List[Dict[str, Dict[str, Float3]]]:
         """
         Retrieves the edges of the road with the given name and returns them
         as a list of point triplets. Roads are defined by a series of lines
@@ -273,8 +272,8 @@ class ScenarioApi(Api):
             road: Name of the road to get edges from.
 
         Returns:
-            The road edges as a list of (left, center, right) point triplets.
-            Each point is an (X, Y, Z) coordinate triplet.
+            The road edges as a list of dictionaries with (``left``, ``middle``, ``right``) points.
+            Each point is an ``(X, Y, Z)`` coordinate triplet.
         """
         data = dict(type='GetDecalRoadEdges')
         data['road'] = road
