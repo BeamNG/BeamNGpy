@@ -72,10 +72,14 @@ class Ultrasonic:
         self.name = name
 
         # Shared memory for velocity data streaming.
-        pid = os.getpid()
-        self.shmem_size = 4
-        self.shmem_handle = f'{pid}.{name}.Ultrasonic'
-        self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
+        self.shmem_size = None
+        self.shmem_handle = None
+        self.shmem = None
+        if is_streaming == True:
+            pid = os.getpid()
+            self.shmem_size = 4
+            self.shmem_handle = f'{pid}.{name}.Ultrasonic'
+            self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
 
         # Create and initialise this sensor in the simulation.
         self._open_ultrasonic(
