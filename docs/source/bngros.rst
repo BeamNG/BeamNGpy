@@ -121,7 +121,7 @@ Using it will start up a node that connects to the simulation and starts up a sc
 +-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
 |``"rotation"``               |Array             |Array of 4 floats, specifying the vehicle rotation quaternion.                                                          | Mandatory  |
 +-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
-|``"structured_sensors"``     |Array             |Array of JSON objects, specifying the vehicles sensor parameters i.e., electrics, IMU, damage, gforce, and time sensor  | Optional   |
+|``"attached_sensors"``       |Array             |Array of JSON objects, specifying the attached sensors in vehicle i.e., electrics, IMU, damage, gforce, and time sensor | Optional   |
 +-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
 |``"ad-hoc_sensors"``         |Array             |Array of JSON objects, specifying the ad-hoc_sensors parameters i.e., Lidar, camera, and Ultrasonic sensor              | Optional   |
 +-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
