@@ -31,7 +31,7 @@ Running the BeamNG ROS integration requires three individual software components
 +-------------+----------+------------------------+
 | BeamNG.tech | BeamNGpy | BeamNG ROS Integration |
 +=============+==========+========================+
-| 0.30        | 1.26.1   | 0.1.4                  |
+| 0.30        | 1.27     | 0.1.4                  |
 +-------------+----------+------------------------+
 | 0.28        | 1.26     | 0.1.3                  |
 +-------------+----------+------------------------+
@@ -216,7 +216,7 @@ Various services to control the state of the simulation are available.
 
 
 - Clone a new vehicle:
-    ``rosservice call /beamng_control/spawn_vehicle 'ros' [0,5,10] [0,0,0,1] "/config/vehicles/etk800.json"``
+    ``rosservice call /beamng_control/spawn_vehicle 'ros' [-717,101,150] [0,0,0,1] "/config/vehicles/etk800.json""``
 
 
 - Load a new scenario:
@@ -267,13 +267,13 @@ List of ROS-topics
 Contrary to other sensors, the Camera sensor may publish to multiple topics.
 If the camera sensor is configured to collect color, depth, annotation, and instance data, it is published to the respective topics:
 
-      `/beamng_control/<vehicle_id>/<camera_name>/color`
+      ``/beamng_control/<vehicle_id>/<camera_name>/color``
 
-      `/beamng_control/<vehicle_id>/<camera_name>/depth`
+      ``/beamng_control/<vehicle_id>/<camera_name>/depth``
 
-      `/beamng_control/<vehicle_id>/<camera_name>/annotation`
+      ``/beamng_control/<vehicle_id>/<camera_name>/annotation``
 
-      `/beamng_control/<vehicle_id>/<camera_name>/instance`
+      ``/beamng_control/<vehicle_id>/<camera_name>/instance``
 
 The message type for all topics is `sensor_msgs.msg.Image`.
 Note that although the bounding_box option is given, this feature is still under development and will automatically be disabled.
