@@ -24,6 +24,7 @@ __all__ = ['Mesh']
 class Mesh:
     """
     An automated 'sensor' to retrieve mesh data in real time.
+
     Args:
         name: A unique name for this mesh sensor.
         bng: The BeamNGpy instance, with which to communicate to the simulation.
