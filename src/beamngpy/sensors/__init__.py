@@ -19,3 +19,5 @@ from .state import State
 from .timer import Timer
 from .ultrasonic import Ultrasonic
 from .vehicle_feeder import VehicleFeeder
+from .roadsSensor import roadsSensor
+from .IdealRADARSensor import IdealRADAR
