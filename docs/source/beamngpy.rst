@@ -127,6 +127,12 @@ Radar
    :members:
    :undoc-members:
 
+Ideal Radar
+^^^^^^^^^^^
+.. autoclass:: beamngpy.sensors.IdealRadar
+   :members:
+   :undoc-members:
+
 Mesh Sensor
 ^^^^^^^^^^^
 .. autoclass:: beamngpy.sensors.Mesh
@@ -136,6 +142,12 @@ Mesh Sensor
 GPS
 ^^^
 .. autoclass:: beamngpy.sensors.GPS
+   :members:
+   :undoc-members:
+
+Roads Sensor
+^^^^^^^^^^^^
+.. autoclass:: beamngpy.sensors.RoadsSensor
    :members:
    :undoc-members:
 

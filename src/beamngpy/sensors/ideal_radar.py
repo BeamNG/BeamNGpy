@@ -12,10 +12,10 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['IdealRADAR']
+__all__ = ['IdealRadar']
 
 
-class IdealRADAR:
+class IdealRadar:
     """
     Args:
         name: A unique name for this ideal RADAR sensor.
