@@ -65,7 +65,6 @@ class Level:
             self.logger.debug(f'No path given, setting path to \'{path}\'')
 
         self.properties = props
-        self.scenarios = {}
         prop_description = ', '.join(list(self.properties.keys()))
         self.logger.debug('adding these properties to level object: '
                           f'{prop_description}')

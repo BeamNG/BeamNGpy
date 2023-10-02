@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import collections as mc
 
+from beamngpy import vec3
 from beamngpy.logging import LOGGER_ID, BNGError
-from beamngpy.misc import vec3
 from beamngpy.sensors.communication_utils import (send_sensor_request,
                                                   set_sensor)
 from beamngpy.types import StrDict

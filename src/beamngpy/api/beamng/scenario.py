@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple, cast
 
 from beamngpy.logging import BNGError, BNGValueError
 from beamngpy.scenario import Scenario, ScenarioObject
@@ -35,63 +35,71 @@ class ScenarioApi(Api):
         levels = {l.name: l for l in levels}
         return levels
 
-    def get_scenarios(self, levels: Dict[str, Level] | None = None) -> Dict[str, Scenario]:
+    def get_scenarios(self, levels: Iterable[str | Level] | None = None) -> Dict[str, List[Scenario]]:
         """
         Queries the available scenarios and returns them as a mapping of
         paths to :class:`.Scenario` instances. The scenarios are constructed
         to point to their parent levels, so to avoid extra queries to the
         simulator about existing levels, a cache of available levels can be
-        passed to this method.
+        passed to this method. If a partial list of levels is supplied, then
+        only scenarios for these levels will be queried and returned.
 
         Args:
-            levels: A dictionary of level names to :class:`.Level`
-                    instances to fill in the parent level of returned
-                    scenarios.
+            levels: A list of level names or :class:`.Level` instances to get scenarios
+                    for. If None, scenarios from all levels will be returned.
 
         Returns:
-            A mapping of scenario paths to their corresponding
-            :class:`.Scenario` instance.
+            A mapping of level names to lists of :class:`.Scenario` instances.
         """
         if levels is None:
             levels = self.get_levels()
+        elif not(all(isinstance(level, Level) for level in levels)):
+            levels_sim = self.get_levels()
+            levels = {levels_sim[str(level)].name: levels_sim[str(level)] for level in levels}
+        else:
+            levels = {str(level): level for level in levels}
+        levels = cast(Dict[str, Level], levels)  # for the type checker
 
-        scenarios = self._message('GetScenarios')
-        scenarios = [Scenario.from_dict(s) for s in scenarios]
-        scenarios = {str(s.path): s for s in scenarios if s.level in levels.keys()}
-        for _, scenario in scenarios.items():
-            assert isinstance(scenario.level, str)
-            scenario.level = levels[scenario.level]
+        scenarios = self._message('GetScenarios', levels=list(str(level) for level in levels))
+        scenarios_levels = {'unknown': []}
 
-        return scenarios
+        # allow case-independent level names in the scenarios
+        levels_lower = {str(level).lower(): str(level) for level in levels}
 
-    def get_level_scenarios(self, level: str | Level) -> Dict[str, Scenario]:
+        if len(scenarios) == 0:
+            scenarios = {}
+        for path, s in scenarios.items():
+            scenario = Scenario.from_dict(s)
+            level_name = str(scenario.level)
+            level_lower = level_name.lower()
+            if level_lower not in levels_lower:
+                continue
+            scenario.level = levels[levels_lower[level_lower]]
+
+            if level_name not in scenarios_levels:
+                scenarios_levels[level_name] = []
+            scenarios_levels[level_name].append(scenario)
+
+        if not scenarios_levels['unknown']:
+            del scenarios_levels['unknown']
+
+        return scenarios_levels
+
+    def get_level_scenarios(self, level: str | Level) -> List[Scenario]:
         """
         Queries the simulator for all scenarios available in the  given level.
 
         Args:
             level: The level to get scenarios for. Can either be the name of
-                    the level as a string or an instance of :class:`.Level`
+                    the level as a string or an instance of :class:`.Level`.
 
         Returns:
-            A mapping of scenario paths to their corresponding
-            :class:`.Scenario` instance.
+            A list of :class:`.Scenario` instances.
         """
-        level_name = None
-        if isinstance(level, Level):
-            level_name = level.name
-        else:
-            level_name = level
+        level_name = level.name if isinstance(level, Level) else level
+        return self.get_scenarios([level]).get(level_name, [])
 
-        scenarios = self._message('GetScenarios')
-        scenarios = [Scenario.from_dict(s) for s in scenarios]
-        scenarios = {str(s.path): s for s in scenarios if s.level == level_name}
-
-        for scenario in scenarios.values():
-            scenario.level = level
-
-        return scenarios
-
-    def get_levels_and_scenarios(self) -> Tuple[Dict[str, Level], Dict[str, Scenario]]:
+    def get_levels_and_scenarios(self) -> Tuple[Dict[str, Level], Dict[str, List[Scenario]]]:
         """
         Utility method that retrieves all levels and scenarios and returns
         them as a tuple of (levels, scenarios).
@@ -102,34 +110,29 @@ class ScenarioApi(Api):
         levels = self.get_levels()
         scenarios = self.get_scenarios(levels=levels)
 
-        for scenario in scenarios.values():
-            assert isinstance(scenario.level, Level)
-            level_scenarios = scenario.level.scenarios
-            level_scenarios[scenario.path] = scenario
-
         return levels, scenarios
 
-    def get_current(self, levels: Dict[str, Level] | None = None) -> Scenario:
+    def get_current(self, connect: bool = True) -> Scenario:
         """
         Queries the currently loaded scenario from the simulator.
 
         Args:
-            levels: A mapping of level names to :class:`.Level` instances
+            connect: Whether to connect the returned scenario and the currently
+                     loaded vehicles to BeamNGpy. Defaults to True. If set to
+                     False, you can still manually connect the returned scenario
+                     by running :func:`.Scenario.connect`.
 
         Returns:
-            A :class:`.Scenario` instance of the currently-loaded scenario. If
-            the ``levels`` parameter contains the level the scenario is taking
-            place in, the scenario's parent level field will be filled in
-            accordingly.
+            A :class:`.Scenario` instance of the currently-loaded scenario.
+            The scenario's parent level field will be filled in accordingly.
         """
         scenario = self._message('GetCurrentScenario')
         if not scenario:
             raise BNGValueError('The current scenario could not be retrieved.')
         scenario = Scenario.from_dict(scenario)
 
-        if levels is not None:
-            if scenario.level in levels:
-                scenario.level = levels[scenario.level]
+        if connect:
+            scenario.connect(self._beamng)
 
         return scenario
 
@@ -240,13 +243,12 @@ class ScenarioApi(Api):
 
     def get_roads(self) -> StrDict:
         """
-        Retrieves the vertex data of all DecalRoads in the current scenario.
-        The vertex data of a DecalRoad is formatted as point triples, where
-        each triplet represents the left, centre, and right points of the edges
-        that make up a DecalRoad.
+        Retrieves the metadata of all DecalRoads in the current scenario.
+        The metadata of a DecalRoad is formatted as a dictionary with the following keys:
+
 
         Returns:
-            A dict mapping DecalRoad IDs to lists of point triples.
+            A dict mapping DecalRoad IDs to their metadata..
         """
         if not self._beamng._scenario:
             raise BNGError('Need to be in a started scenario to get its '
@@ -256,7 +258,7 @@ class ScenarioApi(Api):
         resp = self._send(data).recv('DecalRoadData')
         return resp['data']
 
-    def get_road_edges(self, road: str) -> List[Dict[str, Float3]]:
+    def get_road_edges(self, road: str) -> List[Dict[str, Dict[str, Float3]]]:
         """
         Retrieves the edges of the road with the given name and returns them
         as a list of point triplets. Roads are defined by a series of lines
@@ -270,8 +272,8 @@ class ScenarioApi(Api):
             road: Name of the road to get edges from.
 
         Returns:
-            The road edges as a list of (left, center, right) point triplets.
-            Each point is an (X, Y, Z) coordinate triplet.
+            The road edges as a list of dictionaries with (``left``, ``middle``, ``right``) points.
+            Each point is an ``(X, Y, Z)`` coordinate triplet.
         """
         data = dict(type='GetDecalRoadEdges')
         data['road'] = road

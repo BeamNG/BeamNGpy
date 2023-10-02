@@ -212,6 +212,8 @@ class VehiclesApi(Api):
             a :class:`.Vehicle`.
         """
         info = self._message('GetCurrentVehicles', include_config=include_config)
+        if not info:
+            return {}
         for vid, vehicle in info.items():
             vehicle['id'] = int(vehicle['id'])
         return info

@@ -74,5 +74,5 @@ def test_multi_scenario(beamng: BeamNGpy):
         a_client.scenario.start()
 
         running = b_client.scenario.get_current()
-        assert running.level == scenario.level
+        assert str(running.level) == scenario.level
         assert running.name == scenario.name

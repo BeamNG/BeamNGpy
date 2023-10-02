@@ -37,6 +37,21 @@ def angle_to_quat(angle: Float3) -> Quat:
     return (x, y, z, w)
 
 
+def normalize(q: Quat) -> Quat:
+    """
+    Normalizes the given quaternion.
+
+    Args:
+        q: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
+
+    Returns:
+        The normalized quaternion.
+    """
+    d = math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3])
+    d_inv = 1.0 / max(1e-7, d)
+    return (q[0] * d_inv, q[1] * d_inv, q[2] * d_inv, q[3] * d_inv)
+
+
 def compute_rotation_matrix(quat: Quat) -> ndarray:
     """
     Calculates the rotation matrix for the given quaternion
@@ -61,20 +76,21 @@ def compute_rotation_matrix(quat: Quat) -> ndarray:
     return rot_mat
 
 
-def quat_as_rotation_mat_str(quat: Quat) -> str:
+def quat_as_rotation_mat_str(quat: Quat, delimiter: str = ' ') -> str:
     """
     For a given quaternion, the function computes the corresponding rotation
     matrix and converts it into a string.
 
     Args:
         quat: Quaternion with the order ``(x, y, z, w)`` with ``w`` representing the real component.
+        delimiter: The string with which the elements of the matrix are divided.
 
     Returns:
         Rotation matrix as a string.
     """
     mat = compute_rotation_matrix(quat)
     mat = mat.reshape(9).astype(str)
-    return ' '.join(mat)
+    return delimiter.join(mat)
 
 
 def quat_multiply(a: Quat, b: Quat) -> Quat:

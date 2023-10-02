@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import math
 import xml.etree.ElementTree as ET
+from typing import TYPE_CHECKING
 
-from beamngpy import MeshRoad
-from beamngpy.misc import vec3
+from beamngpy import MeshRoad, vec3
+
+if TYPE_CHECKING:
+    from beamngpy import Scenario
 
 # User control parameters
 # The default road width value (when no width is supplied to a 'way').
@@ -15,7 +20,7 @@ DEFAULT_DEPTH = 1.0
 # A container for storing a road polyline, before rendering in BeamNG.
 
 
-class road:
+class Road:
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
@@ -23,7 +28,7 @@ class road:
 # A container for storing an OpenStreetMap way, with any relevant metadata.
 
 
-class way:
+class Way:
     def __init__(self, nodes, width):
         self.nodes = nodes
         self.width = width
@@ -53,11 +58,11 @@ class OpenStreetMapImporter:
                         nd.append(j.attrib['ref'])
                     elif j.tag == 'tag' and j.attrib['k'] == 'width':
                         width = float(j.attrib['v'])
-                ways[int(i.attrib['id'])] = way(nd, width)
+                ways[int(i.attrib['id'])] = Way(nd, width)
         return nodes, ways, minLat, maxLat, minLon, maxLon
 
     @staticmethod
-    def import_osm(filename, scenario):
+    def import_osm(filename, scenario: Scenario):
 
         # Extract the road data primitives from the OpenStreetMap file.
         print("Extracting road data from file...")
@@ -79,7 +84,7 @@ class OpenStreetMapImporter:
             for i in range(len(w.nodes)):
                 nd = nodes[w.nodes[i]]
                 nds.append([nd.x, nd.y, DEFAULT_ELEVATION, w.width, DEFAULT_DEPTH])
-            roads.append(road('imported_' + str(id), nds))
+            roads.append(Road('imported_' + str(id), nds))
 
         # Create the all the roads from the road polyline data.
         print("Loading import in scenario...")

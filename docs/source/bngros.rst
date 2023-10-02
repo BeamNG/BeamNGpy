@@ -31,13 +31,17 @@ Running the BeamNG ROS integration requires three individual software components
 +-------------+----------+------------------------+
 | BeamNG.tech | BeamNGpy | BeamNG ROS Integration |
 +=============+==========+========================+
-| 0.28        | 1.26     | 0.1.3                  |
+| 0.30        | 1.27     | 0.4                    |
 +-------------+----------+------------------------+
-| 0.27        | 1.25.1   | 0.1.2                  |
+| 0.29        | 1.26.1   | 0.3                    |
++-------------+----------+------------------------+
+| 0.28        | 1.26     | 0.2.1                  |
++-------------+----------+------------------------+
+| 0.27        | 1.25.1   | 0.2                    |
 +-------------+----------+------------------------+
 | 0.26        | 1.24     | 0.1.1                  |
 +-------------+----------+------------------------+
-| 0.25        | 1.23.1   | 0.1.0                  |
+| 0.25        | 1.23.1   | 0.1                    |
 +-------------+----------+------------------------+
 
 WSL2 setup
@@ -106,20 +110,25 @@ Using it will start up a node that connects to the simulation and starts up a sc
 
 
 - Vehicles are also defined as JSON objectsin `beamng_control/config/vehicles/{vehicle}.json`.
+.. TODO: add  
 
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|Key                   |Value Type        | Value Specification                                                                 | Entry Type |
-+======================+==================+=====================================================================================+============+
-|``"name"``            |String            |Name of the vehicle, used for identification                                         | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``"model"``           |String            |Name of the vehicle type, f.ex. ``etk800``                                           | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``"position"``        |Array             |Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the vehicle.   | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``"rotation"``        |Array             |Array of 4 floats, specifying the vehicle rotation quaternion.                       | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``"sensors"``         |Array             |Array of JSON objects, specifying the vehicles sensor parameters.                    | Optional   |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|Key                          |Value Type        | Value Specification                                                                                                    | Entry Type |
++=============================+==================+========================================================================================================================+============+
+|``"name"``                   |String            |Name of the vehicle, used for identification                                                                            | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``"model"``                  |String            |Name of the vehicle type, f.ex. ``etk800``                                                                              | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``"position"``               |Array             |Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the vehicle.                                      | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``"rotation"``               |Array             |Array of 4 floats, specifying the vehicle rotation quaternion.                                                          | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``"attached_sensors"``       |Array             |Array of JSON objects, specifying the attached sensors in vehicle i.e., electrics, IMU, damage, gforce, and time sensor | Optional   |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``"ad-hoc_sensors"``         |Array             |Array of JSON objects, specifying the ad-hoc_sensors parameters i.e., Lidar, camera, and Ultrasonic sensor              | Optional   |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+
+
 
 
 Running BeamNG.Tech
@@ -209,7 +218,7 @@ Various services to control the state of the simulation are available.
 
 
 - Clone a new vehicle:
-    ``rosservice call /beamng_control/spawn_vehicle 'ros' [0,5,10] [0,0,0,1] "/config/vehicles/etk800.json"``
+    ``rosservice call /beamng_control/spawn_vehicle 'ros' [-717,101,150] [0,0,0,1] "/config/vehicles/etk800.json""``
 
 
 - Load a new scenario:
@@ -260,44 +269,44 @@ List of ROS-topics
 Contrary to other sensors, the Camera sensor may publish to multiple topics.
 If the camera sensor is configured to collect color, depth, annotation, and instance data, it is published to the respective topics:
 
-      `/beamng_control/<vehicle_id>/<camera_id>/color`
+      ``/beamng_control/<vehicle_id>/<camera_name>/color``
 
-      `/beamng_control/<vehicle_id>/<camera_id>/depth`
+      ``/beamng_control/<vehicle_id>/<camera_name>/depth``
 
-      `/beamng_control/<vehicle_id>/<camera_id>/annotation`
+      ``/beamng_control/<vehicle_id>/<camera_name>/annotation``
 
-      `/beamng_control/<vehicle_id>/<camera_id>/instance`
+      ``/beamng_control/<vehicle_id>/<camera_name>/instance``
 
 The message type for all topics is `sensor_msgs.msg.Image`.
 Note that although the bounding_box option is given, this feature is still under development and will automatically be disabled.
 
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|Key                 |Value Type        | Value Specification                                                                   | Entry Type |
-+====================+==================+=======================================================================================+============+
-|`"type"`            | String           | `"Camera.default"`                                                                    | Mandatory  |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"name"`            | String           | Unique sensor id.                                                                     | Mandatory  |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"position"`        | Array            | Array of 3 floats, specifying the `x`, `y`, and `x` position of the sensor.           | Mandatory  |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"orientation"`     | Array            | Array of 4 floats, specifying the vehicle rotation quaternion                         | Mandatory  |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"resolution"`      | Array            | Tuple of ints, defining the `x` and `y` resolution of                                 | Optional   |
-|                    |                  | the resulting images.                                                                 |            |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"fov"`             | Integer          | Camera field of view.                                                                 | Optional   |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"colour"`          | Boolean          | Dis-/Enables color image generation.                                                  | Optional   |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"depth"`           | Boolean          | Dis-/Enables depth image generation.                                                  | Optional   |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"annotation"`      | Boolean          | Dis-/Enables ground truth generation for object type annotation.                      | Optional   |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"instance"`        | Boolean          | Dis-/Enables ground truth generation for instance annotation.                         | Optional   |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"bounding_box"`    | Boolean          | This feature is not supoprted at the moment                                           | Optional   |
-|                    |                  | and will be **automatically disabled**.                                               |            |
-+--------------------+------------------+---------------------------------------------------------------------------------------+------------+
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|Key                     |Value Type        | Value Specification                                                                   | Entry Type |
++========================+==================+=======================================================================================+============+
+|`"type"`                | String           | `"Camera.default"`                                                                    | Mandatory  |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"name"`                | String           | Unique sensor id.                                                                     | Mandatory  |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"position"`            | Array            | Array of 3 floats, specifying the `x`, `y`, and `x` position of the sensor.           | Mandatory  |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"rotation"`            | Array            | Array of 4 floats, specifying the vehicle rotation quaternion                         | Mandatory  |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"resolution"`          | Array            | Tuple of ints, defining the `x` and `y` resolution of                                 | Optional   |
+|                        |                  | the resulting images.                                                                 |            |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"fov"`                 | Integer          | Camera field of view.                                                                 | Optional   |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"is_render_colours"`   | Boolean          | Dis-/Enables color image generation.                                                  | Optional   |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"is_render_depth"`     | Boolean          | Dis-/Enables depth image generation.                                                  | Optional   |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"is_render_annotation"`| Boolean          | Dis-/Enables ground truth generation for object type annotation.                      | Optional   |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"is_render_instance"`  | Boolean          | Dis-/Enables ground truth generation for instance annotation.                         | Optional   |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"bounding_box"`        | Boolean          | This feature is not supoprted at the moment                                           | Optional   |
+|                        |                  | and will be **automatically disabled**.                                               |            |
++------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 
 .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/rqt_camera.png
   :width: 800
@@ -309,7 +318,7 @@ Note that although the bounding_box option is given, this feature is still under
 * LiDAR:
 
 Message type: `sensor_msgs.msg.PointCloud2`
-    ``/beamng_control/<vehicle_id>/lidar0``
+    ``/beamng_control/<vehicle_id>/<lidar_name>``
 
 
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
@@ -321,19 +330,17 @@ Message type: `sensor_msgs.msg.PointCloud2`
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |`"position"`                       | Array            | Array of 3 floats, specifying the `x`, `y`, and `x` position of the sensor.           | Mandatory  |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|`"rotation"`                       | Array            | Array of 3 floats, specifying the vehicle rotation quaternion                         | Mandatory  |
++-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |`"vertical_resolution"`            | Integer          | Vertical resolution, i.e. how many lines are sampled vertically                       | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |`"vertical_angle"`                 | Float            | The vertical LiDAR sensor angle, in degrees.                                          | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"hz"`                             | Integer          | The refresh rate of the LiDAR sensor, in Hz.                                          | Optional   |
+|`"frequency"`                      | Integer          | The frequency of this LiDAR sensor.                                                   | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"rps"`                            | Integer          | The rays per second emmited by the LiDAR sensor                                       | Optional   |
+|`"rays_per_second"`                | Integer          | The rays per second emmited by the LiDAR sensor                                       | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"angle"`                          | Integer          | horizontal range resolution, i.e. how many degrees are sampled horizontally           | Optional   |
-+-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"max_distance"`                   | Integer          | Maximal distance for data collection.                                                 | Optional   |
-+-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|`"visualized"`                     | Integer          | Dis-/Enable in-simulation LiDAR visualization.                                        | Optional   |
+|`"is_visualised"`                  | Boolean          | Dis-/Enable in-simulation visualization.                                              | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 
 .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png
@@ -342,10 +349,29 @@ Message type: `sensor_msgs.msg.PointCloud2`
 .. ![3D-LiDAR sensor reading](https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png)
 
 
+* Ultrasonic sensor :
+
+Message type: `sensor_msgs.msg.Range`
+    ``/beamng_control/<vehicle_id>/<ultrasonic_sensor_name>``
+
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|Key                         |Value Type        | Value Specification                                                                             | Entry Type |
++============================+==================+=================================================================================================+============+
+|`"type"`                    | String           | `"Ultrasonic.smallrange"`,and/or  `"Ultrasonic.midrange"`,and/or  `"Ultrasonic.largerange"`     | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|`"name"`                    | String           | Unique sensor id.                                                                               | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|`"position"`                | Array            | Array of 3 floats, specifying the `x`, `y`, and `x` position of the sensor.                     | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|`"rotation"`                | Array            | Array of 3 floats, specifying the vehicle rotation quaternion                                   | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|`"is_visualised"`           | Boolean          | Dis-/Enable in-simulation visualization.                                                        | Optional   |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+
 * Damage:
 
 Message type: `beamng_msgs.msg.DamagSensor`
-    ``/beamng_control/<vehicle_id>/damage0``
+    ``/beamng_control/<vehicle_id>/<damage_sensor_name>``
 
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                    | Entry Type |
@@ -368,7 +394,7 @@ Message type: `beamng_msgs.msg.DamagSensor`
 * time:
 
 Message type: `beamng_msgs.msg.TimeSensor`
-    ``/beamng_control/<vehicle_id>/time0``
+    ``/beamng_control/<vehicle_id>/<time_sensor_name>``
 
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                    | Entry Type |
@@ -382,7 +408,7 @@ Message type: `beamng_msgs.msg.TimeSensor`
 * Gforces:
 
 Message type: `beamng_msgs.msg.GForceSensor`
-    ``/beamng_control/<vehicle_id>/gforce0``
+    ``/beamng_control/<vehicle_id>/<gforce_sensor_name>``
 
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                    | Entry Type |
@@ -396,7 +422,7 @@ Message type: `beamng_msgs.msg.GForceSensor`
 * Electrics:
 
 Message type: `beamng_msgs.msg.ElectricsSensor`
-    ``/beamng_control/<vehicle_id>/electrics0``
+    ``/beamng_control/<vehicle_id>/<electrics_sensor_name>``
 
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                    | Entry Type |
@@ -408,18 +434,20 @@ Message type: `beamng_msgs.msg.ElectricsSensor`
 
 * Imu pose:
 
-Message type: `beamng_msgs.msg.DamagSensor`
-    ``/beamng_control/<vehicle_id>/position_imu``
+Message type: `sensor_msgs.msg.Imu`
+    ``/beamng_control/<vehicle_id>/<imu_sensor_name>``
 
-+--------------------+------------------+----------------------------------------------------------------------------------+------------+
-|Key                 |Value Type        | Value Specification                                                              | Entry Type |
-+====================+==================+==================================================================================+============+
-|`"type"`            | String           | `"IMU"`                                                                          | Mandatory  |
-+--------------------+------------------+----------------------------------------------------------------------------------+------------+
-|`"name"`            | String           | Unique sensor id.                                                                | Mandatory  |
-+--------------------+------------------+----------------------------------------------------------------------------------+------------+
-|`"position"`        | Array            | Array of 3 floats, specifying the `x`, `y`, and `x` position of the sensor.      | Mandatory  |
-+--------------------+------------------+----------------------------------------------------------------------------------+------------+
++--------------------+------------------+------------------------------------------------------------------------------------------+------------+
+|Key                 |Value Type        | Value Specification                                                                      | Entry Type |
++====================+==================+==========================================================================================+============+
+|`"type"`            | String           | `"IMU"`                                                                                  | Mandatory  |
++--------------------+------------------+------------------------------------------------------------------------------------------+------------+
+|`"name"`            | String           | Unique sensor id.                                                                        | Mandatory  |
++--------------------+------------------+------------------------------------------------------------------------------------------+------------+
+|`"node"`            | String           | node number of the sensor. sensor should have either "`node"` or `"position"`            | Mandatory  |
++--------------------+------------------+------------------------------------------------------------------------------------------+------------+
+|`"position"`        | Array            | Array of 3 floats, specifying the `x`, `y`, and `x` position of the sensor.              | Mandatory  |
++--------------------+------------------+------------------------------------------------------------------------------------------+------------+
 
 .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/imu_west_coast_usa.png
   :width: 800
@@ -427,38 +455,11 @@ Message type: `beamng_msgs.msg.DamagSensor`
 .. ![IMU sensor reading](https://github.com/BeamNG/BeamNGpy/raw/master/media/imu_west_coast_usa.png)
 
 
-* Parking sensor (ultrasonic):
-
-Message type: `beamng_msgs.msg.USSensor`
-    ``/beamng_control/<vehicle_id>/parking_sensor``
-
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|Key                 |Value Type        | Value Specification                                                                             | Entry Type |
-+====================+==================+=================================================================================================+============+
-|`"type"`            | String           | `"Ultrasonic.smallrange"`,and/or  `"Ultrasonic.midrange"`,and/or  `"Ultrasonic.largerange"`     | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"name"`            | String           | Unique sensor id.                                                                               | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"position"`        | Array            | Array of 3 floats, specifying the `x`, `y`, and `x` position of the sensor.                     | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"rotation"`        | Array            | Array of 3 floats, specifying the vehicle rotation quaternion                                   | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"fov"`             | Integer          | ultrasonic sensor field of view.                                                                | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"colour"`          | Integer          | Dis-/Enables color image generation.                                                            | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"min_resolution"`  | Integer          | Minimum distance for data collection.                                                           | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"min_distance"`    | Integer          | Minimum range for data collection.                                                              | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|`"max_distance"`    | Integer          | Maximal range for data collection.                                                              | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-
 
 * Vehicle state:
 
 Message type: `beamng_msgs.msg.StateSensor`
-    ``/beamng_control/<vehicle_id>/state``
+    ``/beamng_control/<vehicle_id>/<state_sensor_name>``
 
 
 

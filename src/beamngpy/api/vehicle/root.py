@@ -127,6 +127,11 @@ class RootApi(VehicleApi):
         data = dict(type='Recover')
         self._send(data).ack('Recovered')
 
-    def get_center_of_gravity(self, without_wheels) -> Float3:
+    def get_center_of_gravity(self, without_wheels: bool) -> Float3:
         data = dict(type='GetCenterOfGravity', withoutWheels=without_wheels)
         return self._send(data).recv()['data']
+
+    def deflate_tire(self, wheel_id: int) -> None:
+        data: StrDict = dict(type='DeflateTire')
+        data['wheelId'] = wheel_id
+        self._send(data).ack('CompletedDeflateTire')

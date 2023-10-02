@@ -39,20 +39,25 @@ def test_no_scenario(beamng: BeamNGpy):
             bng.scenario.get_current()
 
 
-def test_find_scenario(beamng: BeamNGpy):
+@pytest.mark.parametrize('scenario_path', [
+    '/levels/west_coast_usa/scenarios/derby_asphalt.json',  # classic scenario
+    '/levels/west_coast_usa/scenarios/speedyScramble/speedyScramble.json',  # Flowgraph scenario
+    '/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json',  # mission
+])
+def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
     with beamng as bng:
         scenarios = bng.scenario.get_scenarios()
         target = None
-        for scenario in scenarios.values():
-            if scenario.name == 'scenarios.west_coast_usa.derby_asphalt.title':
+        for scenario in scenarios['west_coast_usa']:
+            if scenario.path == scenario_path:
                 target = scenario
                 break
 
         assert target is not None
 
-        bng.scenario.load(target)
+        bng.scenario.load(target, connect_player_vehicle=False, connect_existing_vehicles=False)
 
-        loaded = bng.scenario.get_current()
+        loaded = bng.scenario.get_current(connect=False)
         assert loaded.path == target.path
 
 
@@ -69,12 +74,12 @@ def test_get_scenarios(beamng: BeamNGpy):
         assert len(scenarios) > 0
 
         gridmap_scenarios = bng.scenario.get_level_scenarios('gridmap_v2')
-        assert len(gridmap_scenarios.values()) > 0
+        assert len(gridmap_scenarios) > 0
 
-        for scenario in gridmap_scenarios.values():
+        for scenario in gridmap_scenarios:
             assert scenario.level is not None
-            assert isinstance(scenario.level, str)
-            assert scenario.level == 'gridmap_v2'
+            assert isinstance(scenario.level, Level)
+            assert scenario.level.name == 'gridmap_v2'
 
         levels = bng.scenario.get_levels()
         gridmap = levels['gridmap_v2']
@@ -82,9 +87,9 @@ def test_get_scenarios(beamng: BeamNGpy):
         ref = gridmap_scenarios
         gridmap_scenarios = bng.scenario.get_level_scenarios(gridmap)
 
-        assert len(gridmap_scenarios.values()) == len(ref.values())
+        assert len(gridmap_scenarios) == len(ref)
 
-        for scenario in gridmap_scenarios.values():
+        for scenario in gridmap_scenarios:
             assert scenario.level is not None
             assert isinstance(scenario.level, Level)
             assert scenario.level == gridmap
@@ -95,18 +100,19 @@ def test_get_level_and_scenarios(beamng: BeamNGpy):
         levels, scenarios = bng.scenario.get_levels_and_scenarios()
         assert len(levels) > 0
         assert len(scenarios) > 0
-        for scenario in scenarios.values():
-            scenario_level = scenario.level
-            assert isinstance(scenario_level, Level)
-            assert scenario.path in scenario_level.scenarios
+        for level in scenarios:
+            for scenario in scenarios[level]:
+                scenario_level = scenario.level
+                assert isinstance(scenario_level, Level)
+                assert scenario_level.name == level
 
 
 def test_get_current_vehicles(beamng: BeamNGpy):
     with beamng as bng:
         scenarios = bng.scenario.get_scenarios()
         target = None
-        for scenario in scenarios.values():
-            if scenario.name == 'scenarios.west_coast_usa.derby_asphalt.title':
+        for scenario in scenarios['west_coast_usa']:
+            if scenario.path == '/levels/west_coast_usa/scenarios/derby_asphalt.json':
                 target = scenario
                 break
 
@@ -114,14 +120,8 @@ def test_get_current_vehicles(beamng: BeamNGpy):
 
         bng.scenario.load(target)
 
-        vehicles = bng.vehicles.get_current()
-        player = None
-        for vid, vehicle in vehicles.items():
-            if vid == 'scenario_player0':
-                player = vehicle
-                break
-
-        assert player is not None
+        vehicles = bng.vehicles.get_current(include_config=False)
+        player = vehicles['scenario_player0']
 
         sensor = Electrics()
         player.sensors.attach('electrics', sensor)
