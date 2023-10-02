@@ -4,20 +4,20 @@ extract data from simulations.
 """
 
 from .advanced_IMU import AdvancedIMU
-from .GPS import GPS
 from .camera import Camera
 from .damage import Damage
 from .electrics import Electrics
 from .gforces import GForces
+from .GPS import GPS
+from .ideal_radar import IdealRADAR
 from .imu import IMU
 from .lidar import Lidar
 from .mesh import Mesh
 from .powertrain_sensor import PowertrainSensor
 from .radar import Radar
+from .roads_sensor import RoadsSensor
 from .sensor import Sensor
 from .state import State
 from .timer import Timer
 from .ultrasonic import Ultrasonic
 from .vehicle_feeder import VehicleFeeder
-from .roadsSensor import roadsSensor
-from .IdealRADARSensor import IdealRADAR

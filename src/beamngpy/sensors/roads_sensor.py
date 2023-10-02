@@ -12,14 +12,14 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['roadsSensor']
+__all__ = ['RoadsSensor']
 
 
-class roadsSensor:
+class RoadsSensor:
     """
-    roadsSensor class
-    A sensor which gives geometric and semantic data of the road; this data is the parametric cubic equations for the left and right roadedge 
-    and the centerline, as well as 4 points of the centerline
+    A sensor which gives geometric and semantic data of the road; this data is the parametric cubic equations for the left and right roadedge
+    and the centerline, as well as 4 points of the centerline.
+
     Args:
         name: A unique name for this roads sensor.
         bng: The BeamNGpy instance, with which to communicate to the simulation.
@@ -31,7 +31,7 @@ class roadsSensor:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
                  is_send_immediately: bool = False):
-        self.logger = getLogger(f'{LOGGER_ID}.roadsSensor')
+        self.logger = getLogger(f'{LOGGER_ID}.RoadsSensor')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -41,10 +41,10 @@ class roadsSensor:
         self.is_send_immediately = is_send_immediately
 
         # Create and initialise this sensor in the simulation.
-        self._open_roadsSensor(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
+        self._open_roads_sensor(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
 
         # Fetch the unique Id number (in the simulator) for this roads sensor.  We will need this later.
-        self.sensorId = self._get_roadsSensor_id()
+        self.sensorId = self._get_id()
         self.logger.debug('roadsSensor created: 'f'{self.name}')
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
@@ -77,10 +77,10 @@ class roadsSensor:
         readings_data = []
         if self.is_send_immediately:
             # Get the most-recent single reading from vlua.
-            readings_data = self._poll_roadsSensor_VE()
+            readings_data = self._poll_roads_sensor_VE()
         else:
             # Get the bulk data from ge lua.
-            readings_data = self._poll_roadsSensor_GE()
+            readings_data = self._poll_roads_sensor_GE()
 
         self.logger.debug('roadsSensor readings received from simulation: 'f'{self.name}')
         return readings_data
@@ -139,10 +139,10 @@ class roadsSensor:
             'SetRoadsSensorRequestedUpdateTime', ack='CompletedSetRoadsSensorRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
             GFXUpdateTime=requested_update_time)
 
-    def _get_roadsSensor_id(self) -> int:
+    def _get_id(self) -> int:
         return int(self._send_sensor_request('GetRoadsSensorId', ack='CompletedGetRoadsSensorId', name=self.name)['data'])
 
-    def _open_roadsSensor(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
+    def _open_roads_sensor(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
         data: StrDict = dict(type='OpenRoadsSensor')
         data['name'] = name
         data['vid'] = vehicle.vid
@@ -159,10 +159,10 @@ class roadsSensor:
         self.bng._send(data).ack('ClosedRoadsSensor')
         self.logger.info(f'Closed roadsSensor: "{self.name}"')
 
-    def _poll_roadsSensor_GE(self) -> StrDict:
+    def _poll_roads_sensor_GE(self) -> StrDict:
         return self._send_sensor_request('PollRoadsSensorGE', ack='PolledRoadsSensorGECompleted', name=self.name)['data']
 
-    def _poll_roadsSensor_VE(self) -> StrDict:
+    def _poll_roads_sensor_VE(self) -> StrDict:
         if not self.vehicle.connection:
             raise BNGError('The vehicle is not connected!')
         return send_sensor_request(self.vehicle.connection, 'PollRoadsSensorVE', name=self.name, sensorId=self.sensorId)['data']

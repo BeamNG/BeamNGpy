@@ -28,7 +28,7 @@ class IdealRADAR:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
                  is_send_immediately: bool = False):
-        self.logger = getLogger(f'{LOGGER_ID}.idealRADAR')
+        self.logger = getLogger(f'{LOGGER_ID}.IdealRADAR')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -38,10 +38,10 @@ class IdealRADAR:
         self.is_send_immediately = is_send_immediately
 
         # Create and initialise this sensor in the simulation.
-        self._open_idealRADAR(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
+        self._open_ideal_radar(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
 
         # Fetch the unique Id number (in the simulator) for this ideal RADAR sensor.
-        self.sensorId = self._get_idealRADAR_id()
+        self.sensor_id = self._get_id()
         self.logger.debug('idealRADAR - sensor created: 'f'{self.name}')
 
     def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
@@ -59,7 +59,7 @@ class IdealRADAR:
         Removes this sensor from the simulation.
         """
         # Remove this sensor from the simulation.
-        self._close_idealRADAR()
+        self._close_ideal_radar()
         self.logger.debug('idealRADAR - sensor removed: 'f'{self.name}')
 
     def poll(self) -> StrDict:
@@ -74,10 +74,10 @@ class IdealRADAR:
         readings_data = []
         if self.is_send_immediately:
             # Get the most-recent single reading from vlua.
-            readings_data = self._poll_idealRADAR_VE()
+            readings_data = self._poll_ideal_radar_VE()
         else:
             # Get the bulk data from ge lua.
-            readings_data = self._poll_idealRADAR_GE()
+            readings_data = self._poll_ideal_radar_GE()
 
         self.logger.debug('Powertrain - sensor readings received from simulation: 'f'{self.name}')
         return readings_data
@@ -136,10 +136,10 @@ class IdealRADAR:
             'SetIdealRADARRequestedUpdateTime', ack='CompletedSetIdealRADARRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
             GFXUpdateTime=requested_update_time)
 
-    def _get_idealRADAR_id(self) -> int:
+    def _get_id(self) -> int:
         return int(self._send_sensor_request('GetIdealRADARId', ack='CompletedGetIdealRADARId', name=self.name)['data'])
 
-    def _open_idealRADAR(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
+    def _open_ideal_radar(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
         data: StrDict = dict(type='OpenIdealRADAR')
         data['name'] = name
         data['vid'] = vehicle.vid
@@ -149,17 +149,17 @@ class IdealRADAR:
         self.bng._send(data).ack('OpenedIdealRADAR')
         self.logger.info(f'Opened idealRADAR sensor: "{name}"')
 
-    def _close_idealRADAR(self) -> None:
+    def _close_ideal_radar(self) -> None:
         data = dict(type='CloseIdealRADAR')
         data['name'] = self.name
         data['vid'] = self.vehicle.vid
         self.bng._send(data).ack('ClosedIdealRADAR')
         self.logger.info(f'Closed idealRADAR sensor: "{self.name}"')
 
-    def _poll_idealRADAR_GE(self) -> StrDict:
+    def _poll_ideal_radar_GE(self) -> StrDict:
         return self._send_sensor_request('PollIdealRADARGE', ack='PolledIdealRADARGECompleted', name=self.name)['data']
 
-    def _poll_idealRADAR_VE(self) -> StrDict:
+    def _poll_ideal_radar_VE(self) -> StrDict:
         if not self.vehicle.connection:
             raise BNGError('The vehicle is not connected!')
-        return send_sensor_request(self.vehicle.connection, 'PollIdealRADARVE', name=self.name, sensorId=self.sensorId)['data']
+        return send_sensor_request(self.vehicle.connection, 'PollIdealRADARVE', name=self.name, sensorId=self.sensor_id)['data']
