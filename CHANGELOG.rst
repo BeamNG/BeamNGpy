@@ -9,14 +9,19 @@ Version 1.27
 
   - `GPS <beamngpy.html#gps>`__ sensor added
 
-    - check the `documentation <beamngpy.html#gps>`__ or the ``GPS_trajectory.py`` `example script <https://github.com/BeamNG/BeamNGpy/tree/v1.27/examples/GPS_trajectory.py>`__ for more information on usage
+    - check the `documentation <beamngpy.html#gps>`__ or the ``GPS_trajectory.py`` `example script <https://github.com/BeamNG/BeamNGpy/tree/master/examples/GPS_trajectory.py>`__ for more information on usage
 
   - `RoadsSensor <beamngpy.html#roads-sensor>`__ sensor added
   - `IdealRadar <beamngpy.html#ideal-radar>`__ sensor added
   - RADAR sensor now reads the Doppler velocity from vehicles in the simulation as well as static objects.
-  - BeamNGpy now fully supports loading existing missions and Flowgraph scenarios. Look into the `Scenario loading <https://github.com/BeamNG/BeamNGpy/tree/v1.27/examples/scenario_loading.ipynb>`__ example notebook to learn more.
+  - BeamNGpy now fully supports loading existing missions and Flowgraph scenarios. Look into the `Scenario loading <https://github.com/BeamNG/BeamNGpy/tree/master/examples/scenario_loading.ipynb>`__ example notebook to learn more.
   - Beam stresses added as a mode to the ``AdvancedIMU`` sensor.
   - Camera, Lidar, and Radar sensor readings can now be streamed directly to shared memory in BeamNGpy, using dedicated ``stream()`` functions now found in the respective BeamNGpy sensor classes. This represents an alternative to the polling method used previously.
+
+- BeamNGpy projects updated for latest BeamNG.tech version
+
+  - `Impactgen <https://github.com/BeamNG/impactgen>`__: A script to generate various vehicle impact scenarios and output surround views of the affected vehicle in color and semantically annotated images.
+  - `BeamNG.gym <https://github.com/BeamNG/BeamNG.gym>`__: A collection of Gymnasium environments that cover various driving tasks simulated in BeamNG.tech.
 
 - API changes
 
