@@ -133,6 +133,12 @@ Mesh Sensor
    :members:
    :undoc-members:
 
+GPS
+^^^
+.. autoclass:: beamngpy.sensors.GPS
+   :members:
+   :undoc-members:
+
 Classical Sensors
 -----------------
 

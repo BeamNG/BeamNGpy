@@ -2,6 +2,65 @@
 Changelog
 =========
 
+Version 1.27
+============
+
+- New features
+
+  - GPS sensor added
+
+    - check the `documentation <beamngpy.html#gps>`__ or the ``GPS_trajectory.py`` `example script <https://github.com/BeamNG/BeamNGpy/tree/v1.27/examples/GPS_trajectory.py>`__ for more information on usage
+
+  - RADAR sensor now reads the Doppler velocity from vehicles in the simulation as well as static objects.
+
+  - BeamNGpy now fully supports loading existing missions and Flowgraph scenarios. Look into the `Scenario loading <https://github.com/BeamNG/BeamNGpy/tree/v1.27/examples/scenario_loading.ipynb>` example notebook to learn more.
+
+  - Beam stresses added as a mode to the ``AdvancedIMU`` sensor.
+
+  - Camera, Lidar, and Radar sensor readings can now be streamed directly to shared memory in BeamNGpy, using dedicated ``stream()`` functions now found in the respective BeamNGpy sensor classes. This represents an alternative to the polling method used previously.
+
+- API changes
+
+  - Relative camera interface changed to use vectors instead of quaternions.
+
+  - Changed the input and output types of the ``BeamNGpy.scenario.get_scenarios`` function:
+    - the ``levels`` argument is now a list of level names or instances of the Level class to get scenarios for
+    - the return value is now a dictionary where the keys are the level names, and the values are lists of scenarios for the given level
+
+  - Removed the ``level`` argument of ``BeamNGpy.scenario.get_current``, as the level information is now queried from the simulator.
+
+  - Function added to the ``Vehicle`` class to deflate vehicle tires, e.g. to simulate tire blowout.
+
+- Bugfixes
+
+  - Fixed a bug where loading a BeamNGpy scenario could cause an infinite-loading screen glitch.
+
+  - Fixed the ``Mesh`` sensor not working.
+
+  - Part annotations for vehicles are working again.
+
+  - Bug fixed when using multiple ultrasonic sensors, where the first sensor would not update in simulator.
+
+  - Bug fixed when using ultrasonic sensor, relating to failure to detect at some angles to surfaces
+
+  - Bug fixed with ultrasonic sensor, relating to typos in parameter names, rendering some parameters unusable from BeamNGpy.
+
+  - Bug fixed with ``AdvancedIMU`` sensor, when using gravity. Did not work from BeamNGpy before.
+
+  - Bug fixed with ``AdvancedIMU`` sensor, relating to the smoothing not working from BeamNGpy.
+
+  - Bug fixed with the relative camera, which was not operating correctly.
+
+- Miscellaneous
+
+  - The physics update rate of BeamNG.tech launched from BeamNGpy is being changed from 4000 to 2000 times per second to be consistent with the default for the simulator. To change the physics update rate to a different value, you can pass the ``-physicsfps <DESIRED_VALUE>`` argument to the simulator binary.
+
+  - Scenarios created using BeamNGpy are now using the JSON format for prefab generation instead of the old TorqueScript format.
+
+  - BeamNG.tech connection to the simulator is now by default listening on the local interface only (``127.0.0.1``). You can change it to listen on other IP addresses by using the ``listen_ip`` argument in the ``BeamNGpy.open`` function, or the ``-tcom-listen-ip`` command-line argument, if you are not launching BeamNG.tech using BeamNGpy.
+
+  - Optimized Python processing of the depth camera image (thanks for the `contribution <https://github.com/BeamNG/BeamNGpy/pull/229>`__!)
+
 Version 1.26.1
 ==============
 
