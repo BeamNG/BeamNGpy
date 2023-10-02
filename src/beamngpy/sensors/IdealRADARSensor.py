@@ -1,12 +1,5 @@
 from __future__ import annotations
 
-import math  # TO check if
-
-import matplotlib  # TO check if
-import matplotlib.pyplot as plt  # TO check if
-import seaborn as sns  # TO check if
-from matplotlib import collections as mc  # TO check if
-
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any
 
@@ -35,7 +28,7 @@ class IdealRADAR:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
                  is_send_immediately: bool = False):
-        self.logger = getLogger(f'{LOGGER_ID}.idealRADAR')  # check if ok
+        self.logger = getLogger(f'{LOGGER_ID}.idealRADAR')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -47,7 +40,7 @@ class IdealRADAR:
         # Create and initialise this sensor in the simulation.
         self._open_idealRADAR(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
 
-        # Fetch the unique Id number (in the simulator) for this ideal RADAR sensor.  We will need this later.
+        # Fetch the unique Id number (in the simulator) for this ideal RADAR sensor.
         self.sensorId = self._get_idealRADAR_id()
         self.logger.debug('idealRADAR - sensor created: 'f'{self.name}')
 
