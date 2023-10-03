@@ -5,6 +5,7 @@ This guide helps exploring the collection and can help in finding examples for s
 
 For getting started we suggest taking a look at the following examples:
 * [Feature Overview][21]
+* [Scenario Control][25]
 * [East Coast Random][20]
 * [Vehicle Road Bounding Box][17]
 * [Annotation and Bounding Boxes][5]
@@ -14,6 +15,7 @@ More quick usage examples can be found in our [test suite][1].
 | Name     | How to           |
 | ------------- |-------------|
 |[Feature Overview][21]|<ul><li>see the basics of what can be done with BeamNGpy</li></ul>|
+|[Scenario Control][25]|<ul><li>understand the different ways of creating, loading and controlling scenarios</li></ul>|
 |[Modding Interface][2]|<ul><li>write and deploy a mod that interacts with BeamNGpy</li><li>write python functions that interact with functions of the custom mod</li></ul>|
 |[Road Network][3]|<ul><li>fetch information about the current level's road network</li></ul>|
 |[AI Line][4]|<ul><li>use the simulator's AI with BeamNGpy</li></ul>|
@@ -63,3 +65,4 @@ More quick usage examples can be found in our [test suite][1].
 [22]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/advanced_comfort_analysis.ipynb
 [23]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/powertrain_data.ipynb
 [24]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/road_network_exporter.py
+[25]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/scenario_control.ipynb
