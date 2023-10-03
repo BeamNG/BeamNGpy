@@ -1,0 +1,80 @@
+{% for vehicle in vehicles %}{
+ "name": "{{vehicle.vid}}",
+ "class": "BeamNGVehicle",
+ "persistentId": "{{vehicle._uuid}}",
+ "__parent": "{{scenario.name}}_group",
+ "position": {{vehicle.position}},
+{% if vehicle.color is defined %}
+ "color": {{vehicle.color}},
+ "colorPalette0": {{vehicle.color}},
+ "colorPalette1": {{vehicle.color}},
+{% endif %}
+ "dataBlock": "default_vehicle",
+ "jBeam": "{{vehicle.model}}",
+{% if vehicle.licenseText is defined %}
+ "licenseText": "{{vehicle.licenseText}}",
+{% endif %}
+{% if vehicle.partConfig is defined %}
+ "partConfig": "{{vehicle.partConfig}}",
+{% endif %}
+ "rotationMatrix": {{vehicle.rotationMatrix}},
+ "autoEnterVehicle": false
+}
+|---|{% endfor %}
+{% for road in roads %}{
+ "name": "{{road.road_id}}",
+ "class":"DecalRoad",
+ "persistentId": "{{road._uuid}}",
+ "__parent": "{{scenario.name}}_group",
+ "position": [{{road.nodes[0][0]}}, {{road.nodes[0][1]}}, {{road.nodes[0][2]}}],
+ "distanceFade": [1000, 1000],
+ "drivability": {{road.drivability}},
+ "improvedSpline": {{road.improved_spline | bool}},
+ "looped": {{road.looped | bool}},
+ "material": "{{road.material}}",
+ "oneWay": {{road.one_way | bool}},
+ "flipDirection": {{road.flip_direction | bool}},
+ "smoothness": {{road.smoothness}},
+ "detail": 0.1,
+ "overObjects": {{road.over_objects | bool}},
+ "breakAngle": {{road.break_angle}},
+ "renderPriority": {{road.render_priority}},
+ "textureLength": {{road.texture_length}},
+ "zBias": 0,
+ "nodes": [
+{% for node in road.nodes %}
+ [{{node[0]}}, {{node[1]}}, {{node[2]}}, {{node[3]}}],
+{% endfor %}]
+}|---|{% endfor %}
+{% for road in mesh_roads %}{
+ "name": "{{road.road_id}}",
+ "class": "MeshRoad",
+ "persistentId": "{{road._uuid}}",
+ "__parent": "{{scenario.name}}_group",
+ "position": [{{road.nodes[0][0]}}, {{road.nodes[0][1]}}, {{road.nodes[0][2]}}],
+ "bottomMaterial": "{{road.bottom_material}}",
+ "nodes": [
+{% for node in road.nodes %}
+ [{{node[0]}}, {{node[1]}}, {{node[2]}}, {{node[3]}}, {{node[4]}}, 0, 0, 1],
+{% endfor %}],
+ "sideMaterial": "{{road.side_material}}",
+ "topMaterial": "{{road.top_material}}",
+ "textureLength": {{road.texture_length}},
+ "breakAngle": {{road.break_angle}},
+ "widthSubdivisions": {{road.width_subdivisions}}
+}|---|{% endfor %}
+{% for obj in objects %}{
+ "name": "{{obj.id}}",
+ "class": "{{obj.type}}",
+ "persistentId": "{{obj._uuid}}",
+ "__parent": "{{scenario.name}}_group",
+{% for k, v in obj.options.items() %}
+ "{{k}}": {{v}},
+{% endfor %}
+}|---|{% endfor %}
+{
+ "name": "{{scenario.name}}_group",
+ "class": "SimGroup",
+ "persistentId": "{{scenario._uuid}}",
+ "groupPosition": "0.000000 0.000000 0.000000"
+}

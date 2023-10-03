@@ -19,11 +19,11 @@ def main():
     OpenDriveImporter.import_xodr(filename, scenario)                      # import an OpenDrive file (.xodr).
 
     # Import OpenStreetMap (.osm).
-    #filename = 'map.osm'
-    # OpenStreetMapImporter.import_osm(filename, scenario)                  # import an OpenStreetMap file (.osm).
+    # filename = 'map.osm'
+    # OpenStreetMapImporter.import_osm(filename, scenario)                 # import an OpenStreetMap file (.osm).
 
-    # prefix = 'back'                                                        # Import Sumo files (.nod.xml, .edg.xml).
-    #SumoImporter.import_sumo(prefix, scenario)
+    # prefix = 'back'                                                      # Import Sumo files (.nod.xml, .edg.xml).
+    # SumoImporter.import_sumo(prefix, scenario)
 
     # Start up BeamNG with the imported road network.
     print("Making scenario...")

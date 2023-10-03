@@ -5,6 +5,7 @@ from typing import List
 from beamngpy.logging import BNGValueError
 from beamngpy.scenario.scenario_object import SceneObject
 from beamngpy.types import Float3, Float4, Float5, StrDict
+from beamngpy.utils.prefab import get_uuid
 
 
 class Road:
@@ -31,6 +32,10 @@ class Road:
         default_width: Default width of the road nodes.
     """
 
+    @property
+    def _uuid(self):
+        return get_uuid(f'Road_{self.rid}')
+
     def __init__(self, material: str, rid: str | None = None, interpolate: bool = True, default_width: float = 10.0,
                  drivability: int = 1, one_way: bool = False, flip_direction: bool = False, over_objects: bool = True,
                  looped: bool = False, smoothness: float = 0.5, break_angle: float = 3, texture_length: int = 5,
@@ -41,19 +46,19 @@ class Road:
         self.rid = rid
 
         self.drivability = drivability
-        self.one_way = '1' if one_way else '0'
-        self.flip_direction = '1' if flip_direction else '0'
-        self.over_objects = '1' if over_objects else '0'
-        self.looped = '1' if looped else '0'
+        self.one_way = one_way
+        self.flip_direction = flip_direction
+        self.over_objects = over_objects
+        self.looped = looped
         self.smoothness = smoothness
         self.break_angle = break_angle
         self.texture_length = texture_length
         self.render_priority = render_priority
 
         if interpolate:
-            self.improved_spline = '1'
+            self.improved_spline = True
         else:
-            self.improved_spline = '0'
+            self.improved_spline = False
             self.break_angle = 359.9
 
         self.nodes: List[Float4] = list()
@@ -101,6 +106,10 @@ class MeshRoad:
         default_width: Default width of the road nodes.
         default_depth: Default depth of the road nodes.
     """
+
+    @property
+    def _uuid(self):
+        return get_uuid(f'MeshRoad_{self.rid}')
 
     def __init__(self, top_material: str, bottom_material: str | None = None, side_material: str | None = None, rid: str |
                  None = None, default_width: float = 10.0, default_depth: float = 5.0, texture_length: float = 5,

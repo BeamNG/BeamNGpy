@@ -79,7 +79,7 @@ def test_state(beamng: BeamNGpy):
 
 def test_imu(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'imu_test')
+        scenario = Scenario('smallgrid', 'basic_imu_test')
         vehicle = Vehicle('test_car', model='etk800')
 
         imu_pos = IMU(pos=(0.73, 0.51, 0.8), debug=True)

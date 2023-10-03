@@ -8,6 +8,7 @@ from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
 from beamngpy.types import Color, Float3, Quat, StrDict
+from beamngpy.utils.prefab import get_uuid
 from beamngpy.utils.validation import validate_object_name
 from beamngpy.vehicle.sensors import Sensors
 
@@ -77,6 +78,10 @@ class Vehicle:
             raise BNGError('The model of the vehicle is not specified!')
         vehicle = Vehicle(vid, model, port=port, **options)
         return vehicle
+
+    @property
+    def _uuid(self):
+        return get_uuid(f'Vehicle_{self.vid}')
 
     def __init__(self, vid: str, model: str, port: int | None = None, license: str | None = None,
                  color: Color | None = None, color2: Color | None = None, color3: Color | None = None,
@@ -506,3 +511,12 @@ class Vehicle:
             text: The vehicle plate text to be set.
         """
         return self._ge_api.set_license_plate(text)
+
+    def deflate_tire(self, wheel_id: int) -> None:
+        """
+        Deflates the tire of this vehicle with the given wheel ID.
+
+        Args:
+            wheel_id: The given wheel ID.
+        """
+        return self._root.deflate_tire(wheel_id)

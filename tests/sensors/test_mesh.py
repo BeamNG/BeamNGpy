@@ -1,15 +1,15 @@
-from __future__ import annotations
+from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Mesh
 
 
-def test_mesh(beamng: BeamNGpy):
+def test_mesh(beamng: BeamNGpy, steps: int = 3):
     with beamng as bng:
         # Create a vehicle.
-        vehicle = Vehicle('ego_vehicle', model='etki', license='PYTHON', color='Red')
+        vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')
         # Create a scenario.
-        scenario = Scenario('gridmap', 'mesh_test', description='Mesh analysis')
+        scenario = Scenario('smallgrid', 'mesh_test2', description='Mesh analysis')
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle)
         scenario.make(bng)
@@ -23,42 +23,28 @@ def test_mesh(beamng: BeamNGpy):
 
         # Get the mesh data for the vehicle.
         mesh = Mesh('mesh1', bng, vehicle)
-        triangles = mesh.get_triangle_data()
-        print("Raw triangles data from simulator (the nodes of each triangle in triplet lists):")
-        print(triangles)
-
-        wheel1 = mesh.get_wheel_mesh(0)
-        wheel2 = mesh.get_wheel_mesh(1)
-        wheel3 = mesh.get_wheel_mesh(2)
-        wheel4 = mesh.get_wheel_mesh(3)
-        print("Raw triangles (for just a single wheel):")
-        print(wheel1)
 
         nodes = mesh.get_node_positions()
         print("Current node positions from simulator:")
         print(nodes)
 
-        map = mesh.get_nodes_to_triangles_map()
-        print("Map from nodes to triangles (the triangles indexed by node numbers):")
-        print(map)
-        nb = mesh.get_neighbor_nodes(145)
-        print("The neighbor nodes of node 145 (those which share a triangle edge): ", nb)
-        nt = mesh.get_neighbor_triangles(52)
-        print("The neighbor triangles of node 52 (those which share any of triangle 52's nodes): ", nt)
+        # vehicle.ai.set_mode('span')
+        for _ in range(steps):
+            sleep(5)
+            data = mesh.poll()
+            print(data)
+            print("data time: ", data['time'])
+            mesh.mesh_plot()
+            mesh.mass_distribution_plot(data['nodes'])
+            mesh.force_distribution_plot(data['nodes'])
+            mesh.force_direction_plot(data['nodes'])
+            mesh.velocity_distribution_plot(data['nodes'])
+            mesh.velocity_direction_plot(data['nodes'])
 
-        cl1 = mesh.get_closest_mesh_point_to_point((100, 100, 100))
-        print("closest mesh point to (100, 100, 100): ", cl1)
-        ct = mesh.get_closest_vehicle_triangle_to_point((100, 100, 100), True)
-        print("closest vehicle triangle to point (100, 100, 100): ", ct)
 
-
-def main():
+if __name__ == '__main__':
     set_up_simple_logging()
 
     # Start up the simulator.
     bng = BeamNGpy('localhost', 64256)
-    test_mesh(bng)
-
-
-if __name__ == '__main__':
-    main()
+    test_mesh(bng, steps=100)
