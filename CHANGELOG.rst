@@ -14,7 +14,7 @@ Version 1.27
   - `RoadsSensor <beamngpy.html#roads-sensor>`__ sensor added
   - `IdealRadar <beamngpy.html#ideal-radar>`__ sensor added
   - RADAR sensor now reads the Doppler velocity from vehicles in the simulation as well as static objects.
-  - BeamNGpy now fully supports loading existing missions and Flowgraph scenarios. Look into the `Scenario loading <https://github.com/BeamNG/BeamNGpy/tree/master/examples/scenario_loading.ipynb>`__ example notebook to learn more.
+  - BeamNGpy now fully supports loading existing missions and Flowgraph scenarios. Look into the `Scenario Control <https://github.com/BeamNG/BeamNGpy/tree/master/examples/scenario_control.ipynb>`__ example notebook to learn more.
   - Beam stresses added as a mode to the ``AdvancedIMU`` sensor.
   - Camera, Lidar, and Radar sensor readings can now be streamed directly to shared memory in BeamNGpy, using dedicated ``stream()`` functions now found in the respective BeamNGpy sensor classes. This represents an alternative to the polling method used previously.
 
