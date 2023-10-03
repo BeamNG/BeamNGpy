@@ -12,31 +12,35 @@ if TYPE_CHECKING:
     from beamngpy import Scenario
 
 # User control parameters
-# The granularity used when evaluating OpenDrive primitives.
-GRANULARITY = 100
-# The depth (from bottom to top) of the generated mesh roads in BeamNG.
-DEPTH = 1.0
-
-# A container for storing a road polyline, before rendering in BeamNG.
+GRANULARITY = 100  # The granularity used when evaluating OpenDrive primitives.
+DEPTH = 1.0  # The depth (from bottom to top) of the generated mesh roads in BeamNG.
 
 
 class Road:
+    """
+    A container for storing a road polyline, before rendering in BeamNG.
+    """
+
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
 
-# A container for storing explicit polynomials (used for elevation profiles, width profiles, and lane offset profiles).
-
 
 class ExpCubic:
+    """
+    A container for storing explicit polynomials (used for elevation profiles, width profiles, and lane offset profiles).
+    """
+
     def __init__(self, s, a, b, c, d):
         self.s = float(s)
         self.a, self.b, self.c, self.d = float(a), float(b), float(c), float(d)
 
-# A container for storing line segments.
-
 
 class LineSegment:
+    """
+    A container for storing line segments.
+    """
+
     def __init__(self, id, s, x, y, hdg, length, elev=None, width=None, lane_offset=None):
         self.id = int(id)
         self.s = float(s)
@@ -77,10 +81,12 @@ class LineSegment:
             nodes.append([world.x, world.y, elev, width, DEPTH, signed_offset])
         return nodes
 
-# A container for storing circlular arcs (constant curvature).
-
 
 class Arc:
+    """
+    A container for storing circlular arcs (constant curvature).
+    """
+
     def __init__(self, id,  s, x, y, hdg, length, curvature, elev=None, width=None, lane_offset=None):
         self.id = int(id)
         self.s = float(s)
@@ -120,10 +126,12 @@ class Arc:
             nodes.append([x, y, elev, width, DEPTH, signed_offset])
         return nodes
 
-# A class for representing and processing clothoid spirals (linear curvature).
-
 
 class Spiral:
+    """
+    A class for representing and processing clothoid spirals (linear curvature).
+    """
+
     def __init__(self, id, s, x, y, hdg, length, start_k, end_k, elev=None, width=None, lane_offset=None):
         self.id = int(id)
         self.s = float(s)
@@ -165,10 +173,12 @@ class Spiral:
             nodes.append([x, y, elev, width, DEPTH, signed_offset])
         return nodes
 
-# A container for storing explicit cubic polynomials.
-
 
 class Poly3:
+    """
+    A container for storing explicit cubic polynomials.
+    """
+
     def __init__(self, id, s, x, y, hdg, length, a, b, c, d, elev=None, width=None, lane_offset=None):
         self.id = int(id)
         self.s = float(s)
@@ -218,10 +228,12 @@ class Poly3:
             nodes.append([world.x, world.y, elev, width, DEPTH, signed_offset])
         return nodes
 
-# A container for storing parametric cubic polynomials.
-
 
 class ParamPoly3:
+    """
+    A container for storing parametric cubic polynomials.
+    """
+
     def __init__(self, id,  s, x, y, hdg, length, aU, bU, cU, dU, aV, bV, cV, dV, pRange, elev=None, width=None, lane_offset=None):
         self.id = int(id)
         self.s = float(s)

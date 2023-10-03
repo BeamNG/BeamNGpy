@@ -20,18 +20,18 @@ LANE_WIDTH = 1.0
 # The depth (from bottom to top) of the generated mesh roads in BeamNG.
 DEFAULT_DEPTH = 1.0
 
-# A container for storing a road polyline, before rendering in BeamNG.
-
-
 class Road:
+    """
+    A container for storing a road polyline, before rendering in BeamNG.
+    """
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
 
-# A container for storing a Sumo 'edge'.
-
-
 class Edge:
+    """
+    A container for storing a Sumo 'edge'.
+    """
     def __init__(self, a, b, num_lanes):
         self.a, self.b = a, b
         self.num_lanes = num_lanes

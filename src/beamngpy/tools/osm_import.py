@@ -17,18 +17,22 @@ DEFAULT_ELEVATION = 0.1
 # The depth (from bottom to top) of the generated mesh roads in BeamNG.
 DEFAULT_DEPTH = 1.0
 
-# A container for storing a road polyline, before rendering in BeamNG.
-
 
 class Road:
+    """
+    A container for storing a road polyline, before rendering in BeamNG.
+    """
+
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
 
-# A container for storing an OpenStreetMap way, with any relevant metadata.
-
 
 class Way:
+    """
+    A container for storing an OpenStreetMap way, with any relevant metadata.
+    """
+
     def __init__(self, nodes, width):
         self.nodes = nodes
         self.width = width
