@@ -259,7 +259,7 @@ List of ROS-topics
 
 Contrary to other sensors, the Camera sensor may publish to multiple topics.
 If the camera sensor is configured to collect color, depth, annotation, and instance data, it is published to the respective topics:
-`
+
       ``/beamng_control/<vehicle_id>/<camera_id>/color``
 
       ``/beamng_control/<vehicle_id>/<camera_id>/depth``
