@@ -309,31 +309,28 @@ Note that although the bounding_box option is given, this feature is still under
 * LiDAR:
 
 Message type: `sensor_msgs.msg.PointCloud2`
-    ``/beamng_control/<vehicle_id>/lidar0``
-
+    ``/beamng_control/<vehicle_id>/<lidar_id>``
 
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |Key                                |Value Type        | Value Specification                                                                   | Entry Type |
 +===================================+==================+=======================================================================================+============+
-|``type``                           | String           | ``Lidar.default``                                                                   | Mandatory  |
+|``type``                           | String           | ``Lidar.default``                                                                     | Mandatory  |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``name``                           | String           | Unique sensor id.                                                                     | Mandatory  |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``position``                       | Array            | Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the sensor.     | Mandatory  |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
+|``rotation``                       | Array            | Array of 3 floats, specifying the vehicle rotation quaternion                         | Mandatory  |
++-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``vertical_resolution``            | Integer          | Vertical resolution, i.e. how many lines are sampled vertically                       | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``vertical_angle``                 | Float            | The vertical LiDAR sensor angle, in degrees.                                          | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``hz``                             | Integer          | The refresh rate of the LiDAR sensor, in Hz.                                          | Optional   |
+|``frequency``                      | Integer          | The frequency of this LiDAR sensor.                                                   | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``rps``                            | Integer          | The rays per second emmited by the LiDAR sensor                                       | Optional   |
+|``rays_per_second``                | Integer          | The rays per second emmited by the LiDAR sensor                                       | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``angle``                          | Integer          | horizontal range resolution, i.e. how many degrees are sampled horizontally           | Optional   |
-+-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``max_distance``                   | Integer          | Maximal distance for data collection.                                                 | Optional   |
-+-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``visualized``                     | Integer          | Dis-/Enable in-simulation LiDAR visualization.                                        | Optional   |
+|``is_visualised``                  | Boolean          | Dis-/Enable in-simulation visualization.                                              | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 
 .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png
@@ -343,10 +340,29 @@ Message type: `sensor_msgs.msg.PointCloud2`
 .. ! image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png
 
 
+* Ultrasonic sensor :
+
+Message type: `sensor_msgs.msg.Range`
+    ``/beamng_control/<vehicle_id>/<ultrasonic_sensor_name>``
+
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|Key                         |Value Type        | Value Specification                                                                             | Entry Type |
++============================+==================+=================================================================================================+============+
+|``type``                    | String           | ``Ultrasonic.smallrange``,and/or  ``Ultrasonic.midrange``,and/or  ``Ultrasonic.largerange``     | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|``name``                    | String           | Unique sensor id.                                                                               | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|``position``                | Array            | Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the sensor.               | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|``rotation``                | Array            | Array of 3 floats, specifying the vehicle rotation quaternion                                   | Mandatory  |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+|``is_visualised``           | Boolean          | Dis-/Enable in-simulation visualization.                                                        | Optional   |
++----------------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
+
 * Damage:
 
 Message type: `beamng_msgs.msg.DamagSensor`
-    ``/beamng_control/<vehicle_id>/damage0``
+    ``/beamng_control/<vehicle_id>/<damage_sensor_id>``
 
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                    | Entry Type |
@@ -369,7 +385,7 @@ Message type: `beamng_msgs.msg.DamagSensor`
 * time:
 
 Message type: `beamng_msgs.msg.TimeSensor`
-    ``/beamng_control/<vehicle_id>/time0``
+    ``/beamng_control/<vehicle_id>/<time_sensor_id>``
 
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                    | Entry Type |
@@ -383,7 +399,7 @@ Message type: `beamng_msgs.msg.TimeSensor`
 * Gforces:
 
 Message type: `beamng_msgs.msg.GForceSensor`
-    ``/beamng_control/<vehicle_id>/gforce0``
+    ``/beamng_control/<vehicle_id>/<gforce_sensor_id>``
 
 +--------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                    | Entry Type |
@@ -397,7 +413,7 @@ Message type: `beamng_msgs.msg.GForceSensor`
 * Electrics:
 
 Message type: `beamng_msgs.msg.ElectricsSensor`
-    ``/beamng_control/<vehicle_id>/electrics0``
+    ``/beamng_control/<vehicle_id>/<electrics_sensor_id>``
 
 +----------------------+------------------+------------------------------------------------------------------------+------------+
 |Key                   |Value Type        | Value Specification                                                    | Entry Type |
@@ -409,8 +425,8 @@ Message type: `beamng_msgs.msg.ElectricsSensor`
 
 * Imu pose:
 
-Message type: `beamng_msgs.msg.DamagSensor`
-    ``/beamng_control/<vehicle_id>/position_imu``
+Message type: `sensor_msgs.msg.Imu`
+    ``/beamng_control/<vehicle_id>/<imu_sensor_id>``
 
 +--------------------+------------------+----------------------------------------------------------------------------------+------------+
 |Key                 |Value Type        | Value Specification                                                              | Entry Type |
@@ -426,34 +442,6 @@ Message type: `beamng_msgs.msg.DamagSensor`
   :width: 800
   :alt: IMU sensor reading
 .. ![IMU sensor reading](https://github.com/BeamNG/BeamNGpy/raw/master/media/imu_west_coast_usa.png)
-
-
-* Parking sensor (ultrasonic):
-
-Message type: `beamng_msgs.msg.USSensor`
-    ``/beamng_control/<vehicle_id>/parking_sensor``
-
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|Key                 |Value Type        | Value Specification                                                                             | Entry Type |
-+====================+==================+=================================================================================================+============+
-|``type``            | String           | ``Ultrasonics.smallrange``,and/or  ``Ultrasonic.midrange``,and/or  ``Ultrasonic.largerange``    | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``name``            | String           | Unique sensor id.                                                                               | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``position``        | Array            | Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the sensor.               | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``rotation``        | Array            | Array of 3 floats, specifying the vehicle rotation quaternion                                   | Mandatory  |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``fov``             | Integer          | ultrasonic sensor field of view.                                                                | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``colour``          | Integer          | Dis-/Enables color image generation.                                                            | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``min_resolution``  | Integer          | Minimum distance for data collection.                                                           | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``min_distance``    | Integer          | Minimum range for data collection.                                                              | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
-|``max_distance``    | Integer          | Maximal range for data collection.                                                              | Optional   |
-+--------------------+------------------+-------------------------------------------------------------------------------------------------+------------+
 
 
 * Vehicle state:
