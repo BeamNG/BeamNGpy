@@ -337,9 +337,9 @@ Message type: `sensor_msgs.msg.PointCloud2`
 |``is_visualised``                  | Boolean          | Dis-/Enable in-simulation visualization.                                              | Optional   |
 +-----------------------------------+------------------+---------------------------------------------------------------------------------------+------------+
 
-.. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png
-  :width: 800
-  :alt: 3D-LiDAR sensor reading
+.. .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png
+..   :width: 800
+..   :alt: 3D-LiDAR sensor reading
 .. ![3D-LiDAR sensor reading](https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png)
 .. ! image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/lidar_west_coast_usa.png
 
