@@ -31,6 +31,8 @@ Running the BeamNG ROS integration requires three individual software components
 +-------------+----------+------------------------+
 | BeamNG.tech | BeamNGpy | BeamNG ROS Integration |
 +=============+==========+========================+
+| 0.30        | 1.26.1   | 0.1.4                  |
++-------------+----------+------------------------+
 | 0.28        | 1.26     | 0.1.3                  |
 +-------------+----------+------------------------+
 | 0.27        | 1.25.1   | 0.1.2                  |
@@ -107,19 +109,21 @@ Using it will start up a node that connects to the simulation and starts up a sc
 
 - Vehicles are also defined as JSON objectsin `beamng_control/config/vehicles/{vehicle}.json`.
 
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|Key                   |Value Type        | Value Specification                                                                 | Entry Type |
-+======================+==================+=====================================================================================+============+
-|``name``              |String            |Name of the vehicle, used for identification                                         | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``model``             |String            |Name of the vehicle type, f.ex. ``etk800``                                           | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``position``          |Array             |Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the vehicle.   | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``rotation``          |Array             |Array of 4 floats, specifying the vehicle rotation quaternion.                       | Mandatory  |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
-|``sensors``           |Array             |Array of JSON objects, specifying the vehicles sensor parameters.                    | Optional   |
-+----------------------+------------------+-------------------------------------------------------------------------------------+------------+
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|Key                          |Value Type        | Value Specification                                                                                                    | Entry Type |
++=============================+==================+========================================================================================================================+============+
+|``name``                     |String            |Name of the vehicle, used for identification                                                                            | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``model``                    |String            |Name of the vehicle type, f.ex. ``etk800``                                                                              | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``position``                 |Array             |Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the vehicle.                                      | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``rotation``                 |Array             |Array of 4 floats, specifying the vehicle rotation quaternion.                                                          | Mandatory  |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``sensors_classical``        |Array             |Array of JSON objects, specifying the vehicles sensor parameters i.e., electrics, IMU, damage, gforce, and time sensor  | Optional   |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
+|``sensors_automation``       |Array             |Array of JSON objects, specifying the ad-hoc_sensors parameters i.e., Lidar, camera, and Ultrasonic sensor              | Optional   |
++-----------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+------------+
 
 
 Running BeamNG.Tech
@@ -161,7 +165,7 @@ The folloing topics for move/stop the vehicle in simulation and enable/disable k
 Calling ROS-services for controlling the Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To Dis-/Enables user keyboard and mouse control of the BeamNG.Tech game
+To Dis-/Enables user keyboard and mouse control of the BeamNG.Tech simulator
 
 +--------------------------------------+-----------------------------------------------+-----------------------------+
 |Name                                  |  Type                                         |  Purpose                    |
@@ -172,13 +176,13 @@ To Dis-/Enables user keyboard and mouse control of the BeamNG.Tech game
 +--------------------------------------+-----------------------------------------------+-----------------------------+
 
 
-- Disable user keyboard and mouse control of the BeamNG.Tech game:
+- Disable user keyboard and mouse control of the BeamNG.Tech simulator:
   ``rosservice call /beamng_control/pause "{}"``
 - terminal feedback should be:
 
   ``success: True``
 
-- Enable user keyboard and mouse control of the BeamNG.Tech game:
+- Enable user keyboard and mouse control of the BeamNG.Tech simulator:
   ``rosservice call /beamng_control/resume "{}"``
 
 - terminal feedback should be:
