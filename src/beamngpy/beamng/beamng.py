@@ -132,7 +132,7 @@ class BeamNGpy:
                                 happens and prints the stacktrace instead.
                                 Is applicable only when the process is launched by this instance of BeamNGpy,
                                 as it sets a launch argument of the process. Defaults to False.
-            bind_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
+            listen_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
                      Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
         """
         self.connection = Connection(self.host, self.port)
