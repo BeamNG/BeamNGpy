@@ -33,6 +33,8 @@ class NavigraphData:
 
         # Get the road graph data for the current map.
         raw_data = self._send_sensor_request('GetRoadGraph', ack='CompletedGetRoadGraph')['data']
+        for key in raw_data: # fix the types if no roads fround
+            raw_data[key] = dict(raw_data[key])
         self.graph = raw_data['graph']
         self.coords3d = self._to_vec3(raw_data['coords'])
         self.coords2d = self.get_2d_coords()
