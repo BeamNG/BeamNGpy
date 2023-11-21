@@ -323,7 +323,7 @@ class BeamNGpy:
             extensions = []
 
         extensions.insert(0, 'tech/techCore')
-        lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
+        lua = ("extensions.load('{}');" * len(extensions))[:-1]
         lua = lua.format(*extensions)
         call = [binary, '-rport', str(self.port), '-nosteam']
         if platform.system() != 'Linux':  # console is not supported for Linux hosts yet
