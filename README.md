@@ -92,17 +92,12 @@ as documentation, so be sure to check them out.
 
 ## Prerequisites
 
-Usage of BeamNGpy requires BeamNG.tech to be installed. Builds of
-BeamNG.tech are made available for non-commercial use upon request using
-[this form][2]. For commercial use, contact us at [licensing@beamng.gmbh][3].
+Usage of BeamNGpy requires BeamNG.tech to be installed. For commercial use,
+contact us at [licensing@beamng.gmbh][3]. Builds of BeamNG.tech are made 
+available for research and academic use upon request using [this form][2].
 Once downloaded, you can use the environment variable `BNG_HOME` to where
 BeamNG.tech can be run from, or provide a path to the BeamNGpy library
 during initialization.
-
-The regular [Steam release of BeamNG.drive][4] is compatible to an extent as
-well. Certain sensors like the simulated LiDAR or camera will not work, but
-most of the functions that are not exclusive to a Tech build will likely
-work.
 
 <a name="installation"></a>
 
