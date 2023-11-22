@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID
 from beamngpy.types import Float3, StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ['AdvancedIMU']
 
 
-class AdvancedIMU:
+class AdvancedIMU(CommBase):
     """
     An interactive, automated IMU sensor, which produces regular acceleration and gyroscopic measurements in a local coordinate space.
     This sensor must be attached to a vehicle; it cannot be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
@@ -43,36 +42,27 @@ class AdvancedIMU:
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
-        dir: Float3 = (0, -1, 0), up: Float3 = (-0, 0, 1), accel_window_width: float | None = None, gyro_window_width: float | None = None,
-        accel_frequency_cutoff: float | None = None, gyro_frequency_cutoff: float | None = None, is_send_immediately: bool = False, is_using_gravity: bool = False,
-        is_visualised: bool = True, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+                 dir: Float3 = (0, -1, 0), up: Float3 = (-0, 0, 1), accel_window_width: float | None = None, gyro_window_width: float | None = None,
+                 accel_frequency_cutoff: float | None = None, gyro_frequency_cutoff: float | None = None, is_send_immediately: bool = False, is_using_gravity: bool = False,
+                 is_visualised: bool = True, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+        super().__init__(bng, vehicle)
+
         self.logger = getLogger(f'{LOGGER_ID}.Advanced IMU')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
         self.name = name
-        self.vehicle = vehicle
         self.is_send_immediately = is_send_immediately
+        self.vehicle = vehicle
 
         # Create and initialise this sensor in the simulation.
         self._open_advanced_IMU(name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, accel_window_width, gyro_window_width, is_send_immediately,
-            accel_frequency_cutoff, gyro_frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
+                                accel_frequency_cutoff, gyro_frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
 
         # Fetch the unique Id number (in the simulator) for this advanced IMU sensor.  We will need this later.
         self.sensorId = self._get_advanced_imu_id()
 
         self.logger.debug('Advanced IMU - sensor created: 'f'{self.name}')
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, ack: str | None = None, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self) -> None:
         """
@@ -112,8 +102,7 @@ class AdvancedIMU:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Advanced IMU - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request('SendAdHocRequestAdvancedIMU', 'CompletedSendAdHocRequestAdvancedIMU',
-                                             name=self.name, vid=self.vehicle.vid)['data'])
+        return int(self.send_recv_ge('SendAdHocRequestAdvancedIMU', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -126,8 +115,7 @@ class AdvancedIMU:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Advanced IMU - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyAdvancedIMU',
-                                         'CompletedIsAdHocPollRequestReadyAdvancedIMU', requestId=request_id)['data']
+        return self.send_recv_ge('IsAdHocPollRequestReadyAdvancedIMU', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -139,8 +127,7 @@ class AdvancedIMU:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestAdvancedIMU',
-                                             'CompletedCollectAdHocPollRequestAdvancedIMU', requestId=request_id)['data']
+        readings = self.send_recv_ge('CollectAdHocPollRequestAdvancedIMU', requestId=request_id)['data']
         self.logger.debug('Advanced IMU - ad-hoc polling request returned and processed: 'f'{self.name}')
         return readings
 
@@ -151,8 +138,8 @@ class AdvancedIMU:
         Args:
             requested_update_time: The new requested update time.
         """
-        self._set_sensor('SetAdvancedIMURequestedUpdateTime', ack='CompletedSetAdvancedIMURequestedUpdateTime',
-                         name=self.name, vid=self.vehicle.vid, GFXUpdateTime=requested_update_time)
+        self.send_ack_ge('SetAdvancedIMURequestedUpdateTime', ack='CompletedSetAdvancedIMURequestedUpdateTime', name=self.name,
+                         vid=self.vehicle.vid, GFXUpdateTime=requested_update_time)
 
     def set_is_using_gravity(self, is_using_gravity: bool) -> None:
         """
@@ -161,7 +148,7 @@ class AdvancedIMU:
         Args:
             is_using_gravity: A flag which indicates if this sensor is to use gravity in the computation or not.
         """
-        return self._set_sensor(
+        return self.send_ack_ge(
             'SetAdvancedIMUIsUsingGravity', ack='CompletedSetAdvancedIMUIsUsingGravity', name=self.name,
             vid=self.vehicle.vid, isUsingGravity=is_using_gravity)
 
@@ -172,17 +159,16 @@ class AdvancedIMU:
         Args:
             is_visualised: A flag which indicates if this sensor is to be visualised or not.
         """
-        self._set_sensor('SetAdvancedIMUIsVisualised', ack='CompletedSetAdvancedIMUIsVisualised',
+        self.send_ack_ge('SetAdvancedIMUIsVisualised', ack='CompletedSetAdvancedIMUIsVisualised',
                          name=self.name, vid=self.vehicle.vid, isVisualised=is_visualised)
 
     def _get_advanced_imu_id(self) -> int:
-        return int(
-            self._send_sensor_request('GetAdvancedImuId', ack='CompletedGetAdvancedImuId', name=self.name)['data'])
+        return int(self.send_recv_ge('GetAdvancedImuId', name=self.name)['data'])
 
     def _open_advanced_IMU(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3, dir: Float3, up: Float3,
-        accel_window_width: float | None, gyro_window_width: float | None, is_send_immediately: bool, accel_frequency_cutoff: float | None, gyro_frequency_cutoff: float | None,
-        is_using_gravity: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
-        data: StrDict = dict(type='OpenAdvancedIMU')
+                           accel_window_width: float | None, gyro_window_width: float | None, is_send_immediately: bool, accel_frequency_cutoff: float | None, gyro_frequency_cutoff: float | None,
+                           is_using_gravity: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+        data: StrDict = dict()
         data['name'] = name
         data['vid'] = vehicle.vid
         data['GFXUpdateTime'] = gfx_update_time
@@ -199,22 +185,15 @@ class AdvancedIMU:
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.bng._send(data).ack('OpenedAdvancedIMU')
+        self.send_ack_ge(type='OpenAdvancedIMU', ack='OpenedAdvancedIMU', **data)
         self.logger.info(f'Opened advanced IMU sensor: "{name}"')
 
     def _close_advanced_IMU(self) -> None:
-        data = dict(type='CloseAdvancedIMU')
-        data['name'] = self.name
-        data['vid'] = self.vehicle.vid
-        self.bng._send(data).ack('ClosedAdvancedIMU')
+        self.send_ack_ge(type='CloseAdvancedIMU', ack='ClosedAdvancedIMU', name=self.name, vid=self.vehicle.vid)
         self.logger.info(f'Closed advanced IMU sensor: "{self.name}"')
 
     def _poll_advanced_IMU_GE(self) -> StrDict:
-        return self._send_sensor_request(
-            'PollAdvancedImuGE', ack='PolledAdvancedImuGECompleted', name=self.name)['data']
+        return self.send_recv_ge('PollAdvancedImuGE', name=self.name)['data']
 
     def _poll_advanced_IMU_VE(self) -> StrDict:
-        if not self.vehicle.connection:
-            raise BNGError('The vehicle is not connected!')
-        return send_sensor_request(
-            self.vehicle.connection, 'PollAdvancedImuVE', name=self.name, sensorId=self.sensorId)['data']
+        return self.send_recv_veh('PollAdvancedImuVE', name=self.name, sensorId=self.sensorId)['data']

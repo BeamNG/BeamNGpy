@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import math
 import os
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, List
 
 import numpy as np
 from PIL import Image
 
 import beamngpy.sensors.shmem as shmem
-from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.sensors.communication_utils import (send_sensor_request, set_sensor)
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID, BNGValueError
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 
 from . import utils
@@ -20,7 +19,7 @@ if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
 
-class Camera:
+class Camera(CommBase):
     """
     An interactive, automated camera sensor, which can produce regular colour images, depth images, or annotation images.
     This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
@@ -115,16 +114,15 @@ class Camera:
         return utils.export_bounding_boxes_xml(bounding_boxes, folder, filename, path, database, size)
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1, update_priority: float = 0.0, pos: Float3 = (0, 0, 3),
-        dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512), field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
-        is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True, is_render_instance: bool = False, is_render_depth: bool = True,
-        is_depth_inverted: bool = False, is_visualised: bool = False, is_streaming: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
-        is_force_inside_triangle: bool = False):
-
+                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512), field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
+                 is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True, is_render_instance: bool = False, is_render_depth: bool = True,
+                 is_depth_inverted: bool = False, is_visualised: bool = False, is_streaming: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
+                 is_force_inside_triangle: bool = False):
+        super().__init__(bng, vehicle)
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
         self.name = name
         self.resolution = resolution
         self.near_far_planes = near_far_planes
@@ -177,16 +175,6 @@ class Camera:
             self.depth_handle, buffer_size, is_render_colours, is_render_annotations, is_render_instance,
             is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, ack: str | None = None, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, ack, **kwargs)
 
     def _convert_to_image(self, raw_data: bytes | str | None, width: int, height: int) -> Image.Image | None:
         """
@@ -329,8 +317,8 @@ class Camera:
             The processed images.
         """
         # Send and receive a request for readings data from this sensor.
-        raw_readings = self._send_sensor_request(
-            'PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
+        raw_readings = self.send_recv_ge('PollCamera', name=self.name,
+                                         isUsingSharedMemory=self.is_using_shared_memory)['data']
         self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
 
         # Decode the raw sensor readings into image data. This is handled differently, depending on whether shared memory is used or not.
@@ -365,21 +353,21 @@ class Camera:
         return images
 
     def poll_shmem_colour(self):
-        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
         img = np.frombuffer(shmem.read(self.colour_shmem, width * height * 4), dtype=np.uint8)
         return [img, width, height]
 
     def poll_shmem_annotation(self):
-        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
-        img= np.frombuffer(shmem.read(self.annotation_shmem, width * height * 4), dtype=np.uint8)
+        img = np.frombuffer(shmem.read(self.annotation_shmem, width * height * 4), dtype=np.uint8)
         return [img, width, height]
 
     def poll_shmem_depth(self):
-        self._send_sensor_request('PollCamera', ack='PolledCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
+        self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
         img = np.frombuffer(shmem.read(self.depth_shmem, width * height * 4), dtype=np.float32)
@@ -404,8 +392,7 @@ class Camera:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Camera - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request(
-            'SendAdHocRequestCamera', ack='CompletedSendAdHocRequestCamera', name=self.name)['data'])
+        return int(self.send_recv_ge('SendAdHocRequestCamera', name=self.name)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -418,8 +405,7 @@ class Camera:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Camera - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request(
-            'IsAdHocPollRequestReadyCamera', ack='CompletedIsAdHocPollRequestReadyCamera', requestId=request_id)['data']
+        return self.send_recv_ge('IsAdHocPollRequestReadyCamera', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -432,8 +418,7 @@ class Camera:
             The readings data.
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
-        raw_readings = self._send_sensor_request(
-            'CollectAdHocPollRequestCamera', ack='CompletedCollectAdHocPollRequestCamera', requestId=request_id)['data']
+        raw_readings = self.send_recv_ge('CollectAdHocPollRequestCamera', requestId=request_id)['data']
 
         # Format the binary string data from the simulator.
         return self._binary_to_image(raw_readings)
@@ -448,8 +433,7 @@ class Camera:
             The camera data, as images
         """
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
-        raw_readings = self._send_sensor_request(
-            'GetFullCameraRequest', ack='CompletedGetFullCameraRequest', name=self.name)
+        raw_readings = self.send_recv_ge('GetFullCameraRequest', name=self.name)
         if 'data' not in raw_readings:
             raise BNGValueError(f'Camera sensor {self.name} not found.')
         raw_readings = raw_readings['data']
@@ -476,9 +460,8 @@ class Camera:
         Returns:
             The 2D pixel value which represents the given 3D point, on this camera.
         """
-        pixel_data = self._send_sensor_request(
-            'CameraWorldPointToPixel', ack='CompletedCameraWorldPointToPixel', name=self.name,
-            pointX=point[0], pointY=point[1], pointZ=point[2])['data']
+        pixel_data = self.send_recv_ge('CameraWorldPointToPixel', name=self.name,
+                                       pointX=point[0], pointY=point[1], pointZ=point[2])['data']
         return (int(pixel_data['x']), int(pixel_data['y']))
 
     def get_position(self) -> Float3:
@@ -488,8 +471,7 @@ class Camera:
         Returns:
             The sensor position.
         """
-        table = self._send_sensor_request('GetCameraSensorPosition',
-                                          ack='CompletedGetCameraSensorPosition', name=self.name)['data']
+        table = self.send_recv_ge('GetCameraSensorPosition', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_direction(self) -> Float3:
@@ -499,8 +481,7 @@ class Camera:
         Returns:
             The sensor direction.
         """
-        table = self._send_sensor_request('GetCameraSensorDirection',
-                                          ack='CompletedGetCameraSensorDirection', name=self.name)['data']
+        table = self.send_recv_ge('GetCameraSensorDirection', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_requested_update_time(self) -> float:
@@ -510,8 +491,7 @@ class Camera:
         Returns:
             The requested update time.
         """
-        return self._send_sensor_request(
-            'GetCameraRequestedUpdateTime', ack='CompletedGetCameraRequestedUpdateTime', name=self.name)['data']
+        return self.send_recv_ge('GetCameraRequestedUpdateTime', name=self.name)['data']
 
     def get_update_priority(self) -> float:
         """
@@ -520,8 +500,7 @@ class Camera:
         Returns:
             The update priority value.
         """
-        return self._send_sensor_request(
-            'GetCameraUpdatePriority', ack='CompletedGetCameraUpdatePriority', name=self.name)['data']
+        return self.send_recv_ge('GetCameraUpdatePriority', name=self.name)['data']
 
     def get_max_pending_requests(self) -> int:
         """
@@ -530,8 +509,7 @@ class Camera:
         Returns:
             The max pending requests value.
         """
-        return int(self._send_sensor_request('GetCameraMaxPendingGpuRequests',
-                                             ack='CompletedGetCameraMaxPendingGpuRequests', name=self.name)['data'])
+        return int(self.send_recv_ge('GetCameraMaxPendingGpuRequests', name=self.name)['data'])
 
     def set_position(self, pos: Float3) -> None:
         """
@@ -540,7 +518,7 @@ class Camera:
         Args:
             pos: The new position.
         """
-        return self._set_sensor(
+        return self.send_ack_ge(
             'SetCameraSensorPosition', ack='CompletedSetCameraSensorPosition', name=self.name, posX=pos[0],
             posY=pos[1],
             posZ=pos[2])
@@ -552,7 +530,7 @@ class Camera:
         Args:
             dir: The new forward direction vector.
         """
-        self._set_sensor(
+        self.send_ack_ge(
             'SetCameraSensorDirection', ack='CompletedSetCameraSensorDirection', name=self.name,
             dirX=dir[0], dirY=dir[1], dirZ=dir[2])
 
@@ -563,7 +541,7 @@ class Camera:
         Args:
             pos: The new up vector.
         """
-        self._set_sensor('SetCameraSensorUp', ack='CompletedSetCameraSensorUp',
+        self.send_ack_ge('SetCameraSensorUp', ack='CompletedSetCameraSensorUp',
                          name=self.name, upX=up[0], upY=up[1], upZ=up[2])
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
@@ -573,7 +551,7 @@ class Camera:
         Args:
             requested_update_time: The new requested update time.
         """
-        return self._set_sensor(
+        return self.send_ack_ge(
             'SetCameraRequestedUpdateTime', ack='CompletedSetCameraRequestedUpdateTime', name=self.name,
             updateTime=requested_update_time)
 
@@ -584,7 +562,7 @@ class Camera:
         Args:
             update_priority: The new update priority value.
         """
-        return self._set_sensor(
+        return self.send_ack_ge(
             'SetCameraUpdatePriority', ack='CompletedSetCameraUpdatePriority', name=self.name,
             updatePriority=update_priority)
 
@@ -595,7 +573,7 @@ class Camera:
         Args:
             max_pending_requests: The new max pending requests value.
         """
-        return self._set_sensor(
+        return self.send_ack_ge(
             'SetCameraMaxPendingGpuRequests', ack='CompletedSetCameraMaxPendingGpuRequests', name=self.name,
             maxPendingGpuRequests=max_pending_requests)
 
@@ -607,7 +585,7 @@ class Camera:
             depth_shmem_size: int, is_render_colours: bool, is_render_annotations: bool, is_render_instance: bool,
             is_render_depth: bool, is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool,
             is_force_inside_triangle: bool) -> None:
-        data: StrDict = dict(type='OpenCamera')
+        data: StrDict = dict()
         data['vid'] = 0
         if vehicle is not None:
             data['vid'] = vehicle.vid
@@ -636,11 +614,9 @@ class Camera:
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
-        self.bng._send(data).ack('OpenedCamera')
+        self.send_ack_ge(type='OpenCamera', ack='OpenedCamera', **data)
         self.logger.info(f'Opened Camera: "{name}"')
 
     def _close_camera(self) -> None:
-        data = dict(type='CloseCamera')
-        data['name'] = self.name
-        self.bng._send(data).ack('ClosedCamera')
+        self.send_ack_ge(type='CloseCamera', ack='ClosedCamera', name=self.name)
         self.logger.info(f'Closed Camera: "{self.name}"')

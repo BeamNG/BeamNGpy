@@ -2,17 +2,16 @@ from __future__ import annotations
 
 import math
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import collections as mc
 
-from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID
 from beamngpy.types import StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -21,7 +20,7 @@ if TYPE_CHECKING:
 __all__ = ['Mesh']
 
 
-class Mesh:
+class Mesh(CommBase):
     """
     An automated 'sensor' to retrieve mesh data in real time.
 
@@ -35,6 +34,7 @@ class Mesh:
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, groups_list=[], is_track_beams=True):
+        super().__init__(bng, vehicle)
         sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
@@ -44,7 +44,6 @@ class Mesh:
         self.name = name
         self.vehicle = vehicle
         self.vid = vehicle.vid
-        self.bng = bng
 
         self.is_track_beams = is_track_beams
 
@@ -114,7 +113,7 @@ class Mesh:
         if self.is_track_beams == False and self.is_beam_relevance_map_computed == True:
             return
 
-        beam_data = self._send_sensor_request('GetBeamData', ack='CompletedGetBeamData', vid=self.vid)['data']
+        beam_data = self.send_recv_ge('GetBeamData', vid=self.vid)['data']
         self.beams = {}
 
         if self.is_beam_relevance_map_computed == True:
@@ -141,16 +140,6 @@ class Mesh:
                 self.beams[int(key)] = [b0, b1, b2]
                 self.beam_relevance_map[key] = True
         self.is_beam_relevance_map_computed = True
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self) -> None:
         """
@@ -210,7 +199,7 @@ class Mesh:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Mesh - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request('SendAdHocRequestMesh', ack='CompletedSendAdHocRequestMesh', name=self.name, vid=self.vehicle.vid)['data'])
+        return int(self.send_recv_ge('SendAdHocRequestMesh', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -223,7 +212,7 @@ class Mesh:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Mesh - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyMesh', ack='CompletedIsAdHocPollRequestReadyMesh', requestId=request_id)['data']
+        return self.send_recv_ge('IsAdHocPollRequestReadyMesh', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -235,8 +224,7 @@ class Mesh:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestMesh',
-                                             ack='CompletedCollectAdHocPollRequestMesh', requestId=request_id)['data']
+        readings = self.send_recv_ge('CollectAdHocPollRequestMesh', requestId=request_id)['data']
         self.logger.debug('Mesh - ad-hoc polling request returned and processed: 'f'{self.name}')
         return readings
 
@@ -247,32 +235,22 @@ class Mesh:
         Args:
             requested_update_time: The new requested update time.
         """
-        self._set_sensor('SetMeshRequestedUpdateTime', ack='CompletedSetMeshRequestedUpdateTime',
+        self.send_ack_ge('SetMeshRequestedUpdateTime', ack='CompletedSetMeshRequestedUpdateTime',
                          name=self.name, vid=self.vehicle.vid, GFXUpdateTime=requested_update_time)
 
     def _get_mesh_id(self) -> int:
-        return int(self._send_sensor_request('GetMeshId', ack='CompletedGetMeshId', name=self.name)['data'])
+        return int(self.send_recv_ge('GetMeshId', name=self.name)['data'])
 
     def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float) -> None:
-
-        data: StrDict = dict(type='OpenMesh')
-        data['name'] = name
-        data['vid'] = vehicle.vid
-        data['GFXUpdateTime'] = gfx_update_time
-        self.bng._send(data).ack('OpenedMesh')
+        self.send_ack_ge(type='OpenMesh', ack='OpenedMesh', name=name, vid=vehicle.vid, GFXUpdateTime=gfx_update_time)
         self.logger.info(f'Opened Mesh sensor: "{name}"')
 
     def _close_mesh(self) -> None:
-        data = dict(type='CloseMesh')
-        data['name'] = self.name
-        data['vid'] = self.vehicle.vid
-        self.bng._send(data).ack('ClosedMesh')
+        self.send_ack_ge(type='CloseMesh', ack='ClosedMesh', name=self.name, vid=self.vehicle.vid)
         self.logger.info(f'Closed Mesh sensor: "{self.name}"')
 
     def _poll_mesh_VE(self) -> StrDict:
-        if not self.vehicle.connection:
-            raise BNGError('The vehicle is not connected!')
-        return send_sensor_request(self.vehicle.connection, 'PollMeshVE', name=self.name, sensorId=self.sensorId)['data']
+        return self.send_recv_veh('PollMeshVE', name=self.name, sensorId=self.sensorId)['data']
 
     def get_node_positions(self):
         return self.node_positions

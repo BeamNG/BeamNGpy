@@ -9,16 +9,15 @@ import seaborn as sns
 from matplotlib import collections as mc
 
 from beamngpy import vec3
-from beamngpy.logging import LOGGER_ID, BNGError
-from beamngpy.sensors.communication_utils import (send_sensor_request,
-                                                  set_sensor)
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID
 from beamngpy.types import StrDict
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
 
-class NavigraphData:
+class NavigraphData(CommBase):
 
     def __init__(self, bng: BeamNGpy):
         """
@@ -27,13 +26,14 @@ class NavigraphData:
         Args:
             bng: The BeamNG instance.
         """
+        super().__init__(bng, None)
+
         self.logger = getLogger(f'{LOGGER_ID}.Road_Graph')
         self.logger.setLevel(DEBUG)
-        self.bng = bng
 
         # Get the road graph data for the current map.
-        raw_data = self._send_sensor_request('GetRoadGraph', ack='CompletedGetRoadGraph')['data']
-        for key in raw_data: # fix the types if no roads fround
+        raw_data = self.send_recv_ge('GetRoadGraph')['data']
+        for key in raw_data:  # fix the types if no roads fround
             raw_data[key] = dict(raw_data[key])
         self.graph = raw_data['graph']
         self.coords3d = self._to_vec3(raw_data['coords'])
@@ -49,16 +49,6 @@ class NavigraphData:
         for k, v in self.coords3d.items():
             coords_2d[k] = vec3(v.x, v.y, 0.0)
         return coords_2d
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, **kwargs)
 
     def _to_vec3(self, d):
         output = {}
@@ -105,7 +95,7 @@ class NavigraphData:
                     current_path = []
                     current_path.append(head_key)
                     next_key = child_key
-                    while(True):
+                    while (True):
                         current_path.append(next_key)
                         next_successors = graph[next_key].keys()
                         if len(next_successors) != 2:
