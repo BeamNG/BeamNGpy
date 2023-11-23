@@ -93,7 +93,7 @@ as documentation, so be sure to check them out.
 ## Prerequisites
 
 Usage of BeamNGpy requires BeamNG.tech to be installed. For commercial use,
-contact us at [licensing@beamng.gmbh][3]. Builds of BeamNG.tech are made 
+contact us at [licensing@beamng.gmbh][3]. Builds of BeamNG.tech are made
 available for research and academic use upon request using [this form][2].
 Once downloaded, you can use the environment variable `BNG_HOME` to where
 BeamNG.tech can be run from, or provide a path to the BeamNGpy library
@@ -172,7 +172,7 @@ However we do not maintain minor versions: bug fixes and new features will only 
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
-| 0.30                | [1.27](https://github.com/BeamNG/BeamNGpy/tree/v1.27)     |
+| 0.30                | [1.27.1](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1) |
 | 0.28, 0.29          | [1.26.1](https://github.com/BeamNG/BeamNGpy/tree/v1.26.1) |
 | 0.27                | [1.25.1](https://github.com/BeamNG/BeamNGpy/tree/v1.25.1) |
 | 0.26                | [1.24](https://github.com/BeamNG/BeamNGpy/tree/v1.24)     |
