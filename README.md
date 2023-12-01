@@ -128,7 +128,7 @@ if you installed it using `conda`.
 ## Usage
 
 **DISCLAIMER:** If you are using an older version of `beamngpy` and BeamNG.tech, please follow the
-instructions of the corresponding `README` file (for example, [1.22 instructions](https://github.com/BeamNG/BeamNGpy/tree/v1.22)).
+instructions of the corresponding `README` file (for example, [1.27.1 instructions](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1)). If you are using the latest version of BeamNGpy, continue following the instructions located in this README file.
 
 The library can be imported using `import beamngpy`. A short
 usage example setting up a scenario with one vehicle in the West Coast USA map
