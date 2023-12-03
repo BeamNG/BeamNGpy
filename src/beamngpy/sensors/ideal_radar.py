@@ -17,6 +17,9 @@ __all__ = ['IdealRadar']
 
 class IdealRadar:
     """
+    This automated sensor provides the user with data relating to vehicles within a close proximity to its position.  Quantities such as velocity and acceleration
+    are available for these vehicles, in a reference frame local the sensor.  These sensors can be attached to any vehicle, or to any fixed point on the map.
+
     Args:
         name: A unique name for this ideal RADAR sensor.
         bng: The BeamNGpy instance, with which to communicate to the simulation.

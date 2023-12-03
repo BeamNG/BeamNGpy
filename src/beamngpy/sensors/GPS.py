@@ -17,7 +17,20 @@ __all__ = ['GPS']
 
 class GPS:
     """
-    GPS Sensor class.
+    This automated sensor provides GPS readings (position) in spherical coordinates (lattitude, longitude).  It can be attached to any point on or relative to the vehicle.
+
+    Args:
+        name: A unique name for this ideal RADAR sensor.
+        bng: The BeamNGpy instance, with which to communicate to the simulation.
+        vehicle: The vehicle to which this sensor should be attached.
+        gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
+        physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
+        ref_lon: A reference longitude value, which tells the sensor where the origin point of the map is on the (longitude, lattitude) system.
+        ref_lat: A reference lattitude value, which tells the sensor where the origin point of the map is on the (longitude, lattitude) system.
+        is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
+        is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
+        is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle.
+        is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle.
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
