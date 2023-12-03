@@ -15,7 +15,7 @@ extract data from simulations.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING
 
 from beamngpy.types import StrDict
 

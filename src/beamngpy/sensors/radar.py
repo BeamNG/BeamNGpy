@@ -3,10 +3,9 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
 
-from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID
 from beamngpy.types import Float2, Float3, Int2, StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -24,7 +23,7 @@ import beamngpy.sensors.shmem as shmem
 __all__ = ['Radar']
 
 
-class Radar:
+class Radar(CommBase):
     """
     An interactive, automated RADAR sensor, which produces regular RADAR measurements.
     This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
@@ -66,16 +65,17 @@ class Radar:
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1, update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
-        dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), range_bins: int = 200, azimuth_bins: int = 200, vel_bins: int = 200, range_min: float = 0.1, range_max: float = 100.0,
-        vel_min: float = -50.0, vel_max: float = 50.0, half_angle_deg: float = 30.0, resolution: Int2 = (200, 200), field_of_view_y: float = 70,
-        near_far_planes: Float2 = (0.1, 150.0), range_roundess: float = -2.0, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.23, range_focus: float = 0.12,
-        range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
-        is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), range_bins: int = 200, azimuth_bins: int = 200, vel_bins: int = 200, range_min: float = 0.1, range_max: float = 100.0,
+                 vel_min: float = -50.0, vel_max: float = 50.0, half_angle_deg: float = 30.0, resolution: Int2 = (200, 200), field_of_view_y: float = 70,
+                 near_far_planes: Float2 = (0.1, 150.0), range_roundess: float = -2.0, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.23, range_focus: float = 0.12,
+                 range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
+                 is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+        super().__init__(bng, vehicle)
+
         self.logger = getLogger(f'{LOGGER_ID}.RADAR')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
         self.name = name
 
         # Shared memory for velocity data streaming.
@@ -88,19 +88,9 @@ class Radar:
 
         # Create and initialise this sensor in the simulation.
         self._open_radar(name, vehicle, self.shmem_handle, self.shmem_handle2, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
-            vel_bins, range_min, range_max, vel_min, vel_max, half_angle_deg, resolution, field_of_view_y, near_far_planes, range_roundess, range_cutoff_sensitivity, range_shape,
-            range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
+                         vel_bins, range_min, range_max, vel_min, vel_max, half_angle_deg, resolution, field_of_view_y, near_far_planes, range_roundess, range_cutoff_sensitivity, range_shape,
+                         range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
         self.logger.debug('RADAR - sensor created: 'f'{self.name}')
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs):
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, ack: str | None = None, **kwargs):
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return set_sensor(self.bng.connection, type, ack, **kwargs)
 
     def _unpack_float(self, binary):
         # Convert the given binary string into a 1D array of floats.
@@ -121,7 +111,8 @@ class Radar:
         decoded_data = []
         floats_len = int(len(floats))
         for i in range(0, floats_len, 7):
-            decoded_data.append([floats[i], floats[i + 1], floats[i + 2], floats[i + 3], floats[i + 4], floats[i + 5], floats[i + 6]])
+            decoded_data.append([floats[i], floats[i + 1], floats[i + 2], floats[i + 3],
+                                floats[i + 4], floats[i + 5], floats[i + 6]])
         return decoded_data
 
     def remove(self):
@@ -141,7 +132,7 @@ class Radar:
             A 6D point cloud of raw RADAR data, where each entry is (range, doppler velocity, azimuth angle, elevation angle, radar cross section, signal to noise ratio).
         """
         # Send and receive a request for readings data from this sensor.
-        binary = self._send_sensor_request('PollRadar', ack='PolledRadar', name=self.name)['data']
+        binary = self.send_recv_ge('PollRadar', name=self.name)['data']
 
         # Convert the binary string into an array of floats.
         radar_data = self._decode_poll_data(binary)
@@ -155,7 +146,7 @@ class Radar:
         Returns:
             The latest RADAR PPI (plan position indicator) image from shared memory.
         """
-        self._send_sensor_request('GetPPIRadar', ack='CompletedGetPPIRadar', name=self.name)['data']
+        self.send_recv_ge('GetPPIRadar', name=self.name)['data']
         return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
 
     def get_range_doppler(self):
@@ -165,7 +156,7 @@ class Radar:
         Returns:
             The latest RADAR Range-Doppler image from shared memory.
         """
-        self._send_sensor_request('GetRangeDopplerRadar', ack='CompletedGetRangeDopplerRadar', name=self.name)['data']
+        self.send_recv_ge('GetRangeDopplerRadar', name=self.name)['data']
         return np.frombuffer(shmem.read(self.shmem2, self.shmem_size), dtype=np.uint8)
 
     def stream_ppi(self):
@@ -196,7 +187,7 @@ class Radar:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('RADAR - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request('SendAdHocRequestRadar', ack='CompletedSendAdHocRequestRadar', name=self.name)['data'])
+        return int(self.send_recv_ge('SendAdHocRequestRadar', name=self.name)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -209,7 +200,7 @@ class Radar:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('RADAR - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyRadar', ack='CompletedIsAdHocPollRequestReadyRadar', requestId=request_id)['data']
+        return self.send_recv_ge('IsAdHocPollRequestReadyRadar', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int):
         """
@@ -221,7 +212,7 @@ class Radar:
         Returns:
             The readings data.
         """
-        binary = self._send_sensor_request('CollectAdHocPollRequestRadar', ack='CompletedCollectAdHocPollRequestRadar', requestId=request_id)['data']['radarData']
+        binary = self.send_recv_ge('CollectAdHocPollRequestRadar', requestId=request_id)['data']['radarData']
 
         radar_data = self._decode_poll_data(binary)
 
@@ -236,7 +227,7 @@ class Radar:
         Returns:
             (float): The requested update time.
         """
-        return self._send_sensor_request('GetRadarRequestedUpdateTime', ack='CompletedGetRadarRequestedUpdateTime', name=self.name)['data']
+        return self.send_recv_ge('GetRadarRequestedUpdateTime', name=self.name)['data']
 
     def get_update_priority(self) -> float:
         """
@@ -245,7 +236,7 @@ class Radar:
         Returns:
             The update priority value.
         """
-        return self._send_sensor_request('GetRadarUpdatePriority', ack='CompletedGetRadarUpdatePriority', name=self.name)['data']
+        return self.send_recv_ge('GetRadarUpdatePriority', name=self.name)['data']
 
     def get_position(self) -> Float3:
         """
@@ -254,7 +245,7 @@ class Radar:
         Returns:
             The sensor position.
         """
-        table = self._send_sensor_request('GetRadarSensorPosition', ack='CompletedGetRadarSensorPosition', name=self.name)['data']
+        table = self.send_recv_ge('GetRadarSensorPosition', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_direction(self) -> Float3:
@@ -264,7 +255,7 @@ class Radar:
         Returns:
             The sensor direction.
         """
-        table = self._send_sensor_request('GetRadarSensorDirection', ack='CompletedGetRadarSensorDirection', name=self.name)['data']
+        table = self.send_recv_ge('GetRadarSensorDirection', name=self.name)['data']
         return (table['x'], table['y'], table['z'])
 
     def get_max_pending_requests(self) -> int:
@@ -274,7 +265,7 @@ class Radar:
         Returns:
             The max pending requests value.
         """
-        return int(self._send_sensor_request('GetRadarMaxPendingGpuRequests', ack='CompletedGetRadarMaxPendingGpuRequests', name=self.name)['data'])
+        return int(self.send_recv_ge('GetRadarMaxPendingGpuRequests', name=self.name)['data'])
 
     def set_requested_update_time(self, requested_update_time: float):
         """
@@ -283,7 +274,7 @@ class Radar:
         Args:
             requested_update_time: The new requested update time.
         """
-        return self._set_sensor('SetRadarRequestedUpdateTime', ack='CompletedSetRadarRequestedUpdateTime', name=self.name, updateTime=requested_update_time)
+        return self.send_ack_ge('SetRadarRequestedUpdateTime', ack='CompletedSetRadarRequestedUpdateTime', name=self.name, updateTime=requested_update_time)
 
     def set_update_priority(self, update_priority: float) -> None:
         """
@@ -292,7 +283,7 @@ class Radar:
         Args:
             update_priority: The new update priority
         """
-        return self._set_sensor('SetRadarUpdatePriority', ack='CompletedSetRadarUpdatePriority', name=self.name, updatePriority=update_priority)
+        return self.send_ack_ge('SetRadarUpdatePriority', ack='CompletedSetRadarUpdatePriority', name=self.name, updatePriority=update_priority)
 
     def set_max_pending_requests(self, max_pending_requests: int) -> None:
         """
@@ -301,15 +292,16 @@ class Radar:
         Args:
             max_pending_requests: The new max pending requests value.
         """
-        self._set_sensor('SetRadarMaxPendingGpuRequests', ack='CompletedSetRadarMaxPendingGpuRequests', name=self.name, maxPendingGpuRequests=max_pending_requests)
+        self.send_ack_ge('SetRadarMaxPendingGpuRequests', ack='CompletedSetRadarMaxPendingGpuRequests',
+                         name=self.name, maxPendingGpuRequests=max_pending_requests)
 
     def _open_radar(self, name: str, vehicle: Vehicle | None, shmem_handle: str | None, shmem_handle2: str | None, shmem_size: int, requested_update_time: float,
-        update_priority: float, pos: Float3, dir: Float3, up: Float3, range_bins: int, azimuth_bins: int, vel_bins: int, range_min: float, range_max: float, vel_min: float,
-        vel_max: float, half_angle_deg: float, size: Int2, field_of_view_y: float, near_far_planes: Float2, range_roundness: float, range_cutoff_sensitivity: float,
-        range_shape: float, range_focus: float, range_min_cutoff: float, range_direct_max_cutoff: float, is_visualised: bool, is_streaming: bool, is_static: bool,
-        is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+                    update_priority: float, pos: Float3, dir: Float3, up: Float3, range_bins: int, azimuth_bins: int, vel_bins: int, range_min: float, range_max: float, vel_min: float,
+                    vel_max: float, half_angle_deg: float, size: Int2, field_of_view_y: float, near_far_planes: Float2, range_roundness: float, range_cutoff_sensitivity: float,
+                    range_shape: float, range_focus: float, range_min_cutoff: float, range_direct_max_cutoff: float, is_visualised: bool, is_streaming: bool, is_static: bool,
+                    is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
 
-        data: StrDict = dict(type='OpenRadar')
+        data: StrDict = dict()
         data['name'] = name
         data['shmemHandle'] = shmem_handle
         data['shmemHandle2'] = shmem_handle2
@@ -345,16 +337,14 @@ class Radar:
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
 
-        self.bng._send(data).ack('OpenedRadar')
+        self.send_ack_ge(type='OpenRadar', ack='OpenedRadar', **data)
         self.logger.info(f'Opened RADAR sensor: "{name}"')
 
     def _close_radar(self) -> None:
-        data = dict(type='CloseRadar')
-        data['name'] = self.name
-        self.bng._send(data).ack('ClosedRadar')
+        self.send_ack_ge(type='CloseRadar', ack='ClosedRadar', name=self.name)
         self.logger.info(f'Closed RADAR sensor: "{self.name}"')
 
-    def plot_data(self, readings_data, resolution, field_of_view_y, range_min, range_max, range_bins : int=200, azimuth_bins : int=200):
+    def plot_data(self, readings_data, resolution, field_of_view_y, range_min, range_max, range_bins: int = 200, azimuth_bins: int = 200):
         """
         Plot the RADAR readings data. The data plots are: B-Scope, PPI (Plan Position Indicator), RCS (Radar Cross Section), and SNR (Signal-to-Noise Ratio).
         The data is used to populate bins, where each bin represents one pixel on the images, and contains a weighted average of the data at
@@ -389,7 +379,8 @@ class Radar:
             # Find the appropriate 2D bin index (distance, azimuth) for this reading.
             a = int(math.floor(((readings_data[i][2] - min_az_rad) / fov_rad) * azimuth_bins))
             d = int(math.floor(((readings_data[i][0] - range_min) / range_size) * range_bins))
-            d = max(0, min(range_bins, d))  # Safety: if any data is outside the range of the bins, snap it to the nearest edge bin.
+            # Safety: if any data is outside the range of the bins, snap it to the nearest edge bin.
+            d = max(0, min(range_bins, d))
 
             # For the appropriate bin, increment its number of entries for later averaging purposes.
             tally_bins[d, a] = tally_bins[d, a] + 1
@@ -397,8 +388,10 @@ class Radar:
             # Add the weighted doppler velocity, weighted RCS, and weighted SNR values to the appropriate bins.
             weight = readings_data[i][6]
             velocity_bins[d, a] = velocity_bins[d, a] + readings_data[i][1] * weight
-            RCS_bins[d, a] = RCS_bins[d, a] + (10.0 * math.log10(readings_data[i][4])) * weight     # We convert to dB scale.
-            SNR_bins[d, a] = SNR_bins[d, a] + (10.0 * math.log10(readings_data[i][5])) * weight     # We convert to dB scale.
+            # We convert to dB scale.
+            RCS_bins[d, a] = RCS_bins[d, a] + (10.0 * math.log10(readings_data[i][4])) * weight
+            # We convert to dB scale.
+            SNR_bins[d, a] = SNR_bins[d, a] + (10.0 * math.log10(readings_data[i][5])) * weight
 
         # Iterate over all bins and perform the averaging.
         for r in range(rows):
@@ -412,7 +405,8 @@ class Radar:
         # Create the B-Scope Plot.
         fig, ax = plt.subplots(2, 2, figsize=(15, 15))
         half_fov_azimuth = fov_azimuth / 2
-        im = ax[0, 0].imshow(velocity_bins, aspect="auto", origin="lower", extent=(-half_fov_azimuth, half_fov_azimuth, range_min, range_max))
+        im = ax[0, 0].imshow(velocity_bins, aspect="auto", origin="lower",
+                             extent=(-half_fov_azimuth, half_fov_azimuth, range_min, range_max))
         ax[0, 0].set_title("B-Scope")
         ax[0, 0].set_xlabel("Azimuth (degrees)")
         ax[0, 0].set_ylabel("Range (m)")
@@ -452,7 +446,7 @@ class Radar:
         fig.colorbar(mesh, ax=ax[1, 1])
         plt.show()
 
-    def plot_velocity_data(self, velocity_data, resolution, field_of_view_y, range_min : float = 0.0, range_max : float = 100.0, range_bins : int=200, azimuth_bins : int=200):
+    def plot_velocity_data(self, velocity_data, resolution, field_of_view_y, range_min: float = 0.0, range_max: float = 100.0, range_bins: int = 200, azimuth_bins: int = 200):
         """
         Plot the RADAR Doppler velocities.
 
@@ -474,7 +468,8 @@ class Radar:
 
         # Create the B-Scope Plot.
         fig, ax = plt.subplots(2, 2, figsize=(15, 15))
-        im = ax[0, 0].imshow(velocity_data, aspect="auto", origin="lower", extent=(-half_fov_azimuth, half_fov_azimuth, range_min, range_max))
+        im = ax[0, 0].imshow(velocity_data, aspect="auto", origin="lower",
+                             extent=(-half_fov_azimuth, half_fov_azimuth, range_min, range_max))
         ax[0, 0].set_title("B-Scope")
         ax[0, 0].set_xlabel("Azimuth (degrees)")
         ax[0, 0].set_ylabel("Range (m)")

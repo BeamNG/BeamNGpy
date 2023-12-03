@@ -132,7 +132,7 @@ class BeamNGpy:
                                 happens and prints the stacktrace instead.
                                 Is applicable only when the process is launched by this instance of BeamNGpy,
                                 as it sets a launch argument of the process. Defaults to False.
-            bind_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
+            listen_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
                      Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
         """
         self.connection = Connection(self.host, self.port)
@@ -323,9 +323,9 @@ class BeamNGpy:
             extensions = []
 
         extensions.insert(0, 'tech/techCore')
-        lua = ("registerCoreModule('{}');" * len(extensions))[:-1]
-        lua = lua.format(*extensions)
-        call = [binary, '-rport', str(self.port), '-nosteam']
+        lua = ("extensions.load('{}');" * len(extensions))
+        lua = lua.format(*extensions) + f'tech_techCore.openServer({self.port})'
+        call = [binary, '-nosteam']
         if platform.system() != 'Linux':  # console is not supported for Linux hosts yet
             call.append('-console')
 
