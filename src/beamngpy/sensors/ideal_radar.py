@@ -3,10 +3,9 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any
 
+from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ['IdealRadar']
 
 
-class IdealRadar:
+class IdealRadar(CommBase):
     """
     This automated sensor provides the user with data relating to vehicles within a close proximity to its position.  Quantities such as velocity and acceleration
     are available for these vehicles, in a reference frame local the sensor.  These sensors can be attached to any vehicle, or to any fixed point on the map.
@@ -31,11 +30,12 @@ class IdealRadar:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
                  is_send_immediately: bool = False):
+        super().__init__(bng, vehicle)
+
         self.logger = getLogger(f'{LOGGER_ID}.IdealRADAR')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
         self.name = name
         self.vehicle = vehicle
         self.is_send_immediately = is_send_immediately
@@ -46,16 +46,6 @@ class IdealRadar:
         # Fetch the unique Id number (in the simulator) for this ideal RADAR sensor.
         self.sensor_id = self._get_id()
         self.logger.debug('idealRADAR - sensor created: 'f'{self.name}')
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self) -> None:
         """
@@ -95,9 +85,7 @@ class IdealRadar:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('idealRADAR - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request(
-            'SendAdHocRequestIdealRADAR', ack='CompletedSendAdHocRequestIdealRADAR', name=self.name,
-            vid=self.vehicle.vid)['data'])
+        return int(self.send_recv_ge('SendAdHocRequestIdealRADAR', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -110,8 +98,7 @@ class IdealRadar:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('idealRADAR - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyIdealRADAR',
-                                         ack='CompletedIsAdHocPollRequestReadyIdealRADAR', requestId=request_id)['data']
+        return self.send_recv_ge('IsAdHocPollRequestReadyIdealRADAR', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -123,8 +110,7 @@ class IdealRadar:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestIdealRADAR',
-                                             ack='CompletedCollectAdHocPollRequestIdealRADAR', requestId=request_id)['data']
+        readings = self.send_recv_ge('CollectAdHocPollRequestIdealRADAR', requestId=request_id)['data']
         self.logger.debug('idealRADAR - ad-hoc polling request returned and processed: 'f'{self.name}')
         return readings
 
@@ -135,34 +121,29 @@ class IdealRadar:
         Args:
             requested_update_time: The new requested update time.
         """
-        self._set_sensor(
+        self.send_ack_ge(
             'SetIdealRADARRequestedUpdateTime', ack='CompletedSetIdealRADARRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
             GFXUpdateTime=requested_update_time)
 
     def _get_id(self) -> int:
-        return int(self._send_sensor_request('GetIdealRADARId', ack='CompletedGetIdealRADARId', name=self.name)['data'])
+        return int(self.send_recv_ge('GetIdealRADARId', name=self.name)['data'])
 
     def _open_ideal_radar(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
-        data: StrDict = dict(type='OpenIdealRADAR')
+        data: StrDict = dict()
         data['name'] = name
         data['vid'] = vehicle.vid
         data['GFXUpdateTime'] = gfx_update_time
         data['physicsUpdateTime'] = physics_update_time
         data['isSendImmediately'] = is_send_immediately
-        self.bng._send(data).ack('OpenedIdealRADAR')
+        self.send_ack_ge(type='OpenIdealRADAR', ack='OpenedIdealRADAR', **data)
         self.logger.info(f'Opened idealRADAR sensor: "{name}"')
 
     def _close_ideal_radar(self) -> None:
-        data = dict(type='CloseIdealRADAR')
-        data['name'] = self.name
-        data['vid'] = self.vehicle.vid
-        self.bng._send(data).ack('ClosedIdealRADAR')
+        self.send_ack_ge(type='CloseIdealRADAR', ack='ClosedIdealRADAR', name=self.name, vid=self.vehicle.vid)
         self.logger.info(f'Closed idealRADAR sensor: "{self.name}"')
 
     def _poll_ideal_radar_GE(self) -> StrDict:
-        return self._send_sensor_request('PollIdealRADARGE', ack='PolledIdealRADARGECompleted', name=self.name)['data']
+        return self.send_recv_ge('PollIdealRADARGE', name=self.name)['data']
 
     def _poll_ideal_radar_VE(self) -> StrDict:
-        if not self.vehicle.connection:
-            raise BNGError('The vehicle is not connected!')
-        return send_sensor_request(self.vehicle.connection, 'PollIdealRADARVE', name=self.name, sensorId=self.sensor_id)['data']
+        return self.send_recv_veh('PollIdealRADARVE', name=self.name, sensorId=self.sensor_id)['data']

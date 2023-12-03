@@ -2,6 +2,20 @@
 Changelog
 =========
 
+Version 1.27.1
+==============
+- `Camera <beamngpy.html#camera>`__ sensor improvements
+
+  - Added the `Camera.stream <beamngpy.html#beamngpy.sensors.Camera.stream>`__ function
+    for easier retrieval of camera images being streamed through shared memory
+
+  - Added the `Camera.poll_raw <beamngpy.html#beamngpy.sensors.Camera.poll_raw>`__ and
+    `Camera.stream_raw <beamngpy.html#beamngpy.sensors.Camera.stream_raw>`__ functions
+    for getting raw bytes from the simulator, the conversion to a bitmap image is skipped
+
+  - Added the ``camera_streaming.py`` `example <https://github.com/BeamNG/BeamNGpy/blob/v1.27.1/examples/camera_streaming.py>`__
+    to showcase these functions
+
 Version 1.27
 ============
 

@@ -28,7 +28,7 @@ class Connection:
         port: The port to connect to.
     """
 
-    PROTOCOL_VERSION = 'v1.21'
+    PROTOCOL_VERSION = 'v1.22'
 
     @staticmethod
     def _textify_string(data: bytes) -> str | bytes:
@@ -252,7 +252,7 @@ class Connection:
         resp = self.send(data).recv('Hello')
         if resp['protocolVersion'] != self.PROTOCOL_VERSION:
             msg = 'Mismatching BeamNGpy protocol versions. Please ensure both BeamNG.tech and BeamNGpy are using the desired versions.\n' \
-                  f'BeamNGpy\'s is: {self.PROTOCOL_VERSION}' \
+                  f'BeamNGpy\'s is: {self.PROTOCOL_VERSION}\n' \
                   f'BeamNG.tech\'s is: { resp["protocolVersion"] }'
             raise BNGError(msg)
         self.logger.info('Successfully connected to BeamNG.tech.')
