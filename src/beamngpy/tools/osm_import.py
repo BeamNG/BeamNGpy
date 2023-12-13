@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import xml.etree.ElementTree as ET
+import re
 from typing import TYPE_CHECKING
 
 from beamngpy import MeshRoad, vec3
@@ -61,7 +62,11 @@ class OpenStreetMapImporter:
                     if j.tag == 'nd':
                         nd.append(j.attrib['ref'])
                     elif j.tag == 'tag' and j.attrib['k'] == 'width':
-                        width = float(j.attrib['v'])
+                        try:
+                            width = float(j.attrib['v'])
+                        except ValueError:
+                            temp = re.findall(r'\d+', j.attrib['v'])
+                            width = list(map(float, temp))
                 ways[int(i.attrib['id'])] = Way(nd, width)
         return nodes, ways, minLat, maxLat, minLon, maxLon
 
