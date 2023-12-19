@@ -5,19 +5,16 @@ Changelog
 Version 1.28
 ============
 - Functionality added to allow the import of heightmaps (from 2D Python arrays).
-
 - Optimized network communication by removing extra acknowledgements.
-
 - The way of launching BeamNG.tech from BeamNGpy has changed. If you are launching BeamNG.tech
   without BeamNGpy and want to connect BeamNGpy later, you should change the command-line arguments
   you are using to:
 
   ``BeamNG.tech.x64.exe -console -nosteam -tcom-listen-ip 127.0.0.1 -lua extensions.load('tech/techCore');tech_techCore.openServer(64256)``
-
 - Bugfixes
 
   - Fixed OpenDRIVE exporter exporting invalid road networks in some cases.
-  - ``Vehicle.logging`` module has been fixed and is usable again.
+  - The `Vehicle.logging <beamngpy.html#beamngpy.api.vehicle.LoggingApi>`__ module has been fixed and is usable again.
 
 Version 1.27.1
 ==============
