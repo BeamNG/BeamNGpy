@@ -4,6 +4,7 @@ Changelog
 
 Version 1.28
 ============
+- 
 
 Version 1.27.1
 ==============
