@@ -2,6 +2,9 @@
 Changelog
 =========
 
+Version 1.28
+============
+
 Version 1.27.1
 ==============
 - `Camera <beamngpy.html#camera>`__ sensor improvements
