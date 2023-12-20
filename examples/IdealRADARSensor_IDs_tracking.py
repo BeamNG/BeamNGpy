@@ -23,9 +23,9 @@ def main():
 
     # Add the vehicles to the scenario.
     scenario.add_vehicle(vehicleA, pos=(469.91375179455, 1195.1165732879, 168.42811134217), rot_quat=angle_to_quat((0, 0, 270)))
-    scenario.add_vehicle(vehicleB, pos=(481.91375179455, 1195.1165732879, 168.42811134217), rot_quat=(0.0173, -0.0019, -0.6354, 0.7720))
-    scenario.add_vehicle(vehicleC, pos=(488.91375179455, 1195.1165732879, 168.42811134217), rot_quat=(0.0173, -0.0019, -0.6354, 0.7720))
-    scenario.add_vehicle(vehicleD, pos=(495.91375179455, 1195.1165732879, 168.42811134217), rot_quat=(0.0173, -0.0019, -0.6354, 0.7720))
+    scenario.add_vehicle(vehicleB, pos=(481.91375179455, 1195.1165732879, 168.42811134217), rot_quat=angle_to_quat((0, 0, 270)))
+    scenario.add_vehicle(vehicleC, pos=(488.91375179455, 1195.1165732879, 168.42811134217), rot_quat=angle_to_quat((0, 0, 270)))
+    scenario.add_vehicle(vehicleD, pos=(495.91375179455, 1195.1165732879, 168.42811134217), rot_quat=angle_to_quat((0, 0, 270)))
 
     scenario.make(bng)
 
@@ -49,9 +49,9 @@ def main():
     for _ in range(10):
         data_all = idealRADAR1.poll()
         latest_reading = data_all[0]
-        data1stVehicle = latest_reading['vehicle1']
-        data2ndVehicle = latest_reading['vehicle2']
-        data3rdVehicle = latest_reading['vehicle3']
+        data1stVehicle = latest_reading['closestVehicles1']
+        data2ndVehicle = latest_reading['closestVehicles2']
+        data3rdVehicle = latest_reading['closestVehicles3']
         if (data1stVehicle!=[]):
           listIDs1st.append(data1stVehicle['vehicleID'])
           listtime1st.append(latest_reading['time'])

@@ -1,10 +1,9 @@
 from time import sleep
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
+from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging, angle_to_quat
 from beamngpy.sensors import IdealRadar
 
 import matplotlib.pyplot as plt
-import cmath
 
 
 def main():
@@ -22,8 +21,8 @@ def main():
     scenario = Scenario('italy', 'IdealRADAR_plots', description='ideal RADAR')
 
     # Add the vehicles to the scenario.
-    scenario.add_vehicle(vehicle1, pos=(423.91375179455, 1195.1165732879, 168.42811134217), rot_quat=(0.0173, -0.0019, -0.6354, 0.7720))
-    scenario.add_vehicle(vehicle2, pos=(438.91375179455, 1195.1165732879, 168.42811134217), rot_quat=(0.0173, -0.0019, -0.6354, 0.7720))
+    scenario.add_vehicle(vehicle1, pos=(-353.76326635601, 1169.0963008935, 168.6981158547), rot_quat=angle_to_quat((0, 0, 90)))
+    scenario.add_vehicle(vehicle2, pos=(-361.76326635601, 1169.0963008935, 168.69811585470), rot_quat=angle_to_quat((0, 0, 90)))
     scenario.make(bng)
 
     # Set simulator to 60hz temporal resolution
@@ -31,7 +30,8 @@ def main():
     bng.scenario.load(scenario)
     bng.ui.hide_hud()
     bng.scenario.start()
-
+    
+    # set the sensor
     idealRADAR1 = IdealRadar('idealRADAR1', bng, vehicle1, is_send_immediately=False, physics_update_time=0.01)
 
     print("Collecting ideal RADAR readings...")
@@ -41,10 +41,10 @@ def main():
     sleep(3.0)
     listrelDistX, listrelDistY, listrelVelX, listrelVelY, listrelAccX, listrelAccY, listtime = [], [], [], [], [], [], []
 
-    for _ in range(20):
+    for _ in range(60):
         data_all = idealRADAR1.poll()
         latest_reading = data_all[0]
-        data1stVehicle = latest_reading['vehicle1']
+        data1stVehicle = latest_reading['closestVehicles1']
         if (data1stVehicle!=[]):
           listrelDistX.append(data1stVehicle['relDistX'])
           listrelDistY.append(data1stVehicle['relDistY'])
@@ -58,16 +58,16 @@ def main():
 
     # Plot the data
     fig, ax = plt.subplots(3, 2, figsize=(9, 3), sharey=False)
-    ax[0, 0].set(ylabel='distance (m)', title='longitudinal relative distance')
+    ax[0, 0].set(xlabel ='time (s)', ylabel='distance (m)', title='longitudinal relative distance')
     ax[0, 0].plot(listtime, listrelDistX, 'r')
 
-    ax[0, 1].set(title='lateral relative distance')
+    ax[0, 1].set(xlabel ='time (s)', ylabel='distance (m)', title='lateral relative distance')
     ax[0, 1].plot(listtime, listrelDistY, 'b')
 
-    ax[1, 0].set(ylabel='velocity (m/s)', title='longitudinal relative velocity')
+    ax[1, 0].set(xlabel ='time (s)', ylabel='velocity (m/s)', title='longitudinal relative velocity')
     ax[1, 0].plot(listtime, listrelVelX, 'r')
 
-    ax[1, 1].set(title='lateral relative velocity')
+    ax[1, 1].set(xlabel ='time (s)', ylabel='velocity (m/s)', title='lateral relative velocity')
     ax[1, 1].plot(listtime, listrelVelY, 'b')
 
     ax[2, 0].set(xlabel='time (s)', ylabel='acceleration (m/s2)', title='longitudinal relative acceleration')
