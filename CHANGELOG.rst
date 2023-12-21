@@ -11,10 +11,13 @@ Version 1.28
   you are using to:
 
   ``BeamNG.tech.x64.exe -console -nosteam -tcom-listen-ip 127.0.0.1 -lua extensions.load('tech/techCore');tech_techCore.openServer(64256)``
+- Added scenarios on ideal radar sensor use, to plot radar data and track objects
+- Added scenario on road profile plot
+
 - Bugfixes
 
-  - Fixed OpenDRIVE exporter exporting invalid road networks in some cases.
   - The `Vehicle.logging <beamngpy.html#beamngpy.api.vehicle.LoggingApi>`__ module has been fixed and is usable again.
+  - Fixed OpenStreetMap importer to manage mixed data as input in some cases.
 
 Version 1.27.1
 ==============
