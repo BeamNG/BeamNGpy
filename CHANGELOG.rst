@@ -11,8 +11,8 @@ Version 1.28
   you are using to:
 
   ``BeamNG.tech.x64.exe -console -nosteam -tcom-listen-ip 127.0.0.1 -lua extensions.load('tech/techCore');tech_techCore.openServer(64256)``
-- Added scenarios on ideal radar sensor use, to `plot radar data <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/IdealRADARSensor_plot_data.py>`__ and `track objects <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/IdealRADARSensor_IDs_tracking.py>`__
-- Added `scenario <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/roads_plot.py>`__ on road profile plot
+- Added scenarios on ``IdealRADAR`` sensor use, to `plot radar data <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/IdealRADARSensor_plot_data.py>`__ and `track objects <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/IdealRADARSensor_IDs_tracking.py>`__.
+- Added `scenario <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/roads_plot.py>`__ on road profile plotting.
 
 - Bugfixes
 
