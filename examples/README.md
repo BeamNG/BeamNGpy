@@ -22,7 +22,7 @@ More quick usage examples can be found in our [test suite][1].
 |[Annotation and Bounding Boxes][5]|<ul><li>get semantic annotations</li><li>get instance annotations</li><li>draw bounding boxes (note that this feature is not ready for use yet))</li></ul>|
 |[Settings][6]|<ul><li>change the simulation's graphics settings</li></ul>|
 |[Checkpoints][7]|<ul><li>add checkpoints to custom scenarios</li></ul>|
-|[LiDAR][8]|<ul><li>use the LiDAR sensor</li></ul>|
+|[West Coast LiDAR][8]|<ul><li>use the LiDAR sensor</li></ul>|
 |[Multiple Clients][9]|<ul><li>connect multiple BeamNGpy instances to the simulation</li></ul>|
 |[Multishot Camera][10]|<ul><li>change the position and rotation of a camera</li></ul>|
 |[Object Placement][11]|<ul><li>define a custom scenario for a given map</li><li>generate procedural content, i.e. simple meshes</li></ul>|
@@ -34,7 +34,6 @@ More quick usage examples can be found in our [test suite][1].
 |[Ultrasonic Sensor][16]|<ul><li>use the ultrasonic sensor</li></ul>|
 |[Vehicle Road Bounding Box][17]|<ul><li>create a custom road</li><li>extract road information from the simulation</li><li>get a vehicle's bounding box</li></ul>|
 |[Vehicle State Plotting][18]|<ul><li>use the state sensor</li></ul>|
-|[West Coast LiDAR][19]|<ul><li>use the LiDAR sensor</li></ul>|
 |[East Coast Random][20]|<ul><li>create a simple scenario</li><li>use the simulator's AI with BeamNGpy</li></ul>|
 |[Powertrain Analysis][23]|<ul><li>use the Powertrain sensor</li></ul>|
 |[Road Network Exporter][24]|<ul><li>Export BeamNG maps as .xodr files (OpenDRIVE).</li><li>The exported road networks contain elevation and road wideness data, along with junction connectivity.</li><li>BeamNGpy also includes a new class with which to analyse the road network data oneself, and process it as required.</li></ul>|
@@ -48,7 +47,7 @@ More quick usage examples can be found in our [test suite][1].
 [5]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/annotation_bounding_boxes.ipynb
 [6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/change_settings.py
 [7]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/checkpoints.py
-[8]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/lidar_tour.py
+[8]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_lidar.py
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/multi_client.ipynb
 [10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/multishot_camera.ipynb
 [11]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/object_placement.ipynb
@@ -59,7 +58,6 @@ More quick usage examples can be found in our [test suite][1].
 [16]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/ultrasonic_demo.py
 [17]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_road_bounding_box.ipynb
 [18]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_state_plotting.ipynb
-[19]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/west_coast_lidar.py
 [20]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/east_coast_random.py
 [21]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb
 [22]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/advanced_comfort_analysis.ipynb

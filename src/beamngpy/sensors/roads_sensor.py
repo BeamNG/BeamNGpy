@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID
 from beamngpy.types import StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ['RoadsSensor']
 
 
-class RoadsSensor:
+class RoadsSensor(CommBase):
     """
     A sensor which gives geometric and semantic data of the road; this data is the parametric cubic equations for the left and right roadedge
     and the centerline, as well as 4 points of the centerline.
@@ -31,11 +30,12 @@ class RoadsSensor:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
                  is_send_immediately: bool = False):
+        super().__init__(bng, vehicle)
+
         self.logger = getLogger(f'{LOGGER_ID}.RoadsSensor')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
         self.name = name
         self.vehicle = vehicle
         self.is_send_immediately = is_send_immediately
@@ -44,25 +44,15 @@ class RoadsSensor:
         self._open_roads_sensor(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
 
         # Fetch the unique Id number (in the simulator) for this roads sensor.  We will need this later.
-        self.sensorId = self._get_id()
+        self.sensor_id = self._get_id()
         self.logger.debug('roadsSensor created: 'f'{self.name}')
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self) -> None:
         """
         Removes this sensor from the simulation.
         """
         # Remove this sensor from the simulation.
-        self._close_roadsSensor()
+        self._close_roads_sensor()
         self.logger.debug('roadsSensor removed: 'f'{self.name}')
 
     def poll(self) -> StrDict:
@@ -95,9 +85,7 @@ class RoadsSensor:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('roadsSensor - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request(
-            'SendAdHocRequestRoadsSensor', ack='CompletedSendAdHocRequestRoadsSensor', name=self.name,
-            vid=self.vehicle.vid)['data'])
+        return int(self.send_recv_ge('SendAdHocRequestRoadsSensor', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -110,8 +98,7 @@ class RoadsSensor:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('roadsSensor - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyRoadsSensor',
-                                         ack='CompletedIsAdHocPollRequestReadyRoadsSensor', requestId=request_id)['data']
+        return self.send_recv_ge('IsAdHocPollRequestReadyRoadsSensor', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -123,8 +110,7 @@ class RoadsSensor:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestRoadsSensor',
-                                             ack='CompletedCollectAdHocPollRequestRoadsSensor', requestId=request_id)['data']
+        readings = self.send_recv_ge('CollectAdHocPollRequestRoadsSensor', requestId=request_id)['data']
         self.logger.debug('roadsSensor - ad-hoc polling request returned and processed: 'f'{self.name}')
         return readings
 
@@ -135,34 +121,29 @@ class RoadsSensor:
         Args:
             requested_update_time: The new requested update time.
         """
-        self._set_sensor(
+        self.send_ack_ge(
             'SetRoadsSensorRequestedUpdateTime', ack='CompletedSetRoadsSensorRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
             GFXUpdateTime=requested_update_time)
 
     def _get_id(self) -> int:
-        return int(self._send_sensor_request('GetRoadsSensorId', ack='CompletedGetRoadsSensorId', name=self.name)['data'])
+        return int(self.send_recv_ge('GetRoadsSensorId', name=self.name)['data'])
 
     def _open_roads_sensor(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
-        data: StrDict = dict(type='OpenRoadsSensor')
+        data: StrDict = dict()
         data['name'] = name
         data['vid'] = vehicle.vid
         data['GFXUpdateTime'] = gfx_update_time
         data['physicsUpdateTime'] = physics_update_time
         data['isSendImmediately'] = is_send_immediately
-        self.bng._send(data).ack('OpenedRoadsSensor')
+        self.send_ack_ge(type='OpenRoadsSensor', ack='OpenedRoadsSensor', **data)
         self.logger.info(f'Opened RoadsSensor: "{name}"')
 
-    def _close_roadsSensor(self) -> None:
-        data = dict(type='CloseRoadsSensor')
-        data['name'] = self.name
-        data['vid'] = self.vehicle.vid
-        self.bng._send(data).ack('ClosedRoadsSensor')
+    def _close_roads_sensor(self) -> None:
+        self.send_ack_ge(type='CloseRoadsSensor', ack='ClosedRoadsSensor', name=self.name, vid=self.vehicle.vid)
         self.logger.info(f'Closed roadsSensor: "{self.name}"')
 
     def _poll_roads_sensor_GE(self) -> StrDict:
-        return self._send_sensor_request('PollRoadsSensorGE', ack='PolledRoadsSensorGECompleted', name=self.name)['data']
+        return self.send_recv_ge('PollRoadsSensorGE', name=self.name)['data']
 
     def _poll_roads_sensor_VE(self) -> StrDict:
-        if not self.vehicle.connection:
-            raise BNGError('The vehicle is not connected!')
-        return send_sensor_request(self.vehicle.connection, 'PollRoadsSensorVE', name=self.name, sensorId=self.sensorId)['data']
+        return self.send_recv_veh('PollRoadsSensorVE', name=self.name, sensorId=self.sensor_id)['data']
