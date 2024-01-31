@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID
 from beamngpy.types import StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ['PowertrainSensor']
 
 
-class PowertrainSensor:
+class PowertrainSensor(CommBase):
     """
     An interactive, automated powertrain sensor, which produces regular readings directly from a vehicle's powertrain.
     A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
@@ -38,11 +37,11 @@ class PowertrainSensor:
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
                  is_send_immediately: bool = False):
+        super().__init__(bng, vehicle)
         self.logger = getLogger(f'{LOGGER_ID}.Powertrain')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
         self.name = name
         self.vehicle = vehicle
         self.is_send_immediately = is_send_immediately
@@ -53,16 +52,6 @@ class PowertrainSensor:
         # Fetch the unique Id number (in the simulator) for this powertrain sensor.  We will need this later.
         self.sensorId = self._get_powertrain_id()
         self.logger.debug('Powertrain - sensor created: 'f'{self.name}')
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self) -> None:
         """
@@ -102,7 +91,7 @@ class PowertrainSensor:
             A unique Id number for the ad-hoc request.
         """
         self.logger.debug('Powertrain - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self._send_sensor_request(
+        return int(self.send_recv_ge(
             'SendAdHocRequestPowertrain', ack='CompletedSendAdHocRequestPowertrain', name=self.name,
             vid=self.vehicle.vid)['data'])
 
@@ -117,8 +106,7 @@ class PowertrainSensor:
             A flag which indicates if the ad-hoc polling request is complete.
         """
         self.logger.debug('Powertrain - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self._send_sensor_request('IsAdHocPollRequestReadyPowertrain',
-                                         ack='CompletedIsAdHocPollRequestReadyPowertrain', requestId=request_id)['data']
+        return self.send_recv_ge('IsAdHocPollRequestReadyPowertrain', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -130,8 +118,7 @@ class PowertrainSensor:
         Returns:
             The readings data.
         """
-        readings = self._send_sensor_request('CollectAdHocPollRequestPowertrain',
-                                             ack='CompletedCollectAdHocPollRequestPowertrain', requestId=request_id)['data']
+        readings = self.send_recv_ge('CollectAdHocPollRequestPowertrain', requestId=request_id)['data']
         self.logger.debug('Powertrain - ad-hoc polling request returned and processed: 'f'{self.name}')
         return readings
 
@@ -142,34 +129,29 @@ class PowertrainSensor:
         Args:
             requested_update_time: The new requested update time.
         """
-        self._set_sensor(
+        self.send_ack_ge(
             'SetPowertrainRequestedUpdateTime', ack='CompletedSetPowertrainRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
             GFXUpdateTime=requested_update_time)
 
     def _get_powertrain_id(self) -> int:
-        return int(self._send_sensor_request('GetPowertrainId', ack='CompletedGetPowertrainId', name=self.name)['data'])
+        return int(self.send_recv_ge('GetPowertrainId', name=self.name)['data'])
 
     def _open_powertrain(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
-        data: StrDict = dict(type='OpenPowertrain')
+        data: StrDict = dict()
         data['name'] = name
         data['vid'] = vehicle.vid
         data['GFXUpdateTime'] = gfx_update_time
         data['physicsUpdateTime'] = physics_update_time
         data['isSendImmediately'] = is_send_immediately
-        self.bng._send(data).ack('OpenedPowertrain')
+        self.send_ack_ge(type='OpenPowertrain', ack='OpenedPowertrain', **data)
         self.logger.info(f'Opened Powertrain sensor: "{name}"')
 
     def _close_powertrain(self) -> None:
-        data = dict(type='ClosePowertrain')
-        data['name'] = self.name
-        data['vid'] = self.vehicle.vid
-        self.bng._send(data).ack('ClosedPowertrain')
+        self.send_ack_ge(type='ClosePowertrain', ack='ClosedPowertrain', name=self.name, vid=self.vehicle.vid)
         self.logger.info(f'Closed Powertrain sensor: "{self.name}"')
 
     def _poll_powertrain_GE(self) -> StrDict:
-        return self._send_sensor_request('PollPowertrainGE', ack='PolledPowertrainGECompleted', name=self.name)['data']
+        return self.send_recv_ge('PollPowertrainGE', name=self.name)['data']
 
     def _poll_powertrain_VE(self) -> StrDict:
-        if not self.vehicle.connection:
-            raise BNGError('The vehicle is not connected!')
-        return send_sensor_request(self.vehicle.connection, 'PollPowertrainVE', name=self.name, sensorId=self.sensorId)['data']
+        return self.send_recv_veh('PollPowertrainVE', name=self.name, sensorId=self.sensorId)['data']

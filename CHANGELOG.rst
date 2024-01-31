@@ -2,6 +2,23 @@
 Changelog
 =========
 
+Version 1.28
+============
+- Functionality added to allow the import of heightmaps (from 2D Python arrays).
+- Optimized network communication by removing extra acknowledgement messages.
+- The way of launching BeamNG.tech from BeamNGpy has changed. If you are launching BeamNG.tech
+  without BeamNGpy and want to connect BeamNGpy later, you should change the command-line arguments
+  you are using to:
+
+  ``BeamNG.tech.x64.exe -console -nosteam -tcom-listen-ip 127.0.0.1 -lua extensions.load('tech/techCore');tech_techCore.openServer(64256)``
+- Added scenarios on ``IdealRADAR`` sensor use, to `plot radar data <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/IdealRADARSensor_plot_data.py>`__ and `track objects <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/IdealRADARSensor_IDs_tracking.py>`__.
+- Added `scenario <https://github.com/BeamNG/BeamNGpy/blob/v1.28/examples/roads_plot.py>`__ on road profile plotting.
+
+- Bugfixes
+
+  - The `Vehicle.logging <beamngpy.html#beamngpy.api.vehicle.LoggingApi>`__ module has been fixed and is usable again.
+  - Fixed OpenStreetMap importer to manage mixed data as input in some cases.
+
 Version 1.27.1
 ==============
 - `Camera <beamngpy.html#camera>`__ sensor improvements

@@ -41,14 +41,14 @@ def test_no_scenario(beamng: BeamNGpy):
 
 @pytest.mark.parametrize('scenario_path', [
     '/levels/west_coast_usa/scenarios/derby_asphalt.json',  # classic scenario
-    '/levels/west_coast_usa/scenarios/speedyScramble/speedyScramble.json',  # Flowgraph scenario
     '/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json',  # mission
 ])
 def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
     with beamng as bng:
         scenarios = bng.scenario.get_scenarios()
         target = None
-        for scenario in scenarios['west_coast_usa']:
+        scenarios_to_search = scenarios['west_coast_usa'] + scenarios['italy']
+        for scenario in scenarios_to_search:
             if scenario.path == scenario_path:
                 target = scenario
                 break

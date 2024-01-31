@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from beamngpy.logging import LOGGER_ID, BNGError, create_warning
+from beamngpy.connection import CommBase
+from beamngpy.logging import LOGGER_ID, create_warning
 from beamngpy.misc.vec3 import vec3
-from beamngpy.types import StrDict
-
-from .communication_utils import send_sensor_request, set_sensor
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -44,17 +42,16 @@ class TemporalSmoother:
         return st
 
 
-class VehicleFeeder:
+class VehicleFeeder(CommBase):
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, test_id: int):
-
+        super().__init__(bng, vehicle)
         sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
         self.logger = getLogger(f'{LOGGER_ID}.Advanced IMU')
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
-        self.bng = bng
         self.name = name
         self.vehicle = vehicle
 
@@ -62,16 +59,6 @@ class VehicleFeeder:
         self._open_vehicle_feeder(name, vehicle, test_id)
 
         self.logger.debug('Vehicle Feeder created: 'f'{self.name}')
-
-    def _send_sensor_request(self, type: str, ack: str | None = None, **kwargs: Any) -> StrDict:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        return send_sensor_request(self.bng.connection, type, ack, **kwargs)
-
-    def _set_sensor(self, type: str, ack: str | None = None, **kwargs: Any) -> None:
-        if not self.bng.connection:
-            raise BNGError('The simulator is not connected!')
-        set_sensor(self.bng.connection, type, **kwargs)
 
     def remove(self) -> None:
         """
@@ -82,21 +69,15 @@ class VehicleFeeder:
         self.logger.debug('Vehicle Feeder removed: 'f'{self.name}')
 
     def is_time_evolution_complete(self) -> bool:
-        return bool(self._send_sensor_request('IsTimeEvolutionComplete', ack='CompletedIsTimeEvolutionComplete', vid=self.vehicle.vid)['data'])
+        return bool(self.send_recv_ge('IsTimeEvolutionComplete', vid=self.vehicle.vid)['data'])
 
     def _open_vehicle_feeder(self, name: str, vehicle: Vehicle, test_id: int) -> None:
-        data: StrDict = dict(type='OpenVehicleFeeder')
-        data['name'] = name
-        data['vid'] = vehicle.vid
-        data['testId'] = test_id
-        self.bng._send(data).ack('OpenedVehicleFeeder')
+        self.send_ack_ge(type='OpenVehicleFeeder', ack='OpenedVehicleFeeder',
+                         name=name, vid=vehicle.vid, testId=test_id)
         self.logger.info(f'Opened vehicle feeder: "{name}"')
 
     def _close_vehicle_feeder(self) -> None:
-        data = dict(type='CloseVehicleFeeder')
-        data['name'] = self.name
-        data['vid'] = self.vehicle.vid
-        self.bng._send(data).ack('ClosedVehicleFeeder')
+        self.send_ack_ge(type='CloseVehicleFeeder', ack='ClosedVehicleFeeder', name=self.name, vid=self.vehicle.vid)
         self.logger.info(f'Closed vehicle feeder: "{self.name}"')
 
     def smoothExp(self, d, rate):
@@ -481,7 +462,7 @@ class VehicleFeeder:
             x = gps[i].x
             y = gps[i].y
             # plt.plot(x, y,'ro')                                                                         # Silence to remove GPS markers
-            #label = theirData['t'][i]
+            # label = theirData['t'][i]
             # plt.annotate(label, (x, y), textcoords="offset points", xytext=(0, 10), ha='center')       # Silence this line to remove numbers from plot.
             dx = dir[i].x
             dy = dir[i].y
@@ -627,24 +608,24 @@ class VehicleFeeder:
         ax[2].locator_params(axis='x', nbins=38)
 
         ax[0].plot(tTheirs, dTheirs['acc_x_smoothed_both_ways'], "-b", label="theirs")
-        #ax[0].plot(tOurs, dOurs['IMUAccelSmooth0'], "-r", label="ours")
-        #ax[0].plot(tOurs, dOurs['IMUAccelRaw0'], "-r", label="ours")
+        # ax[0].plot(tOurs, dOurs['IMUAccelSmooth0'], "-r", label="ours")
+        # ax[0].plot(tOurs, dOurs['IMUAccelRaw0'], "-r", label="ours")
         ax[0].plot(tOurs, dOurs['IMUAccelPostSmoothX'], "-r", label="ours")
         ax[0].set_title("Acceleration - Front (smoothed)")
         ax[0].set_ylabel("ms^-2")
         ax[0].legend(loc="upper right")
 
         ax[1].plot(tTheirs, dTheirs['acc_y_smoothed_both_ways'], "-b", label="theirs")
-        #ax[1].plot(tOurs, dOurs['IMUAccelSmooth1'], "-r", label="ours")
-        #ax[1].plot(tOurs, dOurs['IMUAccelRaw1'], "-r", label="ours")
+        # ax[1].plot(tOurs, dOurs['IMUAccelSmooth1'], "-r", label="ours")
+        # ax[1].plot(tOurs, dOurs['IMUAccelRaw1'], "-r", label="ours")
         ax[1].plot(tOurs, dOurs['IMUAccelPostSmoothY'], "-r", label="ours")
         ax[1].set_title("Acceleration - Right (smoothed)")
         ax[1].set_ylabel("ms^-2")
         ax[1].legend(loc="upper right")
 
         ax[2].plot(tTheirs, dTheirs['acc_z_smoothed_both_ways'], "-b", label="theirs")
-        #ax[2].plot(tOurs, dOurs['IMUAccelSmooth2'], "-r", label="ours")
-        #ax[2].plot(tOurs, dOurs['IMUAccelRaw2'], "-r", label="ours")
+        # ax[2].plot(tOurs, dOurs['IMUAccelSmooth2'], "-r", label="ours")
+        # ax[2].plot(tOurs, dOurs['IMUAccelRaw2'], "-r", label="ours")
         ax[2].plot(tOurs, dOurs['IMUAccelPostSmoothZ'], "-r", label="ours")
         ax[2].set_title("Acceleration- Up (smoothed)")
         ax[2].set_ylabel("ms^-2")
@@ -660,24 +641,24 @@ class VehicleFeeder:
         ax[2].locator_params(axis='x', nbins=38)
 
         ax[0].plot(tTheirs, dTheirs['gyro_x_smoothed_both_ways'], "-b", label="theirs")
-        #ax[0].plot(tOurs, dOurs['IMUAngVelSmoothX'], "-r", label="ours")
-        #ax[0].plot(tOurs, dOurs['IMUAngVelX'], "-r", label="ours")
+        # ax[0].plot(tOurs, dOurs['IMUAngVelSmoothX'], "-r", label="ours")
+        # ax[0].plot(tOurs, dOurs['IMUAngVelX'], "-r", label="ours")
         ax[0].plot(tOurs, dOurs['IMUAngVelPostSmoothX'], "-r", label="ours")
         ax[0].set_title("Gyroscopic - Roll [front]")
         ax[0].set_ylabel("rad/s")
         ax[0].legend(loc="upper right")
 
         ax[1].plot(tTheirs, dTheirs['gyro_y_smoothed_both_ways'], "-b", label="theirs")
-        #ax[1].plot(tOurs, dOurs['IMUAngVelSmoothY'], "-r", label="ours")
-        #ax[1].plot(tOurs, dOurs['IMUAngVelY'], "-r", label="ours")
+        # ax[1].plot(tOurs, dOurs['IMUAngVelSmoothY'], "-r", label="ours")
+        # ax[1].plot(tOurs, dOurs['IMUAngVelY'], "-r", label="ours")
         ax[1].plot(tOurs, dOurs['IMUAngVelPostSmoothY'], "-r", label="ours")
         ax[1].set_title("Gyroscopic - Pitch [right]")
         ax[1].set_ylabel("rad/s")
         ax[1].legend(loc="upper right")
 
         ax[2].plot(tTheirs, dTheirs['gyro_z_smoothed_both_ways'], "-b", label="theirs")
-        #ax[2].plot(tOurs, dOurs['IMUAngVelSmoothZ'], "-r", label="ours")
-        #ax[2].plot(tOurs, dOurs['IMUAngVelZ'], "-r", label="ours")
+        # ax[2].plot(tOurs, dOurs['IMUAngVelSmoothZ'], "-r", label="ours")
+        # ax[2].plot(tOurs, dOurs['IMUAngVelZ'], "-r", label="ours")
         ax[2].plot(tOurs, dOurs['IMUAngVelPostSmoothZ'], "-r", label="ours")
         ax[2].set_title("Gyroscopic - Yaw [up]")
         ax[2].set_ylabel("rad/s")
@@ -691,7 +672,7 @@ class VehicleFeeder:
         ax[0, 0].locator_params(axis='x', nbins=15)
         ax[0, 0].locator_params(axis='y', nbins=15)
         ax[0, 0].plot(tTheirs, dTheirs['wh_spd_kph_0'], "-b", label="theirs")
-        #ax[0, 0].plot(tOurs, dOurs['Wh1Speed'], "-r", label="ours")
+        # ax[0, 0].plot(tOurs, dOurs['Wh1Speed'], "-r", label="ours")
         ax[0, 0].plot(tOurs, dOurs['Wh1SpeedSmooth'], "-r", label="ours")
         ax[0, 0].set_title("Wheel Speed 1")
         ax[0, 0].set_xlabel("t (s)")
@@ -701,7 +682,7 @@ class VehicleFeeder:
         ax[0, 1].locator_params(axis='x', nbins=15)
         ax[0, 1].locator_params(axis='y', nbins=15)
         ax[0, 1].plot(tTheirs, dTheirs['wh_spd_kph_1'], "-b", label="theirs")
-        #ax[0, 1].plot(tOurs, dOurs['Wh2Speed'], "-r", label="ours")
+        # ax[0, 1].plot(tOurs, dOurs['Wh2Speed'], "-r", label="ours")
         ax[0, 1].plot(tOurs, dOurs['Wh2SpeedSmooth'], "-r", label="ours")
         ax[0, 1].set_title("Wheel Speed 2")
         ax[0, 1].set_xlabel("t (s)")
@@ -711,7 +692,7 @@ class VehicleFeeder:
         ax[1, 0].locator_params(axis='x', nbins=15)
         ax[1, 0].locator_params(axis='y', nbins=15)
         ax[1, 0].plot(tTheirs, dTheirs['wh_spd_kph_2'], "-b", label="theirs")
-        #ax[1, 0].plot(tOurs, dOurs['Wh3Speed'], "-r", label="ours")
+        # ax[1, 0].plot(tOurs, dOurs['Wh3Speed'], "-r", label="ours")
         ax[1, 0].plot(tOurs, dOurs['Wh3SpeedSmooth'], "-r", label="ours")
         ax[1, 0].set_title("Wheel Speed 3")
         ax[1, 0].set_xlabel("t (s)")
@@ -721,7 +702,7 @@ class VehicleFeeder:
         ax[1, 1].locator_params(axis='x', nbins=15)
         ax[1, 1].locator_params(axis='y', nbins=15)
         ax[1, 1].plot(tTheirs, dTheirs['wh_spd_kph_3'], "-b", label="theirs")
-        #ax[1, 1].plot(tOurs, dOurs['Wh4Speed'], "-r", label="ours")
+        # ax[1, 1].plot(tOurs, dOurs['Wh4Speed'], "-r", label="ours")
         ax[1, 1].plot(tOurs, dOurs['Wh4SpeedSmooth'], "-r", label="ours")
         ax[1, 1].set_title("Wheel Speed 4")
         ax[1, 1].set_xlabel("t (s)")
@@ -734,9 +715,9 @@ class VehicleFeeder:
         fig, ax = plt.subplots(2, 2, sharey=True,  figsize=(15, 15))
         ax[0, 0].locator_params(axis='x', nbins=15)
         ax[0, 0].locator_params(axis='y', nbins=15)
-        #ax[0, 0].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_0_'], "-b", label="theirs")
+        # ax[0, 0].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_0_'], "-b", label="theirs")
         ax[0, 0].plot(tTheirs, dTheirs['wh_spd_kph_smooth_0'], "-b", label="theirs")
-        #ax[0, 0].plot(tOurs, dOurs['Wh1AngVel'], "-r", label="ours")
+        # ax[0, 0].plot(tOurs, dOurs['Wh1AngVel'], "-r", label="ours")
         ax[0, 0].plot(tOurs, dOurs['Wh1AngVelSmooth'], "-r", label="ours")
         ax[0, 0].set_title("Wheel Ang Vel 1")
         ax[0, 0].set_xlabel("t (s)")
@@ -745,9 +726,9 @@ class VehicleFeeder:
 
         ax[0, 1].locator_params(axis='x', nbins=15)
         ax[0, 1].locator_params(axis='y', nbins=15)
-        #ax[0, 1].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_1_'], "-b", label="theirs")
+        # ax[0, 1].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_1_'], "-b", label="theirs")
         ax[0, 1].plot(tTheirs, dTheirs['wh_spd_kph_smooth_1'], "-b", label="theirs")
-        #ax[0, 1].plot(tOurs, dOurs['Wh2AngVel'], "-r", label="ours")
+        # ax[0, 1].plot(tOurs, dOurs['Wh2AngVel'], "-r", label="ours")
         ax[0, 1].plot(tOurs, dOurs['Wh2AngVelSmooth'], "-r", label="ours")
         ax[0, 1].set_title("Wheel Ang Vel 2")
         ax[0, 1].set_xlabel("t (s)")
@@ -756,9 +737,9 @@ class VehicleFeeder:
 
         ax[1, 0].locator_params(axis='x', nbins=15)
         ax[1, 0].locator_params(axis='y', nbins=15)
-        #ax[1, 0].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_2_'], "-b", label="theirs")
+        # ax[1, 0].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_2_'], "-b", label="theirs")
         ax[1, 0].plot(tTheirs, dTheirs['wh_spd_kph_smooth_2'], "-b", label="theirs")
-        #ax[1, 0].plot(tOurs, dOurs['Wh3AngVel'], "-r", label="ours")
+        # ax[1, 0].plot(tOurs, dOurs['Wh3AngVel'], "-r", label="ours")
         ax[1, 0].plot(tOurs, dOurs['Wh3AngVelSmooth'], "-r", label="ours")
         ax[1, 0].set_title("Wheel Ang Vel 3")
         ax[1, 0].set_xlabel("t (s)")
@@ -767,9 +748,9 @@ class VehicleFeeder:
 
         ax[1, 1].locator_params(axis='x', nbins=15)
         ax[1, 1].locator_params(axis='y', nbins=15)
-        #ax[1, 1].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_3_'], "-b", label="theirs")
+        # ax[1, 1].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_3_'], "-b", label="theirs")
         ax[1, 1].plot(tTheirs, dTheirs['wh_spd_kph_smooth_3'], "-b", label="theirs")
-        #ax[1, 1].plot(tOurs, dOurs['Wh4AngVel'], "-r", label="ours")
+        # ax[1, 1].plot(tOurs, dOurs['Wh4AngVel'], "-r", label="ours")
         ax[1, 1].plot(tOurs, dOurs['Wh4AngVelSmooth'], "-r", label="ours")
         ax[1, 1].set_title("Wheel Ang Vel 4")
         ax[1, 1].set_xlabel("t (s)")
@@ -851,23 +832,23 @@ class VehicleFeeder:
         #    pt.plotTheirTrajectories(theirTrajectory, n)
 
         # Produce steering mapping plots.
-        #theirSTWAMap = readData('lotus_steering.csv')
-        #ourSTWAMap = readData4Column('stwa_rwa_data.csv')
-        #xx = []
-        #theirSTWAFL = []
-        #ourSTWAFL = []
+        # theirSTWAMap = readData('lotus_steering.csv')
+        # ourSTWAMap = readData4Column('stwa_rwa_data.csv')
+        # xx = []
+        # theirSTWAFL = []
+        # ourSTWAFL = []
         # for i in range(1000):
         #    rwa = (i - 500) / 500
         #    xx.append(rwa)
         #    theirSTWAFL.append(getSTWAFromRWA(rwa, theirSTWAMap, 'rwa_FL', 'stwa'))
         #    ourSTWAFL.append(getSTWAFromRWA(rwa, ourSTWAMap, 'FR', 'stwa') * -9.25024503556995)
-        #theirSTWAFR = []
-        #ourSTWAFR = []
+        # theirSTWAFR = []
+        # ourSTWAFR = []
         # for i in range(1000):
         #    rwa = (i - 500) / 500
         #    theirSTWAFR.append(getSTWAFromRWA(rwa, theirSTWAMap, 'rwa_FR', 'stwa'))
         #    ourSTWAFR.append(getSTWAFromRWA(rwa, ourSTWAMap, 'FL', 'stwa') * -9.25024503556995)
-        #pt.plotSTWAMapping(xx, theirSTWAFL, ourSTWAFL, theirSTWAFR, ourSTWAFR)
+        # pt.plotSTWAMapping(xx, theirSTWAFL, ourSTWAFL, theirSTWAFR, ourSTWAFR)
 
         # Compute and process their data.
         theirData = self._readData(ADataFilename)
@@ -934,11 +915,11 @@ class VehicleFeeder:
         ourData['Wh3AngVelSmooth'] = self.smoothTemporalBothWays(ourData['Wh3AngVel'], ourData['t'], 35)
         ourData['Wh4AngVelSmooth'] = self.smoothTemporalBothWays(ourData['Wh4AngVel'], ourData['t'], 35)
 
-        #traj_smooth = tj.getTrajectoryBasic(theirData)
-        #t_len = tj.getTrajectoryLength(traj_smooth)
-        #traj_smooth2 = tj.getTrajectoryBasic2(theirData)
-        #t_len2 = tj.getTrajectoryLength(traj_smooth2)
-        #self.plotSmoothTraj2(traj_smooth, traj_smooth2)
+        # traj_smooth = tj.getTrajectoryBasic(theirData)
+        # t_len = tj.getTrajectoryLength(traj_smooth)
+        # traj_smooth2 = tj.getTrajectoryBasic2(theirData)
+        # t_len2 = tj.getTrajectoryLength(traj_smooth2)
+        # self.plotSmoothTraj2(traj_smooth, traj_smooth2)
 
         theirTrajectory = self.getTrajectoryFromGPS(theirData)
         ourTrajectory = self.getTrajectoryFromPos(ourData)
@@ -948,7 +929,8 @@ class VehicleFeeder:
         self.saveData(theirData, ourData)
 
         if not pypdf_installed:
-            create_warning('The `PyPDF2` package is not installed. PDFs will not be produced. You can install it using `pip install PyPDF2`.')
+            create_warning(
+                'The `PyPDF2` package is not installed. PDFs will not be produced. You can install it using `pip install PyPDF2`.')
             return
 
         now = datetime.now()

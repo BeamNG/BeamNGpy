@@ -325,8 +325,10 @@ class OpenDriveExporter:
                     continue
                 if r.start == roads[j].end:
                     predecessor = j
+                    contact_point = 'start'
                 if r.end == roads[j].start:
                     successor = j
+                    contact_point = 'end'
             if r.start in junction_map:                 # Compute the junction and contact point data for this road, if they exist.
                 junction = junction_map[r.start]
                 contact_point = 'start'
