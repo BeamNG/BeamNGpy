@@ -126,7 +126,10 @@ class LidarVisualiser:
         self.mouse_x = x
         self.mouse_y = y
 
-    def update_points(self, points, vehicle_state):
+    def update_points(self, points_in, vehicle_state):
+
+        points = np.array([item for row in points_in for item in row]) # flatten (format from shmem is different than from socket).
+
         assert not self.dirty
         if len(points) == 0:
             return
@@ -145,12 +148,6 @@ class LidarVisualiser:
                      4, verts, GL_STATIC_DRAW)
 
         glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-        avg = [
-            np.average(points[0::3]),
-            np.average(points[1::3]),
-            np.average(points[2::3]),
-        ]
 
         min_height = points[2::3].min()
         max_height = np.absolute(points[2::3].max() - min_height)
