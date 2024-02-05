@@ -51,11 +51,11 @@ class ScenarioObject:
             otype = d['class']
             del d['class']
 
-        if 'pos' in d:
+        if 'position' in d:
             pos = d['position']
             del d['position']
 
-        if 'rot' in d:
+        if 'rotation' in d:
             rot_quat = d['rotation']
             del d['rotation']
 
