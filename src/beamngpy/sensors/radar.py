@@ -79,12 +79,18 @@ class Radar(CommBase):
         self.name = name
 
         # Shared memory for velocity data streaming.
-        pid = os.getpid()
         self.shmem_size = 1000 * 1000 * 4
-        self.shmem_handle = f'{pid}.{name}.PPI'
-        self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
-        self.shmem_handle2 = f'{pid}.{name}.RangeDoppler'
-        self.shmem2 = shmem.allocate(self.shmem_size, self.shmem_handle2)
+        self.shmem_handle = None
+        self.shmem = None
+        self.shmem_handle2 = None
+        self.shmem2 = None
+        if is_streaming:
+            pid = os.getpid()
+            self.shmem_size = 1000 * 1000 * 4
+            self.shmem_handle = f'{pid}.{name}.PPI'
+            self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
+            self.shmem_handle2 = f'{pid}.{name}.RangeDoppler'
+            self.shmem2 = shmem.allocate(self.shmem_size, self.shmem_handle2)
 
         # Create and initialise this sensor in the simulation.
         self._open_radar(name, vehicle, self.shmem_handle, self.shmem_handle2, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
