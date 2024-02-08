@@ -32,7 +32,7 @@ def test_radar(beamng: BeamNGpy):
                        requested_update_time=0.01,
                        pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1),
                        resolution=RESOLUTION, field_of_view_y=FOV, near_far_planes=(RANGE_MIN, RANGE_MAX),
-                       range_roundess=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12, range_min_cutoff=0.5, range_direct_max_cutoff=RANGE_MAX)
+                       range_roundness=-2.0, range_cutoff_sensitivity=0.0, range_shape=0.23, range_focus=0.12, range_min_cutoff=0.5, range_direct_max_cutoff=RANGE_MAX)
 
         # Test the automatic polling functionality of the RADAR sensor, to make sure we retrieve the readings.
         sleep(2)

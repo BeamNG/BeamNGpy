@@ -36,6 +36,7 @@ class AdvancedIMU(CommBase):
         gyro_frequency_cutoff: The filtering cutoff frequency to be used for gyroscopic (instead of a window width), if required.
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
         is_using_gravity: A flag which indicates whether this sensor should consider acceleration due to gravity in its computations, or not.
+        is_allow_wheel_nodes: When using 'snap' attachment, this will allow sensors to be attached to vehicle wheels, and will rotate as the wheel turn.
         is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle.
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle.
@@ -44,7 +45,7 @@ class AdvancedIMU(CommBase):
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
                  dir: Float3 = (0, -1, 0), up: Float3 = (-0, 0, 1), accel_window_width: float | None = None, gyro_window_width: float | None = None,
                  accel_frequency_cutoff: float | None = None, gyro_frequency_cutoff: float | None = None, is_send_immediately: bool = False, is_using_gravity: bool = False,
-                 is_visualised: bool = True, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+                 is_allow_wheel_nodes:bool = True, is_visualised: bool = True, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
         super().__init__(bng, vehicle)
 
         self.logger = getLogger(f'{LOGGER_ID}.Advanced IMU')
@@ -57,7 +58,7 @@ class AdvancedIMU(CommBase):
 
         # Create and initialise this sensor in the simulation.
         self._open_advanced_IMU(name, vehicle, gfx_update_time, physics_update_time, pos, dir, up, accel_window_width, gyro_window_width, is_send_immediately,
-                                accel_frequency_cutoff, gyro_frequency_cutoff, is_using_gravity, is_visualised, is_snapping_desired, is_force_inside_triangle)
+            accel_frequency_cutoff, gyro_frequency_cutoff, is_using_gravity, is_allow_wheel_nodes, is_visualised, is_snapping_desired, is_force_inside_triangle)
 
         # Fetch the unique Id number (in the simulator) for this advanced IMU sensor.  We will need this later.
         self.sensorId = self._get_advanced_imu_id()
@@ -166,8 +167,9 @@ class AdvancedIMU(CommBase):
         return int(self.send_recv_ge('GetAdvancedImuId', name=self.name)['data'])
 
     def _open_advanced_IMU(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3, dir: Float3, up: Float3,
-                           accel_window_width: float | None, gyro_window_width: float | None, is_send_immediately: bool, accel_frequency_cutoff: float | None, gyro_frequency_cutoff: float | None,
-                           is_using_gravity: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+            accel_window_width: float | None, gyro_window_width: float | None, is_send_immediately: bool, accel_frequency_cutoff: float | None,
+            gyro_frequency_cutoff: float | None, is_using_gravity: bool, is_allow_wheel_nodes: bool, is_visualised: bool, is_snapping_desired: bool,
+            is_force_inside_triangle: bool) -> None:
         data: StrDict = dict()
         data['name'] = name
         data['vid'] = vehicle.vid
@@ -182,6 +184,7 @@ class AdvancedIMU(CommBase):
         data['gyroFrequencyCutoff'] = gyro_frequency_cutoff
         data['isSendImmediately'] = is_send_immediately
         data['isUsingGravity'] = is_using_gravity
+        data['isAllowWheelNodes'] = is_allow_wheel_nodes
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle

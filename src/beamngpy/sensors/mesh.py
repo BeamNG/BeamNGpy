@@ -33,7 +33,8 @@ class Mesh(CommBase):
         is_track_beams: A flag which indicates if we should keep updating the beam to node maps. This will track broken beams over time, but is slower.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, groups_list=[], is_track_beams=True):
+    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.015,
+        groups_list=[], is_track_beams=True):
         super().__init__(bng, vehicle)
         sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
@@ -55,7 +56,7 @@ class Mesh(CommBase):
         self.is_full_mesh = len(groups_list) == 0
 
         # Create and initialise this sensor in the simulation.
-        self._open_mesh(name, vehicle, gfx_update_time)
+        self._open_mesh(name, vehicle, gfx_update_time, physics_update_time)
 
         # Fetch the unique Id number (in the simulator) for this mesh sensor. We will need this later.
         self.sensorId = self._get_mesh_id()
@@ -241,8 +242,8 @@ class Mesh(CommBase):
     def _get_mesh_id(self) -> int:
         return int(self.send_recv_ge('GetMeshId', name=self.name)['data'])
 
-    def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float) -> None:
-        self.send_ack_ge(type='OpenMesh', ack='OpenedMesh', name=name, vid=vehicle.vid, GFXUpdateTime=gfx_update_time)
+    def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float) -> None:
+        self.send_ack_ge(type='OpenMesh', ack='OpenedMesh', name=name, vid=vehicle.vid, GFXUpdateTime=gfx_update_time, physicsUpdateTime=physics_update_time)
         self.logger.info(f'Opened Mesh sensor: "{name}"')
 
     def _close_mesh(self) -> None:
