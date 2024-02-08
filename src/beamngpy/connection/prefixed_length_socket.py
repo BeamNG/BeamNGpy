@@ -6,11 +6,11 @@ from struct import pack, unpack
 
 from beamngpy.logging import BNGDisconnectedError
 
-BUF_SIZE = 131072
-
+BUF_SIZE = 196608
 
 class PrefixedLengthSocket:
     HEADER_BYTES = 4
+    recv_buffer = []
 
     @staticmethod
     def _initialize_socket() -> socket.socket:
@@ -29,7 +29,8 @@ class PrefixedLengthSocket:
         Returns:
             An array of length ``length`` with the received data.
         """
-        recv_buffer = []
+        recv_buffer = self.recv_buffer
+        recv_buffer.clear()
         while length > 0:
             try:
                 received = self.skt.recv(min(BUF_SIZE, length))
@@ -38,11 +39,11 @@ class PrefixedLengthSocket:
                 received = self.skt.recv(min(BUF_SIZE, length))
             if not received:
                 raise BNGDisconnectedError('The simulator ended the connection.')
-            recv_buffer.extend(received)
+            recv_buffer.append(received)
             length -= len(received)
         assert length == 0
 
-        return bytes(recv_buffer)
+        return b"".join(recv_buffer)
 
     def __init__(self, host: str, port: int, reconnect_tries: int = 5):
         self.host = host

@@ -11,6 +11,7 @@ from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.types import StrDict
 
 from .prefixed_length_socket import PrefixedLengthSocket
+import time
 
 if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
@@ -176,7 +177,7 @@ class Connection:
 
     def _unpack_data(self, data: bytes) -> StrDict:
         unpacked: StrDict = msgpack.unpackb(data, raw=False, strict_map_key=False)
-        self.comm_logger.debug(f'Received {unpacked}.')
+        #self.comm_logger.debug(f'Received {unpacked}.')
 
         # Converts all non-binary strings in the data into utf-8 format.
         return self._string_cleanup(unpacked)
@@ -256,7 +257,6 @@ class Connection:
                   f'BeamNG.tech\'s is: { resp["protocolVersion"] }'
             raise BNGError(msg)
         self.logger.info('Successfully connected to BeamNG.tech.')
-
 
 class Response:
     def __init__(self, connection: Connection, req_id: int):

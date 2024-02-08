@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Dict, List
+import time
 
 import numpy as np
 from PIL import Image
@@ -191,6 +192,7 @@ class Camera(CommBase):
         """
         if raw_data is None or len(raw_data) == 0:
             return None
+
         data = raw_data if isinstance(raw_data, bytes) else raw_data.encode()
 
         # Re-shape the array, based on the number of channels present in the data.
@@ -198,9 +200,11 @@ class Camera(CommBase):
         decoded = decoded.reshape(height, width, 4)
 
         # Convert to image format.
-        return Image.fromarray(decoded)
+        b = Image.fromarray(decoded)
 
-    def _depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
+        return b
+
+    def depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
         """
         Converts raw depth buffer data to visually-clear intensity values in the range [0, 255].
         We process the data so that small changes in distance are better shown, rather than just using linear interpolation.
@@ -272,8 +276,7 @@ class Camera(CommBase):
                 processed_readings['depth'] = None
             else:
                 depth = np.frombuffer(binary['depth'], dtype=np.float32)
-                processed_values = self._depth_buffer_processing(depth)
-                reshaped_data = processed_values.reshape(height, width)
+                reshaped_data = depth.reshape(height, width)
                 image = Image.fromarray(reshaped_data)
                 processed_readings['depth'] = image
 
@@ -326,7 +329,7 @@ class Camera(CommBase):
         # Send and receive a request for readings data from this sensor.
         raw_readings = self.send_recv_ge('PollCamera', name=self.name,
                                          isUsingSharedMemory=self.is_using_shared_memory)['data']
-        self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
+        # self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
 
         if self.is_using_shared_memory:
             if self.colour_shmem:
@@ -351,7 +354,7 @@ class Camera(CommBase):
 
         return raw_readings
 
-    def poll(self) -> Dict[str, Image.Image | None]:
+    def poll(self):
         """
         Gets the most-recent readings for this sensor as processed images.
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
@@ -365,7 +368,7 @@ class Camera(CommBase):
         """
         raw_readings = self.poll_raw()
         images = self._binary_to_image(raw_readings)
-        self.logger.debug('Camera - raw sensor readings converted to image format: 'f'{self.name}')
+        # self.logger.debug('Camera - raw sensor readings converted to image format: 'f'{self.name}')
         return images
 
     def stream_raw(self) -> Dict[str, bytes]:
