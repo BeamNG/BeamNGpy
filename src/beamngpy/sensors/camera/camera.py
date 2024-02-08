@@ -258,8 +258,8 @@ class Camera(CommBase):
         Returns:
             A dictionary containing the processed images.
         """
-        width = self.resolution[0]
-        height = self.resolution[1]
+        width = int(self.resolution[0])
+        height = int(self.resolution[1])
 
         processed_readings: Dict[str, Image.Image | None] = dict()
         if self.is_render_colours:
@@ -329,7 +329,6 @@ class Camera(CommBase):
         # Send and receive a request for readings data from this sensor.
         raw_readings = self.send_recv_ge('PollCamera', name=self.name,
                                          isUsingSharedMemory=self.is_using_shared_memory)['data']
-        # self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
 
         if self.is_using_shared_memory:
             if self.colour_shmem:
@@ -368,7 +367,6 @@ class Camera(CommBase):
         """
         raw_readings = self.poll_raw()
         images = self._binary_to_image(raw_readings)
-        # self.logger.debug('Camera - raw sensor readings converted to image format: 'f'{self.name}')
         return images
 
     def stream_raw(self) -> Dict[str, bytes]:
