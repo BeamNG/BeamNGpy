@@ -2,7 +2,7 @@ import random
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.sensors import SensorConfig
+from beamngpy.sensors import VehicleSensorConfig
 
 
 def main():
@@ -12,7 +12,7 @@ def main():
     beamng = BeamNGpy('localhost', 64256)
     bng = beamng.open(launch=True)
 
-    scenario = Scenario('west_coast_usa', 'Sensor_Config_Demo', description='Importing a pre-made ADAS sensor suite.')
+    scenario = Scenario('west_coast_usa', 'Vehicle_Sensor_Config_Demo', description='Importing a pre-made ADAS sensor suite.')
 
     vehicle = Vehicle('ego_vehicle', model='pickup', license='ADASConfig')
 
@@ -28,7 +28,7 @@ def main():
     vehicle.ai.set_mode('span')
 
     # Path to config file is relative to user folder ie: /AppData/Local/BeamNG.drive/0.XX/
-    config = SensorConfig('config1', bng, vehicle, 'tconfig.json')
+    config = VehicleSensorConfig('config1', bng, vehicle, 'tconfig.json')
 
     print('Driving around, polling all sensors of the configuration periodically...')
     for _ in range(60):

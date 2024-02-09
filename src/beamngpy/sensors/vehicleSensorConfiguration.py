@@ -12,12 +12,13 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['SensorConfig']
+__all__ = ['VehicleSensorConfig']
 
 
-class SensorConfig(CommBase):
+class VehicleSensorConfig(CommBase):
     """
-    A class used for managing ADAS sensor configurations.
+    A class used for managing ADAS vehicle sensor configurations.
+    For map-based ADAS sensor configurations (static, fixed-position sensors), see MapSensorConfiguration.py.
     ADAS sensor configurations are produced with the GUI-Based ADAS Sensor Configuration Editor in the BeamNG.Tech World Editor (press F11).
     """
 
@@ -39,7 +40,7 @@ class SensorConfig(CommBase):
         self.vid = vehicle.vid
         self.sensors = []
 
-        sData = self.send_recv_ge('UnpackSensorConfiguration', filepath = filepath, vid = self.vid, name=self.name)['data']
+        sData = self.send_recv_ge('UnpackVehicleSensorConfiguration', filepath = filepath, vid = self.vid, name=self.name)['data']
         for i in range(len(sData)):
             v = sData[i]
             t = v['type']
@@ -130,7 +131,7 @@ class SensorConfig(CommBase):
                 self.sensors.append(Mesh(
                     self.name + str(i), self.bng, self.vehicle,
                     gfx_update_time=v['GFXUpdateTime'], physics_update_time=v['physicsUpdateTime']))
-        self.logger.debug('SensorConfig - sensor configuration imported: 'f'{self.name}')
+        self.logger.debug('VehicleSensorConfig - sensor configuration imported: 'f'{self.name}')
 
     def remove(self):
         """
@@ -138,4 +139,4 @@ class SensorConfig(CommBase):
         """
         for i in range(len(self.sensors)):
             self.sensors[i].remove()
-        self.logger.debug('SensorConfig - sensor configuration removed: 'f'{self.name}')
+        self.logger.debug('VehicleSensorConfig - sensor configuration removed: 'f'{self.name}')

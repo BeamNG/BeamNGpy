@@ -21,4 +21,5 @@ from .state import State
 from .timer import Timer
 from .ultrasonic import Ultrasonic
 from .vehicle_feeder import VehicleFeeder
-from .sensorConfiguration import SensorConfig
+from .vehicleSensorConfiguration import VehicleSensorConfig
+from .mapSensorConfiguration import MapSensorConfig
