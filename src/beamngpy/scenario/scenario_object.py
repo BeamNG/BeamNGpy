@@ -77,7 +77,7 @@ class ScenarioObject:
         self.opts = options
         self.children = []
 
-        if self.name is not None:
+        if self.name:
             validate_object_name(self.name)
 
     def __eq__(self, other: Any) -> bool:
