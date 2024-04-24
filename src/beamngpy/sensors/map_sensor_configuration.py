@@ -6,7 +6,10 @@ from typing import TYPE_CHECKING
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
 
-from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar
+from .camera import Camera
+from .lidar import Lidar
+from .radar import Radar
+from .ultrasonic import Ultrasonic
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -37,7 +40,7 @@ class MapSensorConfig(CommBase):
         self.name = name
         self.sensors = []
 
-        sData = self.send_recv_ge('UnpackMapSensorConfiguration', filepath = filepath, name=self.name)['data']
+        sData = self.send_recv_ge('UnpackMapSensorConfiguration', filepath=filepath, name=self.name)['data']
         for i in range(len(sData)):
             v = sData[i]
             t = v['type']

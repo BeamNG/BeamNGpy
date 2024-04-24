@@ -12,6 +12,7 @@ from .GPS import GPS
 from .ideal_radar import IdealRadar
 from .imu import IMU
 from .lidar import Lidar
+from .map_sensor_configuration import MapSensorConfig
 from .mesh import Mesh
 from .powertrain_sensor import PowertrainSensor
 from .radar import Radar
@@ -21,5 +22,4 @@ from .state import State
 from .timer import Timer
 from .ultrasonic import Ultrasonic
 from .vehicle_feeder import VehicleFeeder
-from .vehicleSensorConfiguration import VehicleSensorConfig
-from .mapSensorConfiguration import MapSensorConfig
+from .vehicle_sensor_configuration import VehicleSensorConfig

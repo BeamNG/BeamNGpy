@@ -6,7 +6,16 @@ from typing import TYPE_CHECKING
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
 
-from beamngpy.sensors import Camera, Lidar, Ultrasonic, Radar, AdvancedIMU, GPS, IdealRadar, RoadsSensor, PowertrainSensor, Mesh
+from .advanced_IMU import AdvancedIMU
+from .camera import Camera
+from .GPS import GPS
+from .ideal_radar import IdealRadar
+from .lidar import Lidar
+from .mesh import Mesh
+from .powertrain_sensor import PowertrainSensor
+from .radar import Radar
+from .roads_sensor import RoadsSensor
+from .ultrasonic import Ultrasonic
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -40,7 +49,8 @@ class VehicleSensorConfig(CommBase):
         self.vid = vehicle.vid
         self.sensors = []
 
-        sData = self.send_recv_ge('UnpackVehicleSensorConfiguration', filepath = filepath, vid = self.vid, name=self.name)['data']
+        sData = self.send_recv_ge('UnpackVehicleSensorConfiguration', filepath=filepath,
+                                  vid=self.vid, name=self.name)['data']
         for i in range(len(sData)):
             v = sData[i]
             t = v['type']
