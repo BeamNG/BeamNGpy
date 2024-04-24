@@ -4,7 +4,7 @@ from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
 
 from beamngpy.connection import CommBase
-from beamngpy.logging import LOGGER_ID
+from beamngpy.logging import LOGGER_ID, BNGError
 
 from .advanced_IMU import AdvancedIMU
 from .camera import Camera
@@ -53,7 +53,7 @@ class VehicleSensorConfig(CommBase):
                                   vid=self.vid, name=self.name)['data']
         for i in range(len(sData)):
             v = sData[i]
-            t = v['type']
+            t = v['type'].lower()
             if t == 'camera':
                 self.sensors.append(Camera(
                     self.name + str(i), self.bng, self.vehicle,
@@ -67,7 +67,7 @@ class VehicleSensorConfig(CommBase):
                     is_render_instance=v['isRenderInstance'], is_render_depth=v['isRenderDepth'],
                     is_depth_inverted=False, is_visualised=v['isVisualised'],
                     is_static=False, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
-            elif t == 'LiDAR':
+            elif t == 'lidar':
                 self.sensors.append(Lidar(
                     self.name + str(i), self.bng, self.vehicle,
                     requested_update_time=v['updateTime'], update_priority=v['updatePriority'],
@@ -93,7 +93,7 @@ class VehicleSensorConfig(CommBase):
                     sensitivity=v['sensitivity'], fixed_window_size=v['fixedWindowSize'],
                     is_streaming=False, is_visualised=v['isVisualised'],
                     is_static=False, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
-            elif t == 'RADAR':
+            elif t == 'radar':
                 self.sensors.append(Radar(
                     self.name + str(i), self.bng, self.vehicle,
                     requested_update_time=v['updateTime'], update_priority=v['updatePriority'],
@@ -108,7 +108,7 @@ class VehicleSensorConfig(CommBase):
                     range_direct_max_cutoff=v['rangeDirectMaxCutoff'],
                     is_streaming=False, is_visualised=v['isVisualised'],
                     is_static=False, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
-            elif t == 'IMU':
+            elif t == 'imu':
                 self.sensors.append(AdvancedIMU(
                     self.name + str(i), self.bng, self.vehicle,
                     gfx_update_time=v['GFXUpdateTime'], physics_update_time=v['physicsUpdateTime'],
@@ -118,14 +118,14 @@ class VehicleSensorConfig(CommBase):
                     accel_frequency_cutoff=None, gyro_frequency_cutoff=None, is_send_immediately=False,
                     is_using_gravity=v['isUsingGravity'], is_allow_wheel_nodes=v['isAllowWheelNodes'],  is_visualised=v['isVisualised'],
                     is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
-            elif t == 'GPS':
+            elif t == 'gps':
                 self.sensors.append(GPS(
                     self.name + str(i), self.bng, self.vehicle,
                     gfx_update_time=v['GFXUpdateTime'], physics_update_time=v['physicsUpdateTime'],
                     pos=(v['pos']['x'], v['pos']['y'], v['pos']['z']),
                     ref_lon=v['refLon'], ref_lat=v['refLat'], is_send_immediately=False, is_visualised=v['isVisualised'],
                     is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
-            elif t == 'idealRADAR':
+            elif t == 'idealradar':
                 self.sensors.append(IdealRadar(
                     self.name + str(i), self.bng, self.vehicle, is_send_immediately=False,
                     gfx_update_time=v['GFXUpdateTime'], physics_update_time=v['physicsUpdateTime']))
@@ -141,6 +141,8 @@ class VehicleSensorConfig(CommBase):
                 self.sensors.append(Mesh(
                     self.name + str(i), self.bng, self.vehicle,
                     gfx_update_time=v['GFXUpdateTime'], physics_update_time=v['physicsUpdateTime']))
+            else:
+                raise BNGError(f"Sensor type '{v['type']}' not found.")
         self.logger.debug('VehicleSensorConfig - sensor configuration imported: 'f'{self.name}')
 
     def remove(self):

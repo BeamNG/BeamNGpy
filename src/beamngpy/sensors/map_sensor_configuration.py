@@ -4,7 +4,7 @@ from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
 
 from beamngpy.connection import CommBase
-from beamngpy.logging import LOGGER_ID
+from beamngpy.logging import LOGGER_ID, BNGError
 
 from .camera import Camera
 from .lidar import Lidar
@@ -43,7 +43,7 @@ class MapSensorConfig(CommBase):
         sData = self.send_recv_ge('UnpackMapSensorConfiguration', filepath=filepath, name=self.name)['data']
         for i in range(len(sData)):
             v = sData[i]
-            t = v['type']
+            t = v['type'].lower()
             if t == 'camera':
                 self.sensors.append(Camera(
                     self.name + str(i), self.bng, self.vehicle,
@@ -57,7 +57,7 @@ class MapSensorConfig(CommBase):
                     is_render_instance=v['isRenderInstance'], is_render_depth=v['isRenderDepth'],
                     is_depth_inverted=False, is_visualised=v['isVisualised'],
                     is_static=True, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
-            elif t == 'LiDAR':
+            elif t == 'lidar':
                 self.sensors.append(Lidar(
                     self.name + str(i), self.bng, self.vehicle,
                     requested_update_time=v['updateTime'], update_priority=v['updatePriority'],
@@ -83,7 +83,7 @@ class MapSensorConfig(CommBase):
                     sensitivity=v['sensitivity'], fixed_window_size=v['fixedWindowSize'],
                     is_streaming=False, is_visualised=v['isVisualised'],
                     is_static=True, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
-            elif t == 'RADAR':
+            elif t == 'radar':
                 self.sensors.append(Radar(
                     self.name + str(i), self.bng, self.vehicle,
                     requested_update_time=v['updateTime'], update_priority=v['updatePriority'],
@@ -98,6 +98,8 @@ class MapSensorConfig(CommBase):
                     range_direct_max_cutoff=v['rangeDirectMaxCutoff'],
                     is_streaming=False, is_visualised=v['isVisualised'],
                     is_static=True, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
+            else:
+                raise BNGError(f"Sensor type '{v['type']}' not found.")
         self.logger.debug('MapSensorConfig - sensor configuration imported: 'f'{self.name}')
 
     def remove(self):
