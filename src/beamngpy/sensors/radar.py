@@ -135,7 +135,8 @@ class Radar(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A 6D point cloud of raw RADAR data, where each entry is (range, doppler velocity, azimuth angle, elevation angle, radar cross section, signal to noise ratio).
+            A dictionary containing the 6D point cloud of raw RADAR data, where each entry is as follows:
+            (range, doppler velocity, azimuth angle, elevation angle, radar cross section, signal to noise ratio).
         """
         # Send and receive a request for readings data from this sensor.
         binary = self.send_recv_ge('PollRadar', name=self.name)['data']

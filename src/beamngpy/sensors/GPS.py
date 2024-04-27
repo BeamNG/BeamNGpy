@@ -68,7 +68,12 @@ class GPS(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary containing the sensor readings data.
+            A dictionary containing the sensor readings data.  Depending on the set poll timings, there may be multiple readings.  The data in each reading, by key, is as follows:
+            time: the time at which the reading was taken, in seconds.
+            x: the world-space X-axis position of the sensor, at the time of the reading, in meters.
+            y: the world-space Y-axis position of the sensor, at the time of the reading, in meters.
+            lon: the longitude of the sensor, relative to the set origin, in degrees.
+            lat: the latitude of the sensor, relative to the set origin, in degrees.
         """
         # Send and receive a request for readings data from this sensor.
         readings_data = []

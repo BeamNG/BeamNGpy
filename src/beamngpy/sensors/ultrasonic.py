@@ -104,7 +104,11 @@ class Ultrasonic(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary containing the distance measurement and the window (min and mix values) in which it was computed.
+            A dictionary containing the following keys:
+
+            distance: the latest distance measurement, in meters.
+            windowMin: (internal parameter) which indicates the minimum size of the data filtering window used in post-processing. This can usually be ignored.
+            windowMax: (internal parameter) which indicates the maximum size of the data filtering window used in post-processing. This can usually be ignored.
         """
         # Send and receive a request for readings data from this sensor.
         distance_measurement = self.send_recv_ge('PollUltrasonic', name=self.name)['data']
