@@ -276,8 +276,9 @@ class Camera(CommBase):
                 processed_readings['depth'] = None
             else:
                 depth = np.frombuffer(binary['depth'], dtype=np.float32)
+                #depth = self.depth_buffer_processing(depth)
                 reshaped_data = depth.reshape(height, width)
-                image = Image.fromarray(reshaped_data)
+                image = Image.fromarray(np.uint8(reshaped_data * 255))
                 processed_readings['depth'] = image
 
         return processed_readings
