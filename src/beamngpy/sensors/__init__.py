@@ -10,7 +10,6 @@ from .electrics import Electrics
 from .gforces import GForces
 from .GPS import GPS
 from .ideal_radar import IdealRadar
-from .imu import IMU
 from .lidar import Lidar
 from .mesh import Mesh
 from .powertrain_sensor import PowertrainSensor
