@@ -79,7 +79,17 @@ class AdvancedIMU(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary containing the sensor readings data.
+            A dictionary containing the sensor readings data.  Depending on the set poll timings, there may be multiple readings.  The data in each reading, by key, is as follows:
+            time: the time of the reading, in seconds.
+            mass: the local mass at the sensor position, in kg.
+            accRaw: the raw (unsmoothed) acceleration data, for each of the three sensor axes, in ms^-2.
+            accSmooth: the smoothed acceleration data, for each of the three sensor axes, in ms^-2.
+            angVel: the raw (unsmoothed) angular velocity (rotational velocity), for each of the three sensor axes, in rad/s.
+            angVelSmooth: the smoothed angular velocity (rotational velocity), for each of the three sensor axes, in rad/s.
+            pos: the world-space position of this sensor, at the time of the reading, in meters * 3.
+            dirX: the world-space direction vector of the sensors first axis (the sensor forward direction), upon which the acceleration and gyroscopic data was measured.
+            dirY: the world-space direction vector of the sensors second axis (the sensor up direction), upon which the acceleration and gyroscopic data was measured.
+            dirZ: the world-space direction vector of the sensors third axis, upon which the acceleration and gyroscopic data was measured.
         """
         # Send and receive a request for readings data from this sensor.
         readings_data = []

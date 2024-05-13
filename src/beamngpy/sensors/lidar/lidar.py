@@ -175,7 +175,10 @@ class Lidar(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            The LiDAR point cloud and colour data.
+            A dictionary with the following keys:
+
+            * ``pointCloud``: The point cloud readings, as a dictionary of vectors.
+            * ``colours``: The semantic annotation data, as a dictionary of colours for each corresponding point in the point cloud.
         """
         processed_readings: StrDict = dict(type='Lidar')
 
