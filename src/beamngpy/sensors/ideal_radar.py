@@ -62,7 +62,20 @@ class IdealRadar(CommBase):
 
         Returns:
             A dictionary containing the sensor readings data.
+            The ideal RADAR sensor detects the closest vehicles within a hard-coded distance from the ego vehicle, which are in front of the ego vehicle and at the same direction.
+            The number of closest vehicles has been hard-coded as 4; one may edit this from the Lua end.
+            For each of these vehicles the sensor returns:
+            vehicleID: the vehicle's unique id.
+            width: the vehicle's width.
+            length: the vehicle's length.
+            distToPlayerVehicleSq: the squared distance of the ego vehicle and this vehicle.
+            relDistX, relDistY: The relative distance to the ego vehicle front position, longitudinal and lateral.
+            relVelX, relVelY: The relative velocity wrt the ego vehicle frame, longitudinal and lateral.
+            relAccX, relAccY: The relative acceleration wrt the ego vehicle frame, longitudinal and lateral.
+            vel: velocity vector of this vehicle.
+            acc: acceleration vector of this vehicle.
         """
+
         # Send and receive a request for readings data from this sensor.
         readings_data = []
         if self.is_send_immediately:
