@@ -9,7 +9,7 @@ def test_mesh(beamng: BeamNGpy, steps: int = 3):
         # Create a vehicle.
         vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')
         # Create a scenario.
-        scenario = Scenario('smallgrid', 'mesh_test2', description='Mesh analysis')
+        scenario = Scenario('tech_ground', 'mesh_test2', description='Mesh analysis')
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle)
         scenario.make(bng)

@@ -7,7 +7,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle
 
 def test_camera_control(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'camera_control_test')
+        scenario = Scenario('tech_ground', 'camera_control_test')
         ego = Vehicle('ego', model='etk800')
         other = Vehicle('other', model='etk800')
 

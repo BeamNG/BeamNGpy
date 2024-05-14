@@ -10,7 +10,7 @@ from beamngpy.sensors import Damage, Electrics, State
 
 def test_electrics(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'electrics_test')
+        scenario = Scenario('tech_ground', 'electrics_test')
         vehicle = Vehicle('test_car', model='etk800')
 
         electrics = Electrics()
@@ -36,7 +36,7 @@ def test_electrics(beamng: BeamNGpy):
 
 def test_damage(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'damage_test')
+        scenario = Scenario('tech_ground', 'damage_test')
         dummy = Vehicle('dummy', model='pickup')
         scenario.add_vehicle(dummy, pos=(0, 0, 0))
         scenario.make(beamng)
@@ -59,7 +59,7 @@ def test_damage(beamng: BeamNGpy):
 
 def test_state(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'state_test')
+        scenario = Scenario('tech_ground', 'state_test')
         vehicle = Vehicle('test_car', model='pickup')
 
         state = State()
@@ -75,6 +75,7 @@ def test_state(beamng: BeamNGpy):
         vehicle.sensors.poll()
 
     assert state['pos'][0] < 0.1
+
 
 if __name__ == '__main__':
     bng = BeamNGpy('localhost', 64256)

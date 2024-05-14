@@ -10,7 +10,7 @@ def test_quats(beamng: BeamNGpy):
     with beamng as bng:
         set_up_simple_logging()
 
-        scenario = Scenario('smallgrid', 'test_quat')
+        scenario = Scenario('tech_ground', 'test_quat')
 
         blue_etk = Vehicle('ego_vehicle',
                            model='etk800',
@@ -66,7 +66,7 @@ def test_quats(beamng: BeamNGpy):
         pickup.teleport(pos, rot_quat=angle_to_quat((0, 45, 0)))
         pickup.sensors.poll()
         pos_after = pickup.state['pos']
-        assert(pos_before != pos_after)
+        assert (pos_before != pos_after)
 
         pickup.sensors.poll()
         pos_before = pickup.state['pos']
@@ -74,7 +74,7 @@ def test_quats(beamng: BeamNGpy):
         pickup.teleport(pos, rot_quat=rot_quat)
         pickup.sensors.poll()
         pos_after = pickup.state['pos']
-        assert(pos_before != pos_after)
+        assert (pos_before != pos_after)
 
         try:
             bng.scenario.teleport_object(rb, (-10, 5, 0), rot_quat=angle_to_quat((-45, 0, 0)))

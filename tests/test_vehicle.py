@@ -13,7 +13,7 @@ from beamngpy.types import Float3
 
 def test_get_available_vehicles(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'spawn_test')
+        scenario = Scenario('tech_ground', 'spawn_test')
         vehicle = Vehicle('irrelevant', model='pickup')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)
@@ -48,7 +48,7 @@ def test_vehicle_move(beamng: BeamNGpy):
     with beamng as bng:
         bng.settings.set_deterministic(50)
 
-        scenario = Scenario('smallgrid', 'move_test')
+        scenario = Scenario('tech_ground', 'move_test')
         vehicle = Vehicle('test_car', model='etk800')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(bng)
@@ -131,7 +131,7 @@ def test_vehicle_ai(beamng: BeamNGpy):
 
 def test_dynamic_vehicle_spawn(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'dynamic spawn test')
+        scenario = Scenario('tech_ground', 'dynamic spawn test')
         unique_vehicle_name = 'unique'
         vehicle = Vehicle(unique_vehicle_name, model='pickup')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
@@ -148,7 +148,7 @@ def test_dynamic_vehicle_spawn(beamng: BeamNGpy):
 
 def test_vehicle_spawn(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'spawn_test')
+        scenario = Scenario('tech_ground', 'spawn_test')
         vehicle = Vehicle('irrelevant', model='pickup')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)
@@ -209,7 +209,7 @@ def _check_lights(target, data, msg_fmt):
 
 def test_lights(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'bbox_test')
+        scenario = Scenario('tech_ground', 'bbox_test')
         config = 'vehicles/etk800/854_police_A.pc'
         vehicle = Vehicle('vehicle', model='etk800', part_config=config)
         other = Vehicle('other', model='pickup')
@@ -319,7 +319,7 @@ def test_traffic(beamng: BeamNGpy):
 
 def test_part_configs(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'parts_test')
+        scenario = Scenario('tech_ground', 'parts_test')
         vehicle = Vehicle('ego', model='etk800')
         scenario.add_vehicle(vehicle)
         scenario.make(bng)

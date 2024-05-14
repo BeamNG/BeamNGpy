@@ -16,7 +16,7 @@ def main():
     beamng = BeamNGpy('localhost', 64256)
     beamng.open(launch=True)
 
-    scenario = Scenario('smallgrid', 'mesh_test')
+    scenario = Scenario('tech_ground', 'mesh_test')
 
     cylinder = ProceduralCylinder(name='cylinder',
                                   radius=3.5,

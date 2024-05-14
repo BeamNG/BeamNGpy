@@ -11,7 +11,7 @@ def test_powertrain(beamng: BeamNGpy):
         # Create a vehicle.
         vehicle = Vehicle('ego_vehicle', model='etki', license='PYTHON', color='Red')
         # Create a scenario.
-        scenario = Scenario('smallgrid', 'powertrain_test', description='Testing the powertrain sensor')
+        scenario = Scenario('tech_ground', 'powertrain_test', description='Testing the powertrain sensor')
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle)
         scenario.make(bng)
