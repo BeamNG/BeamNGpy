@@ -51,6 +51,7 @@ class Camera(CommBase):
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
         postprocess_depth: If True, the raw depth data will be postprocessed to better represent values with middle intensity. Defaults to False,
                            as the postprocessing is computationally intensive.
+        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
     @staticmethod
@@ -119,7 +120,7 @@ class Camera(CommBase):
                  dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512), field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
                  is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True, is_render_instance: bool = False, is_render_depth: bool = True,
                  is_depth_inverted: bool = False, is_visualised: bool = False, is_streaming: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
-                 is_force_inside_triangle: bool = False, postprocess_depth: bool = False):
+                 is_force_inside_triangle: bool = False, postprocess_depth: bool = False, is_dir_world_space: bool = False):
         super().__init__(bng, vehicle)
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
         self.logger.setLevel(DEBUG)
@@ -177,7 +178,7 @@ class Camera(CommBase):
             name, vehicle, requested_update_time, update_priority, self.resolution, field_of_view_y, near_far_planes,
             pos, dir, up, is_using_shared_memory, self.colour_handle, self.shmem_size, self.annotation_handle, self.shmem_size,
             self.depth_handle, self.shmem_size, is_render_colours, is_render_annotations, is_render_instance,
-            is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
+            is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
     def _convert_to_image(self, raw_data: bytes | str | None, width: int, height: int) -> Image.Image | None:
@@ -659,7 +660,7 @@ class Camera(CommBase):
             annotation_shmem_handle: str | None, annotation_shmem_size: int, depth_shmem_handle: str | None,
             depth_shmem_size: int, is_render_colours: bool, is_render_annotations: bool, is_render_instance: bool,
             is_render_depth: bool, is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool,
-            is_force_inside_triangle: bool) -> None:
+            is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
         data: StrDict = dict()
         data['vid'] = 0
         if vehicle is not None:
@@ -689,6 +690,7 @@ class Camera(CommBase):
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
+        data['isDirWorldSpace'] = is_dir_world_space
         self.send_ack_ge(type='OpenCamera', ack='OpenedCamera', **data)
         self.logger.info(f'Opened Camera: "{name}"')
 

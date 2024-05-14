@@ -66,6 +66,7 @@ class VehicleSensorConfig(CommBase):
                     is_render_colours=v['isRenderColours'], is_render_annotations=v['isRenderAnnotations'],
                     is_render_instance=v['isRenderInstance'], is_render_depth=v['isRenderDepth'],
                     is_depth_inverted=False, is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=False, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'lidar':
                 self.sensors.append(Lidar(
@@ -78,6 +79,7 @@ class VehicleSensorConfig(CommBase):
                     is_360_mode=v['is360'], is_rotate_mode=v['isRotate'],
                     is_using_shared_memory=False, is_streaming=False,
                     is_annotated=v['isAnnotated'], is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=False, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'ultrasonic':
                 self.sensors.append(Ultrasonic(
@@ -92,6 +94,7 @@ class VehicleSensorConfig(CommBase):
                     range_direct_max_cutoff=v['rangeDirectMaxCutoff'],
                     sensitivity=v['sensitivity'], fixed_window_size=v['fixedWindowSize'],
                     is_streaming=False, is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=False, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'radar':
                 self.sensors.append(Radar(
@@ -107,6 +110,7 @@ class VehicleSensorConfig(CommBase):
                     range_shape=v['rangeShape'], range_focus=v['rangeFocus'], range_min_cutoff=v['rangeMinCutoff'],
                     range_direct_max_cutoff=v['rangeDirectMaxCutoff'],
                     is_streaming=False, is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=False, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'imu':
                 self.sensors.append(AdvancedIMU(
@@ -117,6 +121,7 @@ class VehicleSensorConfig(CommBase):
                     accel_window_width=v['accelWindowWidth'], gyro_window_width=v['gyro_window_width'],
                     accel_frequency_cutoff=None, gyro_frequency_cutoff=None, is_send_immediately=False,
                     is_using_gravity=v['isUsingGravity'], is_allow_wheel_nodes=v['isAllowWheelNodes'],  is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'gps':
                 self.sensors.append(GPS(
@@ -124,6 +129,7 @@ class VehicleSensorConfig(CommBase):
                     gfx_update_time=v['GFXUpdateTime'], physics_update_time=v['physicsUpdateTime'],
                     pos=(v['pos']['x'], v['pos']['y'], v['pos']['z']),
                     ref_lon=v['refLon'], ref_lat=v['refLat'], is_send_immediately=False, is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'idealradar':
                 self.sensors.append(IdealRadar(

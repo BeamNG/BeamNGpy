@@ -56,6 +56,7 @@ class MapSensorConfig(CommBase):
                     is_render_colours=v['isRenderColours'], is_render_annotations=v['isRenderAnnotations'],
                     is_render_instance=v['isRenderInstance'], is_render_depth=v['isRenderDepth'],
                     is_depth_inverted=False, is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=True, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'lidar':
                 self.sensors.append(Lidar(
@@ -68,6 +69,7 @@ class MapSensorConfig(CommBase):
                     is_360_mode=v['is360'], is_rotate_mode=v['isRotate'],
                     is_using_shared_memory=False, is_streaming=False,
                     is_annotated=v['isAnnotated'], is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=True, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'ultrasonic':
                 self.sensors.append(Ultrasonic(
@@ -82,6 +84,7 @@ class MapSensorConfig(CommBase):
                     range_direct_max_cutoff=v['rangeDirectMaxCutoff'],
                     sensitivity=v['sensitivity'], fixed_window_size=v['fixedWindowSize'],
                     is_streaming=False, is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=True, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             elif t == 'radar':
                 self.sensors.append(Radar(
@@ -97,6 +100,7 @@ class MapSensorConfig(CommBase):
                     range_shape=v['rangeShape'], range_focus=v['rangeFocus'], range_min_cutoff=v['rangeMinCutoff'],
                     range_direct_max_cutoff=v['rangeDirectMaxCutoff'],
                     is_streaming=False, is_visualised=v['isVisualised'],
+                    is_dir_world_space=True,
                     is_static=True, is_snapping_desired=v['isSnappingDesired'], is_force_inside_triangle=v['isSnappingDesired']))
             else:
                 raise BNGError(f"Sensor type '{v['type']}' not found.")

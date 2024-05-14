@@ -62,6 +62,7 @@ class Radar(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1, update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
@@ -69,7 +70,7 @@ class Radar(CommBase):
                  vel_min: float = -50.0, vel_max: float = 50.0, half_angle_deg: float = 30.0, resolution: Int2 = (200, 200), field_of_view_y: float = 70,
                  near_far_planes: Float2 = (0.1, 150.0), range_roundness: float = -2.0, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.23, range_focus: float = 0.12,
                  range_min_cutoff: float = 0.5, range_direct_max_cutoff: float = 150.0, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
-                 is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+                 is_snapping_desired: bool = False, is_force_inside_triangle: bool = False, is_dir_world_space: bool = False):
         super().__init__(bng, vehicle)
 
         self.logger = getLogger(f'{LOGGER_ID}.RADAR')
@@ -95,7 +96,8 @@ class Radar(CommBase):
         # Create and initialise this sensor in the simulation.
         self._open_radar(name, vehicle, self.shmem_handle, self.shmem_handle2, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
                          vel_bins, range_min, range_max, vel_min, vel_max, half_angle_deg, resolution, field_of_view_y, near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape,
-                         range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
+                         range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle,
+                         is_dir_world_space)
         self.logger.debug('RADAR - sensor created: 'f'{self.name}')
 
     def _unpack_float(self, binary):
@@ -306,7 +308,7 @@ class Radar(CommBase):
                     update_priority: float, pos: Float3, dir: Float3, up: Float3, range_bins: int, azimuth_bins: int, vel_bins: int, range_min: float, range_max: float, vel_min: float,
                     vel_max: float, half_angle_deg: float, size: Int2, field_of_view_y: float, near_far_planes: Float2, range_roundness: float, range_cutoff_sensitivity: float,
                     range_shape: float, range_focus: float, range_min_cutoff: float, range_direct_max_cutoff: float, is_visualised: bool, is_streaming: bool, is_static: bool,
-                    is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+                    is_snapping_desired: bool, is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
 
         data: StrDict = dict()
         data['name'] = name
@@ -343,6 +345,7 @@ class Radar(CommBase):
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
+        data['isDirWorldSpace'] = is_dir_world_space
 
         self.send_ack_ge(type='OpenRadar', ack='OpenedRadar', **data)
         self.logger.info(f'Opened RADAR sensor: "{name}"')

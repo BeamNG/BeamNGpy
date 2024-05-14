@@ -53,6 +53,7 @@ class Ultrasonic(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
@@ -62,7 +63,7 @@ class Ultrasonic(CommBase):
                  range_roundness: float = -1.15, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.3,
                  range_focus: float = 0.376, range_min_cutoff: float = 0.1, range_direct_max_cutoff: float = 5.0,
                  sensitivity: float = 3.0, fixed_window_size: float = 10, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
-                 is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+                 is_snapping_desired: bool = False, is_force_inside_triangle: bool = False, is_dir_world_space: bool = False):
         super().__init__(bng, vehicle)
 
         self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
@@ -87,7 +88,7 @@ class Ultrasonic(CommBase):
             name, vehicle, self.shmem_handle, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
             near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
             range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_streaming, is_static, is_snapping_desired,
-            is_force_inside_triangle)
+            is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')
 
     def remove(self):
@@ -269,7 +270,7 @@ class Ultrasonic(CommBase):
             dir: Float3, up: Float3, size: Int2, field_of_view_y: float, near_far_planes: Float2,
             range_roundness: float, range_cutoff_sensitivity: float, range_shape: float, range_focus: float,
             range_min_cutoff: float, range_direct_max_cutoff: float, sensitivity: float, fixed_window_size: float,
-            is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+            is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
         data: StrDict = dict()
         data['name'] = name
         data['shmemHandle'] = shmem_handle
@@ -298,6 +299,7 @@ class Ultrasonic(CommBase):
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
+        data['isDirWorldSpace'] = is_dir_world_space
 
         self.send_ack_ge('OpenUltrasonic', ack='OpenedUltrasonic', **data)
         self.logger.info(f'Opened ultrasonic sensor: "{name}"')

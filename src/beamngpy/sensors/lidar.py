@@ -79,13 +79,14 @@ class Lidar(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1, update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
                  dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), vertical_resolution: int = 64, vertical_angle: float = 26.9, frequency: float = 20,
                  horizontal_angle: float = 360, max_distance: float = 120, is_rotate_mode: bool = False, is_360_mode: bool = True, is_using_shared_memory: bool = True,
                  is_visualised: bool = True, is_streaming: bool = False, is_annotated: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
-                 is_force_inside_triangle: bool = False):
+                 is_force_inside_triangle: bool = False, is_dir_world_space: bool = False):
         super().__init__(bng, vehicle)
 
         self.logger = getLogger(f'{LOGGER_ID}.Lidar')
@@ -116,7 +117,7 @@ class Lidar(CommBase):
             name, vehicle, is_using_shared_memory, self.point_cloud_shmem_handle, self.point_cloud_shmem_size, self.
             colour_shmem_handle, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
             vertical_resolution, vertical_angle, frequency, horizontal_angle, max_distance, is_rotate_mode, is_360_mode,
-            is_visualised, is_streaming, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle)
+            is_visualised, is_streaming, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
 
     def _convert_binary_to_array(self, binary: StrDict) -> StrDict:
@@ -380,7 +381,8 @@ class Lidar(CommBase):
             self, name: str, vehicle: Vehicle | None, is_using_shared_memory: bool, point_cloud_shmem_handle: str | None, point_cloud_shmem_size: int,
             colour_shmem_handle: str | None, colour_shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3, dir: Float3, up: Float3,
             vertical_resolution: int, vertical_angle: float, frequency: float, horizontal_angle: float, max_distance: float, is_rotate_mode: bool, is_360_mode: bool,
-            is_visualised: bool, is_streaming: bool, is_annotated: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool):
+            is_visualised: bool, is_streaming: bool, is_annotated: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool,
+            is_dir_world_space: bool):
         data: StrDict = dict()
         data['vid'] = 0
         if vehicle is not None:
@@ -409,6 +411,7 @@ class Lidar(CommBase):
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
+        data['isDirWorldSpace'] = is_dir_world_space
         self.send_ack_ge(type='OpenLidar', ack='OpenedLidar', **data)
         self.logger.info(f'Opened lidar: "{name}"')
 
