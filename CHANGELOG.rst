@@ -2,6 +2,9 @@
 Changelog
 =========
 
+Version 1.29
+============
+
 Version 1.28
 ============
 - Functionality added to allow the import of heightmaps (from 2D Python arrays).

@@ -169,11 +169,6 @@ Electrics
 .. autoclass:: beamngpy.sensors.Electrics
    :show-inheritance:
 
-IMU
-^^^
-.. autoclass:: beamngpy.sensors.IMU
-   :show-inheritance:
-
 Timer
 ^^^^^
 .. autoclass:: beamngpy.sensors.Timer
