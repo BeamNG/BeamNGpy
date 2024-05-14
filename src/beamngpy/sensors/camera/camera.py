@@ -278,6 +278,9 @@ class Camera(CommBase):
                 depth = np.frombuffer(binary['depth'], dtype=np.float32)
                 if self.postprocess_depth:
                     depth = self.depth_buffer_processing(depth)
+                else:  # scale from (NEAR, FAR) to (0.0, 255.0)
+                    depth = 255.0 * (depth - self.near_far_planes[0]) / \
+                        (self.near_far_planes[1] - self.near_far_planes[0])
                 reshaped_data = depth.reshape(height, width)
                 if self.is_depth_inverted:
                     reshaped_data = 255 - reshaped_data
