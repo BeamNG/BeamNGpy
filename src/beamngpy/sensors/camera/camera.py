@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Dict, List
-import time
 
 import numpy as np
 from PIL import Image
@@ -50,6 +49,8 @@ class Camera(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+        postprocess_depth: If True, the raw depth data will be postprocessed to better represent values with middle intensity. Defaults to False,
+                           as the postprocessing is computationally intensive.
     """
 
     @staticmethod
@@ -118,7 +119,7 @@ class Camera(CommBase):
                  dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512), field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
                  is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True, is_render_instance: bool = False, is_render_depth: bool = True,
                  is_depth_inverted: bool = False, is_visualised: bool = False, is_streaming: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
-                 is_force_inside_triangle: bool = False):
+                 is_force_inside_triangle: bool = False, postprocess_depth: bool = False):
         super().__init__(bng, vehicle)
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
         self.logger.setLevel(DEBUG)
@@ -134,6 +135,7 @@ class Camera(CommBase):
         self.is_render_instance = is_render_instance
         self.is_render_depth = is_render_depth
         self.is_streaming = is_streaming
+        self.postprocess_depth = postprocess_depth
 
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
@@ -244,8 +246,6 @@ class Camera(CommBase):
         # Re-map the depth values back to their original order.
         depth_intensity = np.empty_like(s_data)
         depth_intensity[sort_index] = depth_intensity_sorted
-        if self.is_depth_inverted:
-            depth_intensity = 255 - depth_intensity
 
         return depth_intensity
 
@@ -276,9 +276,12 @@ class Camera(CommBase):
                 processed_readings['depth'] = None
             else:
                 depth = np.frombuffer(binary['depth'], dtype=np.float32)
-                #depth = self.depth_buffer_processing(depth)
+                if self.postprocess_depth:
+                    depth = self.depth_buffer_processing(depth)
                 reshaped_data = depth.reshape(height, width)
-                image = Image.fromarray(np.uint8(reshaped_data * 255))
+                if self.is_depth_inverted:
+                    reshaped_data = 255 - reshaped_data
+                image = Image.fromarray(np.uint8(reshaped_data))
                 processed_readings['depth'] = image
 
         return processed_readings
