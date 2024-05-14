@@ -249,7 +249,7 @@ class Camera(CommBase):
 
         return depth_intensity
 
-    def _binary_to_image(self, binary: StrDict) -> Dict[str, Image.Image | None]:
+    def _binary_to_image(self, binary: StrDict, full_poll_request: bool = False) -> Dict[str, Image.Image | None]:
         """
         Converts the binary string data from the simulator, which contains the data buffers for colour, annotations, and depth, into images.
 
@@ -276,11 +276,13 @@ class Camera(CommBase):
                 processed_readings['depth'] = None
             else:
                 depth = np.frombuffer(binary['depth'], dtype=np.float32)
+                if full_poll_request:  # transform the (NEAR, FAR) range to (0.0, 1.0)
+                    depth = (depth - self.near_far_planes[0]) / (self.near_far_planes[1] - self.near_far_planes[0])
+
                 if self.postprocess_depth:
                     depth = self.depth_buffer_processing(depth)
-                else:  # scale from (NEAR, FAR) to (0.0, 255.0)
-                    depth = 255.0 * (depth - self.near_far_planes[0]) / \
-                        (self.near_far_planes[1] - self.near_far_planes[0])
+                else:  # scale from (0.0, 1.0) to (0.0, 255.0)
+                    depth = np.clip(depth * 255.0, 0.0, 255.0)
                 reshaped_data = depth.reshape(height, width)
                 if self.is_depth_inverted:
                     reshaped_data = 255 - reshaped_data
@@ -510,7 +512,7 @@ class Camera(CommBase):
         if 'data' not in raw_readings:
             raise BNGValueError(f'Camera sensor {self.name} not found.')
         raw_readings = raw_readings['data']
-        raw_readings = self._binary_to_image(raw_readings)
+        raw_readings = self._binary_to_image(raw_readings, full_poll_request=True)
 
         data = dict(type='data')
         data['colour'] = raw_readings['colour']
