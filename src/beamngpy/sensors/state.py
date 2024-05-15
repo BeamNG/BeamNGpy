@@ -7,6 +7,7 @@ class State(Sensor):
     direction, velocity, etc.
 
     It contains the following:
+        * ``time``: The current simulation time in seconds.
         * ``pos``: The vehicle's position as an ``(x, y, z)`` triplet
         * ``dir``: The vehicle's direction vector as an ``(x, y, z)`` triplet
         * ``up``: The vehicle's up vector as an ``(x, y, z)`` triplet
