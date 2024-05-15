@@ -52,9 +52,9 @@ def test_vehicle_move(beamng: BeamNGpy):
         vehicle = Vehicle('test_car', model='etk800')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(bng)
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
         vehicle.control(throttle=1)
         bng.control.step(120, wait=True)
         vehicle.sensors.poll()
@@ -75,10 +75,9 @@ def test_vehicle_ai(beamng: BeamNGpy):
         scenario.add_vehicle(other, pos=(-453, 700, 75), rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(bng)
 
-        bng.scenario.load(scenario)
-
-        bng.scenario.start()
         bng.control.pause()
+        bng.scenario.load(scenario)
+        bng.scenario.start()
 
         vehicle.switch()
 
@@ -178,9 +177,9 @@ def test_vehicle_bbox(beamng: BeamNGpy):
         scenario.add_vehicle(vehicle_b, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
 
         bbox_beg = vehicle_a.get_bbox()
         vehicle_a.ai.set_mode('span')
@@ -234,9 +233,9 @@ def test_lights(beamng: BeamNGpy):
             for i in range(3):
                 possible.append((light, i))
 
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
 
         for r in range(len(binary) + len(ternary)):
             r = r + 1
@@ -305,9 +304,9 @@ def test_traffic(beamng: BeamNGpy):
         scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
         scenario.make(bng)
 
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
 
         bng.traffic.start([other])
         other.switch()
