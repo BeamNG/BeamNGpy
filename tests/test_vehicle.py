@@ -237,6 +237,8 @@ def test_lights(beamng: BeamNGpy):
         bng.scenario.load(scenario)
         bng.scenario.start()
 
+        bng.control.step(100)
+
         for r in range(len(binary) + len(ternary)):
             r = r + 1
             for idx, combo in enumerate(itertools.combinations(possible, r)):
