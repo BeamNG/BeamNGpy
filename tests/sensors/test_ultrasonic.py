@@ -11,7 +11,7 @@ def test_ultrasonic(beamng: BeamNGpy):
         # Create a vehicle.
         vehicle = Vehicle('ego_vehicle', model='etki', licence='PYTHON', color='Red')
         # Create a scenario.
-        scenario = Scenario('smallgrid', 'ultrasonic_test', description='Testing the ultrasonic sensor')
+        scenario = Scenario('tech_ground', 'ultrasonic_test', description='Testing the ultrasonic sensor')
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle)
         scenario.make(bng)

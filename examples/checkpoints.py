@@ -9,7 +9,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle
 
 if __name__ == '__main__':
     with BeamNGpy('localhost', 64256) as bng:
-        scenario = Scenario('smallgrid', 'waypoint demo')
+        scenario = Scenario('tech_ground', 'waypoint demo')
         vehicle = Vehicle('test_car', model='etk800', rot_quat=(0, 0, 0, 1))
         scenario.add_vehicle(vehicle)
 

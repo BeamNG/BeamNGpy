@@ -10,7 +10,7 @@ def main():
     print("Initializing BeamNG...")
     beamng = BeamNGpy('localhost', 64256)
     beamng.open(launch=True)
-    scenario = Scenario('smallgrid', 'roads_importer')
+    scenario = Scenario('tech_ground', 'roads_importer')
     vehicle = Vehicle('ego_vehicle', model='etk800')
     scenario.add_vehicle(vehicle)
 
@@ -33,7 +33,7 @@ def main():
 
     # Execute BeamNG until the user closes it.
     print("Completed.")
-    while(True):
+    while (True):
         pass
     beamng.close()
 

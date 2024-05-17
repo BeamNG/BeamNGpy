@@ -62,6 +62,39 @@ class RoadsSensor(CommBase):
 
         Returns:
             A dictionary containing the sensor readings data.
+
+            The Roads sensor outputs:
+            time: the time-stamp of the sample reading.
+            dist2CL: the minimum distance between the vehicle front-axle-midpoint and road reference line (center line), in metres.
+            dist2Left: the minimum distance between the vehicle front-axle-midpoint and left road edge, in metres.
+            dist2Right: the minimum distance between vehicle front-axle-midpoint and right road edge, in metres.
+            halfWidth: the half-width (center to edge) of the road at the front-axle-midpoint, in metres.
+            roadRadius: the radius of the curvature of the road, in metres. (If the road is straight, then radius = NaN.)
+            headingAngle: the angle between the vehicle forward direction and the road reference line, in rad.
+
+            Coordinates of the coordinates of the four closest points (P0, P1, P2, P3) on the centerline of the road:
+            xP0onCL, yP0onCL, zP0onCL: the world-space X, Y, Z coordinates of the closest road point, 'P0', in metres.
+            xP1onCL, yP1onCL, zP1onCL: the world-space X, Y, Z coordinates of the 2nd-closest road point, 'P1', in metres.
+            xP2onCL, yP2onCL, zP2onCL: the world-space X, Y, Z coordinates of the 3rd-closest road point, 'P2', in metres.
+            xP3onCL, yP3onCL, zP3onCL: the world-space X, Y, Z coordinates of the 4th-closest road point, 'P3', in metres.
+
+            The cubic parametric polynomial (U and V equations) of the centerline and the left and right roadedges:
+            uAofCL, uBofCL, uCofCL, uDofCL: road Reference-Line Parametric Cubic Polynomial U equation; constant, linear, quadratic and cubic term.
+            vAofCL, vBofCL, vCofCL, vDofCL: road Reference-Line Parametric Cubic Polynomial V equation; constant, linear, quadratic and cubic term.
+            uAofLeftRE, uBofLeftRE, uCofLeftRE, uDofLeftRE: left roadedge Parametric Cubic Polynomial U equation; constant, linear, quadratic and cubic term.
+            vAofLeftRE, vBofLeftRE, vCofLeftRE, vDofLeftRE: left roadedge Parametric Cubic Polynomial V equation; constant, linear, quadratic and cubic term.
+            uAofRightRE, uBofRightRE, uCofRightRE, uDofRightRE: right roadedge Parametric Cubic Polynomial U equation; constant, linear, quadratic and cubic term.
+            vAofRightRE, vBofRightRE, vCofRightRE, vDofRightRE: right roadedge Parametric Cubic Polynomial V equation; constant, linear, quadratic and cubic term.
+            
+            start points on the road:
+            xStartCL, yStartCL, zStartCL: the starting point of the road centerline.
+            xStartL, yStartL, zStartL: the coordinates of the starting point of the left roadedge (estimated).
+            xStartR, yStartR, zStartR: the coordinates of the starting point of the right roadedge (estimated).
+
+            semantic road data:
+            drivability: the 'drivability' number of the road, where smaller = dirt/country roads and larger = highways etc.
+            speedLimit: the speed limit of the road, in m/s.
+            flag1way: a flag which indicates if the road is bi-directional (val = 0.0), or one-way (val = 1.0).
         """
         # Send and receive a request for readings data from this sensor.
         readings_data = []

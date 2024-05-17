@@ -286,7 +286,7 @@ Note that although the bounding_box option is given, this feature is still under
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``orientation``     | Array            | Array of 4 floats, specifying the vehicle rotation quaternion                         | Mandatory  |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``resolution``      | Array            | Tuple of ints, defining the ``x`` and ``y`` resolution of                                 | Optional   |
+|``resolution``      | Array            | Tuple of ints, defining the ``x`` and ``y`` resolution of                             | Optional   |
 |                    |                  | the resulting images.                                                                 |            |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``fov``             | Integer          | Camera field of view.                                                                 | Optional   |

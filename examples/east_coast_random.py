@@ -65,11 +65,11 @@ def main():
         bng.ui.hide_hud()
         bng.settings.set_deterministic(60)  # Set simulator to be deterministic, with 60 Hz temporal resolution
 
+        # Put simulator in pause awaiting further inputs
+        bng.control.pause()
         # Load and start the scenario
         bng.scenario.load(scenario)
         bng.scenario.start()
-        # Put simulator in pause awaiting further inputs
-        bng.control.pause()
 
         assert vehicle.is_connected()
 
@@ -78,16 +78,16 @@ def main():
         fov = 120
         resolution = (512, 512)
         front_camera = Camera('front_camera', bng, vehicle,
-            pos=pos, dir=direction, field_of_view_y=fov, resolution=resolution,
-            is_render_colours=True, is_render_depth=True, is_render_annotations=True)
+                              pos=pos, dir=direction, field_of_view_y=fov, resolution=resolution,
+                              is_render_colours=True, is_render_depth=True, is_render_annotations=True)
 
         pos = (0.0, 3, 1.0)
         direction = (0, 1, 0)
         fov = 90
         resolution = (512, 512)
         back_camera = Camera('back_camera', bng, vehicle,
-            pos=pos, dir=direction, field_of_view_y=fov, resolution=resolution,
-            is_render_colours=True, is_render_depth=True, is_render_annotations=True)
+                             pos=pos, dir=direction, field_of_view_y=fov, resolution=resolution,
+                             is_render_colours=True, is_render_depth=True, is_render_annotations=True)
 
         # Send random inputs to vehice and advance the simulation 20 steps
         for _ in range(1024):

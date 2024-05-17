@@ -30,11 +30,12 @@ class GPS(CommBase):
         is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle.
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle.
+        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
                  ref_lon: float = 0.0, ref_lat: float = 0.0, is_send_immediately: bool = False, is_visualised: bool = True, is_snapping_desired: bool = False,
-                 is_force_inside_triangle: bool = False):
+                 is_force_inside_triangle: bool = False, is_dir_world_space: bool = False):
         super().__init__(bng, vehicle)
 
         self.logger = getLogger(f'{LOGGER_ID}.GPS')
@@ -47,7 +48,7 @@ class GPS(CommBase):
 
         # Create and initialise this sensor in the simulation.
         self._open_GPS(name, vehicle, gfx_update_time, physics_update_time, pos, ref_lon, ref_lat, is_send_immediately,
-                       is_visualised, is_snapping_desired, is_force_inside_triangle)
+                       is_visualised, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
 
         # Fetch the unique Id number (in the simulator) for this GPS sensor.  We will need this later.
         self.sensorId = self._get_GPS_id()
@@ -68,7 +69,12 @@ class GPS(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary containing the sensor readings data.
+            A dictionary containing the sensor readings data.  Depending on the set poll timings, there may be multiple readings.  The data in each reading, by key, is as follows:
+            time: the time at which the reading was taken, in seconds.
+            x: the world-space X-axis position of the sensor, at the time of the reading, in meters.
+            y: the world-space Y-axis position of the sensor, at the time of the reading, in meters.
+            lon: the longitude of the sensor, relative to the set origin, in degrees.
+            lat: the latitude of the sensor, relative to the set origin, in degrees.
         """
         # Send and receive a request for readings data from this sensor.
         readings_data = []
@@ -145,7 +151,7 @@ class GPS(CommBase):
         return int(self.send_recv_ge('GetGPSId', name=self.name)['data'])
 
     def _open_GPS(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3, ref_lon: float, ref_lat: float,
-                  is_send_immediately: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool) -> None:
+                  is_send_immediately: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
         data: StrDict = dict()
         data['name'] = name
         data['vid'] = vehicle.vid
@@ -158,6 +164,7 @@ class GPS(CommBase):
         data['isVisualised'] = is_visualised
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
+        data['isDirWorldSpace'] = is_dir_world_space
         self.send_ack_ge(type='OpenGPS', ack='OpenedGPS', **data)
         self.logger.info(f'Opened GPS sensor: "{name}"')
 

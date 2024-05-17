@@ -49,6 +49,9 @@ class Camera(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+        postprocess_depth: If True, the raw depth data will be postprocessed to better represent values with middle intensity. Defaults to False,
+                           as the postprocessing is computationally intensive.
+        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
     @staticmethod
@@ -117,7 +120,7 @@ class Camera(CommBase):
                  dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (512, 512), field_of_view_y: float = 70, near_far_planes: Float2 = (0.05, 100.0),
                  is_using_shared_memory: bool = False, is_render_colours: bool = True, is_render_annotations: bool = True, is_render_instance: bool = False, is_render_depth: bool = True,
                  is_depth_inverted: bool = False, is_visualised: bool = False, is_streaming: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
-                 is_force_inside_triangle: bool = False):
+                 is_force_inside_triangle: bool = False, postprocess_depth: bool = False, is_dir_world_space: bool = False):
         super().__init__(bng, vehicle)
         self.logger = getLogger(f'{LOGGER_ID}.Camera')
         self.logger.setLevel(DEBUG)
@@ -133,6 +136,7 @@ class Camera(CommBase):
         self.is_render_instance = is_render_instance
         self.is_render_depth = is_render_depth
         self.is_streaming = is_streaming
+        self.postprocess_depth = postprocess_depth
 
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
@@ -174,7 +178,7 @@ class Camera(CommBase):
             name, vehicle, requested_update_time, update_priority, self.resolution, field_of_view_y, near_far_planes,
             pos, dir, up, is_using_shared_memory, self.colour_handle, self.shmem_size, self.annotation_handle, self.shmem_size,
             self.depth_handle, self.shmem_size, is_render_colours, is_render_annotations, is_render_instance,
-            is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle)
+            is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
     def _convert_to_image(self, raw_data: bytes | str | None, width: int, height: int) -> Image.Image | None:
@@ -191,6 +195,7 @@ class Camera(CommBase):
         """
         if raw_data is None or len(raw_data) == 0:
             return None
+
         data = raw_data if isinstance(raw_data, bytes) else raw_data.encode()
 
         # Re-shape the array, based on the number of channels present in the data.
@@ -198,9 +203,11 @@ class Camera(CommBase):
         decoded = decoded.reshape(height, width, 4)
 
         # Convert to image format.
-        return Image.fromarray(decoded)
+        b = Image.fromarray(decoded)
 
-    def _depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
+        return b
+
+    def depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
         """
         Converts raw depth buffer data to visually-clear intensity values in the range [0, 255].
         We process the data so that small changes in distance are better shown, rather than just using linear interpolation.
@@ -240,12 +247,10 @@ class Camera(CommBase):
         # Re-map the depth values back to their original order.
         depth_intensity = np.empty_like(s_data)
         depth_intensity[sort_index] = depth_intensity_sorted
-        if self.is_depth_inverted:
-            depth_intensity = 255 - depth_intensity
 
         return depth_intensity
 
-    def _binary_to_image(self, binary: StrDict) -> Dict[str, Image.Image | None]:
+    def _binary_to_image(self, binary: StrDict, full_poll_request: bool = False) -> Dict[str, Image.Image | None]:
         """
         Converts the binary string data from the simulator, which contains the data buffers for colour, annotations, and depth, into images.
 
@@ -254,8 +259,8 @@ class Camera(CommBase):
         Returns:
             A dictionary containing the processed images.
         """
-        width = self.resolution[0]
-        height = self.resolution[1]
+        width = int(self.resolution[0])
+        height = int(self.resolution[1])
 
         processed_readings: Dict[str, Image.Image | None] = dict()
         if self.is_render_colours:
@@ -272,9 +277,17 @@ class Camera(CommBase):
                 processed_readings['depth'] = None
             else:
                 depth = np.frombuffer(binary['depth'], dtype=np.float32)
-                processed_values = self._depth_buffer_processing(depth)
-                reshaped_data = processed_values.reshape(height, width)
-                image = Image.fromarray(reshaped_data)
+                if full_poll_request:  # transform the (NEAR, FAR) range to (0.0, 1.0)
+                    depth = (depth - self.near_far_planes[0]) / (self.near_far_planes[1] - self.near_far_planes[0])
+
+                if self.postprocess_depth:
+                    depth = self.depth_buffer_processing(depth)
+                else:  # scale from (0.0, 1.0) to (0.0, 255.0)
+                    depth = np.clip(depth * 255.0, 0.0, 255.0)
+                reshaped_data = depth.reshape(height, width)
+                if self.is_depth_inverted:
+                    reshaped_data = 255 - reshaped_data
+                image = Image.fromarray(np.uint8(reshaped_data))
                 processed_readings['depth'] = image
 
         return processed_readings
@@ -326,7 +339,6 @@ class Camera(CommBase):
         # Send and receive a request for readings data from this sensor.
         raw_readings = self.send_recv_ge('PollCamera', name=self.name,
                                          isUsingSharedMemory=self.is_using_shared_memory)['data']
-        self.logger.debug('Camera - raw sensor readings received from simulation: 'f'{self.name}')
 
         if self.is_using_shared_memory:
             if self.colour_shmem:
@@ -351,7 +363,7 @@ class Camera(CommBase):
 
         return raw_readings
 
-    def poll(self) -> Dict[str, Image.Image | None]:
+    def poll(self):
         """
         Gets the most-recent readings for this sensor as processed images.
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
@@ -365,7 +377,6 @@ class Camera(CommBase):
         """
         raw_readings = self.poll_raw()
         images = self._binary_to_image(raw_readings)
-        self.logger.debug('Camera - raw sensor readings converted to image format: 'f'{self.name}')
         return images
 
     def stream_raw(self) -> Dict[str, bytes]:
@@ -502,7 +513,7 @@ class Camera(CommBase):
         if 'data' not in raw_readings:
             raise BNGValueError(f'Camera sensor {self.name} not found.')
         raw_readings = raw_readings['data']
-        raw_readings = self._binary_to_image(raw_readings)
+        raw_readings = self._binary_to_image(raw_readings, full_poll_request=True)
 
         data = dict(type='data')
         data['colour'] = raw_readings['colour']
@@ -649,7 +660,7 @@ class Camera(CommBase):
             annotation_shmem_handle: str | None, annotation_shmem_size: int, depth_shmem_handle: str | None,
             depth_shmem_size: int, is_render_colours: bool, is_render_annotations: bool, is_render_instance: bool,
             is_render_depth: bool, is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool,
-            is_force_inside_triangle: bool) -> None:
+            is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
         data: StrDict = dict()
         data['vid'] = 0
         if vehicle is not None:
@@ -679,6 +690,7 @@ class Camera(CommBase):
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
+        data['isDirWorldSpace'] = is_dir_world_space
         self.send_ack_ge(type='OpenCamera', ack='OpenedCamera', **data)
         self.logger.info(f'Opened Camera: "{name}"')
 

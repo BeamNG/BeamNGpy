@@ -13,7 +13,7 @@ from beamngpy.types import Float3
 
 def test_get_available_vehicles(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'spawn_test')
+        scenario = Scenario('tech_ground', 'spawn_test')
         vehicle = Vehicle('irrelevant', model='pickup')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)
@@ -48,13 +48,13 @@ def test_vehicle_move(beamng: BeamNGpy):
     with beamng as bng:
         bng.settings.set_deterministic(50)
 
-        scenario = Scenario('smallgrid', 'move_test')
+        scenario = Scenario('tech_ground', 'move_test')
         vehicle = Vehicle('test_car', model='etk800')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(bng)
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
         vehicle.control(throttle=1)
         bng.control.step(120, wait=True)
         vehicle.sensors.poll()
@@ -75,10 +75,9 @@ def test_vehicle_ai(beamng: BeamNGpy):
         scenario.add_vehicle(other, pos=(-453, 700, 75), rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(bng)
 
-        bng.scenario.load(scenario)
-
-        bng.scenario.start()
         bng.control.pause()
+        bng.scenario.load(scenario)
+        bng.scenario.start()
 
         vehicle.switch()
 
@@ -131,7 +130,7 @@ def test_vehicle_ai(beamng: BeamNGpy):
 
 def test_dynamic_vehicle_spawn(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'dynamic spawn test')
+        scenario = Scenario('tech_ground', 'dynamic spawn test')
         unique_vehicle_name = 'unique'
         vehicle = Vehicle(unique_vehicle_name, model='pickup')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
@@ -148,7 +147,7 @@ def test_dynamic_vehicle_spawn(beamng: BeamNGpy):
 
 def test_vehicle_spawn(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'spawn_test')
+        scenario = Scenario('tech_ground', 'spawn_test')
         vehicle = Vehicle('irrelevant', model='pickup')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(beamng)
@@ -178,9 +177,9 @@ def test_vehicle_bbox(beamng: BeamNGpy):
         scenario.add_vehicle(vehicle_b, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
         scenario.make(beamng)
 
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
 
         bbox_beg = vehicle_a.get_bbox()
         vehicle_a.ai.set_mode('span')
@@ -209,7 +208,7 @@ def _check_lights(target, data, msg_fmt):
 
 def test_lights(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'bbox_test')
+        scenario = Scenario('tech_ground', 'bbox_test')
         config = 'vehicles/etk800/854_police_A.pc'
         vehicle = Vehicle('vehicle', model='etk800', part_config=config)
         other = Vehicle('other', model='pickup')
@@ -234,9 +233,11 @@ def test_lights(beamng: BeamNGpy):
             for i in range(3):
                 possible.append((light, i))
 
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
+
+        bng.control.step(100)
 
         for r in range(len(binary) + len(ternary)):
             r = r + 1
@@ -305,9 +306,9 @@ def test_traffic(beamng: BeamNGpy):
         scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
         scenario.make(bng)
 
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.pause()
 
         bng.traffic.start([other])
         other.switch()
@@ -319,7 +320,7 @@ def test_traffic(beamng: BeamNGpy):
 
 def test_part_configs(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'parts_test')
+        scenario = Scenario('tech_ground', 'parts_test')
         vehicle = Vehicle('ego', model='etk800')
         scenario.add_vehicle(vehicle)
         scenario.make(bng)

@@ -12,7 +12,7 @@ def test_multi_vehicle(beamng: BeamNGpy):
     active vehicles, connect to one, and control it
     """
     with beamng as a_client:
-        scenario = Scenario('smallgrid', 'multi_vehicle')
+        scenario = Scenario('tech_ground', 'multi_vehicle')
         first = Vehicle('first', model='etk800')
         scenario.add_vehicle(first, pos=(2, 2, 0))
         second = Vehicle('second', model='etki')

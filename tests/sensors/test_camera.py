@@ -12,7 +12,7 @@ from beamngpy.sensors import Camera
 def test_camera(beamng: BeamNGpy):
     with beamng as bng:
         vehicle = Vehicle('ego_vehicle', model='etki', license='PYTHON', color='Green')             # Create a vehicle.
-        scenario = Scenario('smallgrid', 'camera_test', description='Testing the camera sensor')    # Create a scenario.
+        scenario = Scenario('tech_ground', 'camera_test', description='Testing the camera sensor')    # Create a scenario.
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle)
         scenario.make(bng)

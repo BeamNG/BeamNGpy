@@ -9,7 +9,7 @@ from beamngpy.sensors import AdvancedIMU
 def test_advanced_IMU(beamng: BeamNGpy):
     with beamng as bng:
         vehicle = Vehicle('ego_vehicle', model='etki', license='PYTHON', color='Red')  # Create a vehicle.
-        scenario = Scenario('smallgrid', 'advanced_IMU_test',
+        scenario = Scenario('tech_ground', 'advanced_IMU_test',
                             description='Testing the advanced IMU sensor')  # Create a scenario.
         scenario.add_vehicle(vehicle)  # Add the vehicle to the scenario.
         scenario.make(bng)

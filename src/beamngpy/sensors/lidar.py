@@ -23,7 +23,35 @@ MAX_LIDAR_POINTS = 2000000
 
 class Lidar(CommBase):
     """
-    An interactive, automated LiDAR sensor, which produces regular LiDAR point clouds, ready for further processing.
+    An automated LiDAR sensor, which produces raw LiDAR point clouds, ready for further processing by the user.
+
+    This sensor runs in various modes, which are chosen using the two flag arguments 'is_rotate_mode' and 'is_360_mode':
+
+    ** MODE I: Full 360 Degrees Mode: **
+        The LiDAR will return a point cloud covering the full 360 degree sector around the provided 'up' vector, with the chosen parameters.
+        This mode should be used if fast, 360 degree updates are required.  For fastest results, use shared memory or see the 'stream()' functions.
+        Note: There is no need to provide a horizontal angle for this mode, since it will be fixed upon instantiation.
+        Likewise, the direction vector is meaningless when using this mode, since the full 360 degrees will be scanned with every reading.
+        [For this mode, leave the flags as default or switch is_360_mode=True, is_rotate_mode=False].
+
+    ** MODE II: LFO Mode: **
+        The LiDAR will operate in a low-frequency rotating mode and provide readings local to the sector at which it currently points.
+        For best results, the frequency should be in the range [1Hz, 8Hz].  Faster frequencies (on this mode) may cause undersampling in some sectors, so beware!
+        The horizontal angle defines the aperture of the returns in the currently-facing direction, as the LiDAR spins.
+        The direction vector will specify the starting direction only, for this mode.
+        [For this mode, set the flags as follows: is_360_mode=False, is_rotate_mode=True].
+
+    ** MODE III: Static Mode: **
+        The LiDAR will operate in a fixed static pose relative to the vehicle (ie it doesn't rotate). You can set the horizontal angle and direction and this
+        will remain so for the lifetime of the sensor.  The horizontal angle is supported in the range [1, 179] degrees (the full hemisphere, basically).
+        [For this mode, set the flags as follows: is_360_mode=False, is_rotate_mode=False].
+
+    All three LiDAR modes also support the return of semantic annotations (segmentations).  This can be switched on with the similarly-named flag (see below).
+
+    Shared memory can be used with all modes, if required.  This will be much faster than sending big LiDAR point clouds over the TCP socket, and is
+    recommended (however, not everyone will be running BeamNGPy on the same machine as BeamNG.Tech, so this may not be an option).  See the provided 'stream()'
+    functions for maximum speed here.
+
     This sensor can be attached to a vehicle, or can be fixed to a position in space. The dir and up parameters are used to set the local coordinate system.
     A requested update rate can be provided, to tell the simulator how often to read measurements for this sensor. If a negative value is provided, the sensor
     will not update automatically at all. However, ad-hoc polling requests can be sent at any time, even for non-updating sensors.
@@ -39,10 +67,11 @@ class Lidar(CommBase):
         up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
         vertical_resolution: The vertical resolution of this LiDAR sensor.
         vertical_angle: The vertical angle of this LiDAR sensor, in degrees.
-        rays_per_second: The number of LiDAR rays per second which this sensor should emit.
         frequency: The frequency of this LiDAR sensor.
         horizontal_angle: The horizontal angle of this LiDAR sensor.
         max_distance: The maximum distance which this LiDAR sensor will detect, in metres.
+        is_rotate_mode: Runs the LiDAR sensor in 'LFO rotate'.  Should be used with frequencies in the range [1Hz - 10Hz, or so, for best results].
+        is_360_mode: Runs the LiDAR sensor in 'Full 360 Degrees' mode. Note: there is no need to provide a horizontal angle for this mode.
         is_using_shared_memory: A flag which indicates if we should use shared memory to send/recieve the sensor readings data.
         is_visualised: A flag which indicates if this LiDAR sensor should appear visualised or not.
         is_streaming: Whether or not to stream the data directly to shared memory (no poll required, for efficiency - BeamNGpy won't block.)
@@ -50,18 +79,19 @@ class Lidar(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
+        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1, update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
-                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), vertical_resolution: int = 64, vertical_angle: float = 26.9, rays_per_second: float = 2200000,
-                 frequency: float = 20, horizontal_angle: float = 360, max_distance: float = 120, is_using_shared_memory: bool = True, is_visualised: bool = True, is_streaming: bool = False,
-                 is_annotated: bool = False, is_static: bool = False, is_snapping_desired: bool = False, is_force_inside_triangle: bool = False):
+                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), vertical_resolution: int = 64, vertical_angle: float = 26.9, frequency: float = 20,
+                 horizontal_angle: float = 360, max_distance: float = 120, is_rotate_mode: bool = False, is_360_mode: bool = True, is_using_shared_memory: bool = True,
+                 is_visualised: bool = True, is_streaming: bool = False, is_annotated: bool = False, is_static: bool = False, is_snapping_desired: bool = False,
+                 is_force_inside_triangle: bool = False, is_dir_world_space: bool = False):
         super().__init__(bng, vehicle)
 
         self.logger = getLogger(f'{LOGGER_ID}.Lidar')
         self.logger.setLevel(DEBUG)
 
-        # Cache some properties we will need later.
         self.name = name
 
         # Set up the shared memory for this sensor, if requested.
@@ -86,8 +116,8 @@ class Lidar(CommBase):
         self._open_lidar(
             name, vehicle, is_using_shared_memory, self.point_cloud_shmem_handle, self.point_cloud_shmem_size, self.
             colour_shmem_handle, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
-            vertical_resolution, vertical_angle, rays_per_second, frequency, horizontal_angle, max_distance,
-            is_visualised, is_streaming, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle)
+            vertical_resolution, vertical_angle, frequency, horizontal_angle, max_distance, is_rotate_mode, is_360_mode,
+            is_visualised, is_streaming, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
 
     def _convert_binary_to_array(self, binary: StrDict) -> StrDict:
@@ -146,16 +176,16 @@ class Lidar(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            The LiDAR point cloud and colour data.
+            A dictionary with the following keys:
+
+            * ``pointCloud``: The point cloud readings, as a dictionary of vectors.
+            * ``colours``: The semantic annotation data, as a dictionary of colours for each corresponding point in the point cloud.
         """
         processed_readings: StrDict = dict(type='Lidar')
 
         # Get the LiDAR point cloud and colour data, and format it before returning it.
-        point_cloud_data = None
-        colour_data = None
+        point_cloud_data, colour_data = None, None
         if self.is_using_shared_memory:
-            data_sizes = self.send_recv_ge('PollLidar', name=self.name,
-                                           isUsingSharedMemory=self.is_using_shared_memory)['data']
             assert self.point_cloud_shmem
             point_cloud_data = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
             point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
@@ -168,8 +198,7 @@ class Lidar(CommBase):
             processed_readings['colours'] = colour_data
             self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
         else:
-            binary = self.send_recv_ge('PollLidar', name=self.name,
-                                       isUsingSharedMemory=self.is_using_shared_memory)['data']
+            binary = self.send_recv_ge('PollLidar', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
             self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
             processed_readings = self._convert_binary_to_array(binary)
 
@@ -188,6 +217,10 @@ class Lidar(CommBase):
         self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
 
         return point_cloud_data
+
+
+    # The following three functions are used together to send and recieve single 'ad-hoc' style sensor requests.
+    # This is for users who only want occasional readings now and again, which they can request, wait for, then collect later.
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -345,12 +378,11 @@ class Lidar(CommBase):
                          name=self.name, isAnnotated=is_annotated)
 
     def _open_lidar(
-            self, name: str, vehicle: Vehicle | None, is_using_shared_memory: bool, point_cloud_shmem_handle: str | None,
-            point_cloud_shmem_size: int, colour_shmem_handle: str | None, colour_shmem_size: int,
-            requested_update_time: float, update_priority: float, pos: Float3, dir: Float3, up: Float3,
-            vertical_resolution: int, vertical_angle: float, rays_per_second: float, frequency: float,
-            horizontal_angle: float, max_distance: float, is_visualised: bool, is_streaming: bool, is_annotated: bool, is_static: bool,
-            is_snapping_desired: bool, is_force_inside_triangle: bool):
+            self, name: str, vehicle: Vehicle | None, is_using_shared_memory: bool, point_cloud_shmem_handle: str | None, point_cloud_shmem_size: int,
+            colour_shmem_handle: str | None, colour_shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3, dir: Float3, up: Float3,
+            vertical_resolution: int, vertical_angle: float, frequency: float, horizontal_angle: float, max_distance: float, is_rotate_mode: bool, is_360_mode: bool,
+            is_visualised: bool, is_streaming: bool, is_annotated: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool,
+            is_dir_world_space: bool):
         data: StrDict = dict()
         data['vid'] = 0
         if vehicle is not None:
@@ -368,16 +400,18 @@ class Lidar(CommBase):
         data['up'] = up
         data['vRes'] = vertical_resolution
         data['vAngle'] = vertical_angle
-        data['rps'] = rays_per_second
         data['hz'] = frequency
         data['hAngle'] = horizontal_angle
         data['maxDist'] = max_distance
+        data['isRotate'] = is_rotate_mode
+        data['is360'] = is_360_mode
         data['isVisualised'] = is_visualised
         data['isStreaming'] = is_streaming
         data['isAnnotated'] = is_annotated
         data['isStatic'] = is_static
         data['isSnappingDesired'] = is_snapping_desired
         data['isForceInsideTriangle'] = is_force_inside_triangle
+        data['isDirWorldSpace'] = is_dir_world_space
         self.send_ack_ge(type='OpenLidar', ack='OpenedLidar', **data)
         self.logger.info(f'Opened lidar: "{name}"')
 

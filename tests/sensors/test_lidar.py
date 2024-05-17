@@ -9,7 +9,7 @@ from beamngpy.sensors import Lidar
 def test_lidar(beamng: BeamNGpy):
     with beamng as bng:
         vehicle = Vehicle('ego_vehicle', model='etki', license='PYTHON', color='Blue')              # Create a vehicle.
-        scenario = Scenario('smallgrid', 'lidar_test', description='Testing the LiDAR sensor')      # Create a scenario.
+        scenario = Scenario('tech_ground', 'lidar_test', description='Testing the LiDAR sensor')      # Create a scenario.
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
         scenario.make(bng)

@@ -170,13 +170,13 @@ class Connection:
     def _pack_data(self, data: StrDict) -> Tuple[int, bytes]:
         req_id = self._assign_request_id()
         data['_id'] = req_id
-        self.comm_logger.debug(f'Sending {data}.')
+        self.comm_logger.debug('Sending %s.', data)
         packed = cast(bytes, msgpack.packb(data, use_bin_type=True))  # the cast is for type checker
         return req_id, packed
 
     def _unpack_data(self, data: bytes) -> StrDict:
         unpacked: StrDict = msgpack.unpackb(data, raw=False, strict_map_key=False)
-        self.comm_logger.debug(f'Received {unpacked}.')
+        self.comm_logger.debug('Received %s.', unpacked)
 
         # Converts all non-binary strings in the data into utf-8 format.
         return self._string_cleanup(unpacked)

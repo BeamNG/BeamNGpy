@@ -14,8 +14,8 @@ if __name__ == '__main__':
 
     beamng.settings.set_deterministic(60)
 
-    beamng.scenario.load(scenario)
     beamng.control.pause()
+    beamng.scenario.load(scenario)
     beamng.scenario.start()
 
     ego.ai.set_mode('span')

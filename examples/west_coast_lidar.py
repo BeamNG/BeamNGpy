@@ -34,8 +34,21 @@ def main():
     bng.scenario.start()
 
     # NOTE: Create sensor after scenario has started.
-    # lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True)     # Send data via shared memory.
-    lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)   # Send data through lua socket instead.
+
+    # Unsilence the demo which you want to run:
+    lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True,      # [DEMO: DEFAULT - 360 MODE].  Uses shared memory.
+                  is_360_mode=True)
+
+    #lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True,      # [DEMO: ROTATE MODE].  Uses shared memory.
+    #              is_rotate_mode=True, is_360_mode=False, horizontal_angle=60, frequency=3)
+
+    #lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True,      # [DEMO: 360 MODE, WITH UPWARDS TILT].  Uses shared memory.
+    #              is_360_mode=True, dir=(0, -1, 0.5))
+
+    #Lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=True,      # [DEMO: STATIC MODE, WITH 120 DEGREE APERTURE].  Uses shared memory.
+    #              is_rotate_mode=False, is_360_mode=False, horizontal_angle=120)
+
+    #lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)    # Does NOT use shared memory.  Sends data through lua socket instead.
 
     vehicle.ai.set_mode('span')
     print('Driving around, polling the LiDAR sensor every 5 seconds...')

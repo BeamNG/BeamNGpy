@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def test_new_scenario(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('smallgrid', 'test_scenario')
+        scenario = Scenario('tech_ground', 'test_scenario')
         vehicle = Vehicle('test_car', model='etk800')
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
@@ -62,7 +62,7 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
 
 
 def test_scenario_vehicle_name():
-    scenario = Scenario('smallgrid', 'same')
+    scenario = Scenario('tech_ground', 'same')
     vehicle = Vehicle('same', model='etk800')
     with pytest.raises(BNGValueError):
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
