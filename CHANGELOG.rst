@@ -4,6 +4,35 @@ Changelog
 
 Version 1.29
 ============
+- Added documentation on the sensors output signals.
+- Added the ``postprocess_depth`` flag to the `Camera <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#camera>`__ sensor, which makes the distinction of the depth image clearer, but is computationally intensive (off by default)
+- Added ``time`` as a field of the `State <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.State>`__ sensor, represents the current simulation time (which is different from the ``Timer`` sensor representing the time since the scenario start)
+- Added new flag to automated sensors: ``is_dir_world_space``
+
+  - ``False`` by default; if ``True``, then the ``dir`` argument of the sensors represents the world space direction instead of the vehicle space direction vector
+
+- Updated `change_settings.py <https://github.com/BeamNG/BeamNGpy/blob/v1.29/examples/change_settings.py>`__ example with setting a windowed mode resolution
+- Examples changed to use the new Tech Ground level (``tech_ground``) instead of the Smallgrid (``smallgrid``). We encourage the users to use the Tech Ground level as the default flat level in BeamNG.tech for the improved support of annotations and materials.
+
+- `BeamNGpy.scenario.load <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.load>`__ does not resume the physics anymore
+
+  - to pause the physics (`BeamNGpy.control.pause() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.load>`__) and allow stepping (`BeamNGpy.control.step() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.step>`__), it is preferred to call ``BeamNGpy.control.pause()`` before ``BeamNGpy.scenario.load()`` )
+
+- Bugfixes
+
+  - RADAR now works without shared memory.
+  - Fixed ``find_objects_class`` when getting data from the simulator.
+  - Fixed IdealRADAR with ``is_send_immediately=True``.
+  - Fixed ``BeamNGpy.scenario.delete`` not deleting the prefab file.
+  - BeamNGpy functions using the ``cling=True`` argument should behave more reasonably when finding the ground level
+
+    - the ``cling=True`` argument still does not work for ``Scenario.add_vehicle``
+
+- Removals/Deprecations
+
+  - Removed the IMU sensor. The `AdvancedIMU <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#advanced-imu>`__ is a replacement with more features.
+  - Removed examples which used the deprecated old IMU sensor.
+  - Removed LidarVisualizer and the pyopengl dependency
 
 Version 1.28
 ============
