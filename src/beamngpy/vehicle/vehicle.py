@@ -3,7 +3,7 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from beamngpy.api.vehicle import AIApi, LoggingApi, RootApi
+from beamngpy.api.vehicle import AIApi, LoggingApi, RootApi, AccApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
@@ -137,6 +137,10 @@ class Vehicle:
         self.attach_sensor = self.sensors.attach
         self.detach_sensor = self.sensors.detach
         self.poll_sensors = self.sensors.poll
+       
+        self.acc = AccApi(self)  # this API is for ACC handling
+        self.acc_load = self.acc.start
+        self.acc_unload = self.acc.stop
 
     def _init_beamng_api(self, beamng: BeamNGpy | None = None):
         from beamngpy.api.beamng import GEVehiclesApi
