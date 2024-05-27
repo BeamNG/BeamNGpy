@@ -75,17 +75,14 @@ class Ultrasonic(CommBase):
 
         # Shared memory for velocity data streaming.
         self.shmem_size = None
-        self.shmem_handle = None
         self.shmem = None
         if is_streaming == True:
-            pid = os.getpid()
             self.shmem_size = 4
-            self.shmem_handle = f'{pid}.{name}.Ultrasonic'
-            self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
+            self.shmem = shmem.allocate(self.shmem_size)
 
         # Create and initialise this sensor in the simulation.
         self._open_ultrasonic(
-            name, vehicle, self.shmem_handle, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
+            name, vehicle, self.shmem.name, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
             near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
             range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_streaming, is_static, is_snapping_desired,
             is_force_inside_triangle, is_dir_world_space)
@@ -266,14 +263,14 @@ class Ultrasonic(CommBase):
                          name=self.name, isVisualised=is_visualised)
 
     def _open_ultrasonic(
-            self, name: str, vehicle: Vehicle | None, shmem_handle: str | None, shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3,
+            self, name: str, vehicle: Vehicle | None, shmem_name: str | None, shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3,
             dir: Float3, up: Float3, size: Int2, field_of_view_y: float, near_far_planes: Float2,
             range_roundness: float, range_cutoff_sensitivity: float, range_shape: float, range_focus: float,
             range_min_cutoff: float, range_direct_max_cutoff: float, sensitivity: float, fixed_window_size: float,
             is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
         data: StrDict = dict()
         data['name'] = name
-        data['shmemHandle'] = shmem_handle
+        data['shmemHandle'] = shmem_name
         data['shmemSize'] = shmem_size
         data['vid'] = 0
         if vehicle is not None:

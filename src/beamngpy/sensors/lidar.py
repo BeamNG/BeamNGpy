@@ -11,6 +11,7 @@ import beamngpy.sensors.shmem as shmem
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
 from beamngpy.types import Float3, StrDict
+from multiprocessing.shared_memory import SharedMemory
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -97,25 +98,20 @@ class Lidar(CommBase):
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
         self.point_cloud_shmem_size = MAX_LIDAR_POINTS * 3 * 4
-        self.point_cloud_shmem = None
-        self.point_cloud_shmem_handle = None
+        self.point_cloud_shmem: SharedMemory | None = None
         self.colour_shmem_size = MAX_LIDAR_POINTS * 4
-        self.colour_shmem = None
-        self.colour_shmem_handle = None
+        self.colour_shmem: SharedMemory | None = None
         if is_using_shared_memory:
-            pid = os.getpid()
-            self.point_cloud_shmem_handle = f'{pid}.{name}.PointCloud'
-            self.point_cloud_shmem = shmem.allocate(self.point_cloud_shmem_size, self.point_cloud_shmem_handle)
-            self.logger.debug(f'Lidar - Bound shared memory for point cloud data: {self.point_cloud_shmem_handle}')
+            self.point_cloud_shmem = shmem.allocate(self.point_cloud_shmem_size)
+            self.logger.debug(f'Lidar - Bound shared memory for point cloud data: {self.point_cloud_shmem.name}')
 
-            self.colour_shmem_handle = f'{pid}.{name}.Colour'
-            self.colour_shmem = shmem.allocate(self.colour_shmem_size, self.colour_shmem_handle)
-            self.logger.debug(f'Lidar - Bound shared memory for colour data: {self.colour_shmem_handle}')
+            self.colour_shmem = shmem.allocate(self.colour_shmem_size)
+            self.logger.debug(f'Lidar - Bound shared memory for colour data: {self.colour_shmem.name}')
 
         # Create and initialise this sensor in the simulation.
         self._open_lidar(
-            name, vehicle, is_using_shared_memory, self.point_cloud_shmem_handle, self.point_cloud_shmem_size, self.
-            colour_shmem_handle, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
+            name, vehicle, is_using_shared_memory, self.point_cloud_shmem.name, self.point_cloud_shmem_size, self.
+            colour_shmem.name, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
             vertical_resolution, vertical_angle, frequency, horizontal_angle, max_distance, is_rotate_mode, is_360_mode,
             is_visualised, is_streaming, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
@@ -132,23 +128,12 @@ class Lidar(CommBase):
         processed_readings: StrDict = dict(type='Lidar')
 
         # Format the point cloud data.
-        floats = np.zeros(int(len(binary['pointCloud']) / 4))
-        ctr = 0
-        # Convert the binary string to a float array.
-        for i in range(0, int(len(binary['pointCloud'])), 4):
-            floats[ctr] = struct.unpack('f', binary['pointCloud'][i:i + 4])[0]
-            ctr = ctr + 1
-        points = []
-        # Convert the floats to points by collecting each triplet.
-        for i in range(0, int(len(floats)), 3):
-            points.append([floats[i], floats[i + 1], floats[i + 2]])
-        processed_readings['pointCloud'] = np.array(points, dtype=np.float32)
+        floats = np.frombuffer(binary['pointCloud'], dtype=np.float32)
+        processed_readings['pointCloud'] = floats.reshape((-1, 3))
 
         # Format the corresponding colour data.
-        colour = []
-        for i in range(len(binary['colours'])):
-            colour.append(np.uint8(binary['colours'][i]))
-        processed_readings['colours'] = colour
+        colours = np.frombuffer(binary['colours'], dtype=np.uint8)
+        processed_readings['colours'] = colours
 
         return processed_readings
 
@@ -159,16 +144,42 @@ class Lidar(CommBase):
         # Remove the shared memory binding being used by this sensor, if applicable.
         if self.is_using_shared_memory:
             assert self.point_cloud_shmem
-            self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.point_cloud_shmem_handle}')
+            self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.point_cloud_shmem.name}')
             self.point_cloud_shmem.close()
 
             assert self.colour_shmem
-            self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.colour_shmem_handle}')
+            self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.colour_shmem.name}')
             self.colour_shmem.close()
 
         # Remove this sensor from the simulation.
         self._close_lidar()
         self.logger.debug('Lidar - sensor removed: 'f'{self.name}')
+
+    def poll_raw(self):
+        """
+        Gets the most-recent readings for this sensor as unprocessed bytes.
+        Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
+
+        Returns:
+            A dictionary with values being the unprocessed bytes representing the RGBA data from the sensors and
+            the following keys
+
+            * ``pointCloud``: The colour data.
+            * ``colours``: The semantic annotation data.
+        """
+        if self.is_using_shared_memory:
+            raw_readings = {}
+            assert self.point_cloud_shmem
+            raw_readings['pointCloud'] = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
+            self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
+
+            assert self.colour_shmem
+            raw_readings['colours'] = shmem.read(self.colour_shmem, self.colour_shmem_size)
+            self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
+        else:
+            raw_readings = self.send_recv_ge('PollLidar', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
+            self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
+        return raw_readings
 
     def poll(self) -> StrDict:
         """
@@ -184,24 +195,8 @@ class Lidar(CommBase):
         processed_readings: StrDict = dict(type='Lidar')
 
         # Get the LiDAR point cloud and colour data, and format it before returning it.
-        point_cloud_data, colour_data = None, None
-        if self.is_using_shared_memory:
-            assert self.point_cloud_shmem
-            point_cloud_data = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
-            point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
-            processed_readings['pointCloud'] = point_cloud_data
-            self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
-
-            assert self.colour_shmem
-            colour_data = shmem.read(self.colour_shmem, self.colour_shmem_size)
-            colour_data = np.frombuffer(colour_data, dtype=np.uint8)
-            processed_readings['colours'] = colour_data
-            self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
-        else:
-            binary = self.send_recv_ge('PollLidar', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
-            self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
-            processed_readings = self._convert_binary_to_array(binary)
-
+        raw_readings = self.poll_raw()
+        processed_readings = self._convert_binary_to_array(raw_readings)
         return processed_readings
 
     def stream(self) -> StrDict:
@@ -211,7 +206,6 @@ class Lidar(CommBase):
         Returns:
             The LiDAR point cloud data.
         """
-
         point_cloud_data = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
         point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
         self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
@@ -221,7 +215,6 @@ class Lidar(CommBase):
 
     # The following three functions are used together to send and recieve single 'ad-hoc' style sensor requests.
     # This is for users who only want occasional readings now and again, which they can request, wait for, then collect later.
-
     def send_ad_hoc_poll_request(self) -> int:
         """
         Sends an ad-hoc polling request to the simulator. This will be executed by the simulator immediately, but will take time to process, so the
@@ -378,8 +371,8 @@ class Lidar(CommBase):
                          name=self.name, isAnnotated=is_annotated)
 
     def _open_lidar(
-            self, name: str, vehicle: Vehicle | None, is_using_shared_memory: bool, point_cloud_shmem_handle: str | None, point_cloud_shmem_size: int,
-            colour_shmem_handle: str | None, colour_shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3, dir: Float3, up: Float3,
+            self, name: str, vehicle: Vehicle | None, is_using_shared_memory: bool, point_cloud_shmem_name: str | None, point_cloud_shmem_size: int,
+            colour_shmem_name: str | None, colour_shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3, dir: Float3, up: Float3,
             vertical_resolution: int, vertical_angle: float, frequency: float, horizontal_angle: float, max_distance: float, is_rotate_mode: bool, is_360_mode: bool,
             is_visualised: bool, is_streaming: bool, is_annotated: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool,
             is_dir_world_space: bool):
@@ -389,9 +382,9 @@ class Lidar(CommBase):
             data['vid'] = vehicle.vid
         data['useSharedMemory'] = is_using_shared_memory
         data['name'] = name
-        data['pointCloudShmemHandle'] = point_cloud_shmem_handle
+        data['pointCloudShmemHandle'] = point_cloud_shmem_name
         data['pointCloudShmemSize'] = point_cloud_shmem_size
-        data['colourShmemHandle'] = colour_shmem_handle
+        data['colourShmemHandle'] = colour_shmem_name
         data['colourShmemSize'] = colour_shmem_size
         data['updateTime'] = requested_update_time
         data['priority'] = update_priority

@@ -140,44 +140,35 @@ class Camera(CommBase):
 
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
-        self.colour_handle = None
         self.colour_shmem = None
-        self.annotation_handle = None
         self.annotation_shmem = None
-        self.instance_handle = None
         self.instance_shmem = None
-        self.depth_handle = None
         self.depth_shmem = None
         self.shmem_size = -1
         if is_using_shared_memory:
             self.logger.debug('Camera - Initializing shared memory.')
-            pid = os.getpid()
             self.shmem_size = resolution[0] * resolution[1] * 4
             if is_render_colours:
-                self.colour_handle = '{}.{}.{}.colour'.format(pid, '', name)
-                self.colour_shmem = shmem.allocate(self.shmem_size, self.colour_handle)
-                self.logger.debug('Camera - Bound shared memory for colour: 'f'{self.colour_handle}')
+                self.colour_shmem = shmem.allocate(self.shmem_size)
+                self.logger.debug('Camera - Bound shared memory for colour: 'f'{self.colour_shmem.name}')
 
             if is_render_annotations:
-                self.annotation_handle = '{}.{}.{}.annotations'.format(pid, '', name)
-                self.annotation_shmem = shmem.allocate(self.shmem_size, self.annotation_handle)
-                self.logger.debug('Camera - Bound shared memory for semantic annotations: 'f'{self.annotation_handle}')
+                self.annotation_shmem = shmem.allocate(self.shmem_size)
+                self.logger.debug('Camera - Bound shared memory for semantic annotations: 'f'{self.annotation_shmem.name}')
 
             if is_render_instance:
-                self.instance_handle = '{}.{}.{}.instance'.format(pid, '', name)
-                self.instance_shmem = shmem.allocate(self.shmem_size, self.instance_handle)
-                self.logger.debug('Camera - Bound shared memory for instance annotations: 'f'{self.instance_handle}')
+                self.instance_shmem = shmem.allocate(self.shmem_size)
+                self.logger.debug('Camera - Bound shared memory for instance annotations: 'f'{self.instance_shmem.name}')
 
             if is_render_depth:
-                self.depth_handle = '{}.{}.{}.depth'.format(pid, '', name)
-                self.depth_shmem = shmem.allocate(self.shmem_size, self.depth_handle)
-                self.logger.debug('Camera - Bound shared memory for depth: 'f'{self.depth_handle}')
+                self.depth_shmem = shmem.allocate(self.shmem_size)
+                self.logger.debug('Camera - Bound shared memory for depth: 'f'{self.depth_shmem.name}')
 
         # Create and initialise the camera in the simulation.
         self._open_camera(
             name, vehicle, requested_update_time, update_priority, self.resolution, field_of_view_y, near_far_planes,
-            pos, dir, up, is_using_shared_memory, self.colour_handle, self.shmem_size, self.annotation_handle, self.shmem_size,
-            self.depth_handle, self.shmem_size, is_render_colours, is_render_annotations, is_render_instance,
+            pos, dir, up, is_using_shared_memory, self.colour_shmem.name, self.shmem_size, self.annotation_shmem.name, self.shmem_size,
+            self.depth_shmem.name, self.shmem_size, is_render_colours, is_render_annotations, is_render_instance,
             is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
@@ -196,7 +187,7 @@ class Camera(CommBase):
         if raw_data is None or len(raw_data) == 0:
             return None
 
-        data = raw_data if isinstance(raw_data, bytes) else raw_data.encode()
+        data = raw_data.encode() if isinstance(raw_data, str) else raw_data
 
         # Re-shape the array, based on the number of channels present in the data.
         decoded = np.frombuffer(data, dtype=np.uint8)
@@ -299,23 +290,23 @@ class Camera(CommBase):
         # Remove any shared memory binding which this sensor is using.
         if self.is_using_shared_memory:
             if self.colour_shmem:
-                self.logger.debug('Camera - Unbinding shared memory for colour: 'f'{self.colour_handle}')
+                self.logger.debug('Camera - Unbinding shared memory for colour: 'f'{self.colour_shmem.name}')
                 self.colour_shmem.close()
 
             if self.annotation_shmem:
                 self.logger.debug(
                     'Camera - Unbinding shared memory for semantic annotations: '
-                    f'{self.annotation_handle}')
+                    f'{self.annotation_shmem.name}')
                 self.annotation_shmem.close()
 
             if self.instance_shmem:
                 self.logger.debug(
                     'Camera - Unbinding shared memory for instance annotations: '
-                    f'{self.instance_handle}')
+                    f'{self.instance_shmem.name}')
                 self.instance_shmem.close()
 
             if self.depth_shmem:
-                self.logger.debug('Camera - Unbinding shared memory for depth: 'f'{self.depth_handle}')
+                self.logger.debug('Camera - Unbinding shared memory for depth: 'f'{self.depth_shmem.name}')
                 self.depth_shmem.close()
 
         # Remove this sensor from the simulation.

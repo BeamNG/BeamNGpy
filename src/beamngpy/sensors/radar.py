@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
 import math
-import os
+from multiprocessing.shared_memory import SharedMemory
 import struct
 
 import matplotlib.pyplot as plt
@@ -81,20 +81,15 @@ class Radar(CommBase):
 
         # Shared memory for velocity data streaming.
         self.shmem_size = 1000 * 1000 * 4
-        self.shmem_handle = None
-        self.shmem = None
-        self.shmem_handle2 = None
-        self.shmem2 = None
+        self.shmem: SharedMemory | None = None
+        self.shmem2: SharedMemory | None = None
         if is_streaming:
-            pid = os.getpid()
             self.shmem_size = 1000 * 1000 * 4
-            self.shmem_handle = f'{pid}.{name}.PPI'
-            self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
-            self.shmem_handle2 = f'{pid}.{name}.RangeDoppler'
-            self.shmem2 = shmem.allocate(self.shmem_size, self.shmem_handle2)
+            self.shmem = shmem.allocate(self.shmem_size)
+            self.shmem2 = shmem.allocate(self.shmem_size)
 
         # Create and initialise this sensor in the simulation.
-        self._open_radar(name, vehicle, self.shmem_handle, self.shmem_handle2, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
+        self._open_radar(name, vehicle, self.shmem.name, self.shmem2.name, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
                          vel_bins, range_min, range_max, vel_min, vel_max, half_angle_deg, resolution, field_of_view_y, near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape,
                          range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle,
                          is_dir_world_space)
@@ -304,7 +299,7 @@ class Radar(CommBase):
         self.send_ack_ge('SetRadarMaxPendingGpuRequests', ack='CompletedSetRadarMaxPendingGpuRequests',
                          name=self.name, maxPendingGpuRequests=max_pending_requests)
 
-    def _open_radar(self, name: str, vehicle: Vehicle | None, shmem_handle: str | None, shmem_handle2: str | None, shmem_size: int, requested_update_time: float,
+    def _open_radar(self, name: str, vehicle: Vehicle | None, shmem_name: str | None, shmem2_name: str | None, shmem_size: int, requested_update_time: float,
                     update_priority: float, pos: Float3, dir: Float3, up: Float3, range_bins: int, azimuth_bins: int, vel_bins: int, range_min: float, range_max: float, vel_min: float,
                     vel_max: float, half_angle_deg: float, size: Int2, field_of_view_y: float, near_far_planes: Float2, range_roundness: float, range_cutoff_sensitivity: float,
                     range_shape: float, range_focus: float, range_min_cutoff: float, range_direct_max_cutoff: float, is_visualised: bool, is_streaming: bool, is_static: bool,
@@ -312,8 +307,8 @@ class Radar(CommBase):
 
         data: StrDict = dict()
         data['name'] = name
-        data['shmemHandle'] = shmem_handle
-        data['shmemHandle2'] = shmem_handle2
+        data['shmemHandle'] = shmem_name
+        data['shmemHandle2'] = shmem2_name
         data['shmemSize'] = shmem_size
         data['vid'] = 0
         if vehicle is not None:
