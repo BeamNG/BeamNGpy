@@ -191,7 +191,7 @@ class Camera(CommBase):
 
         # Re-shape the array, based on the number of channels present in the data.
         decoded = np.frombuffer(data, dtype=np.uint8)
-        decoded = decoded.reshape(height, width, 4)
+        decoded = decoded.reshape(height, width, 4).copy()
 
         # Convert to image format.
         b = Image.fromarray(decoded)
@@ -275,10 +275,10 @@ class Camera(CommBase):
                     depth = self.depth_buffer_processing(depth)
                 else:  # scale from (0.0, 1.0) to (0.0, 255.0)
                     depth = np.clip(depth * 255.0, 0.0, 255.0)
-                reshaped_data = depth.reshape(height, width)
+                reshaped_data = np.array(depth.reshape(height, width), dtype=np.uint8)
                 if self.is_depth_inverted:
                     reshaped_data = 255 - reshaped_data
-                image = Image.fromarray(np.uint8(reshaped_data))
+                image = Image.fromarray(reshaped_data)
                 processed_readings['depth'] = image
 
         return processed_readings

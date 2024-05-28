@@ -129,11 +129,16 @@ class Lidar(CommBase):
 
         # Format the point cloud data.
         floats = np.frombuffer(binary['pointCloud'], dtype=np.float32)
-        processed_readings['pointCloud'] = floats.reshape((-1, 3))
+        if self.is_using_shared_memory:
+            n_points = int(floats[-1])
+            floats = floats[:3 * n_points]
+        processed_readings['pointCloud'] = floats.reshape((-1, 3)).copy()
 
         # Format the corresponding colour data.
         colours = np.frombuffer(binary['colours'], dtype=np.uint8)
-        processed_readings['colours'] = colours
+        if self.is_using_shared_memory:
+            colours = colours[:4 * n_points]
+        processed_readings['colours'] = colours.reshape((-1, 4)).copy() # rgba
 
         return processed_readings
 
