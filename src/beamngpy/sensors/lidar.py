@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import os
-import struct
 from logging import DEBUG, getLogger
+from multiprocessing.shared_memory import SharedMemory
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -11,7 +10,6 @@ import beamngpy.sensors.shmem as shmem
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
 from beamngpy.types import Float3, StrDict
-from multiprocessing.shared_memory import SharedMemory
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
@@ -97,6 +95,7 @@ class Lidar(CommBase):
 
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
+        self.is_streaming = is_streaming
         self.point_cloud_shmem_size = MAX_LIDAR_POINTS * 3 * 4
         self.point_cloud_shmem: SharedMemory | None = None
         self.colour_shmem_size = MAX_LIDAR_POINTS * 4
@@ -129,16 +128,16 @@ class Lidar(CommBase):
 
         # Format the point cloud data.
         floats = np.frombuffer(binary['pointCloud'], dtype=np.float32)
-        if self.is_using_shared_memory:
+        if self.is_streaming:
             n_points = int(floats[-1])
             floats = floats[:3 * n_points]
         processed_readings['pointCloud'] = floats.reshape((-1, 3)).copy()
 
         # Format the corresponding colour data.
         colours = np.frombuffer(binary['colours'], dtype=np.uint8)
-        if self.is_using_shared_memory:
+        if self.is_streaming:
             colours = colours[:4 * n_points]
-        processed_readings['colours'] = colours.reshape((-1, 4)).copy() # rgba
+        processed_readings['colours'] = colours.reshape((-1, 4)).copy()  # rgba
 
         return processed_readings
 
@@ -174,6 +173,9 @@ class Lidar(CommBase):
         """
         if self.is_using_shared_memory:
             raw_readings = {}
+            if not self.is_streaming:
+                sizes = self.send_recv_ge('PollLidar', name=self.name,
+                                          isUsingSharedMemory=self.is_using_shared_memory)['data']
             assert self.point_cloud_shmem
             raw_readings['pointCloud'] = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
             self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
@@ -181,8 +183,13 @@ class Lidar(CommBase):
             assert self.colour_shmem
             raw_readings['colours'] = shmem.read(self.colour_shmem, self.colour_shmem_size)
             self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
+
+            if not self.is_streaming:
+                raw_readings['pointCloud'] = raw_readings['pointCloud'][:int(sizes['points'])]
+                raw_readings['colours'] = raw_readings['colours'][:int(sizes['colours'])]
         else:
-            raw_readings = self.send_recv_ge('PollLidar', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)['data']
+            raw_readings = self.send_recv_ge('PollLidar', name=self.name,
+                                             isUsingSharedMemory=self.is_using_shared_memory)['data']
             self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
         return raw_readings
 
@@ -211,15 +218,11 @@ class Lidar(CommBase):
         Returns:
             The LiDAR point cloud data.
         """
-        point_cloud_data = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
-        point_cloud_data = np.frombuffer(point_cloud_data, dtype=np.float32)
-        self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
-
-        return point_cloud_data
-
+        return self.poll()
 
     # The following three functions are used together to send and recieve single 'ad-hoc' style sensor requests.
     # This is for users who only want occasional readings now and again, which they can request, wait for, then collect later.
+
     def send_ad_hoc_poll_request(self) -> int:
         """
         Sends an ad-hoc polling request to the simulator. This will be executed by the simulator immediately, but will take time to process, so the
