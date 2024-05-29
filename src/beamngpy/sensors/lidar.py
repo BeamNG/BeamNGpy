@@ -127,6 +127,11 @@ class Lidar(CommBase):
         """
         processed_readings: StrDict = dict(type='Lidar')
 
+        if len(binary['pointCloud']) == 0:
+            processed_readings['pointCloud'] = np.array(dtype=np.float32)
+            processed_readings['colours'] = np.array(dtype=np.uint8)
+            return processed_readings
+
         # Format the point cloud data.
         floats = np.frombuffer(binary['pointCloud'], dtype=np.float32)
         if self.is_streaming:
