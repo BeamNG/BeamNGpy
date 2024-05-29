@@ -12,13 +12,12 @@ if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
 import math
-from multiprocessing.shared_memory import SharedMemory
 import struct
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-import beamngpy.sensors.shmem as shmem
+from beamngpy.sensors.shmem import BNGSharedMemory
 
 __all__ = ['Radar']
 
@@ -81,15 +80,15 @@ class Radar(CommBase):
 
         # Shared memory for velocity data streaming.
         self.shmem_size = 1000 * 1000 * 4
-        self.shmem: SharedMemory | None = None
-        self.shmem2: SharedMemory | None = None
+        self.shmem: BNGSharedMemory | None = None
+        self.shmem2: BNGSharedMemory | None = None
         if is_streaming:
             self.shmem_size = 1000 * 1000 * 4
-            self.shmem = shmem.allocate(self.shmem_size)
-            self.shmem2 = shmem.allocate(self.shmem_size)
+            self.shmem = BNGSharedMemory(self.shmem_size)
+            self.shmem2 = BNGSharedMemory(self.shmem_size)
 
         # Create and initialise this sensor in the simulation.
-        self._open_radar(name, vehicle, self.shmem.name, self.shmem2.name, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
+        self._open_radar(name, vehicle, self.shmem.name if self.shmem else None, self.shmem2.name, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
                          vel_bins, range_min, range_max, vel_min, vel_max, half_angle_deg, resolution, field_of_view_y, near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape,
                          range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle,
                          is_dir_world_space)
@@ -151,7 +150,7 @@ class Radar(CommBase):
             The latest RADAR PPI (plan position indicator) image from shared memory.
         """
         self.send_recv_ge('GetPPIRadar', name=self.name)['data']
-        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
+        return np.frombuffer(self.shmem, self.shmem_size).read(dtype=np.uint8)
 
     def get_range_doppler(self):
         """
@@ -161,7 +160,7 @@ class Radar(CommBase):
             The latest RADAR Range-Doppler image from shared memory.
         """
         self.send_recv_ge('GetRangeDopplerRadar', name=self.name)['data']
-        return np.frombuffer(shmem.read(self.shmem2, self.shmem_size), dtype=np.uint8)
+        return np.frombuffer(self.shmem2, self.shmem_size).read(dtype=np.uint8)
 
     def stream_ppi(self):
         """
@@ -170,7 +169,7 @@ class Radar(CommBase):
         Returns:
             The latest RADAR PPI image from shared memory.
         """
-        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.uint8)
+        return np.frombuffer(self.shmem, self.shmem_size).read(dtype=np.uint8)
 
     def stream_range_doppler(self):
         """
@@ -179,7 +178,7 @@ class Radar(CommBase):
         Returns:
             The latest RADAR Range-Doppler image from shared memory.
         """
-        return np.frombuffer(shmem.read(self.shmem2, self.shmem_size), dtype=np.uint8)
+        return np.frombuffer(self.shmem2, self.shmem_size).read(dtype=np.uint8)
 
     def send_ad_hoc_poll_request(self) -> int:
         """

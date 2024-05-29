@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from logging import DEBUG, getLogger
-from multiprocessing.shared_memory import SharedMemory
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-import beamngpy.sensors.shmem as shmem
+from beamngpy.sensors.shmem import BNGSharedMemory
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
 from beamngpy.types import Float3, StrDict
@@ -97,20 +96,22 @@ class Lidar(CommBase):
         self.is_using_shared_memory = is_using_shared_memory
         self.is_streaming = is_streaming
         self.point_cloud_shmem_size = MAX_LIDAR_POINTS * 3 * 4
-        self.point_cloud_shmem: SharedMemory | None = None
+        self.point_cloud_shmem: BNGSharedMemory | None = None
         self.colour_shmem_size = MAX_LIDAR_POINTS * 4
-        self.colour_shmem: SharedMemory | None = None
+        self.colour_shmem: BNGSharedMemory | None = None
         if is_using_shared_memory:
-            self.point_cloud_shmem = shmem.allocate(self.point_cloud_shmem_size)
+            self.point_cloud_shmem = BNGSharedMemory(self.point_cloud_shmem_size)
             self.logger.debug(f'Lidar - Bound shared memory for point cloud data: {self.point_cloud_shmem.name}')
 
-            self.colour_shmem = shmem.allocate(self.colour_shmem_size)
+            self.colour_shmem = BNGSharedMemory(self.colour_shmem_size)
             self.logger.debug(f'Lidar - Bound shared memory for colour data: {self.colour_shmem.name}')
 
         # Create and initialise this sensor in the simulation.
+        point_cloud_shmem_name = self.point_cloud_shmem.name if self.point_cloud_shmem else None
+        colour_shmem_name = self.colour_shmem.name if self.colour_shmem else None
         self._open_lidar(
-            name, vehicle, is_using_shared_memory, self.point_cloud_shmem.name, self.point_cloud_shmem_size, self.
-            colour_shmem.name, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
+            name, vehicle, is_using_shared_memory, point_cloud_shmem_name, self.point_cloud_shmem_size,
+            colour_shmem_name, self.colour_shmem_size, requested_update_time, update_priority, pos, dir, up,
             vertical_resolution, vertical_angle, frequency, horizontal_angle, max_distance, is_rotate_mode, is_360_mode,
             is_visualised, is_streaming, is_annotated, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Lidar - sensor created: 'f'{self.name}')
@@ -149,11 +150,11 @@ class Lidar(CommBase):
         if self.is_using_shared_memory:
             assert self.point_cloud_shmem
             self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.point_cloud_shmem.name}')
-            self.point_cloud_shmem.close()
+            self.point_cloud_shmem.close_and_unlink()
 
             assert self.colour_shmem
             self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.colour_shmem.name}')
-            self.colour_shmem.close()
+            self.colour_shmem.close_and_unlink()
 
         # Remove this sensor from the simulation.
         self._close_lidar()
@@ -177,11 +178,11 @@ class Lidar(CommBase):
                 sizes = self.send_recv_ge('PollLidar', name=self.name,
                                           isUsingSharedMemory=self.is_using_shared_memory)['data']
             assert self.point_cloud_shmem
-            raw_readings['pointCloud'] = shmem.read(self.point_cloud_shmem, self.point_cloud_shmem_size)
+            raw_readings['pointCloud'] = self.point_cloud_shmem.read(self.point_cloud_shmem_size)
             self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
 
             assert self.colour_shmem
-            raw_readings['colours'] = shmem.read(self.colour_shmem, self.colour_shmem_size)
+            raw_readings['colours'] = self.colour_shmem.read(self.colour_shmem_size)
             self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
 
             if not self.is_streaming:

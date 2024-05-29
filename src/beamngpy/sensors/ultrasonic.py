@@ -6,16 +6,13 @@ from typing import TYPE_CHECKING
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
 from beamngpy.types import Float2, Float3, Int2, StrDict
+import numpy as np
+
+from beamngpy.sensors.shmem import BNGSharedMemory
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
-
-import os
-
-import numpy as np
-
-import beamngpy.sensors.shmem as shmem
 
 __all__ = ['Ultrasonic']
 
@@ -78,11 +75,11 @@ class Ultrasonic(CommBase):
         self.shmem = None
         if is_streaming == True:
             self.shmem_size = 4
-            self.shmem = shmem.allocate(self.shmem_size)
+            self.shmem = BNGSharedMemory(self.shmem_size)
 
         # Create and initialise this sensor in the simulation.
         self._open_ultrasonic(
-            name, vehicle, self.shmem.name, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
+            name, vehicle, self.shmem.name if self.shmem else None, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
             near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
             range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_streaming, is_static, is_snapping_desired,
             is_force_inside_triangle, is_dir_world_space)
@@ -121,7 +118,7 @@ class Ultrasonic(CommBase):
         Returns:
             The latest Ultrasonic distance reading from shared memory.
         """
-        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.float32)
+        return np.frombuffer(self.shmem, self.shmem_size).read(dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """

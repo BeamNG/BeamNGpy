@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import os
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Dict, List
 
 import numpy as np
 from PIL import Image
 
-import beamngpy.sensors.shmem as shmem
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
+from beamngpy.sensors.shmem import BNGSharedMemory
 
 from . import utils
 
@@ -149,26 +148,29 @@ class Camera(CommBase):
             self.logger.debug('Camera - Initializing shared memory.')
             self.shmem_size = resolution[0] * resolution[1] * 4
             if is_render_colours:
-                self.colour_shmem = shmem.allocate(self.shmem_size)
+                self.colour_shmem = BNGSharedMemory(self.shmem_size)
                 self.logger.debug('Camera - Bound shared memory for colour: 'f'{self.colour_shmem.name}')
 
             if is_render_annotations:
-                self.annotation_shmem = shmem.allocate(self.shmem_size)
+                self.annotation_shmem = BNGSharedMemory(self.shmem_size)
                 self.logger.debug('Camera - Bound shared memory for semantic annotations: 'f'{self.annotation_shmem.name}')
 
             if is_render_instance:
-                self.instance_shmem = shmem.allocate(self.shmem_size)
+                self.instance_shmem = BNGSharedMemory(self.shmem_size)
                 self.logger.debug('Camera - Bound shared memory for instance annotations: 'f'{self.instance_shmem.name}')
 
             if is_render_depth:
-                self.depth_shmem = shmem.allocate(self.shmem_size)
+                self.depth_shmem = BNGSharedMemory(self.shmem_size)
                 self.logger.debug('Camera - Bound shared memory for depth: 'f'{self.depth_shmem.name}')
 
         # Create and initialise the camera in the simulation.
+        colour_shmem_name = self.colour_shmem.name if self.colour_shmem else None
+        annotation_shmem_name = self.annotation_shmem.name if self.annotation_shmem else None
+        depth_shmem_name = self.depth_shmem.name if self.depth_shmem else None
         self._open_camera(
             name, vehicle, requested_update_time, update_priority, self.resolution, field_of_view_y, near_far_planes,
-            pos, dir, up, is_using_shared_memory, self.colour_shmem.name, self.shmem_size, self.annotation_shmem.name, self.shmem_size,
-            self.depth_shmem.name, self.shmem_size, is_render_colours, is_render_annotations, is_render_instance,
+            pos, dir, up, is_using_shared_memory, colour_shmem_name, self.shmem_size, annotation_shmem_name, self.shmem_size,
+            depth_shmem_name, self.shmem_size, is_render_colours, is_render_annotations, is_render_instance,
             is_render_depth, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
         self.logger.debug('Camera - sensor created: 'f'{self.name}')
 
@@ -291,23 +293,23 @@ class Camera(CommBase):
         if self.is_using_shared_memory:
             if self.colour_shmem:
                 self.logger.debug('Camera - Unbinding shared memory for colour: 'f'{self.colour_shmem.name}')
-                self.colour_shmem.close()
+                self.colour_shmem.close_and_unlink()
 
             if self.annotation_shmem:
                 self.logger.debug(
                     'Camera - Unbinding shared memory for semantic annotations: '
                     f'{self.annotation_shmem.name}')
-                self.annotation_shmem.close()
+                self.annotation_shmem.close_and_unlink()
 
             if self.instance_shmem:
                 self.logger.debug(
                     'Camera - Unbinding shared memory for instance annotations: '
                     f'{self.instance_shmem.name}')
-                self.instance_shmem.close()
+                self.instance_shmem.close_and_unlink()
 
             if self.depth_shmem:
                 self.logger.debug('Camera - Unbinding shared memory for depth: 'f'{self.depth_shmem.name}')
-                self.depth_shmem.close()
+                self.depth_shmem.close_and_unlink()
 
         # Remove this sensor from the simulation.
         self._close_camera()
@@ -334,19 +336,19 @@ class Camera(CommBase):
         if self.is_using_shared_memory:
             if self.colour_shmem:
                 if 'colour' in raw_readings.keys():
-                    raw_readings['colour'] = shmem.read(self.colour_shmem, self.shmem_size)
+                    raw_readings['colour'] = self.colour_shmem.read(self.shmem_size)
                 else:
                     self.logger.error(
                         'Camera - Colour buffer failed to render. Check that you are not running on low settings.')
             if self.annotation_shmem:
                 if 'annotation' in raw_readings.keys():
-                    raw_readings['annotation'] = shmem.read(self.annotation_shmem, self.shmem_size)
+                    raw_readings['annotation'] = self.annotation_shmem.read(self.shmem_size)
                 else:
                     self.logger.error(
                         'Camera - Annotation buffer failed to render. Check that you are not running on low settings.')
             if self.depth_shmem:
                 if 'depth' in raw_readings.keys():
-                    raw_readings['depth'] = shmem.read(self.depth_shmem, self.shmem_size)
+                    raw_readings['depth'] = self.depth_shmem.read(self.shmem_size)
                 else:
                     self.logger.error(
                         'Camera - Depth buffer failed to render. Check that you are not running on low settings.')
@@ -389,11 +391,11 @@ class Camera(CommBase):
 
         raw_readings = {}
         if self.colour_shmem:
-            raw_readings['colour'] = shmem.read(self.colour_shmem, self.shmem_size)
+            raw_readings['colour'] = self.colour_shmem.read(self.shmem_size)
         if self.annotation_shmem:
-            raw_readings['annotation'] = shmem.read(self.annotation_shmem, self.shmem_size)
+            raw_readings['annotation'] = self.annotation_shmem.read(self.shmem_size)
         if self.depth_shmem:
-            raw_readings['depth'] = shmem.read(self.depth_shmem, self.shmem_size)
+            raw_readings['depth'] = self.depth_shmem.read(self.shmem_size)
 
         return raw_readings
 
@@ -423,31 +425,31 @@ class Camera(CommBase):
         self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
-        img = np.frombuffer(shmem.read(self.colour_shmem, width * height * 4), dtype=np.uint8)
+        img = np.frombuffer(self.colour_shmem, width * height * 4).read(dtype=np.uint8)
         return [img, width, height]
 
     def poll_shmem_annotation(self):
         self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
-        img = np.frombuffer(shmem.read(self.annotation_shmem, width * height * 4), dtype=np.uint8)
+        img = np.frombuffer(self.annotation_shmem, width * height * 4).read(dtype=np.uint8)
         return [img, width, height]
 
     def poll_shmem_depth(self):
         self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
-        img = np.frombuffer(shmem.read(self.depth_shmem, width * height * 4), dtype=np.float32)
+        img = np.frombuffer(self.depth_shmem, width * height * 4).read(dtype=np.float32)
         return [img, width, height]
 
     def stream_colour(self, size):
-        return np.frombuffer(shmem.read(self.colour_shmem, size), dtype=np.uint8)
+        return np.frombuffer(self.colour_shmem, size).read(dtype=np.uint8)
 
     def stream_annotation(self, size):
-        return np.frombuffer(shmem.read(self.annotation_shmem, size), dtype=np.uint8)
+        return np.frombuffer(self.annotation_shmem, size).read(dtype=np.uint8)
 
     def stream_depth(self, size):
-        return np.frombuffer(shmem.read(self.depth_shmem, size), dtype=np.float32)
+        return np.frombuffer(self.depth_shmem, size).read(dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """
