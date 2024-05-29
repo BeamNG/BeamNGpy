@@ -118,7 +118,7 @@ class VehicleSensorConfig(CommBase):
                     gfx_update_time=v['GFXUpdateTime'], physics_update_time=v['physicsUpdateTime'],
                     pos=(v['pos']['x'], v['pos']['y'], v['pos']['z']),
                     dir=(v['dir']['x'], v['dir']['y'], v['dir']['z']), up=(v['up']['x'], v['up']['y'], v['up']['z']),
-                    accel_window_width=v['accelWindowWidth'], gyro_window_width=v['gyro_window_width'],
+                    accel_window_width=v['accelWindowWidth'], gyro_window_width=v['gyroWindowWidth'],
                     accel_frequency_cutoff=None, gyro_frequency_cutoff=None, is_send_immediately=False,
                     is_using_gravity=v['isUsingGravity'], is_allow_wheel_nodes=v['isAllowWheelNodes'],  is_visualised=v['isVisualised'],
                     is_dir_world_space=True,
