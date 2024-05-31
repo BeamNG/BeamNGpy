@@ -150,7 +150,7 @@ class Radar(CommBase):
             The latest RADAR PPI (plan position indicator) image from shared memory.
         """
         self.send_recv_ge('GetPPIRadar', name=self.name)['data']
-        return np.frombuffer(self.shmem, self.shmem_size).read(dtype=np.uint8)
+        return np.frombuffer(self.shmem.read(self.shmem_size), dtype=np.uint8)
 
     def get_range_doppler(self):
         """
@@ -160,7 +160,7 @@ class Radar(CommBase):
             The latest RADAR Range-Doppler image from shared memory.
         """
         self.send_recv_ge('GetRangeDopplerRadar', name=self.name)['data']
-        return np.frombuffer(self.shmem2, self.shmem_size).read(dtype=np.uint8)
+        return np.frombuffer(self.shmem2.read(self.shmem_size), dtype=np.uint8)
 
     def stream_ppi(self):
         """
@@ -169,7 +169,7 @@ class Radar(CommBase):
         Returns:
             The latest RADAR PPI image from shared memory.
         """
-        return np.frombuffer(self.shmem, self.shmem_size).read(dtype=np.uint8)
+        return np.frombuffer(self.shmem.read(self.shmem_size), dtype=np.uint8)
 
     def stream_range_doppler(self):
         """
@@ -178,7 +178,7 @@ class Radar(CommBase):
         Returns:
             The latest RADAR Range-Doppler image from shared memory.
         """
-        return np.frombuffer(self.shmem2, self.shmem_size).read(dtype=np.uint8)
+        return np.frombuffer(self.shmem2.read(self.shmem_size), dtype=np.uint8)
 
     def send_ad_hoc_poll_request(self) -> int:
         """

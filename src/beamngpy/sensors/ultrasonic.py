@@ -118,7 +118,7 @@ class Ultrasonic(CommBase):
         Returns:
             The latest Ultrasonic distance reading from shared memory.
         """
-        return np.frombuffer(self.shmem, self.shmem_size).read(dtype=np.float32)
+        return np.frombuffer(self.shmem.read(self.shmem_size), dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """

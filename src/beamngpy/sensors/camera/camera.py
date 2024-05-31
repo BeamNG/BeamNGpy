@@ -425,31 +425,31 @@ class Camera(CommBase):
         self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
-        img = np.frombuffer(self.colour_shmem, width * height * 4).read(dtype=np.uint8)
+        img = np.frombuffer(self.colour_shmem.read(width * height * 4), dtype=np.uint8)
         return [img, width, height]
 
     def poll_shmem_annotation(self):
         self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
-        img = np.frombuffer(self.annotation_shmem, width * height * 4).read(dtype=np.uint8)
+        img = np.frombuffer(self.annotation_shmem.read(width * height * 4), dtype=np.uint8)
         return [img, width, height]
 
     def poll_shmem_depth(self):
         self.send_recv_ge('PollCamera', name=self.name, isUsingSharedMemory=self.is_using_shared_memory)
         width = self.resolution[0]
         height = self.resolution[1]
-        img = np.frombuffer(self.depth_shmem, width * height * 4).read(dtype=np.float32)
+        img = np.frombuffer(self.depth_shmem.read(width * height * 4), dtype=np.float32)
         return [img, width, height]
 
     def stream_colour(self, size):
-        return np.frombuffer(self.colour_shmem, size).read(dtype=np.uint8)
+        return np.frombuffer(self.colour_shmem.read(size), dtype=np.uint8)
 
     def stream_annotation(self, size):
-        return np.frombuffer(self.annotation_shmem, size).read(dtype=np.uint8)
+        return np.frombuffer(self.annotation_shmem.read(size), dtype=np.uint8)
 
     def stream_depth(self, size):
-        return np.frombuffer(self.depth_shmem, size).read(dtype=np.float32)
+        return np.frombuffer(self.depth_shmem.read(size), dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """
