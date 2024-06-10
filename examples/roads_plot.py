@@ -42,13 +42,15 @@ def discretize(d):
         pts_LE.append(vec3(u_LE, v_LE) + vec3(d['xStartL'], d['yStartL']))                        # Road left edge (with offset added horizontally).
         pts_RE.append(vec3(u_RE, v_RE) + vec3(d['xStartR'], d['yStartR']))                        # Road right edge (with offset added horizontally).
 
-
     return pts_CL, pts_LE, pts_RE
 
 def update():
     sleep(1)
     print("in while...")
     d_raw = rs.poll()
+    if not d_raw:
+        print("No data received.")
+        return
     d = d_raw[0]
     print("got raw data...")
     pts_CL, pts_LE, pts_RE = discretize(d)
@@ -83,7 +85,7 @@ def update():
     v1 = vp + vec3.normalize(vec3(dir[0], dir[1])) * 10.0
     v2 = v1 - vp
     ax.plot(vp.x, vp.y, 'bo')
-    plt.arrow(vp.x, vp.y, v2.x, v2.y, width = 0.05)
+    plt.arrow(vp.x, vp.y, v2.x, v2.y, width=0.05)
 
     frames.append([ax.plot])
 
@@ -112,7 +114,7 @@ if __name__ == '__main__':
 
     # Create the animation frames
     for k in range(20):
-            update()
+        update()
 
     # Create the animation
     animation = FuncAnimation(fig, update, frames, interval=50)
