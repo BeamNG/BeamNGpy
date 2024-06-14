@@ -1,0 +1,8 @@
+GetScenarioState
+================
+This is a ROS service definition.
+
+**Source**
+
+.. literalinclude:: ../../../../../../beamng_msgs/srv/GetScenarioState.srv
+

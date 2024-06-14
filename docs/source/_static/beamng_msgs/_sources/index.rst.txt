@@ -1,0 +1,23 @@
+.. GENERATED_CONTENT by rosdoc2.verbs.build.builders.sphinx_builder.
+
+beamng_msgs
+===========
+
+The beamng_msgs package required for the BeamNG.tech ROS2 communication.
+
+.. toctree::
+   :maxdepth: 2
+
+
+   C++ API <generated/index>
+   Message Definitions <interfaces/message_definitions>
+   Service Definitions <interfaces/service_definitions>
+   Action Definitions <interfaces/action_definitions>
+   Standard Documents <standards>
+
+
+
+.. toctree::
+   :hidden:
+
+   genindex

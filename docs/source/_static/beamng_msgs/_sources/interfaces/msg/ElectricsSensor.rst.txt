@@ -1,0 +1,8 @@
+ElectricsSensor
+===============
+This is a ROS message definition.
+
+**Source**
+
+.. literalinclude:: ../../../../../../beamng_msgs/msg/ElectricsSensor.msg
+

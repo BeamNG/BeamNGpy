@@ -1,0 +1,8 @@
+MeshSensor
+==========
+This is a ROS message definition.
+
+**Source**
+
+.. literalinclude:: ../../../../../../beamng_msgs/msg/MeshSensor.msg
+

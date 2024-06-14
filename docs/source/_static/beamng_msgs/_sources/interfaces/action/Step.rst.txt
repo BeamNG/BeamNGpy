@@ -1,0 +1,8 @@
+Step
+====
+This is a ROS action definition.
+
+**Source**
+
+.. literalinclude:: ../../../../../../beamng_msgs/action/Step.action
+
