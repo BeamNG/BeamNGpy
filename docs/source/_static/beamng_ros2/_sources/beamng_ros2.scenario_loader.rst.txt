@@ -1,0 +1,7 @@
+beamng\_ros2.scenario\_loader module
+====================================
+
+.. automodule:: beamng_ros2.scenario_loader
+   :members:
+   :undoc-members:
+   :show-inheritance:

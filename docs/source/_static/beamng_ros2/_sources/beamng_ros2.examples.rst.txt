@@ -1,0 +1,18 @@
+beamng\_ros2.examples package
+=============================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   beamng_ros2.examples.example_client
+
+Module contents
+---------------
+
+.. automodule:: beamng_ros2.examples
+   :members:
+   :undoc-members:
+   :show-inheritance:

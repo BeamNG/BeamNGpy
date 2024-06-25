@@ -1,0 +1,7 @@
+beamng\_ros2.examples.example\_client module
+============================================
+
+.. automodule:: beamng_ros2.examples.example_client
+   :members:
+   :undoc-members:
+   :show-inheritance:

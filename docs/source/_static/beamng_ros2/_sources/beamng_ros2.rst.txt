@@ -1,0 +1,30 @@
+beamng\_ros2 package
+====================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   beamng_ros2.examples
+   beamng_ros2.publishers
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   beamng_ros2.beamng
+   beamng_ros2.scenario_loader
+   beamng_ros2.utils
+   beamng_ros2.vehicle
+
+Module contents
+---------------
+
+.. automodule:: beamng_ros2
+   :members:
+   :undoc-members:
+   :show-inheritance:

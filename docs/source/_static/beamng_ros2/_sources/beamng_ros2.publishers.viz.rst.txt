@@ -1,0 +1,7 @@
+beamng\_ros2.publishers.viz module
+==================================
+
+.. automodule:: beamng_ros2.publishers.viz
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+beamng\_ros2.publishers.coupling module
+=======================================
+
+.. automodule:: beamng_ros2.publishers.coupling
+   :members:
+   :undoc-members:
+   :show-inheritance:

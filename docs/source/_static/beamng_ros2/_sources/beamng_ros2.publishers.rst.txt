@@ -1,0 +1,22 @@
+beamng\_ros2.publishers package
+===============================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   beamng_ros2.publishers.base
+   beamng_ros2.publishers.coupling
+   beamng_ros2.publishers.road_network
+   beamng_ros2.publishers.sensors
+   beamng_ros2.publishers.viz
+
+Module contents
+---------------
+
+.. automodule:: beamng_ros2.publishers
+   :members:
+   :undoc-members:
+   :show-inheritance:

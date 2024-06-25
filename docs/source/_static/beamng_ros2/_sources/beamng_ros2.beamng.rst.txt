@@ -1,0 +1,7 @@
+beamng\_ros2.beamng module
+==========================
+
+.. automodule:: beamng_ros2.beamng
+   :members:
+   :undoc-members:
+   :show-inheritance:

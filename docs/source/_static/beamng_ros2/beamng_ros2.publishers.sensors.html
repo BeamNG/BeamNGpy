@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>beamng_ros2.publishers.sensors module &mdash; BeamNG-ROS2 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=8d563738"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="beamng_ros2.publishers.viz module" href="beamng_ros2.publishers.viz.html" />
+    <link rel="prev" title="beamng_ros2.publishers.road_network module" href="beamng_ros2.publishers.road_network.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BeamNG-ROS2
+          </a>
+              <div class="version">
+                1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Python API</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="beamng_ros2.html">beamng_ros2 package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="beamng_ros2.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="beamng_ros2.examples.html">beamng_ros2.examples package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="beamng_ros2.publishers.html">beamng_ros2.publishers package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="beamng_ros2.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="beamng_ros2.html#module-beamng_ros2">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="standards.html">Standard Documents</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user_docs.html">Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="genindex.html">Index</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BeamNG-ROS2</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">beamng_ros2</a></li>
+          <li class="breadcrumb-item"><a href="beamng_ros2.html">beamng_ros2 package</a></li>
+          <li class="breadcrumb-item"><a href="beamng_ros2.publishers.html">beamng_ros2.publishers package</a></li>
+      <li class="breadcrumb-item active">beamng_ros2.publishers.sensors module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/beamng_ros2.publishers.sensors.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-beamng_ros2.publishers.sensors">
+<span id="beamng-ros2-publishers-sensors-module"></span><h1>beamng_ros2.publishers.sensors module<a class="headerlink" href="#module-beamng_ros2.publishers.sensors" title="Link to this heading"></a></h1>
+<p>Sensor publishers are connected to BeamNG vehicles using BeamNGpy and they periodically publish
+the sensor data on the <code class="docutils literal notranslate"><span class="pre">~/beamng/&lt;vehicle</span> <span class="pre">name&gt;/&lt;sensor</span> <span class="pre">name&gt;</span></code> topic.</p>
+<p>The default values of sensor attributes are located in the <code class="docutils literal notranslate"><span class="pre">/config/sensors.json</span></code> file,
+and you can use any arguments that the</p>
+<p>Complete list of sensor types which are available in the BeamNG-ROS2 integration:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Sensor type</p></th>
+<th class="head"><p>BeamNG-ROS2 publisher</p></th>
+<th class="head"><p>BeamNGpy sensor</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">imu</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.AdvancedIMUPublisher" title="beamng_ros2.publishers.sensors.AdvancedIMUPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdvancedIMUPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.AdvancedIMU" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.AdvancedIMU</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">camera</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.CameraPublisher" title="beamng_ros2.publishers.sensors.CameraPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">CameraPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Camera" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Camera</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gps</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.GPSPublisher" title="beamng_ros2.publishers.sensors.GPSPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">GPSPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.GPS" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.GPS</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">idealradar</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.IdealRadarPublisher" title="beamng_ros2.publishers.sensors.IdealRadarPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">IdealRadarPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.IdealRadar" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.IdealRadar</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lidar</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.LidarPublisher" title="beamng_ros2.publishers.sensors.LidarPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">LidarPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Lidar" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Lidar</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mesh</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.MeshPublisher" title="beamng_ros2.publishers.sensors.MeshPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Mesh" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Mesh</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">powertrain</span></code></p></td>
+<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">PowertrainPublisher</span></code></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.PowertrainSensor" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.PowertrainSensor</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">radar</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.RadarPublisher" title="beamng_ros2.publishers.sensors.RadarPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">RadarPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Radar" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Radar</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">roadssensor</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.RoadsSensorPublisher" title="beamng_ros2.publishers.sensors.RoadsSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoadsSensorPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.RoadsSensor" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.RoadsSensor</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ultrasonic</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.UltrasonicPublisher" title="beamng_ros2.publishers.sensors.UltrasonicPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">UltrasonicPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Ultrasonic" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Ultrasonic</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">damage</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.DamagePublisher" title="beamng_ros2.publishers.sensors.DamagePublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">DamagePublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Damage" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Damage</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">electrics</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.ElectricsPublisher" title="beamng_ros2.publishers.sensors.ElectricsPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricsPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Electrics" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Electrics</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gforces</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.GForcesPublisher" title="beamng_ros2.publishers.sensors.GForcesPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">GForcesPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.GForces" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.GForces</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">state</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.StatePublisher" title="beamng_ros2.publishers.sensors.StatePublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatePublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.State" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.State</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">timer</span></code></p></td>
+<td><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.TimerPublisher" title="beamng_ros2.publishers.sensors.TimerPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimerPublisher</span></code></a></p></td>
+<td><p><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.Timer" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.sensors.Timer</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<p>Some of the sensors support shared memory (with and without explicit polling), to enable it,
+set the following attributes of the sensors:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;is_using_shared_memory&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="c1">// enable shared memory</span>
+<span class="s2">&quot;is_streaming&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="c1">// enable streaming - updating the memory without sending a request to BeamNG</span>
+</pre></div>
+</div>
+<section id="sensor-publishers-list">
+<h2>Sensor Publishers List<a class="headerlink" href="#sensor-publishers-list" title="Link to this heading"></a></h2>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.AdvancedIMUPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">AdvancedIMUPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.AdvancedIMUPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>IMU sensor publisher. Returns standard <a class="reference external" href="https://docs.ros.org/en/humble/p/sensor_msgs/interfaces/msg/Imu.html" title="(in sensor_msgs v4.2)"><span>Imu</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.AdvancedIMUPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Imu</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.AdvancedIMUPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Imu</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.AdvancedIMUPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.AdvancedIMUPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.AutoSensorPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">AutoSensorPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prototype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.SensorPublisher" title="beamng_ros2.publishers.sensors.SensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorPublisher</span></code></a></p>
+<p>A base class for “automated” sensors, which require to be created after a vehicle
+is loaded and connected to the scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>prototype</strong> (<em>Callable</em>) – Constructor of the corresponding BeamNGpy sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.AutoSensorPublisher.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher.poll" title="Link to this definition"></a></dt>
+<dd><p>Gets the raw data from the simulator. Needs to be implemented by derived classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><em>Dict</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><em>Any</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.AutoSensorPublisher.post_scenario_start">
+<span class="sig-name descname"><span class="pre">post_scenario_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vehicle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle" title="(in BeamNGpy)"><span class="pre">Vehicle</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher.post_scenario_start" title="Link to this definition"></a></dt>
+<dd><p>A hook function that is called for the connected vehicle after the scenario is loaded and started.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vehicle</strong> (<a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle" title="(in BeamNGpy)"><em>Vehicle</em></a>) – The vehicle instance <strong>connected</strong> to the simulator at the moment of calling this function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.AutoSensorPublisher.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher.remove" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.CameraPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">CameraPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.CameraPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>Camera data publisher. Publishes one or multiple <a class="reference external" href="https://docs.ros.org/en/humble/p/sensor_msgs/interfaces/msg/Image.html" title="(in sensor_msgs v4.2)"><span>Image</span></a> messages
+depending on the configuration:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">~/sensors/&lt;CAM_NAME&gt;/colour</span></code>: color data if <code class="docutils literal notranslate"><span class="pre">is_render_colours=True</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~/sensors/&lt;CAM_NAME&gt;/annotation</span></code>: class semantic annotations if <code class="docutils literal notranslate"><span class="pre">is_render_annotations=True</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~/sensors/&lt;CAM_NAME&gt;/instance</span></code>: object semantic annotations if <code class="docutils literal notranslate"><span class="pre">is_render_instance=True</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~/sensors/&lt;CAM_NAME&gt;/depth</span></code> depth image if <code class="docutils literal notranslate"><span class="pre">is_render_depth=True</span></code></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.CameraPublisher.create_publisher">
+<span class="sig-name descname"><span class="pre">create_publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Node</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.CameraPublisher.create_publisher" title="Link to this definition"></a></dt>
+<dd><p>Creates an inner instance of the <a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.publisher.html#rclpy.publisher.Publisher" title="(in rclpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">rclpy.publisher.Publisher</span></code></a> for the node
+with the message type that is defined by the <a class="reference internal" href="#beamng_ros2.publishers.sensors.CameraPublisher.msg_type" title="beamng_ros2.publishers.sensors.CameraPublisher.msg_type"><code class="xref py py-func docutils literal notranslate"><span class="pre">msg_type()</span></code></a> function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>node</strong> (<em>Node</em>) – The node for which the publisher will be created.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.CameraPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.CameraPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Not implemented, the camera sensor uses custom logic to poll the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.CameraPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.CameraPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.CameraPublisher.publish">
+<span class="sig-name descname"><span class="pre">publish</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.CameraPublisher.publish" title="Link to this definition"></a></dt>
+<dd><p>Function that publishes the corresponding data using the inner instance of the ROS2 publisher. Needs
+to be implemented by derived classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.ClassicalSensorPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">ClassicalSensorPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prototype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.SensorPublisher" title="beamng_ros2.publishers.sensors.SensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">SensorPublisher</span></code></a></p>
+<p>A base class for “classical” sensors, which are usually created before loading the scenario.
+Polling of all classical sensors is done in a centralized way using the <code class="xref py py-func docutils literal notranslate"><span class="pre">beamngpy.Vehicle.sensors.poll()</span></code>
+function and therefore is not included in this base class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>prototype</strong> (<em>Callable</em>) – Constructor of the corresponding BeamNGpy sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.ClassicalSensorPublisher.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher.poll" title="Link to this definition"></a></dt>
+<dd><p>Gets the raw data from the simulator. Needs to be implemented by derived classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><em>Dict</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><em>Any</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.ClassicalSensorPublisher.pre_scenario_start">
+<span class="sig-name descname"><span class="pre">pre_scenario_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vehicle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle" title="(in BeamNGpy)"><span class="pre">Vehicle</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher.pre_scenario_start" title="Link to this definition"></a></dt>
+<dd><p>A hook function that is called for the connected vehicle before the scenario is loaded and started.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vehicle</strong> (<a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle" title="(in BeamNGpy)"><em>Vehicle</em></a>) – The vehicle instance <strong>not connected</strong> to the simulator at the moment of calling this function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.ClassicalSensorPublisher.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher.remove" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.DamagePublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">DamagePublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.DamagePublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher" title="beamng_ros2.publishers.sensors.ClassicalSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalSensorPublisher</span></code></a></p>
+<p>Damage sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/DamageSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>DamageSensor</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.DamagePublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DamageSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.DamagePublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>DamageSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.DamagePublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.DamagePublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.ElectricsPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">ElectricsPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.ElectricsPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher" title="beamng_ros2.publishers.sensors.ClassicalSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalSensorPublisher</span></code></a></p>
+<p>Electrics sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/ElectricsSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>ElectricsSensor</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.ElectricsPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ElectricsSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.ElectricsPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>ElectricsSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.ElectricsPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.ElectricsPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.GForcesPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">GForcesPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.GForcesPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher" title="beamng_ros2.publishers.sensors.ClassicalSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalSensorPublisher</span></code></a></p>
+<p>GForces sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/GForceSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>GForceSensor</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.GForcesPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">GForceSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.GForcesPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>GForceSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.GForcesPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.GForcesPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.GPSPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">GPSPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.GPSPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>GPS sensor publisher publishing <a class="reference external" href="https://docs.ros.org/en/humble/p/sensor_msgs/interfaces/msg/NavSatFix.html" title="(in sensor_msgs v4.2)"><span>NavSatFix</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.GPSPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">NavSatFix</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.GPSPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>NavSatFix</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.GPSPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.GPSPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.IdealRadarPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">IdealRadarPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.IdealRadarPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>GPS sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/IdealRadarSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>IdealRadarSensor</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.IdealRadarPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">IdealRadarSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.IdealRadarPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>IdealRadarSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.IdealRadarPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.IdealRadarPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.LidarPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">LidarPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.LidarPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>Lidar sensor publisher publishing <a class="reference external" href="https://docs.ros.org/en/humble/p/sensor_msgs/interfaces/msg/PointCloud2.html" title="(in sensor_msgs v4.2)"><span>PointCloud2</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.LidarPublisher.create_publisher">
+<span class="sig-name descname"><span class="pre">create_publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.LidarPublisher.create_publisher" title="Link to this definition"></a></dt>
+<dd><p>Creates an inner instance of the <a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.publisher.html#rclpy.publisher.Publisher" title="(in rclpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">rclpy.publisher.Publisher</span></code></a> for the node
+with the message type that is defined by the <a class="reference internal" href="#beamng_ros2.publishers.sensors.LidarPublisher.msg_type" title="beamng_ros2.publishers.sensors.LidarPublisher.msg_type"><code class="xref py py-func docutils literal notranslate"><span class="pre">msg_type()</span></code></a> function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>node</strong> (<em>Node</em>) – The node for which the publisher will be created.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.LidarPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PointCloud2</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.LidarPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>PointCloud2</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.LidarPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.LidarPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.MeshPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">MeshPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.MeshPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>Mesh sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/MeshSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>MeshSensor</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.MeshPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MeshSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.MeshPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>MeshSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.MeshPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.MeshPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.PowertrainSensorPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">PowertrainSensorPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.PowertrainSensorPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>Powertrain sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/PowertrainSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>PowertrainSensor</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.PowertrainSensorPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PowertrainSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.PowertrainSensorPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>PowertrainSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.PowertrainSensorPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.PowertrainSensorPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.RadarPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">RadarPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.RadarPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>Radar sensor publisher publishing radar_msgs <a class="reference external" href="https://docs.ros.org/en/noetic/api/radar_msgs/html/msg/RadarReturn.html">RadarReturn</a> messages
+if the library is found, custom <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/RadarReturn.html" title="(in BeamNG-ROS2 v1.0)"><span>RadarReturn</span></a> messages if not.</p>
+<p>You can force the publisher to always send custom BeamNG message type by setting the
+<code class="docutils literal notranslate"><span class="pre">use_beamng_msg_type=True</span></code> argument in the sensor .json definition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.RadarPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Time</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">RadarReturn</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.RadarPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<em>Time</em>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>RadarReturn</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.RadarPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.RadarPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.RoadsSensorPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">RoadsSensorPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.RoadsSensorPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>Roads sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/RoadsSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>RoadsSensor</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.RoadsSensorPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">RoadsSensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.RoadsSensorPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>RoadsSensor</em> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.RoadsSensorPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.RoadsSensorPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">SensorPublisher</span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="beamng_ros2.publishers.base.html#beamng_ros2.publishers.base.VehiclePublisher" title="beamng_ros2.publishers.base.VehiclePublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">VehiclePublisher</span></code></a></p>
+<p>Base class for BeamNG sensor publishers, which have access to a connected <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle" title="(in BeamNGpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">beamngpy.Vehicle</span></code></a>
+instance.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.create">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#beamng_ros2.publishers.sensors.SensorPublisher" title="beamng_ros2.publishers.sensors.SensorPublisher"><span class="pre">SensorPublisher</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.create" title="Link to this definition"></a></dt>
+<dd><p>Creates an instance of a specific sensor publishers based on the name, type and
+extra parameters which will be passed to the underlying BeamNGpy sensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor. Has to be unique for a vehicle.</p></li>
+<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Type of the sensor in the format of either “&lt;TYPE&gt;” or “&lt;TYPE&gt;.&lt;CONFIGURATION&gt;”.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><em>Dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><em>Any</em></a><em>]</em>) – Extra parameters of the sensor, all fields included in this dictionary will
+override the parameters set up by the sensor type and configuration.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#beamng_ros2.publishers.sensors.SensorPublisher" title="beamng_ros2.publishers.sensors.SensorPublisher"><em>SensorPublisher</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.create_publisher">
+<span class="sig-name descname"><span class="pre">create_publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.create_publisher" title="Link to this definition"></a></dt>
+<dd><p>Creates an inner instance of the <a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.publisher.html#rclpy.publisher.Publisher" title="(in rclpy)"><code class="xref py py-class docutils literal notranslate"><span class="pre">rclpy.publisher.Publisher</span></code></a> for the node
+with the message type that is defined by the <code class="xref py py-func docutils literal notranslate"><span class="pre">msg_type()</span></code> function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>node</strong> (<em>Node</em>) – The node for which the publisher will be created.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.get_data">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><em>Any</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.get_sensor_config">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_sensor_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sensor_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensor_config_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.get_sensor_config" title="Link to this definition"></a></dt>
+<dd><p>Gets the default configuration of a sensor by its type. Configuration is a dictionary
+where keys are strings representing the attributes of the sensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sensor_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – The sensor type (see the top for their comprehensive list).</p></li>
+<li><p><strong>sensor_config_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Some sensors include custom configurations setting multiple parameters at once.
+If empty, the default configuration will be used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The configuration of the sensor as a dictionary.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><em>Dict</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><em>Any</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.get_sensor_publisher">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_sensor_publisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sensor_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#beamng_ros2.publishers.sensors.SensorPublisher" title="beamng_ros2.publishers.sensors.SensorPublisher"><span class="pre">SensorPublisher</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.get_sensor_publisher" title="Link to this definition"></a></dt>
+<dd><p>Gets the constructor of the specific publisher with the provided type.
+The constructor of all sensor publishers take two arguments: name and configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sensor_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – The sensor type (see the top for their comprehensive list).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><em>Callable</em></a>[[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><em>Dict</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><em>Any</em></a>]], <a class="reference internal" href="#beamng_ros2.publishers.sensors.SensorPublisher" title="beamng_ros2.publishers.sensors.SensorPublisher"><em>SensorPublisher</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.poll">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.poll" title="Link to this definition"></a></dt>
+<dd><p>Gets the raw data from the simulator. Needs to be implemented by derived classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><em>Dict</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><em>Any</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.publish">
+<span class="sig-name descname"><span class="pre">publish</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.publish" title="Link to this definition"></a></dt>
+<dd><p>Function that publishes the corresponding data using the inner instance of the ROS2 publisher. Needs
+to be implemented by derived classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.SensorPublisher.remove">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.SensorPublisher.remove" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.StatePublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">StatePublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.StatePublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher" title="beamng_ros2.publishers.sensors.ClassicalSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalSensorPublisher</span></code></a></p>
+<p>State publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/StateSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>StateSensor</span></a> messages.</p>
+<p>Keep in mind this publisher is loaded by default for every vehicle and therefore you do not
+need to specify it in the configuration file of the scenario.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.StatePublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">StateSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.StatePublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>StateSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.StatePublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.StatePublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.StatePublisher.pre_scenario_start">
+<span class="sig-name descname"><span class="pre">pre_scenario_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vehicle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle" title="(in BeamNGpy)"><span class="pre">Vehicle</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.StatePublisher.pre_scenario_start" title="Link to this definition"></a></dt>
+<dd><p>A hook function that is called for the connected vehicle before the scenario is loaded and started.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vehicle</strong> (<a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle" title="(in BeamNGpy)"><em>Vehicle</em></a>) – The vehicle instance <strong>not connected</strong> to the simulator at the moment of calling this function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.TimerPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">TimerPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.TimerPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.ClassicalSensorPublisher" title="beamng_ros2.publishers.sensors.ClassicalSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalSensorPublisher</span></code></a></p>
+<p>Time sensor publisher publishing <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/TimeSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>TimeSensor</span></a> messages.</p>
+<p>The timer returns time since the start of scenario, which is not the same time that is used as the
+header of the published messages. You can use the <a class="reference external" href="https://beamngpy.readthedocs.io/en/latest/_static/beamng_msgs/interfaces/msg/StateSensor.html" title="(in BeamNG-ROS2 v1.0)"><span>StateSensor</span></a>
+messages to get the ROS2 time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.TimerPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TimeSensor</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.TimerPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>TimeSensor</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.TimerPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.TimerPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.UltrasonicPublisher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">beamng_ros2.publishers.sensors.</span></span><span class="sig-name descname"><span class="pre">UltrasonicPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.12)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#beamng_ros2.publishers.sensors.UltrasonicPublisher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#beamng_ros2.publishers.sensors.AutoSensorPublisher" title="beamng_ros2.publishers.sensors.AutoSensorPublisher"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutoSensorPublisher</span></code></a></p>
+<p>Ultrasonic sensor publisher publishing <a class="reference external" href="https://docs.ros.org/en/humble/p/sensor_msgs/interfaces/msg/Range.html" title="(in sensor_msgs v4.2)"><span>Range</span></a> messages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Name of the sensor.</p></li>
+<li><p><strong>config</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Arguments of the sensor passed to the BeamNGpy class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.UltrasonicPublisher.get_data">
+<span class="sig-name descname"><span class="pre">get_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Range</span></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.UltrasonicPublisher.get_data" title="Link to this definition"></a></dt>
+<dd><p>Gets the data in the format publishable to the topic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.ros.org/en/iron/p/rclpy/rclpy.time.html#rclpy.time.Time" title="(in rclpy)"><em>Time</em></a>) – The ROS2 time to be used in the header of the message.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Range</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="beamng_ros2.publishers.sensors.UltrasonicPublisher.msg_type">
+<span class="sig-name descname"><span class="pre">msg_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><span class="pre">Type</span></a></span></span><a class="headerlink" href="#beamng_ros2.publishers.sensors.UltrasonicPublisher.msg_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the message type that this publisher publishes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.12)"><em>Type</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="beamng_ros2.publishers.road_network.html" class="btn btn-neutral float-left" title="beamng_ros2.publishers.road_network module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="beamng_ros2.publishers.viz.html" class="btn btn-neutral float-right" title="beamng_ros2.publishers.viz module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, BeamNG GmbH.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+beamng\_ros2.publishers.sensors module
+======================================
+
+.. automodule:: beamng_ros2.publishers.sensors
+   :members:
+   :undoc-members:
+   :show-inheritance:
