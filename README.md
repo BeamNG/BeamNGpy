@@ -1,5 +1,5 @@
 # BeamNGpy
-<a href="https://beamngpy.readthedocs.io/en/latest/"><img src="https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png" /></a>
+<a href="https://beamngpy.readthedocs.io/en/latest/"><img src="https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png" /></a> 
 
 **BeamNGpy** is an official library providing a Python API to [BeamNG.tech][11],
 the academia- and industry-oriented fork of the video game [BeamNG.drive][4].
