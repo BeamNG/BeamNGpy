@@ -37,3 +37,59 @@ class Terrain_Importer:
         response = bng.connection.send(d)
         response.ack('CompletedImportHeightmap')
         logger.debug('Terrain_Importer - terrain imported.')
+
+    @staticmethod
+    def terrain_and_road_import(bng: BeamNGpy, png_path, roads, DOI, margin, zMax):
+        """
+        Imports a heightmap from a given .png file (16-bit greyscale, uncompressed), then lays down the given roads on top of this modified terrain.
+        The terrain will be further modified to fit the roads.
+
+        Args:
+            bng: The BeamNG instance.
+            png_path: The path of the .png file (16-bit greyscale, uncompressed), which contains values in the range [0, 65535].
+            roads: The list of roads which will be laid on the modified terrain (the terrain will also be terraformed to them).
+            DOI: The domain of influence parameter of the terraforming process.
+            margin: The margin parameter (around the roads).
+            zMax: Sets the terrain prominence, which will be [0, zMax]. This is how the .png values will be scaled when modifying the terrain.
+        """
+        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger.setLevel(DEBUG)
+        d = dict(type = 'TerrainAndRoadImport', pngPath = png_path, roads = roads, DOI = DOI, margin = margin, zMax = zMax)
+        response = bng.connection.send(d)
+        response.ack('CompletedTerrainAndRoadImport')
+        logger.debug('Terrain_Importer - terrain and roads imported.')
+
+    @staticmethod
+    def peaks_and_road_import(bng: BeamNGpy, peaks, roads, DOI, margin):
+        """
+        Modifies the terrain with respect to a given collection of peaks and troughs (3D points), then lays down the given roads on top of this modified terrain.
+        The terrain will be further modified to fit the given roads.
+
+        Args:
+            bng: The BeamNG instance.
+            peaks: The list of 3D points which represent desired peaks and troughs in the terrain.
+            roads: The list of roads which will be laid on the modified terrain (the terrain will also be terraformed to them).
+            DOI: The domain of influence parameter of the terraforming process.
+            margin: The margin parameter (around the roads).
+        """
+        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger.setLevel(DEBUG)
+        d = dict(type = 'PeaksAndRoadImport', peaks = peaks, roads = roads, DOI = DOI, margin = margin)
+        response = bng.connection.send(d)
+        response.ack('CompletedPeaksAndRoadImport')
+        logger.debug('Terrain_Importer - peaks and roads imported.')
+
+    @staticmethod
+    def reset(bng: BeamNGpy):
+        """
+        Resets the terrain and roads which were created by the importing methods in this class (terrain+roads and peaks+roads).
+
+        Args:
+            bng: The BeamNG instance.
+        """
+        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger.setLevel(DEBUG)
+        d = dict(type = 'ResetTerrain', data = {})
+        response = bng.connection.send(d)
+        response.ack('CompletedResetTerrain')
+        logger.debug('Terrain_Importer - reset.')
