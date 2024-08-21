@@ -62,21 +62,26 @@ def main():
     roads.append(roads1)
     roads.append(roads2)
 
-    # Allow the user to open the world editor.
-    print("Press F11 on BeamNG to open the world editor...")
+    # Open the world editor - NOTE: THE WORLD EDITOR MUST BE OPEN WHEN USING THE FUNCTIONALITY OF THE TERRAIN IMPORTER.
+    # Also have a short pause on the python thread, while the world editor opens on the lua thread.
+    print("Opening the world editor...")
+    Terrain_Importer.open_close_world_editor(beamng, True)
     time.sleep(5)
 
     # Import the peaks and roads to BeamNG.
-    DOI = 150.0
+    print("Importing peaks and roads...")
+    DOI = 150.0         # These parameters can be adjusted, as prefered.
     margin = 6.0
     Terrain_Importer.peaks_and_road_import(beamng, peaks, roads, DOI, margin)
 
-    # Wait for 30 seconds, then clear the terrain and roads (ready for another iteration, if you like).
+    # Pause for a few seconds, then clear the terrain and roads (ready for another batch iteration, as prefered). NOTE: reset needs unsilenced.
+    print("Completed...")
     time.sleep(60)
+
+    #print("Resetting heightmap/roads...")
     #Terrain_Importer.reset(beamng)
 
     # Execute BeamNG until the user closes it.
-    print("Completed.")
     while(True):
         pass
     beamng.close()

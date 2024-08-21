@@ -93,3 +93,19 @@ class Terrain_Importer:
         response = bng.connection.send(d)
         response.ack('CompletedResetTerrain')
         logger.debug('Terrain_Importer - reset.')
+
+    @staticmethod
+    def open_close_world_editor(bng: BeamNGpy, is_open):
+        """
+        Toggles the world editor open/closed.
+
+        Args:
+            bng: The BeamNG instance.
+            is_open: A flag which indicates if the world editor should be switched to open (True) or closed (False).
+        """
+        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger.setLevel(DEBUG)
+        d = dict(type = 'OpenCloseWorldEditor', isOpen = is_open)
+        response = bng.connection.send(d)
+        response.ack('CompletedOpenCloseWorldEditor')
+        logger.debug('Terrain_Importer - open/close world editor.')
