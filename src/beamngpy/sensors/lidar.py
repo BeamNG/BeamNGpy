@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from beamngpy.sensors.shmem import BNGSharedMemory
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
+from beamngpy.sensors.shmem import BNGSharedMemory
 from beamngpy.types import Float3, StrDict
 
 if TYPE_CHECKING:
@@ -128,21 +128,21 @@ class Lidar(CommBase):
         processed_readings: StrDict = dict(type='Lidar')
 
         if len(binary['pointCloud']) == 0:
-            processed_readings['pointCloud'] = np.array(dtype=np.float32)
-            processed_readings['colours'] = np.array(dtype=np.uint8)
+            processed_readings['pointCloud'] = np.empty(0, dtype=np.float32)
+            processed_readings['colours'] = np.empty(0, dtype=np.uint8)
             return processed_readings
 
         # Format the point cloud data.
         floats = np.frombuffer(binary['pointCloud'], dtype=np.float32)
         if self.is_streaming:
             n_points = int(floats[-1])
-            floats = floats[:3 * n_points]
+            floats = floats[: 3 * n_points]
         processed_readings['pointCloud'] = floats.reshape((-1, 3)).copy()
 
         # Format the corresponding colour data.
         colours = np.frombuffer(binary['colours'], dtype=np.uint8)
         if self.is_streaming:
-            colours = colours[:4 * n_points]
+            colours = colours[: 4 * n_points]
         processed_readings['colours'] = colours.reshape((-1, 4)).copy()  # rgba
 
         return processed_readings
@@ -154,16 +154,16 @@ class Lidar(CommBase):
         # Remove the shared memory binding being used by this sensor, if applicable.
         if self.is_using_shared_memory:
             assert self.point_cloud_shmem
-            self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.point_cloud_shmem.name}')
+            self.logger.debug('Lidar - Unbinding shared memory: ' f'{self.point_cloud_shmem.name}')
             self.point_cloud_shmem.close_and_unlink()
 
             assert self.colour_shmem
-            self.logger.debug('Lidar - Unbinding shared memory: 'f'{self.colour_shmem.name}')
+            self.logger.debug('Lidar - Unbinding shared memory: ' f'{self.colour_shmem.name}')
             self.colour_shmem.close_and_unlink()
 
         # Remove this sensor from the simulation.
         self._close_lidar()
-        self.logger.debug('Lidar - sensor removed: 'f'{self.name}')
+        self.logger.debug('Lidar - sensor removed: ' f'{self.name}')
 
     def poll_raw(self):
         """
@@ -180,23 +180,25 @@ class Lidar(CommBase):
         if self.is_using_shared_memory:
             raw_readings = {}
             if not self.is_streaming:
-                sizes = self.send_recv_ge('PollLidar', name=self.name,
-                                          isUsingSharedMemory=self.is_using_shared_memory)['data']
+                sizes = self.send_recv_ge(
+                    'PollLidar', name=self.name, isUsingSharedMemory=self.is_using_shared_memory
+                )['data']
             assert self.point_cloud_shmem
             raw_readings['pointCloud'] = self.point_cloud_shmem.read(self.point_cloud_shmem_size)
-            self.logger.debug('Lidar - point cloud data read from shared memory: 'f'{self.name}')
+            self.logger.debug('Lidar - point cloud data read from shared memory: ' f'{self.name}')
 
             assert self.colour_shmem
             raw_readings['colours'] = self.colour_shmem.read(self.colour_shmem_size)
-            self.logger.debug('Lidar - colour data read from shared memory: 'f'{self.name}')
+            self.logger.debug('Lidar - colour data read from shared memory: ' f'{self.name}')
 
             if not self.is_streaming:
-                raw_readings['pointCloud'] = raw_readings['pointCloud'][:int(sizes['points'])]
-                raw_readings['colours'] = raw_readings['colours'][:int(sizes['colours'])]
+                raw_readings['pointCloud'] = raw_readings['pointCloud'][: int(sizes['points'])]
+                raw_readings['colours'] = raw_readings['colours'][: int(sizes['colours'])]
         else:
-            raw_readings = self.send_recv_ge('PollLidar', name=self.name,
-                                             isUsingSharedMemory=self.is_using_shared_memory)['data']
-            self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
+            raw_readings = self.send_recv_ge(
+                'PollLidar', name=self.name, isUsingSharedMemory=self.is_using_shared_memory
+            )['data']
+            self.logger.debug('Lidar - LiDAR data read from socket: ' f'{self.name}')
         return raw_readings
 
     def poll(self) -> StrDict:
@@ -238,7 +240,7 @@ class Lidar(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('Lidar - ad-hoc polling request sent: 'f'{self.name}')
+        self.logger.debug('Lidar - ad-hoc polling request sent: ' f'{self.name}')
         return int(self.send_recv_ge('SendAdHocRequestLidar', name=self.name)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
@@ -251,7 +253,7 @@ class Lidar(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('Lidar - ad-hoc polling request checked for completion: 'f'{self.name}')
+        self.logger.debug('Lidar - ad-hoc polling request checked for completion: ' f'{self.name}')
         return self.send_recv_ge('IsAdHocPollRequestReadyLidar', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
@@ -266,7 +268,7 @@ class Lidar(CommBase):
         # Get the binary string data from the simulator.
         binary = self.send_recv_ge('CollectAdHocPollRequestLidar', requestId=request_id)['data']
 
-        self.logger.debug('Lidar - LiDAR data read from socket: 'f'{self.name}')
+        self.logger.debug('Lidar - LiDAR data read from socket: ' f'{self.name}')
         return self._convert_binary_to_array(binary)
 
     def get_requested_update_time(self) -> float:
@@ -341,8 +343,12 @@ class Lidar(CommBase):
         Args:
             update_priority: The new requested update time.
         """
-        self.send_ack_ge('SetLidarRequestedUpdateTime', ack='CompletedSetLidarRequestedUpdateTime',
-                         name=self.name, updateTime=requested_update_time)
+        self.send_ack_ge(
+            'SetLidarRequestedUpdateTime',
+            ack='CompletedSetLidarRequestedUpdateTime',
+            name=self.name,
+            updateTime=requested_update_time,
+        )
 
     def set_update_priority(self, update_priority: float) -> None:
         """
@@ -351,8 +357,12 @@ class Lidar(CommBase):
         Args:
             update_priority: The new update priority value.
         """
-        self.send_ack_ge('SetLidarUpdatePriority', ack='CompletedSetLidarUpdatePriority',
-                         name=self.name, updatePriority=update_priority)
+        self.send_ack_ge(
+            'SetLidarUpdatePriority',
+            ack='CompletedSetLidarUpdatePriority',
+            name=self.name,
+            updatePriority=update_priority,
+        )
 
     def set_max_pending_requests(self, max_pending_requests: int) -> None:
         """
@@ -361,8 +371,12 @@ class Lidar(CommBase):
         Args:
             max_pending_requests: The new max pending requests value.
         """
-        self.send_ack_ge('SetLidarMaxPendingGpuRequests', ack='CompletedSetLidarMaxPendingGpuRequests',
-                         name=self.name, maxPendingGpuRequests=max_pending_requests)
+        self.send_ack_ge(
+            'SetLidarMaxPendingGpuRequests',
+            ack='CompletedSetLidarMaxPendingGpuRequests',
+            name=self.name,
+            maxPendingGpuRequests=max_pending_requests,
+        )
 
     def set_is_visualised(self, is_visualised: bool) -> None:
         """
@@ -371,8 +385,9 @@ class Lidar(CommBase):
         Args:
             is_visualised: A flag which indicates if this LiDAR sensor is to be visualised or not.
         """
-        self.send_ack_ge('SetLidarIsVisualised', ack='CompletedSetLidarIsVisualised',
-                         name=self.name, isVisualised=is_visualised)
+        self.send_ack_ge(
+            'SetLidarIsVisualised', ack='CompletedSetLidarIsVisualised', name=self.name, isVisualised=is_visualised
+        )
 
     def set_is_annotated(self, is_annotated: bool) -> None:
         """
@@ -381,8 +396,9 @@ class Lidar(CommBase):
         Args:
             is_annotated: A flag which indicates if this LiDAR sensor is to be annotated or not.
         """
-        self.send_ack_ge('SetLidarIsAnnotated', ack='CompletedSetLidarIsAnnotated',
-                         name=self.name, isAnnotated=is_annotated)
+        self.send_ack_ge(
+            'SetLidarIsAnnotated', ack='CompletedSetLidarIsAnnotated', name=self.name, isAnnotated=is_annotated
+        )
 
     def _open_lidar(
             self, name: str, vehicle: Vehicle | None, is_using_shared_memory: bool, point_cloud_shmem_name: str | None, point_cloud_shmem_size: int,

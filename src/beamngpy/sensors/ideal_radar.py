@@ -45,7 +45,7 @@ class IdealRadar(CommBase):
 
         # Fetch the unique Id number (in the simulator) for this ideal RADAR sensor.
         self.sensor_id = self._get_id()
-        self.logger.debug('idealRADAR - sensor created: 'f'{self.name}')
+        self.logger.debug('idealRADAR - sensor created: ' f'{self.name}')
 
     def remove(self) -> None:
         """
@@ -53,7 +53,7 @@ class IdealRadar(CommBase):
         """
         # Remove this sensor from the simulation.
         self._close_ideal_radar()
-        self.logger.debug('idealRADAR - sensor removed: 'f'{self.name}')
+        self.logger.debug('idealRADAR - sensor removed: ' f'{self.name}')
 
     def poll(self) -> StrDict:
         """
@@ -85,7 +85,7 @@ class IdealRadar(CommBase):
             # Get the bulk data from ge lua.
             readings_data = self._poll_ideal_radar_GE()
 
-        self.logger.debug('Powertrain - sensor readings received from simulation: 'f'{self.name}')
+        self.logger.debug('Powertrain - sensor readings received from simulation: ' f'{self.name}')
         return readings_data
 
     def send_ad_hoc_poll_request(self) -> int:
@@ -97,7 +97,7 @@ class IdealRadar(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('idealRADAR - ad-hoc polling request sent: 'f'{self.name}')
+        self.logger.debug('idealRADAR - ad-hoc polling request sent: ' f'{self.name}')
         return int(self.send_recv_ge('SendAdHocRequestIdealRADAR', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
@@ -110,7 +110,7 @@ class IdealRadar(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('idealRADAR - ad-hoc polling request checked for completion: 'f'{self.name}')
+        self.logger.debug('idealRADAR - ad-hoc polling request checked for completion: ' f'{self.name}')
         return self.send_recv_ge('IsAdHocPollRequestReadyIdealRADAR', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
@@ -124,7 +124,7 @@ class IdealRadar(CommBase):
             The readings data.
         """
         readings = self.send_recv_ge('CollectAdHocPollRequestIdealRADAR', requestId=request_id)['data']
-        self.logger.debug('idealRADAR - ad-hoc polling request returned and processed: 'f'{self.name}')
+        self.logger.debug('idealRADAR - ad-hoc polling request returned and processed: ' f'{self.name}')
         return readings
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
@@ -135,8 +135,12 @@ class IdealRadar(CommBase):
             requested_update_time: The new requested update time.
         """
         self.send_ack_ge(
-            'SetIdealRADARRequestedUpdateTime', ack='CompletedSetIdealRADARRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
-            GFXUpdateTime=requested_update_time)
+            'SetIdealRADARRequestedUpdateTime',
+            ack='CompletedSetIdealRADARRequestedUpdateTime',
+            name=self.name,
+            vid=self.vehicle.vid,
+            GFXUpdateTime=requested_update_time,
+        )
 
     def _get_id(self) -> int:
         return int(self.send_recv_ge('GetIdealRADARId', name=self.name)['data'])

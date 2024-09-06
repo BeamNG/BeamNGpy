@@ -96,26 +96,13 @@ class Radar(CommBase):
 
     def _unpack_float(self, binary):
         # Convert the given binary string into a 1D array of floats.
-        floats = np.zeros(int(len(binary) / 4))
-        ctr = 0
-        binary_len = int(len(binary))
-        for i in range(0, binary_len, 4):
-            floats[ctr] = struct.unpack('f', binary[i:i + 4])[0]
-            ctr = ctr + 1
-        return floats
+        return np.frombuffer(binary, dtype=np.float32)
 
     def _decode_poll_data(self, binary):
         floats = self._unpack_float(binary)
         if len(floats) == 0:
             return None
-
-        # Re-format the float array into a 6D point cloud of raw RADAR data.
-        decoded_data = []
-        floats_len = int(len(floats))
-        for i in range(0, floats_len, 7):
-            decoded_data.append([floats[i], floats[i + 1], floats[i + 2], floats[i + 3],
-                                floats[i + 4], floats[i + 5], floats[i + 6]])
-        return decoded_data
+        return floats.reshape((-1, 7))
 
     def remove(self):
         """
@@ -123,7 +110,7 @@ class Radar(CommBase):
         """
         # Remove this sensor from the simulation.
         self._close_radar()
-        self.logger.debug('RADAR - sensor removed: 'f'{self.name}')
+        self.logger.debug('RADAR - sensor removed: ' f'{self.name}')
 
     def poll(self):
         """
@@ -139,7 +126,7 @@ class Radar(CommBase):
 
         # Convert the binary string into an array of floats.
         radar_data = self._decode_poll_data(binary)
-        self.logger.debug('RADAR - sensor readings received from simulation: 'f'{self.name}')
+        self.logger.debug('RADAR - sensor readings received from simulation: ' f'{self.name}')
         return radar_data
 
     def get_ppi(self):
@@ -189,7 +176,7 @@ class Radar(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('RADAR - ad-hoc polling request sent: 'f'{self.name}')
+        self.logger.debug('RADAR - ad-hoc polling request sent: ' f'{self.name}')
         return int(self.send_recv_ge('SendAdHocRequestRadar', name=self.name)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
@@ -202,7 +189,7 @@ class Radar(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('RADAR - ad-hoc polling request checked for completion: 'f'{self.name}')
+        self.logger.debug('RADAR - ad-hoc polling request checked for completion: ' f'{self.name}')
         return self.send_recv_ge('IsAdHocPollRequestReadyRadar', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int):
@@ -216,10 +203,9 @@ class Radar(CommBase):
             The readings data.
         """
         binary = self.send_recv_ge('CollectAdHocPollRequestRadar', requestId=request_id)['data']['radarData']
-
         radar_data = self._decode_poll_data(binary)
 
-        self.logger.debug('RADAR - ad-hoc polling request returned and processed: 'f'{self.name}')
+        self.logger.debug('RADAR - ad-hoc polling request returned and processed: ' f'{self.name}')
 
         return radar_data
 

@@ -95,7 +95,7 @@ class NavigraphData(CommBase):
                     current_path = []
                     current_path.append(head_key)
                     next_key = child_key
-                    while (True):
+                    while True:
                         current_path.append(next_key)
                         next_successors = graph[next_key].keys()
                         if len(next_successors) != 2:
@@ -126,7 +126,7 @@ class NavigraphData(CommBase):
             path_segments: The collection of individual 'path segments' to plot.
             coords3d: The 3d coordinates data from the navgraph (comes from the exporter file).
         """
-        sns.set()
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
 
         fig, ax = plt.subplots(figsize=(15, 15))
         px = []
@@ -142,7 +142,7 @@ class NavigraphData(CommBase):
             for j in range(1, len(seg)):
                 px.append(coords3d[seg[j]][0])
                 py.append(coords3d[seg[j]][1])
-                node_colors.append((.0, 0.0, 1.0, 1.0))
+                node_colors.append((0.0, 0.0, 1.0, 1.0))
                 p1 = coords3d[seg[j - 1]]
                 p2 = coords3d[seg[j]]
                 lines.append([(p1[0], p1[1]), (p2[0], p2[1])])

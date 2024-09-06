@@ -36,7 +36,6 @@ class Mesh(CommBase):
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.015,
         groups_list=[], is_track_beams=True):
         super().__init__(bng, vehicle)
-        sns.set()  # Let seaborn apply better styling to all matplotlib graphs
 
         self.logger = getLogger(f'{LOGGER_ID}.Mesh')
         self.logger.setLevel(DEBUG)
@@ -74,7 +73,7 @@ class Mesh(CommBase):
         # Populate the list of beams for this sensor.
         self.beams = self._get_active_beams()
 
-        self.logger.debug('Mesh - sensor created: 'f'{self.name}')
+        self.logger.debug('Mesh - sensor created: ' f'{self.name}')
 
     def _is_node_relevant(self, v):
         """
@@ -103,7 +102,9 @@ class Mesh(CommBase):
         Returns:
             True if the beam is in one of the selected mesh groups, otherwise false
         """
-        return self._is_node_relevant(self.raw_data['nodes'][b0]) and self._is_node_relevant(self.raw_data['nodes'][b1])
+        return self._is_node_relevant(self.raw_data['nodes'][b0]) and self._is_node_relevant(
+            self.raw_data['nodes'][b1]
+        )
 
     def _get_active_beams(self):
         """
@@ -147,7 +148,7 @@ class Mesh(CommBase):
         Removes this sensor from the simulation.
         """
         self._close_mesh()
-        self.logger.debug('Mesh - sensor removed: 'f'{self.name}')
+        self.logger.debug('Mesh - sensor removed: ' f'{self.name}')
 
     def poll(self) -> StrDict:
         """
@@ -187,7 +188,7 @@ class Mesh(CommBase):
         # Get the latest beams from the simulator.
         self._get_active_beams()
 
-        self.logger.debug('Mesh - sensor readings received from simulation: 'f'{self.name}')
+        self.logger.debug('Mesh - sensor readings received from simulation: ' f'{self.name}')
         return self.raw_data
 
     def send_ad_hoc_poll_request(self) -> int:
@@ -199,7 +200,7 @@ class Mesh(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('Mesh - ad-hoc polling request sent: 'f'{self.name}')
+        self.logger.debug('Mesh - ad-hoc polling request sent: ' f'{self.name}')
         return int(self.send_recv_ge('SendAdHocRequestMesh', name=self.name, vid=self.vehicle.vid)['data'])
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
@@ -212,7 +213,7 @@ class Mesh(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('Mesh - ad-hoc polling request checked for completion: 'f'{self.name}')
+        self.logger.debug('Mesh - ad-hoc polling request checked for completion: ' f'{self.name}')
         return self.send_recv_ge('IsAdHocPollRequestReadyMesh', requestId=request_id)['data']
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
@@ -226,7 +227,7 @@ class Mesh(CommBase):
             The readings data.
         """
         readings = self.send_recv_ge('CollectAdHocPollRequestMesh', requestId=request_id)['data']
-        self.logger.debug('Mesh - ad-hoc polling request returned and processed: 'f'{self.name}')
+        self.logger.debug('Mesh - ad-hoc polling request returned and processed: ' f'{self.name}')
         return readings
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
@@ -274,6 +275,7 @@ class Mesh(CommBase):
         return lns1, lns2, lns3
 
     def mesh_plot(self):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -308,6 +310,7 @@ class Mesh(CommBase):
         plt.show()
 
     def mass_distribution_plot(self, data):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -355,6 +358,7 @@ class Mesh(CommBase):
         plt.show()
 
     def force_distribution_plot(self, data):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -406,6 +410,7 @@ class Mesh(CommBase):
         plt.show()
 
     def force_direction_plot(self, data):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -443,10 +448,10 @@ class Mesh(CommBase):
             fz = force['z']
             mag = math.sqrt(fx * fx + fy * fy + fz * fz)
             colors.append(mag)
-            fac = 1/max(1, mag)
-            ax[0, 0].arrow(x[-1], y[-1], fx*fac, fy*fac, width=0.05, ec='red')
-            ax[1, 0].arrow(x[-1], z[-1], fx*fac, fz*fac, width=0.05, ec='red')
-            ax[1, 1].arrow(y[-1], z[-1], fy*fac, fz*fac, width=0.05, ec='red')
+            fac = 1 / max(1, mag)
+            ax[0, 0].arrow(x[-1], y[-1], fx * fac, fy * fac, width=0.05, ec='red')
+            ax[1, 0].arrow(x[-1], z[-1], fx * fac, fz * fac, width=0.05, ec='red')
+            ax[1, 1].arrow(y[-1], z[-1], fy * fac, fz * fac, width=0.05, ec='red')
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)
@@ -462,6 +467,7 @@ class Mesh(CommBase):
         plt.show()
 
     def velocity_distribution_plot(self, data):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -513,6 +519,7 @@ class Mesh(CommBase):
         plt.show()
 
     def velocity_direction_plot(self, data):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
         ax[0, 0].set_aspect('equal', adjustable='box')
         ax[1, 0].set_aspect('equal', adjustable='box')
@@ -550,10 +557,10 @@ class Mesh(CommBase):
             vz = vel['z']
             mag = math.sqrt(vx * vx + vy * vy + vz * vz)
             colors.append(mag)
-            fac = 1/max(1, mag)
-            ax[0, 0].arrow(x[-1], y[-1], vx*fac, vy*fac, width=0.05, ec='red')
-            ax[1, 0].arrow(x[-1], z[-1], vx*fac, vz*fac, width=0.05, ec='red')
-            ax[1, 1].arrow(y[-1], z[-1], vy*fac, vz*fac, width=0.05, ec='red')
+            fac = 1 / max(1, mag)
+            ax[0, 0].arrow(x[-1], y[-1], vx * fac, vy * fac, width=0.05, ec='red')
+            ax[1, 0].arrow(x[-1], z[-1], vx * fac, vz * fac, width=0.05, ec='red')
+            ax[1, 1].arrow(y[-1], z[-1], vy * fac, vz * fac, width=0.05, ec='red')
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)

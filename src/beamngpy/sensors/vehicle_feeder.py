@@ -22,6 +22,7 @@ import seaborn as sns
 pypdf_installed = False
 try:
     from PyPDF2 import PdfMerger, PdfReader
+
     pypdf_installed = True
 except ImportError:
     pypdf_installed = False
@@ -46,8 +47,6 @@ class VehicleFeeder(CommBase):
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, test_id: int):
         super().__init__(bng, vehicle)
-        sns.set()  # Let seaborn apply better styling to all matplotlib graphs
-
         self.logger = getLogger(f'{LOGGER_ID}.Advanced IMU')
         self.logger.setLevel(DEBUG)
 
@@ -58,7 +57,7 @@ class VehicleFeeder(CommBase):
         # Create and initialise this sensor in the simulation.
         self._open_vehicle_feeder(name, vehicle, test_id)
 
-        self.logger.debug('Vehicle Feeder created: 'f'{self.name}')
+        self.logger.debug('Vehicle Feeder created: ' f'{self.name}')
 
     def remove(self) -> None:
         """
@@ -66,14 +65,13 @@ class VehicleFeeder(CommBase):
         """
         # Remove this sensor from the simulation.
         self._close_vehicle_feeder()
-        self.logger.debug('Vehicle Feeder removed: 'f'{self.name}')
+        self.logger.debug('Vehicle Feeder removed: ' f'{self.name}')
 
     def is_time_evolution_complete(self) -> bool:
         return bool(self.send_recv_ge('IsTimeEvolutionComplete', vid=self.vehicle.vid)['data'])
 
     def _open_vehicle_feeder(self, name: str, vehicle: Vehicle, test_id: int) -> None:
-        self.send_ack_ge(type='OpenVehicleFeeder', ack='OpenedVehicleFeeder',
-                         name=name, vid=vehicle.vid, testId=test_id)
+        self.send_ack_ge(type='OpenVehicleFeeder', ack='OpenedVehicleFeeder', name=name, vid=vehicle.vid, testId=test_id)
         self.logger.info(f'Opened vehicle feeder: "{name}"')
 
     def _close_vehicle_feeder(self) -> None:
@@ -158,23 +156,26 @@ class VehicleFeeder(CommBase):
             siA = markers[i]
             siB = markers[i + 1]
             for j in range(siA, siB):
-                wBwd = (j - siA) / (siB - siA)      # Graded weight from GPS points A to B. Sums to unity.
+                wBwd = (j - siA) / (siB - siA)  # Graded weight from GPS points A to B. Sums to unity.
                 wFwd = 1.0 - wBwd
-                avgPos.append(vec3(
-                    (wFwd * Fpositions[j].x) + (wBwd * Bpositions[0][j]),
-                    (wFwd * Fpositions[j].y) + (wBwd * Bpositions[1][j]),
-                    (wFwd * Fpositions[j].z) + (wBwd * Bpositions[2][j])))
+                avgPos.append(
+                    vec3(
+                        (wFwd * Fpositions[j].x) + (wBwd * Bpositions[0][j]),
+                        (wFwd * Fpositions[j].y) + (wBwd * Bpositions[1][j]),
+                        (wFwd * Fpositions[j].z) + (wBwd * Bpositions[2][j]),
+                    )
+                )
         return avgPos
 
     def computeMarkers(self, d):
         markers = []
-        markers.append(0)                               # Start with index 0.
+        markers.append(0)  # Start with index 0.
         last_marked_val = d[0]
         for i in range(1, len(d)):
             if abs(d[i] - last_marked_val) > 1e-12:
                 markers.append(i)
                 last_marked_val = d[i]
-        if markers[-1] != len(d) - 1:                # Make sure the last index is included at the end of the markers.
+        if markers[-1] != len(d) - 1:  # Make sure the last index is included at the end of the markers.
             markers.append(len(d) - 1)
 
         return markers
@@ -222,8 +223,7 @@ class VehicleFeeder(CommBase):
             pos.append(vec3(gpsX[startIdx], gpsY[startIdx], gpsZ[startIdx]))
 
             # Append predictions for the intermediate positions in this sub-interval.
-            posData = self.computeIntermediatePositions(
-                startIdx, endIdx, prevIdx, gpsX, gpsY, gpsZ, AccX, AccY, AccZ, times)
+            posData = self.computeIntermediatePositions(startIdx, endIdx, prevIdx, gpsX, gpsY, gpsZ, AccX, AccY, AccZ, times)
             for j in range(len(posData)):
                 pos.append(posData[j])
 
@@ -388,6 +388,7 @@ class VehicleFeeder(CommBase):
         return ourData
 
     def saveBothTrajectories(self, dTheirs, dOurs, theirData):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         # for flipping the plot in x and/or y.
         dff = [x * 1 for x in dOurs[0]]
         eff = [x * 1 for x in dOurs[1]]
@@ -443,14 +444,18 @@ class VehicleFeeder(CommBase):
         o = vec3(
             theirData['y_signal_preprocess_gps_front_pos_0_'][0],
             theirData['y_signal_preprocess_gps_front_pos_1_'][0],
-            theirData['y_signal_preprocess_gps_front_pos_2_'][0])
+            theirData['y_signal_preprocess_gps_front_pos_2_'][0],
+        )
         for i in range(len(markers)):
             idx = markers[i]
             dir.append(theirData['dir'][idx])
-            gps.append(vec3(
-                theirData['y_signal_preprocess_gps_front_pos_0_'][idx] - o.x,
-                theirData['y_signal_preprocess_gps_front_pos_1_'][idx] - o.y,
-                theirData['y_signal_preprocess_gps_front_pos_2_'][idx] - o.z))
+            gps.append(
+                vec3(
+                    theirData['y_signal_preprocess_gps_front_pos_0_'][idx] - o.x,
+                    theirData['y_signal_preprocess_gps_front_pos_1_'][idx] - o.y,
+                    theirData['y_signal_preprocess_gps_front_pos_2_'][idx] - o.z,
+                )
+            )
 
         # COMPUTE THE VELOCITIES.
         vel = []
@@ -477,7 +482,7 @@ class VehicleFeeder(CommBase):
         plt.savefig('trajectory.pdf')
 
     def plotSTWAMapping(self, xx, theirSTWAFL, ourSTWAFL, theirSTWAFR, ourSTWAFR):
-
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 1, figsize=(15, 15))
 
         ax[0].plot(xx, theirSTWAFL, "-b", label="Theirs")
@@ -495,6 +500,7 @@ class VehicleFeeder(CommBase):
         plt.show()
 
     def saveData(self, dTheirs, dOurs):
+        sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         tTheirs = dTheirs['t']
         tOurs = dOurs['t']
 
@@ -522,7 +528,7 @@ class VehicleFeeder(CommBase):
         plt.savefig('stwa.pdf')
 
         # DRIVE TORQUES:
-        fig, ax = plt.subplots(2, 2,  sharey=True, figsize=(15, 15))
+        fig, ax = plt.subplots(2, 2, sharey=True, figsize=(15, 15))
         ax[0, 0].locator_params(axis='x', nbins=15)
         ax[0, 0].locator_params(axis='y', nbins=15)
         ax[0, 0].plot(tTheirs, dTheirs['y_signal_preprocess_drv_wh_trq_drv_0_'], "-b", label="theirs")
@@ -635,7 +641,7 @@ class VehicleFeeder(CommBase):
         plt.savefig('acceleration.pdf')
 
         # SMOOTHED GYROSCOPIC DATA.
-        fig, ax = plt.subplots(3, 1, sharey=True,  figsize=(15, 15))
+        fig, ax = plt.subplots(3, 1, sharey=True, figsize=(15, 15))
         ax[0].locator_params(axis='x', nbins=38)
         ax[1].locator_params(axis='x', nbins=38)
         ax[2].locator_params(axis='x', nbins=38)
@@ -668,7 +674,7 @@ class VehicleFeeder(CommBase):
         plt.savefig('gyroscopic.pdf')
 
         # WHEEL SPEEDS:
-        fig, ax = plt.subplots(2, 2, sharey=True,  figsize=(15, 15))
+        fig, ax = plt.subplots(2, 2, sharey=True, figsize=(15, 15))
         ax[0, 0].locator_params(axis='x', nbins=15)
         ax[0, 0].locator_params(axis='y', nbins=15)
         ax[0, 0].plot(tTheirs, dTheirs['wh_spd_kph_0'], "-b", label="theirs")
@@ -712,7 +718,7 @@ class VehicleFeeder(CommBase):
         plt.savefig('wheel_speeds.pdf')
 
         # WHEELS ANGULAR VELOCITY:
-        fig, ax = plt.subplots(2, 2, sharey=True,  figsize=(15, 15))
+        fig, ax = plt.subplots(2, 2, sharey=True, figsize=(15, 15))
         ax[0, 0].locator_params(axis='x', nbins=15)
         ax[0, 0].locator_params(axis='y', nbins=15)
         # ax[0, 0].plot(tTheirs, dTheirs['y_signal_preprocess_signals_wh_spd_0_'], "-b", label="theirs")
@@ -766,7 +772,7 @@ class VehicleFeeder(CommBase):
         for i in range(len(data[0])):
             key = data[0][i]
             val = []
-            for j in range(1, len(data)):               # Convert the column to a list of floats.
+            for j in range(1, len(data)):  # Convert the column to a list of floats.
                 val.append(float(data[j][i]))
             d[key] = val
 
@@ -776,7 +782,7 @@ class VehicleFeeder(CommBase):
         with open(filename, newline='') as csvfile:
             data = list(csv.reader(csvfile))
         d = {}
-        for i in range(len(data[0])-1):
+        for i in range(len(data[0]) - 1):
             key = data[0][i]
             val = []
             for j in range(1, len(data)):
@@ -787,7 +793,7 @@ class VehicleFeeder(CommBase):
 
     def _getSTWAFromRWA(self, rwa, d, rwa_string, stwa_string):
 
-        floorIdx = None     # find the floor number
+        floorIdx = None  # find the floor number
         bestYet = 1e12
         for i in range(len(d[rwa_string])):
             if d[rwa_string][i] > rwa:
@@ -796,7 +802,7 @@ class VehicleFeeder(CommBase):
                 bestYet = rwa - d[rwa_string][i]
                 floorIdx = i
 
-        ceilIdx = None     # find the ceiling number
+        ceilIdx = None  # find the ceiling number
         bestYet = 1e12
         for i in range(len(d[rwa_string])):
             if d[rwa_string][i] < rwa:
@@ -852,30 +858,20 @@ class VehicleFeeder(CommBase):
 
         # Compute and process their data.
         theirData = self._readData(ADataFilename)
-        theirData['acc_x_smoothed_both_ways'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_IMU_1_acc_x'], theirData['t'], 35)
-        theirData['acc_y_smoothed_both_ways'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_IMU_1_acc_y'], theirData['t'], 35)
-        theirData['acc_z_smoothed_both_ways'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_IMU_1_acc_z'], theirData['t'], 35)
-        theirData['gyro_x_smoothed_both_ways'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_IMU_1_gyro_x'], theirData['t'], 10)
-        theirData['gyro_y_smoothed_both_ways'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_IMU_1_gyro_y'], theirData['t'], 10)
-        theirData['gyro_z_smoothed_both_ways'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_IMU_1_gyro_z'], theirData['t'], 10)
+        theirData['acc_x_smoothed_both_ways'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_IMU_1_acc_x'], theirData['t'], 35)
+        theirData['acc_y_smoothed_both_ways'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_IMU_1_acc_y'], theirData['t'], 35)
+        theirData['acc_z_smoothed_both_ways'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_IMU_1_acc_z'], theirData['t'], 35)
+        theirData['gyro_x_smoothed_both_ways'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_IMU_1_gyro_x'], theirData['t'], 10)
+        theirData['gyro_y_smoothed_both_ways'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_IMU_1_gyro_y'], theirData['t'], 10)
+        theirData['gyro_z_smoothed_both_ways'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_IMU_1_gyro_z'], theirData['t'], 10)
 
-        theirData['wh_spd_kph_smooth_0'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_WH_SPD_1_spd'], theirData['t'], 35)
-        theirData['wh_spd_kph_smooth_1'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_WH_SPD_2_spd'], theirData['t'], 35)
-        theirData['wh_spd_kph_smooth_2'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_WH_SPD_3_spd'], theirData['t'], 35)
-        theirData['wh_spd_kph_smooth_3'] = self.smoothTemporalBothWays(
-            theirData['y_UDP_RX_udp_rx_WH_SPD_4_spd'], theirData['t'], 35)
+        theirData['wh_spd_kph_smooth_0'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_WH_SPD_1_spd'], theirData['t'], 35)
+        theirData['wh_spd_kph_smooth_1'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_WH_SPD_2_spd'], theirData['t'], 35)
+        theirData['wh_spd_kph_smooth_2'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_WH_SPD_3_spd'], theirData['t'], 35)
+        theirData['wh_spd_kph_smooth_3'] = self.smoothTemporalBothWays(theirData['y_UDP_RX_udp_rx_WH_SPD_4_spd'], theirData['t'], 35)
 
         theirData['wh_spd_kph_0'], theirData['wh_spd_kph_1'], theirData['wh_spd_kph_2'], theirData['wh_spd_kph_3'] = [], [], [], []
-        for i in range(len(theirData['wh_spd_kph_smooth_0'])):        # convert wheel speeds from rad/s to kph.
+        for i in range(len(theirData['wh_spd_kph_smooth_0'])):  # convert wheel speeds from rad/s to kph.
             theirData['wh_spd_kph_0'].append(theirData['wh_spd_kph_smooth_0'][i] * 3.6 * 0.3185)  # kph
         for i in range(len(theirData['wh_spd_kph_smooth_1'])):
             theirData['wh_spd_kph_1'].append(theirData['wh_spd_kph_smooth_1'][i] * 3.6 * 0.3185)  # kph
@@ -886,12 +882,9 @@ class VehicleFeeder(CommBase):
 
         dir = []
         for i in range(len(theirData['t'])):
-            dx = theirData['y_signal_preprocess_gps_front_pos_0_'][i] - \
-                theirData['y_signal_preprocess_gps_rear_pos_0_'][i]
-            dy = theirData['y_signal_preprocess_gps_front_pos_1_'][i] - \
-                theirData['y_signal_preprocess_gps_rear_pos_1_'][i]
-            dz = theirData['y_signal_preprocess_gps_front_pos_2_'][i] - \
-                theirData['y_signal_preprocess_gps_rear_pos_2_'][i]
+            dx = theirData['y_signal_preprocess_gps_front_pos_0_'][i] - theirData['y_signal_preprocess_gps_rear_pos_0_'][i]
+            dy = theirData['y_signal_preprocess_gps_front_pos_1_'][i] - theirData['y_signal_preprocess_gps_rear_pos_1_'][i]
+            dz = theirData['y_signal_preprocess_gps_front_pos_2_'][i] - theirData['y_signal_preprocess_gps_rear_pos_2_'][i]
             dir.append(vec3(dx, dy, dz))
         theirData['dir'] = dir
 
@@ -929,8 +922,7 @@ class VehicleFeeder(CommBase):
         self.saveData(theirData, ourData)
 
         if not pypdf_installed:
-            create_warning(
-                'The `PyPDF2` package is not installed. PDFs will not be produced. You can install it using `pip install PyPDF2`.')
+            create_warning('The `PyPDF2` package is not installed. PDFs will not be produced. You can install it using `pip install PyPDF2`.')
             return
 
         now = datetime.now()

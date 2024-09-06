@@ -5,7 +5,7 @@ import seaborn as sns
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Radar
 
-sns.set()  # Let seaborn apply better styling to all matplotlib graphs
+sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
 
 
 def main():
@@ -18,8 +18,7 @@ def main():
 
     vehicle = Vehicle('ego_vehicle', model='etk800', license='RED', color='Red')
 
-    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675),
-                         rot_quat=(0, 0, 0.3826834, 0.9238795))
+    scenario.add_vehicle(vehicle, pos=(-717.121, 101, 118.675), rot_quat=(0, 0, 0.3826834, 0.9238795))
     scenario.make(bng)
 
     bng.settings.set_deterministic(60)  # Set simulator to 60hz temporal resolution
