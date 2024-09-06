@@ -12,7 +12,6 @@ BUF_SIZE = 196608
 
 class PrefixedLengthSocket:
     HEADER_BYTES = 4
-    recv_buffer = []
 
     @staticmethod
     def _initialize_socket() -> socket.socket:
@@ -53,6 +52,7 @@ class PrefixedLengthSocket:
         self.reconnect_tries = reconnect_tries
         self.SEND_LOCK = threading.Lock()
         self.RECV_LOCK = threading.Lock()
+        self.recv_buffer = []
         self.skt = self._initialize_socket()
         self.skt.connect((host, port))
 
