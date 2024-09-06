@@ -88,7 +88,7 @@ class Radar(CommBase):
             self.shmem2 = BNGSharedMemory(self.shmem_size)
 
         # Create and initialise this sensor in the simulation.
-        self._open_radar(name, vehicle, self.shmem.name if self.shmem else None, self.shmem2.name, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
+        self._open_radar(name, vehicle, self.shmem.name if self.shmem else None, self.shmem2.name if self.shmem2 else None, self.shmem_size, requested_update_time, update_priority, pos, dir, up, range_bins, azimuth_bins,
                          vel_bins, range_min, range_max, vel_min, vel_max, half_angle_deg, resolution, field_of_view_y, near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape,
                          range_focus, range_min_cutoff, range_direct_max_cutoff, is_visualised, is_streaming, is_static, is_snapping_desired, is_force_inside_triangle,
                          is_dir_world_space)

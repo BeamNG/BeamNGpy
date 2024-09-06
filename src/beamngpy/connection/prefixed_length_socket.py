@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import socket
+import threading
 import time
 from struct import pack, unpack
 
 from beamngpy.logging import BNGDisconnectedError
 
 BUF_SIZE = 196608
+
 
 class PrefixedLengthSocket:
     HEADER_BYTES = 4
@@ -49,6 +51,8 @@ class PrefixedLengthSocket:
         self.host = host
         self.port = port
         self.reconnect_tries = reconnect_tries
+        self.SEND_LOCK = threading.Lock()
+        self.RECV_LOCK = threading.Lock()
         self.skt = self._initialize_socket()
         self.skt.connect((host, port))
 
@@ -58,13 +62,15 @@ class PrefixedLengthSocket:
     def send(self, data: bytes) -> None:
         length = pack('!I', len(data))  # Prefix the message length to the front of the message data.
         data = length + data
-        self.skt.sendall(data)
+        with self.SEND_LOCK:
+            self.skt.sendall(data)
 
     def recv(self) -> bytes:
-        packed_length = self._recv_exactly(self.HEADER_BYTES)
-        length = unpack('!I', packed_length)[0]
+        with self.RECV_LOCK:
+            packed_length = self._recv_exactly(self.HEADER_BYTES)
+            length = unpack('!I', packed_length)[0]
 
-        message = self._recv_exactly(length)
+            message = self._recv_exactly(length)
         return message
 
     def close(self) -> None:
