@@ -9,9 +9,18 @@ from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, List
 
-from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
-                                 EnvironmentApi, ScenarioApi, SettingsApi,
-                                 SystemApi, TrafficApi, UiApi, VehiclesApi)
+from beamngpy.api.beamng import (
+    CameraApi,
+    ControlApi,
+    DebugApi,
+    EnvironmentApi,
+    ScenarioApi,
+    SettingsApi,
+    SystemApi,
+    TrafficApi,
+    UiApi,
+    VehiclesApi,
+)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning
@@ -86,9 +95,17 @@ class BeamNGpy:
             See :class:`.VehiclesApi` for details.
     """
 
-    def __init__(self, host: str, port: int, home: str | None = None, binary: str | None = None,
-                 user: str | None = None, quit_on_close: bool = True, crash_lua_on_error: bool | None = None):
-        self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        home: str | None = None,
+        binary: str | None = None,
+        user: str | None = None,
+        quit_on_close: bool = True,
+        crash_lua_on_error: bool | None = None,
+    ):
+        self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
         self.logger.setLevel(logging.DEBUG)
         self.host = host
         self.port = port
@@ -117,9 +134,15 @@ class BeamNGpy:
         """
         return self._tech_enabled
 
-    def open(self, extensions: List[str] | None = None, *args: str,
-             launch: bool = True, crash_lua_on_error: bool | None = None,
-             listen_ip: str = '127.0.0.1', **opts: str) -> BeamNGpy:
+    def open(
+        self,
+        extensions: List[str] | None = None,
+        *args: str,
+        launch: bool = True,
+        crash_lua_on_error: bool | None = None,
+        listen_ip: str = "127.0.0.1",
+        **opts: str,
+    ) -> BeamNGpy:
         """
         Starts a BeamNG.* process, opens a server socket, and waits for the spawned BeamNG.* process to connect.
         This method blocks until the process started and is ready.
@@ -140,18 +163,20 @@ class BeamNGpy:
         # try to connect to existing instance
         connected = self.connection.connect_to_beamng(tries=1, log_tries=False)
         if connected:
-            self.logger.info('BeamNGpy successfully connected to existing BeamNG instance.')
+            self.logger.info(
+                "BeamNGpy successfully connected to existing BeamNG instance."
+            )
         elif launch:
-            self.logger.info('Opening BeamNGpy instance.')
+            self.logger.info("Opening BeamNGpy instance.")
             arg_list = list(args)
 
             if crash_lua_on_error is None:
                 crash_lua_on_error = self.crash_lua_on_error
             if crash_lua_on_error == True:
-                arg_list.append('-tcom-debug')
+                arg_list.append("-tcom-debug")
             elif crash_lua_on_error == False:
-                arg_list.append('-no-tcom-debug')
-            arg_list.extend(('-tcom-listen-ip', listen_ip))
+                arg_list.append("-no-tcom-debug")
+            arg_list.extend(("-tcom-listen-ip", listen_ip))
 
             self._start_beamng(extensions, *arg_list, **opts)
             sleep(10)
@@ -171,7 +196,7 @@ class BeamNGpy:
         """
         Disconnects from the simulator and kills the BeamNG.* process.
         """
-        self.logger.info('Closing BeamNGpy instance.')
+        self.logger.info("Closing BeamNGpy instance.")
         if not self.quit_on_close:
             self.disconnect()
             return
@@ -182,8 +207,8 @@ class BeamNGpy:
 
     def _load_system_info(self) -> None:
         info = self.system.get_info()
-        self._host_os = info['os']['type']
-        self._tech_enabled = info['tech']
+        self._host_os = info["os"]["type"]
+        self._tech_enabled = info["tech"]
 
     def _setup_api(self) -> None:
         self.camera = CameraApi(self)
@@ -277,7 +302,7 @@ class BeamNGpy:
         """
         Kills the running BeamNG.* process.
         """
-        self.logger.info('Terminating BeamNG.tech process.')
+        self.logger.info("Terminating BeamNG.tech process.")
         if self.connection:
             try:
                 self.control.quit_beamng()
@@ -287,11 +312,16 @@ class BeamNGpy:
                 self.connection = None
         if not self.process:
             self.logger.info(
-                'cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine')
+                "cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine"
+            )
             return
-        if os.name == 'nt':
-            with open(os.devnull, 'w') as devnull:
-                subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)], stdout=devnull, stderr=devnull)
+        if os.name == "nt":
+            with open(os.devnull, "w") as devnull:
+                subprocess.call(
+                    ["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
+                    stdout=devnull,
+                    stderr=devnull,
+                )
         else:
             try:
                 os.kill(self.process.pid, signal.SIGTERM)
@@ -301,16 +331,22 @@ class BeamNGpy:
 
     def _send(self, data: StrDict) -> Response:
         if not self.connection:
-            raise BNGError('Not connected to the simulator!')
+            raise BNGError("Not connected to the simulator!")
         return self.connection.send(data)
 
     def _message(self, req: str, **kwargs: Any) -> Any:
         if not self.connection:
-            raise BNGError('Not connected to the simulator!')
+            raise BNGError("Not connected to the simulator!")
         return self.connection.message(req, **kwargs)
 
-    def _prepare_call(self, binary: str, user: Path | None, extensions: List[str] | None,
-                      *args: str, **usr_opts: str) -> List[str]:
+    def _prepare_call(
+        self,
+        binary: str,
+        user: Path | None,
+        extensions: List[str] | None,
+        *args: str,
+        **usr_opts: str,
+    ) -> List[str]:
         """
         Prepares the command line call to execute to start BeamNG.*.
         according to this class' and the global configuration.
@@ -322,44 +358,49 @@ class BeamNGpy:
         if extensions is None:
             extensions = []
 
-        extensions.insert(0, 'tech/techCore')
-        lua = ("extensions.load('{}');" * len(extensions))
-        lua = lua.format(*extensions) + f'tech_techCore.openServer({self.port})'
-        call = [binary, '-nosteam']
-        if platform.system() != 'Linux':  # console is not supported for Linux hosts yet
-            call.append('-console')
+        extensions.insert(0, "tech/techCore")
+        lua = "extensions.load('{}');" * len(extensions)
+        lua = lua.format(*extensions) + f"tech_techCore.openServer({self.port})"
+        call = [binary, "-nosteam"]
+        if platform.system() != "Linux":  # console is not supported for Linux hosts yet
+            call.append("-console")
 
         for arg in args:
             call.append(arg)
 
-        call_opts = {'lua': lua}
-        if 'lua' in usr_opts.keys():
-            call_opts['lua'] = usr_opts['lua']
+        call_opts = {"lua": lua}
+        if "lua" in usr_opts.keys():
+            call_opts["lua"] = usr_opts["lua"]
 
         for key, val in call_opts.items():
-            call.extend(['-' + key, val])
+            call.extend(["-" + key, val])
 
         if user:
-            call.append('-userpath')
+            call.append("-userpath")
             call.append(str(user))
-            if ' ' in str(user):
-                msg = 'Your configured userpath contains a space. ' \
-                      'Unfortunately, this is known to cause issues in ' \
-                      'launching BeamNG.tech. If you require a path with a ' \
-                      'space in it, you can alternatively set it manually in' \
-                      'the file "startup.ini" contained in the directory of ' \
-                      'your BeamNG.tech installtion. This would not be ' \
-                      'automatically updated if you change the `user` ' \
-                      'parameter to `BeamNGpy`, but serves as a workaround ' \
-                      'until the issue is fixed in BeamNG.tech.'
+            if " " in str(user):
+                msg = (
+                    "Your configured userpath contains a space. "
+                    "Unfortunately, this is known to cause issues in "
+                    "launching BeamNG.tech. If you require a path with a "
+                    "space in it, you can alternatively set it manually in"
+                    'the file "startup.ini" contained in the directory of '
+                    "your BeamNG.tech installtion. This would not be "
+                    "automatically updated if you change the `user` "
+                    "parameter to `BeamNGpy`, but serves as a workaround "
+                    "until the issue is fixed in BeamNG.tech."
+                )
                 self.logger.error(msg)
 
-        call_str = ' '.join(call)
-        self.logger.debug('Created system call for starting '
-                          f'BeamNG process: `{call_str}`')
+        call_str = " ".join(call)
+        self.logger.debug(
+            "Created system call for starting " f"BeamNG process: `{call_str}`"
+        )
         return call
 
-    def _start_beamng(self, extensions: List[str] | None, *args: str, **opts: str) -> None:
+    def _start_beamng(
+        self, extensions: List[str] | None, *args: str, **opts: str
+    ) -> None:
         """
         Spawns a BeamNG.* process and retains a reference to it for later
         termination.
@@ -368,18 +409,24 @@ class BeamNGpy:
         if self.binary:
             binary = home / self.binary
             if not binary.is_file():
-                raise BNGError(f'The BeamNG binary {binary} was not found in BeamNG home.')
+                raise BNGError(
+                    f"The BeamNG binary {binary} was not found in BeamNG home."
+                )
         else:
             binary = filesystem.determine_binary(home)
-        userpath = Path(self.user) if self.user else filesystem.determine_userpath(binary)
+        userpath = (
+            Path(self.user) if self.user else filesystem.determine_userpath(binary)
+        )
         call = self._prepare_call(str(binary), userpath, extensions, *args, **opts)
 
-        if platform.system() == 'Linux':
+        if platform.system() == "Linux":
             # keep the same behaviour as on Windows - do not print game logs to the Python stdout
-            self.process = subprocess.Popen(call, stdout=subprocess.DEVNULL, stdin=subprocess.PIPE)
+            self.process = subprocess.Popen(
+                call, stdout=subprocess.DEVNULL, stdin=subprocess.PIPE
+            )
         else:
             self.process = subprocess.Popen(call, stdin=subprocess.PIPE)
-        self.logger.info('Started BeamNG.')
+        self.logger.info("Started BeamNG.")
 
     def __enter__(self):
         self.open()

@@ -11,8 +11,6 @@ class AccApi(VehicleApi):
         vehicle: An instance of a vehicle object.
     """
 
-    
-
     def start(self, sp: float, inputFlag: bool) -> None:
         """
         Starts ACC
@@ -20,17 +18,19 @@ class AccApi(VehicleApi):
         Args:
             vehicle: An instance of a vehicle object.
         """
-        data = dict(type='LoadACC') # dict(type='LoadACC', speed=sp, debugFlag=inputFlag)
-        data['speed'] = sp
-        data['debugFlag'] = inputFlag
-        self._send(data).ack('ACCloaded')
-        log_msg = ('Started ACC.')
+        data = dict(
+            type="LoadACC"
+        )  # dict(type='LoadACC', speed=sp, debugFlag=inputFlag)
+        data["speed"] = sp
+        data["debugFlag"] = inputFlag
+        self._send(data).ack("ACCloaded")
+        log_msg = "Started ACC."
         self._logger.info(log_msg)
 
     def stop(self) -> None:
         """
         Stops ACC.
         """
-        data = dict(type='UnloadACC')
-        self._send(data).ack('ACCunloaded')
-        self._logger.info('Stopped ACC.')
+        data = dict(type="UnloadACC")
+        self._send(data).ack("ACCunloaded")
+        self._logger.info("Stopped ACC.")

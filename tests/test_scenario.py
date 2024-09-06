@@ -15,12 +15,12 @@ if TYPE_CHECKING:
 
 def test_new_scenario(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('tech_ground', 'test_scenario')
-        vehicle = Vehicle('test_car', model='etk800')
+        scenario = Scenario("tech_ground", "test_scenario")
+        vehicle = Vehicle("test_car", model="etk800")
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
         bng.scenario.load(scenario)
-        assert bng.scenario.get_name() == 'test_scenario'
+        assert bng.scenario.get_name() == "test_scenario"
         try:
             bng.scenario.start()
         except socket.timeout:
@@ -39,15 +39,18 @@ def test_no_scenario(beamng: BeamNGpy):
             bng.scenario.get_current()
 
 
-@pytest.mark.parametrize('scenario_path', [
-    '/levels/west_coast_usa/scenarios/derby_asphalt.json',  # classic scenario
-    '/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json',  # mission
-])
+@pytest.mark.parametrize(
+    "scenario_path",
+    [
+        "/levels/west_coast_usa/scenarios/derby_asphalt.json",  # classic scenario
+        "/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json",  # mission
+    ],
+)
 def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
     with beamng as bng:
         scenarios = bng.scenario.get_scenarios()
         target = None
-        scenarios_to_search = scenarios['west_coast_usa'] + scenarios['italy']
+        scenarios_to_search = scenarios["west_coast_usa"] + scenarios["italy"]
         for scenario in scenarios_to_search:
             if scenario.path == scenario_path:
                 target = scenario
@@ -55,15 +58,17 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
 
         assert target is not None
 
-        bng.scenario.load(target, connect_player_vehicle=False, connect_existing_vehicles=False)
+        bng.scenario.load(
+            target, connect_player_vehicle=False, connect_existing_vehicles=False
+        )
 
         loaded = bng.scenario.get_current(connect=False)
         assert loaded.path == target.path
 
 
 def test_scenario_vehicle_name():
-    scenario = Scenario('tech_ground', 'same')
-    vehicle = Vehicle('same', model='etk800')
+    scenario = Scenario("tech_ground", "same")
+    vehicle = Vehicle("same", model="etk800")
     with pytest.raises(BNGValueError):
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
 
@@ -73,16 +78,16 @@ def test_get_scenarios(beamng: BeamNGpy):
         scenarios = bng.scenario.get_scenarios()
         assert len(scenarios) > 0
 
-        gridmap_scenarios = bng.scenario.get_level_scenarios('gridmap_v2')
+        gridmap_scenarios = bng.scenario.get_level_scenarios("gridmap_v2")
         assert len(gridmap_scenarios) > 0
 
         for scenario in gridmap_scenarios:
             assert scenario.level is not None
             assert isinstance(scenario.level, Level)
-            assert scenario.level.name == 'gridmap_v2'
+            assert scenario.level.name == "gridmap_v2"
 
         levels = bng.scenario.get_levels()
-        gridmap = levels['gridmap_v2']
+        gridmap = levels["gridmap_v2"]
 
         ref = gridmap_scenarios
         gridmap_scenarios = bng.scenario.get_level_scenarios(gridmap)
@@ -111,8 +116,8 @@ def test_get_current_vehicles(beamng: BeamNGpy):
     with beamng as bng:
         scenarios = bng.scenario.get_scenarios()
         target = None
-        for scenario in scenarios['west_coast_usa']:
-            if scenario.path == '/levels/west_coast_usa/scenarios/derby_asphalt.json':
+        for scenario in scenarios["west_coast_usa"]:
+            if scenario.path == "/levels/west_coast_usa/scenarios/derby_asphalt.json":
                 target = scenario
                 break
 
@@ -121,10 +126,10 @@ def test_get_current_vehicles(beamng: BeamNGpy):
         bng.scenario.load(target)
 
         vehicles = bng.vehicles.get_current(include_config=False)
-        player = vehicles['scenario_player0']
+        player = vehicles["scenario_player0"]
 
         sensor = Electrics()
-        player.sensors.attach('electrics', sensor)
+        player.sensors.attach("electrics", sensor)
         player.connect(bng)
 
         assert player.is_connected()
@@ -134,7 +139,7 @@ def test_get_current_vehicles(beamng: BeamNGpy):
         player.control(throttle=1.0)
         bng.control.step(600)
         player.sensors.poll()
-        assert sensor['wheelspeed'] > 0
+        assert sensor["wheelspeed"] > 0
 
 
 def find_object_name(scene: SceneObject, name: str):
@@ -151,8 +156,8 @@ def find_object_name(scene: SceneObject, name: str):
 
 def test_get_scenetree(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario('gridmap_v2', 'test_scenario')
-        vehicle = Vehicle('egoVehicle', model='etk800')
+        scenario = Scenario("gridmap_v2", "test_scenario")
+        vehicle = Vehicle("egoVehicle", model="etk800")
         scenario.add_vehicle(vehicle, pos=(0, 0, 100), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
         bng.scenario.load(scenario)
@@ -161,7 +166,7 @@ def test_get_scenetree(beamng: BeamNGpy):
         scenario.sync_scene()
 
         assert scenario.scene is not None
-        assert scenario.scene.type == 'SimGroup'
+        assert scenario.scene.type == "SimGroup"
 
-        prefab = find_object_name(scenario.scene, 'test_scenario')
+        prefab = find_object_name(scenario.scene, "test_scenario")
         assert prefab is not None

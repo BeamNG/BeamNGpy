@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['Mesh']
+__all__ = ["Mesh"]
 
 
 class Mesh(CommBase):
@@ -33,11 +33,19 @@ class Mesh(CommBase):
         is_track_beams: A flag which indicates if we should keep updating the beam to node maps. This will track broken beams over time, but is slower.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.015,
-        groups_list=[], is_track_beams=True):
+    def __init__(
+        self,
+        name: str,
+        bng: BeamNGpy,
+        vehicle: Vehicle,
+        gfx_update_time: float = 0.0,
+        physics_update_time: float = 0.015,
+        groups_list=[],
+        is_track_beams=True,
+    ):
         super().__init__(bng, vehicle)
 
-        self.logger = getLogger(f'{LOGGER_ID}.Mesh')
+        self.logger = getLogger(f"{LOGGER_ID}.Mesh")
         self.logger.setLevel(DEBUG)
 
         # BeamNG properties.
@@ -73,7 +81,7 @@ class Mesh(CommBase):
         # Populate the list of beams for this sensor.
         self.beams = self._get_active_beams()
 
-        self.logger.debug('Mesh - sensor created: ' f'{self.name}')
+        self.logger.debug("Mesh - sensor created: " f"{self.name}")
 
     def _is_node_relevant(self, v):
         """
@@ -85,10 +93,10 @@ class Mesh(CommBase):
         Returns:
             True if the node is in one of the selected mesh groups, otherwise false
         """
-        if 'partOrigin' not in v:
+        if "partOrigin" not in v:
             return False
 
-        return v['partOrigin'] in self.groups
+        return v["partOrigin"] in self.groups
 
     def _is_beam_relevant(self, b0, b1):
         """
@@ -102,9 +110,9 @@ class Mesh(CommBase):
         Returns:
             True if the beam is in one of the selected mesh groups, otherwise false
         """
-        return self._is_node_relevant(self.raw_data['nodes'][b0]) and self._is_node_relevant(
-            self.raw_data['nodes'][b1]
-        )
+        return self._is_node_relevant(
+            self.raw_data["nodes"][b0]
+        ) and self._is_node_relevant(self.raw_data["nodes"][b1])
 
     def _get_active_beams(self):
         """
@@ -115,7 +123,7 @@ class Mesh(CommBase):
         if self.is_track_beams == False and self.is_beam_relevance_map_computed == True:
             return
 
-        beam_data = self.send_recv_ge('GetBeamData', vid=self.vid)['data']
+        beam_data = self.send_recv_ge("GetBeamData", vid=self.vid)["data"]
         self.beams = {}
 
         if self.is_beam_relevance_map_computed == True:
@@ -127,7 +135,7 @@ class Mesh(CommBase):
                 self.beams[int(key)] = [b0, b1, b2]
             return
 
-        if 'nodes' not in self.raw_data:
+        if "nodes" not in self.raw_data:
             return
 
         # We have not yet computed the beam relevance map, so compute it now. We only need to do this once.
@@ -148,7 +156,7 @@ class Mesh(CommBase):
         Removes this sensor from the simulation.
         """
         self._close_mesh()
-        self.logger.debug('Mesh - sensor removed: ' f'{self.name}')
+        self.logger.debug("Mesh - sensor removed: " f"{self.name}")
 
     def poll(self) -> StrDict:
         """
@@ -167,17 +175,17 @@ class Mesh(CommBase):
 
         if self.is_node_relevance_map_computed == True:
             for k in self.node_relevance_map.keys():
-                self.node_positions[k] = self.raw_data['nodes'][k]
+                self.node_positions[k] = self.raw_data["nodes"][k]
         else:
             # The node relevance map has not been computed, so compute it now.  This only needs to be computed once.
             self.node_relevance_map = {}
             if self.is_full_mesh == True:
-                for k, v in self.raw_data['nodes'].items():
+                for k, v in self.raw_data["nodes"].items():
                     key = int(k)
                     self.node_positions[key] = v
                     self.node_relevance_map[key] = True
             else:
-                for k, v in self.raw_data['nodes'].items():
+                for k, v in self.raw_data["nodes"].items():
                     # Only include beams which are requested.
                     if self._is_node_relevant(v) == True:
                         key = int(k)
@@ -188,7 +196,9 @@ class Mesh(CommBase):
         # Get the latest beams from the simulator.
         self._get_active_beams()
 
-        self.logger.debug('Mesh - sensor readings received from simulation: ' f'{self.name}')
+        self.logger.debug(
+            "Mesh - sensor readings received from simulation: " f"{self.name}"
+        )
         return self.raw_data
 
     def send_ad_hoc_poll_request(self) -> int:
@@ -200,8 +210,12 @@ class Mesh(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('Mesh - ad-hoc polling request sent: ' f'{self.name}')
-        return int(self.send_recv_ge('SendAdHocRequestMesh', name=self.name, vid=self.vehicle.vid)['data'])
+        self.logger.debug("Mesh - ad-hoc polling request sent: " f"{self.name}")
+        return int(
+            self.send_recv_ge(
+                "SendAdHocRequestMesh", name=self.name, vid=self.vehicle.vid
+            )["data"]
+        )
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -213,8 +227,12 @@ class Mesh(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('Mesh - ad-hoc polling request checked for completion: ' f'{self.name}')
-        return self.send_recv_ge('IsAdHocPollRequestReadyMesh', requestId=request_id)['data']
+        self.logger.debug(
+            "Mesh - ad-hoc polling request checked for completion: " f"{self.name}"
+        )
+        return self.send_recv_ge("IsAdHocPollRequestReadyMesh", requestId=request_id)[
+            "data"
+        ]
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -226,8 +244,12 @@ class Mesh(CommBase):
         Returns:
             The readings data.
         """
-        readings = self.send_recv_ge('CollectAdHocPollRequestMesh', requestId=request_id)['data']
-        self.logger.debug('Mesh - ad-hoc polling request returned and processed: ' f'{self.name}')
+        readings = self.send_recv_ge(
+            "CollectAdHocPollRequestMesh", requestId=request_id
+        )["data"]
+        self.logger.debug(
+            "Mesh - ad-hoc polling request returned and processed: " f"{self.name}"
+        )
         return readings
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
@@ -237,22 +259,44 @@ class Mesh(CommBase):
         Args:
             requested_update_time: The new requested update time.
         """
-        self.send_ack_ge('SetMeshRequestedUpdateTime', ack='CompletedSetMeshRequestedUpdateTime',
-                         name=self.name, vid=self.vehicle.vid, GFXUpdateTime=requested_update_time)
+        self.send_ack_ge(
+            "SetMeshRequestedUpdateTime",
+            ack="CompletedSetMeshRequestedUpdateTime",
+            name=self.name,
+            vid=self.vehicle.vid,
+            GFXUpdateTime=requested_update_time,
+        )
 
     def _get_mesh_id(self) -> int:
-        return int(self.send_recv_ge('GetMeshId', name=self.name)['data'])
+        return int(self.send_recv_ge("GetMeshId", name=self.name)["data"])
 
-    def _open_mesh(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float) -> None:
-        self.send_ack_ge(type='OpenMesh', ack='OpenedMesh', name=name, vid=vehicle.vid, GFXUpdateTime=gfx_update_time, physicsUpdateTime=physics_update_time)
+    def _open_mesh(
+        self,
+        name: str,
+        vehicle: Vehicle,
+        gfx_update_time: float,
+        physics_update_time: float,
+    ) -> None:
+        self.send_ack_ge(
+            type="OpenMesh",
+            ack="OpenedMesh",
+            name=name,
+            vid=vehicle.vid,
+            GFXUpdateTime=gfx_update_time,
+            physicsUpdateTime=physics_update_time,
+        )
         self.logger.info(f'Opened Mesh sensor: "{name}"')
 
     def _close_mesh(self) -> None:
-        self.send_ack_ge(type='CloseMesh', ack='ClosedMesh', name=self.name, vid=self.vehicle.vid)
+        self.send_ack_ge(
+            type="CloseMesh", ack="ClosedMesh", name=self.name, vid=self.vehicle.vid
+        )
         self.logger.info(f'Closed Mesh sensor: "{self.name}"')
 
     def _poll_mesh_VE(self) -> StrDict:
-        return self.send_recv_veh('PollMeshVE', name=self.name, sensorId=self.sensorId)['data']
+        return self.send_recv_veh("PollMeshVE", name=self.name, sensorId=self.sensorId)[
+            "data"
+        ]
 
     def get_node_positions(self):
         return self.node_positions
@@ -263,11 +307,11 @@ class Mesh(CommBase):
         lines3 = []
         c = []
         for _, v in self.beams.items():
-            p1 = self.node_positions[v[0]]['pos']
-            p2 = self.node_positions[v[1]]['pos']
-            lines1.append([(p1['x'], p1['y']), (p2['x'], p2['y'])])
-            lines2.append([(p1['x'], p1['z']), (p2['x'], p2['z'])])
-            lines3.append([(p1['y'], p1['z']), (p2['y'], p2['z'])])
+            p1 = self.node_positions[v[0]]["pos"]
+            p2 = self.node_positions[v[1]]["pos"]
+            lines1.append([(p1["x"], p1["y"]), (p2["x"], p2["y"])])
+            lines2.append([(p1["x"], p1["z"]), (p2["x"], p2["z"])])
+            lines3.append([(p1["y"], p1["z"]), (p2["y"], p2["z"])])
             c.append((0.3, 0.3, 0.3, 0.1))
         lns1 = mc.LineCollection(lines1, colors=c, linewidths=0.5)
         lns2 = mc.LineCollection(lines2, colors=c, linewidths=0.5)
@@ -277,9 +321,9 @@ class Mesh(CommBase):
     def mesh_plot(self):
         sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
-        ax[0, 0].set_aspect('equal', adjustable='box')
-        ax[1, 0].set_aspect('equal', adjustable='box')
-        ax[1, 1].set_aspect('equal', adjustable='box')
+        ax[0, 0].set_aspect("equal", adjustable="box")
+        ax[1, 0].set_aspect("equal", adjustable="box")
+        ax[1, 1].set_aspect("equal", adjustable="box")
         ax[0, 0].set_xlim([-3, 3])
         ax[1, 0].set_xlim([-3, 3])
         ax[1, 1].set_xlim([-3, 3])
@@ -295,12 +339,12 @@ class Mesh(CommBase):
         ax[1, 1].set_title("End Elevation")
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
-        ax[0, 1].axis('off')
+        ax[0, 1].axis("off")
         for i in range(len(self.node_positions)):
-            node = self.node_positions[i]['pos']
-            ax[0, 0].plot(node['x'], node['y'], 'ro')
-            ax[1, 0].plot(node['x'], node['z'], 'ro')
-            ax[1, 1].plot(node['y'], node['z'], 'ro')
+            node = self.node_positions[i]["pos"]
+            ax[0, 0].plot(node["x"], node["y"], "ro")
+            ax[1, 0].plot(node["x"], node["z"], "ro")
+            ax[1, 1].plot(node["y"], node["z"], "ro")
 
         lns1, lns2, lns3 = self.compute_beam_line_segments()
         ax[0, 0].add_collection(lns1)
@@ -312,9 +356,9 @@ class Mesh(CommBase):
     def mass_distribution_plot(self, data):
         sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
-        ax[0, 0].set_aspect('equal', adjustable='box')
-        ax[1, 0].set_aspect('equal', adjustable='box')
-        ax[1, 1].set_aspect('equal', adjustable='box')
+        ax[0, 0].set_aspect("equal", adjustable="box")
+        ax[1, 0].set_aspect("equal", adjustable="box")
+        ax[1, 1].set_aspect("equal", adjustable="box")
         ax[0, 0].set_xlim([-3, 3])
         ax[1, 0].set_xlim([-3, 3])
         ax[1, 1].set_xlim([-3, 3])
@@ -330,7 +374,7 @@ class Mesh(CommBase):
         ax[1, 1].set_title("End Elevation")
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
-        ax[0, 1].axis('off')
+        ax[0, 1].axis("off")
 
         x = []
         y = []
@@ -338,11 +382,11 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]['pos']
-            x.append(node['x'])
-            y.append(node['y'])
-            z.append(node['z'])
-            colors.append(data[i]['mass'])
+            node = data[i]["pos"]
+            x.append(node["x"])
+            y.append(node["y"])
+            z.append(node["z"])
+            colors.append(data[i]["mass"])
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)
@@ -360,9 +404,9 @@ class Mesh(CommBase):
     def force_distribution_plot(self, data):
         sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
-        ax[0, 0].set_aspect('equal', adjustable='box')
-        ax[1, 0].set_aspect('equal', adjustable='box')
-        ax[1, 1].set_aspect('equal', adjustable='box')
+        ax[0, 0].set_aspect("equal", adjustable="box")
+        ax[1, 0].set_aspect("equal", adjustable="box")
+        ax[1, 1].set_aspect("equal", adjustable="box")
         ax[0, 0].set_xlim([-3, 3])
         ax[1, 0].set_xlim([-3, 3])
         ax[1, 1].set_xlim([-3, 3])
@@ -378,7 +422,7 @@ class Mesh(CommBase):
         ax[1, 1].set_title("End Elevation")
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
-        ax[0, 1].axis('off')
+        ax[0, 1].axis("off")
 
         x = []
         y = []
@@ -386,14 +430,14 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]['pos']
-            x.append(node['x'])
-            y.append(node['y'])
-            z.append(node['z'])
-            force = data[i]['force']
-            fx = force['x']
-            fy = force['y']
-            fz = force['z']
+            node = data[i]["pos"]
+            x.append(node["x"])
+            y.append(node["y"])
+            z.append(node["z"])
+            force = data[i]["force"]
+            fx = force["x"]
+            fy = force["y"]
+            fz = force["z"]
             colors.append(math.sqrt(fx * fx + fy * fy + fz * fz))
 
         cmap = matplotlib.cm.viridis
@@ -412,9 +456,9 @@ class Mesh(CommBase):
     def force_direction_plot(self, data):
         sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
-        ax[0, 0].set_aspect('equal', adjustable='box')
-        ax[1, 0].set_aspect('equal', adjustable='box')
-        ax[1, 1].set_aspect('equal', adjustable='box')
+        ax[0, 0].set_aspect("equal", adjustable="box")
+        ax[1, 0].set_aspect("equal", adjustable="box")
+        ax[1, 1].set_aspect("equal", adjustable="box")
         ax[0, 0].set_xlim([-3, 3])
         ax[1, 0].set_xlim([-3, 3])
         ax[1, 1].set_xlim([-3, 3])
@@ -430,7 +474,7 @@ class Mesh(CommBase):
         ax[1, 1].set_title("End Elevation")
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
-        ax[0, 1].axis('off')
+        ax[0, 1].axis("off")
 
         x = []
         y = []
@@ -438,20 +482,20 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]['pos']
-            x.append(node['x'])
-            y.append(node['y'])
-            z.append(node['z'])
-            force = data[i]['force']
-            fx = force['x']
-            fy = force['y']
-            fz = force['z']
+            node = data[i]["pos"]
+            x.append(node["x"])
+            y.append(node["y"])
+            z.append(node["z"])
+            force = data[i]["force"]
+            fx = force["x"]
+            fy = force["y"]
+            fz = force["z"]
             mag = math.sqrt(fx * fx + fy * fy + fz * fz)
             colors.append(mag)
             fac = 1 / max(1, mag)
-            ax[0, 0].arrow(x[-1], y[-1], fx * fac, fy * fac, width=0.05, ec='red')
-            ax[1, 0].arrow(x[-1], z[-1], fx * fac, fz * fac, width=0.05, ec='red')
-            ax[1, 1].arrow(y[-1], z[-1], fy * fac, fz * fac, width=0.05, ec='red')
+            ax[0, 0].arrow(x[-1], y[-1], fx * fac, fy * fac, width=0.05, ec="red")
+            ax[1, 0].arrow(x[-1], z[-1], fx * fac, fz * fac, width=0.05, ec="red")
+            ax[1, 1].arrow(y[-1], z[-1], fy * fac, fz * fac, width=0.05, ec="red")
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)
@@ -469,9 +513,9 @@ class Mesh(CommBase):
     def velocity_distribution_plot(self, data):
         sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
-        ax[0, 0].set_aspect('equal', adjustable='box')
-        ax[1, 0].set_aspect('equal', adjustable='box')
-        ax[1, 1].set_aspect('equal', adjustable='box')
+        ax[0, 0].set_aspect("equal", adjustable="box")
+        ax[1, 0].set_aspect("equal", adjustable="box")
+        ax[1, 1].set_aspect("equal", adjustable="box")
         ax[0, 0].set_xlim([-3, 3])
         ax[1, 0].set_xlim([-3, 3])
         ax[1, 1].set_xlim([-3, 3])
@@ -487,7 +531,7 @@ class Mesh(CommBase):
         ax[1, 1].set_title("End Elevation")
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
-        ax[0, 1].axis('off')
+        ax[0, 1].axis("off")
 
         x = []
         y = []
@@ -495,14 +539,14 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]['pos']
-            x.append(node['x'])
-            y.append(node['y'])
-            z.append(node['z'])
-            vel = data[i]['vel']
-            vx = vel['x']
-            vy = vel['y']
-            vz = vel['z']
+            node = data[i]["pos"]
+            x.append(node["x"])
+            y.append(node["y"])
+            z.append(node["z"])
+            vel = data[i]["vel"]
+            vx = vel["x"]
+            vy = vel["y"]
+            vz = vel["z"]
             colors.append(math.sqrt(vx * vx + vy * vy + vz * vz))
 
         cmap = matplotlib.cm.viridis
@@ -521,9 +565,9 @@ class Mesh(CommBase):
     def velocity_direction_plot(self, data):
         sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
         fig, ax = plt.subplots(2, 2)
-        ax[0, 0].set_aspect('equal', adjustable='box')
-        ax[1, 0].set_aspect('equal', adjustable='box')
-        ax[1, 1].set_aspect('equal', adjustable='box')
+        ax[0, 0].set_aspect("equal", adjustable="box")
+        ax[1, 0].set_aspect("equal", adjustable="box")
+        ax[1, 1].set_aspect("equal", adjustable="box")
         ax[0, 0].set_xlim([-3, 3])
         ax[1, 0].set_xlim([-3, 3])
         ax[1, 1].set_xlim([-3, 3])
@@ -539,7 +583,7 @@ class Mesh(CommBase):
         ax[1, 1].set_title("End Elevation")
         ax[1, 1].set_xlabel("y")
         ax[1, 1].set_ylabel("z")
-        ax[0, 1].axis('off')
+        ax[0, 1].axis("off")
 
         x = []
         y = []
@@ -547,20 +591,20 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]['pos']
-            x.append(node['x'])
-            y.append(node['y'])
-            z.append(node['z'])
-            vel = data[i]['vel']
-            vx = vel['x']
-            vy = vel['y']
-            vz = vel['z']
+            node = data[i]["pos"]
+            x.append(node["x"])
+            y.append(node["y"])
+            z.append(node["z"])
+            vel = data[i]["vel"]
+            vx = vel["x"]
+            vy = vel["y"]
+            vz = vel["z"]
             mag = math.sqrt(vx * vx + vy * vy + vz * vz)
             colors.append(mag)
             fac = 1 / max(1, mag)
-            ax[0, 0].arrow(x[-1], y[-1], vx * fac, vy * fac, width=0.05, ec='red')
-            ax[1, 0].arrow(x[-1], z[-1], vx * fac, vz * fac, width=0.05, ec='red')
-            ax[1, 1].arrow(y[-1], z[-1], vy * fac, vz * fac, width=0.05, ec='red')
+            ax[0, 0].arrow(x[-1], y[-1], vx * fac, vy * fac, width=0.05, ec="red")
+            ax[1, 0].arrow(x[-1], z[-1], vx * fac, vz * fac, width=0.05, ec="red")
+            ax[1, 1].arrow(y[-1], z[-1], vy * fac, vz * fac, width=0.05, ec="red")
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)

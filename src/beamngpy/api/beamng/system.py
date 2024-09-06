@@ -13,7 +13,9 @@ class SystemApi(Api):
         beamng: An instance of the simulator.
     """
 
-    def get_info(self, os: bool = True, cpu: bool = False, gpu: bool = False, power: bool = False) -> StrDict:
+    def get_info(
+        self, os: bool = True, cpu: bool = False, gpu: bool = False, power: bool = False
+    ) -> StrDict:
         """
         Returns the information about the host's system.
 
@@ -23,5 +25,5 @@ class SystemApi(Api):
             gpu: Whether to include information about the GPU of the host.
             power: Whether to include information about the power options of the host.
         """
-        data = dict(type='GetSystemInfo', os=os, cpu=cpu, gpu=gpu, power=power)
+        data = dict(type="GetSystemInfo", os=os, cpu=cpu, gpu=gpu, power=power)
         return self._send(data).recv()

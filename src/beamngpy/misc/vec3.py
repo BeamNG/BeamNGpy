@@ -87,7 +87,7 @@ class vec3:
             return self.y
         if n == 2:
             return self.z
-        raise IndexError(f'vec3 does not have an element at index {n}.')
+        raise IndexError(f"vec3 does not have an element at index {n}.")
 
     def dot(self, b) -> float:
         """
@@ -111,7 +111,11 @@ class vec3:
         Returns:
             The cross product between the two vectors (a vector value)
         """
-        return vec3(self.y * b.z - self.z * b.y, -(self.x * b.z - self.z * b.x), self.x * b.y - self.y * b.x)
+        return vec3(
+            self.y * b.z - self.z * b.y,
+            -(self.x * b.z - self.z * b.x),
+            self.x * b.y - self.y * b.x,
+        )
 
     def distance_sq(self, b) -> float:
         """

@@ -28,12 +28,19 @@ class EnvironmentApi(Api):
         Returns:
             The dictionary with keys specified above.
         """
-        data: StrDict = dict(type='GetTimeOfDay')
-        resp = self._send(data).recv('TimeOfDay')
-        return resp['data']
+        data: StrDict = dict(type="GetTimeOfDay")
+        resp = self._send(data).recv("TimeOfDay")
+        return resp["data"]
 
-    def set_tod(self, tod: Time | None = None, play: bool | None = None, day_scale: float | None = None,
-                night_scale: float | None = None, day_length: float | None = None, azimuth_override: float | None = None) -> None:
+    def set_tod(
+        self,
+        tod: Time | None = None,
+        play: bool | None = None,
+        day_scale: float | None = None,
+        night_scale: float | None = None,
+        day_length: float | None = None,
+        azimuth_override: float | None = None,
+    ) -> None:
         """
         Sets the current time of day. The time of day value is given as a float
         between 0 and 1. How this value affects the lighting of the scene is
@@ -48,14 +55,15 @@ class EnvironmentApi(Api):
             azimuth_override: Used to specify an azimuth that will stay constant throughout the day cycle.
         """
         data: StrDict = dict(
-            type='TimeOfDayChange',
+            type="TimeOfDayChange",
             time=tod,
             play=play,
             dayScale=day_scale,
             nightScale=night_scale,
             dayLength=day_length,
-            azimuthOverride=azimuth_override)
-        self._send(data).ack('TimeOfDayChanged')
+            azimuthOverride=azimuth_override,
+        )
+        self._send(data).ack("TimeOfDayChanged")
 
     def set_weather_preset(self, preset: str, time: float = 1) -> None:
         """
@@ -71,10 +79,10 @@ class EnvironmentApi(Api):
             time: Time in seconds the transition from the current
                             settings to the preset's should take.
         """
-        data: StrDict = dict(type='SetWeatherPreset')
-        data['preset'] = preset
-        data['time'] = time
-        self._send(data).ack('WeatherPresetChanged')
+        data: StrDict = dict(type="SetWeatherPreset")
+        data["preset"] = preset
+        data["time"] = time
+        self._send(data).ack("WeatherPresetChanged")
 
     def get_gravity(self) -> float:
         """
@@ -83,9 +91,9 @@ class EnvironmentApi(Api):
         Returns:
             The gravity value of the simulator.
         """
-        data: StrDict = dict(type='GetGravity')
-        resp = self._send(data).recv('Gravity')
-        return resp['gravity']
+        data: StrDict = dict(type="GetGravity")
+        resp = self._send(data).recv("Gravity")
+        return resp["gravity"]
 
     def set_gravity(self, gravity: float = -9.807) -> None:
         """
@@ -94,6 +102,6 @@ class EnvironmentApi(Api):
         Args:
             gravity: The gravity value to set. The default one is that of earth (-9.807).
         """
-        data: StrDict = dict(type='SetGravity')
-        data['gravity'] = gravity
-        self._send(data).ack('GravitySet')
+        data: StrDict = dict(type="SetGravity")
+        data["gravity"] = gravity
+        self._send(data).ack("GravitySet")

@@ -20,18 +20,22 @@ LANE_WIDTH = 1.0
 # The depth (from bottom to top) of the generated mesh roads in BeamNG.
 DEFAULT_DEPTH = 1.0
 
+
 class Road:
     """
     A container for storing a road polyline, before rendering in BeamNG.
     """
+
     def __init__(self, name, nodes):
         self.name = name
         self.nodes = nodes
+
 
 class Edge:
     """
     A container for storing a Sumo 'edge'.
     """
+
     def __init__(self, a, b, num_lanes):
         self.a, self.b = a, b
         self.num_lanes = num_lanes
@@ -46,11 +50,15 @@ class SumoImporter:
         root = tree.getroot()
         nodes = {}
         for i in root:
-            if i.tag == 'node':
-                if 'z' in i.attrib:
-                    nodes[i.attrib['id']] = vec3(float(i.attrib['x']), float(i.attrib['y']), float(i.attrib['z']))
+            if i.tag == "node":
+                if "z" in i.attrib:
+                    nodes[i.attrib["id"]] = vec3(
+                        float(i.attrib["x"]), float(i.attrib["y"]), float(i.attrib["z"])
+                    )
                 else:
-                    nodes[i.attrib['id']] = vec3(float(i.attrib['x']), float(i.attrib['y']), DEFAULT_ELEVATION)
+                    nodes[i.attrib["id"]] = vec3(
+                        float(i.attrib["x"]), float(i.attrib["y"]), DEFAULT_ELEVATION
+                    )
         return nodes
 
     # Extracts the edge data from the Sumo files (.edg.xml).
@@ -60,11 +68,15 @@ class SumoImporter:
         root = tree.getroot()
         edges = {}
         for i in root:
-            if i.tag == 'edge':
-                if 'numLanes' in i.attrib:
-                    edges[i.attrib['id']] = Edge(i.attrib['from'], i.attrib['to'], int(i.attrib['numLanes']))
+            if i.tag == "edge":
+                if "numLanes" in i.attrib:
+                    edges[i.attrib["id"]] = Edge(
+                        i.attrib["from"], i.attrib["to"], int(i.attrib["numLanes"])
+                    )
                 else:
-                    edges[i.attrib['id']] = Edge(i.attrib['from'], i.attrib['to'], DEFAULT_NUM_LANES)
+                    edges[i.attrib["id"]] = Edge(
+                        i.attrib["from"], i.attrib["to"], DEFAULT_NUM_LANES
+                    )
         return edges
 
     # Remove all duplicate edges (ones where the two nodes are the same, even if in reverse eg A-B and B-A).
@@ -86,8 +98,8 @@ class SumoImporter:
 
         # Extract the road data primitives from the Sumo files.
         print("Extracting road data from Sumo files...")
-        nodes = SumoImporter.extract_node_data(prefix + '.nod.xml')
-        unprocessed_edges = SumoImporter.extract_edge_data(prefix + '.edg.xml')
+        nodes = SumoImporter.extract_node_data(prefix + ".nod.xml")
+        unprocessed_edges = SumoImporter.extract_edge_data(prefix + ".edg.xml")
         edges = SumoImporter.remove_duplicate_edges(unprocessed_edges)
         print("Primitives to import:  nodes:", len(nodes), "; edges:", len(edges))
 
@@ -98,8 +110,9 @@ class SumoImporter:
             width = e.num_lanes * LANE_WIDTH
             nds = [
                 [n1.x, n1.y, n1.z, width, DEFAULT_DEPTH],
-                [n2.x, n2.y, n2.z, width, DEFAULT_DEPTH]]
-            roads.append(Road('imported_' + str(id), nds))
+                [n2.x, n2.y, n2.z, width, DEFAULT_DEPTH],
+            ]
+            roads.append(Road("imported_" + str(id), nds))
 
         # Create the all the roads from the road polyline data.
         print("Loading import in scenario...")

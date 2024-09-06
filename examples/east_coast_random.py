@@ -7,6 +7,7 @@
 .. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
 
 """
+
 import random
 
 from matplotlib import pyplot as plt
@@ -33,15 +34,17 @@ def main():
 
     plt.ion()
 
-    beamng = BeamNGpy('localhost', 64256)
+    beamng = BeamNGpy("localhost", 64256)
     bng = beamng.open(launch=True)
 
     # Create a scenario in east_coast_usa
-    scenario = Scenario('east_coast_usa', 'tech_test', description='Random driving for research')
+    scenario = Scenario(
+        "east_coast_usa", "tech_test", description="Random driving for research"
+    )
 
     # Set up first vehicle, with two cameras, gforces sensor, lidar, electrical
     # sensors, and damage sensors
-    vehicle = Vehicle('ego_vehicle', model='etk800', license='RED', color='Red')
+    vehicle = Vehicle("ego_vehicle", model="etk800", license="RED", color="Red")
 
     # Set up sensors
     gforces = GForces()
@@ -50,10 +53,10 @@ def main():
     timer = Timer()
 
     # Attach them
-    vehicle.attach_sensor('gforces', gforces)
-    vehicle.attach_sensor('electrics', electrics)
-    vehicle.attach_sensor('damage', damage)
-    vehicle.attach_sensor('timer', timer)
+    vehicle.attach_sensor("gforces", gforces)
+    vehicle.attach_sensor("electrics", electrics)
+    vehicle.attach_sensor("damage", damage)
+    vehicle.attach_sensor("timer", timer)
 
     scenario.add_vehicle(vehicle, pos=(-426.68, -43.59, 31.11), rot_quat=(0, 0, 1, 0))
 
@@ -63,7 +66,9 @@ def main():
     # Start BeamNG and enter the main loop
     try:
         bng.ui.hide_hud()
-        bng.settings.set_deterministic(60)  # Set simulator to be deterministic, with 60 Hz temporal resolution
+        bng.settings.set_deterministic(
+            60
+        )  # Set simulator to be deterministic, with 60 Hz temporal resolution
 
         # Put simulator in pause awaiting further inputs
         bng.control.pause()
@@ -77,17 +82,35 @@ def main():
         direction = (0, -1, 0)
         fov = 120
         resolution = (512, 512)
-        front_camera = Camera('front_camera', bng, vehicle,
-                              pos=pos, dir=direction, field_of_view_y=fov, resolution=resolution,
-                              is_render_colours=True, is_render_depth=True, is_render_annotations=True)
+        front_camera = Camera(
+            "front_camera",
+            bng,
+            vehicle,
+            pos=pos,
+            dir=direction,
+            field_of_view_y=fov,
+            resolution=resolution,
+            is_render_colours=True,
+            is_render_depth=True,
+            is_render_annotations=True,
+        )
 
         pos = (0.0, 3, 1.0)
         direction = (0, 1, 0)
         fov = 90
         resolution = (512, 512)
-        back_camera = Camera('back_camera', bng, vehicle,
-                             pos=pos, dir=direction, field_of_view_y=fov, resolution=resolution,
-                             is_render_colours=True, is_render_depth=True, is_render_annotations=True)
+        back_camera = Camera(
+            "back_camera",
+            bng,
+            vehicle,
+            pos=pos,
+            dir=direction,
+            field_of_view_y=fov,
+            resolution=resolution,
+            is_render_colours=True,
+            is_render_depth=True,
+            is_render_annotations=True,
+        )
 
         # Send random inputs to vehice and advance the simulation 20 steps
         for _ in range(1024):
@@ -102,23 +125,23 @@ def main():
             vehicle.sensors.poll()
             sensors = vehicle.sensors
 
-            print('{} seconds passed.'.format(sensors['timer']['time']))
+            print("{} seconds passed.".format(sensors["timer"]["time"]))
 
             front_cam_data = front_camera.poll()
             back_cam_data = back_camera.poll()
 
-            a_colour.imshow(front_cam_data['colour'].convert('RGB'))
-            a_depth.imshow(front_cam_data['depth'].convert('L'))
-            a_annot.imshow(front_cam_data['annotation'].convert('RGB'))
+            a_colour.imshow(front_cam_data["colour"].convert("RGB"))
+            a_depth.imshow(front_cam_data["depth"].convert("L"))
+            a_annot.imshow(front_cam_data["annotation"].convert("RGB"))
 
-            b_colour.imshow(back_cam_data['colour'].convert('RGB'))
-            b_depth.imshow(back_cam_data['depth'].convert('L'))
-            b_annot.imshow(back_cam_data['annotation'].convert('RGB'))
+            b_colour.imshow(back_cam_data["colour"].convert("RGB"))
+            b_depth.imshow(back_cam_data["depth"].convert("L"))
+            b_annot.imshow(back_cam_data["annotation"].convert("RGB"))
 
             plt.pause(1.0)
     finally:
         bng.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

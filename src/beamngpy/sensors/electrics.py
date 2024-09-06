@@ -80,36 +80,37 @@ class Electrics(Sensor):
     - water_temperature (float): Water temperature [C].
     - wheelspeed (float): Wheel speed [m/s].
     """
+
     name_map = {
-        'absActive': 'abs_active',
-        'avgWheelAV': 'avg_wheel_av',
-        'brakelights': 'brake_lights',
-        'checkengine': 'check_engine',
-        'clutchRatio': 'clutch_ratio',
-        'engineLoad': 'engine_load',
-        'engineThrottle': 'engine_throttle',
-        'escActive': 'esc_active',
-        'exhaustFlow': 'exhaust_flow',
-        'fog': 'fog_lights',
-        'fuelVolume': 'fuel_volume',
-        'fuelCapacity': 'fuel_capacity',
-        'gear_A': 'gear_a',
-        'gearIndex': 'gear_index',
-        'gear_M': 'gear_m',
-        'hazard_enabled': 'hazard_signal',
-        'isShifting': 'is_shifting',
-        'lights_state': 'headlights',
-        'oiltemp': 'oil_temperature',
-        'radiatorFanSpin': 'radiator_fan_spin',
-        'rpmTacho': 'rpm_tacho',
-        'signal_L': 'signal_l',
-        'signal_left_input': 'left_signal',
-        'signal_R': 'signal_r',
-        'signal_right_input': 'right_signal',
-        'tcsActive': 'tcs_active',
-        'throttleFactor': 'throttle_factor',
-        'twoStep': 'two_step',
-        'watertemp': 'water_temperature',
+        "absActive": "abs_active",
+        "avgWheelAV": "avg_wheel_av",
+        "brakelights": "brake_lights",
+        "checkengine": "check_engine",
+        "clutchRatio": "clutch_ratio",
+        "engineLoad": "engine_load",
+        "engineThrottle": "engine_throttle",
+        "escActive": "esc_active",
+        "exhaustFlow": "exhaust_flow",
+        "fog": "fog_lights",
+        "fuelVolume": "fuel_volume",
+        "fuelCapacity": "fuel_capacity",
+        "gear_A": "gear_a",
+        "gearIndex": "gear_index",
+        "gear_M": "gear_m",
+        "hazard_enabled": "hazard_signal",
+        "isShifting": "is_shifting",
+        "lights_state": "headlights",
+        "oiltemp": "oil_temperature",
+        "radiatorFanSpin": "radiator_fan_spin",
+        "rpmTacho": "rpm_tacho",
+        "signal_L": "signal_l",
+        "signal_left_input": "left_signal",
+        "signal_R": "signal_r",
+        "signal_right_input": "right_signal",
+        "tcsActive": "tcs_active",
+        "throttleFactor": "throttle_factor",
+        "twoStep": "two_step",
+        "watertemp": "water_temperature",
     }
 
     def __init__(self):
@@ -129,21 +130,21 @@ class Electrics(Sensor):
         return vals
 
     def _reassign_values(self, vals: StrDict) -> StrDict:
-        if 'left_signal' in vals:
-            vals['left_signal'] = vals['left_signal'] == 1
-        if 'right_signal' in vals:
-            vals['right_signal'] = vals['right_signal'] == 1
-        if 'hazard_signal' in vals:
-            vals['hazard_signal'] = vals['hazard_signal'] == 1
+        if "left_signal" in vals:
+            vals["left_signal"] = vals["left_signal"] == 1
+        if "right_signal" in vals:
+            vals["right_signal"] = vals["right_signal"] == 1
+        if "hazard_signal" in vals:
+            vals["hazard_signal"] = vals["hazard_signal"] == 1
         return vals
 
     def encode_vehicle_request(self):
-        req = dict(type='Electrics')
+        req = dict(type="Electrics")
         return req
 
     def decode_response(self, resp):
-        if 'values' in resp:
-            ret = self._rename_values(resp['values'])
+        if "values" in resp:
+            ret = self._rename_values(resp["values"])
             ret = self._reassign_values(ret)
             return ret
         return None

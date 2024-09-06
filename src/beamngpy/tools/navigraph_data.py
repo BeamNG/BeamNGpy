@@ -28,21 +28,21 @@ class NavigraphData(CommBase):
         """
         super().__init__(bng, None)
 
-        self.logger = getLogger(f'{LOGGER_ID}.Road_Graph')
+        self.logger = getLogger(f"{LOGGER_ID}.Road_Graph")
         self.logger.setLevel(DEBUG)
 
         # Get the road graph data for the current map.
-        raw_data = self.send_recv_ge('GetRoadGraph')['data']
+        raw_data = self.send_recv_ge("GetRoadGraph")["data"]
         for key in raw_data:  # fix the types if no roads fround
             raw_data[key] = dict(raw_data[key])
-        self.graph = raw_data['graph']
-        self.coords3d = self._to_vec3(raw_data['coords'])
+        self.graph = raw_data["graph"]
+        self.coords3d = self._to_vec3(raw_data["coords"])
         self.coords2d = self.get_2d_coords()
-        self.widths = raw_data['widths']
-        self.normals = self._to_vec3(raw_data['normals'])
+        self.widths = raw_data["widths"]
+        self.normals = self._to_vec3(raw_data["normals"])
         self._cached_tangents = {}
 
-        self.logger.debug('Road_Graph - data retrieved.')
+        self.logger.debug("Road_Graph - data retrieved.")
 
     def get_2d_coords(self):
         coords_2d = {}
@@ -99,7 +99,9 @@ class NavigraphData(CommBase):
                         current_path.append(next_key)
                         next_successors = graph[next_key].keys()
                         if len(next_successors) != 2:
-                            if self._collection_does_not_contain_segment(collection, current_path):
+                            if self._collection_does_not_contain_segment(
+                                collection, current_path
+                            ):
                                 collection[ctr] = current_path
                                 ctr = ctr + 1
                             break
@@ -110,7 +112,9 @@ class NavigraphData(CommBase):
                                 did_find = True
                                 break
                         if did_find == False:
-                            if self._collection_does_not_contain_segment(collection, current_path):
+                            if self._collection_does_not_contain_segment(
+                                collection, current_path
+                            ):
                                 collection[ctr] = current_path
                                 ctr = ctr + 1
                             break

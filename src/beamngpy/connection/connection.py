@@ -28,7 +28,7 @@ class Connection:
         port: The port to connect to.
     """
 
-    PROTOCOL_VERSION = 'v1.22'
+    PROTOCOL_VERSION = "v1.22"
 
     @staticmethod
     def _textify_string(data: bytes) -> str | bytes:
@@ -40,7 +40,7 @@ class Connection:
             The conversion, if it was possible to convert. Otherwise the untouched binary data.
         """
         try:
-            return data.decode('utf-8')
+            return data.decode("utf-8")
         except:
             return data
 
@@ -84,8 +84,8 @@ class Connection:
         self.port = port
         # The socket related to this connection instance. This is set upon connecting.
         self.skt: PrefixedLengthSocket | None = None
-        self.logger = logging.getLogger(f'{LOGGER_ID}.BeamNGpy')
-        self.comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
+        self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
+        self.comm_logger = logging.getLogger(f"{LOGGER_ID}.communication")
         self.req_id = 0
         self.received_messages: Dict[int, StrDict | BNGError | BNGValueError] = {}
 
@@ -99,14 +99,14 @@ class Connection:
             tries: The number of connection attempts.
         """
         if not self.port:
-            raise BNGError('The simulator port is not set!')
+            raise BNGError("The simulator port is not set!")
         while tries > 0:
             try:
-                self.logger.info(f'Attempting to connect to vehicle {vehicle.vid}')
+                self.logger.info(f"Attempting to connect to vehicle {vehicle.vid}")
                 self.skt = PrefixedLengthSocket(self.host, self.port)
                 break
             except (ConnectionRefusedError, ConnectionAbortedError, OSError) as err:
-                msg = f'Error connecting to BeamNG.tech vehicle {vehicle.vid}. {tries} tries left.'
+                msg = f"Error connecting to BeamNG.tech vehicle {vehicle.vid}. {tries} tries left."
                 self.logger.error(msg)
                 self.logger.exception(err)
                 sleep(5)
@@ -114,7 +114,7 @@ class Connection:
 
         # Send a first message across the socket to ensure we have matching protocol values.
         self.hello()
-        self.logger.info(f'Successfully connected to vehicle {vehicle.vid}.')
+        self.logger.info(f"Successfully connected to vehicle {vehicle.vid}.")
 
     def connect_to_beamng(self, tries: int = 25, log_tries: bool = True) -> bool:
         """
@@ -129,11 +129,13 @@ class Connection:
             True if the connection was successful, False otherwise.
         """
         if not self.port:
-            raise BNGError('The simulator port is not set!')
+            raise BNGError("The simulator port is not set!")
 
         # Attempt to connect to the simulator through this socket.
         if log_tries:
-            self.logger.info('Connecting to BeamNG.tech at: 'f'({self.host}, {self.port})')
+            self.logger.info(
+                "Connecting to BeamNG.tech at: " f"({self.host}, {self.port})"
+            )
         connected = False
         while tries > 0:
             try:
@@ -142,7 +144,9 @@ class Connection:
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
                 if log_tries:
-                    self.logger.error(f'Error connecting to BeamNG.tech. {tries} tries left.')
+                    self.logger.error(
+                        f"Error connecting to BeamNG.tech. {tries} tries left."
+                    )
                     self.logger.exception(err)
                 tries -= 1
                 if tries > 0:
@@ -151,7 +155,7 @@ class Connection:
         if connected:
             self.hello()
             if log_tries:
-                self.logger.info('BeamNGpy successfully connected to BeamNG.')
+                self.logger.info("BeamNGpy successfully connected to BeamNG.")
         return connected
 
     def disconnect(self) -> None:
@@ -169,14 +173,16 @@ class Connection:
 
     def _pack_data(self, data: StrDict) -> Tuple[int, bytes]:
         req_id = self._assign_request_id()
-        data['_id'] = req_id
-        self.comm_logger.debug('Sending %s.', data)
-        packed = cast(bytes, msgpack.packb(data, use_bin_type=True))  # the cast is for type checker
+        data["_id"] = req_id
+        self.comm_logger.debug("Sending %s.", data)
+        packed = cast(
+            bytes, msgpack.packb(data, use_bin_type=True)
+        )  # the cast is for type checker
         return req_id, packed
 
     def _unpack_data(self, data: bytes) -> StrDict:
         unpacked: StrDict = msgpack.unpackb(data, raw=False, strict_map_key=False)
-        self.comm_logger.debug('Received %s.', unpacked)
+        self.comm_logger.debug("Received %s.", unpacked)
 
         # Converts all non-binary strings in the data into utf-8 format.
         return self._string_cleanup(unpacked)
@@ -190,7 +196,7 @@ class Connection:
             data: The data to encode and send
         """
         if not self.skt:
-            raise BNGError('Cannot send, not connected to the simulator.')
+            raise BNGError("Cannot send, not connected to the simulator.")
         req_id, packed_data = self._pack_data(data)
         try:
             # First, attempt to send over the current socket stored in this Connection instance.
@@ -204,20 +210,21 @@ class Connection:
         if req_id in self.received_messages:
             return self.received_messages.pop(req_id)
         if not self.skt:
-            raise BNGError('Cannot receive, not connected to the simulator.')
+            raise BNGError("Cannot receive, not connected to the simulator.")
         while True:
             message = self.skt.recv()
             message = self._unpack_data(message)
-            if not '_id' in message:
+            if not "_id" in message:
                 raise BNGError(
-                    'Invalid message received! The version of BeamNG.tech running is incompatible with this version of BeamNGpy.')
-            _id = int(message['_id'])
-            del message['_id']
+                    "Invalid message received! The version of BeamNG.tech running is incompatible with this version of BeamNGpy."
+                )
+            _id = int(message["_id"])
+            del message["_id"]
 
-            if 'bngError' in message:
-                message = BNGError(message['bngError'])
-            elif 'bngValueError' in message:
-                message = BNGValueError(message['bngValueError'])
+            if "bngError" in message:
+                message = BNGError(message["bngError"])
+            elif "bngValueError" in message:
+                message = BNGValueError(message["bngValueError"])
 
             if _id == req_id:
                 return message
@@ -234,28 +241,32 @@ class Connection:
         Returns:
             The response received from the simulator as a dictionary.
         """
-        self.logger.debug(f'Sending message of type {req} to BeamNG.tech\'s engine in blocking mode.')
-        kwargs['type'] = req
+        self.logger.debug(
+            f"Sending message of type {req} to BeamNG.tech's engine in blocking mode."
+        )
+        kwargs["type"] = req
         resp = self.send(kwargs).recv(type=req)
-        self.logger.debug(f'Got response for message of type {req}.')
+        self.logger.debug(f"Got response for message of type {req}.")
 
-        if 'result' in resp:
-            return resp['result']
+        if "result" in resp:
+            return resp["result"]
         return None
 
     def hello(self) -> None:
         """
         First function called after connections. Exchanges the protocol version with the connected simulator and raises an error upon mismatch.
         """
-        data = dict(type='Hello')
-        data['protocolVersion'] = self.PROTOCOL_VERSION
-        resp = self.send(data).recv('Hello')
-        if resp['protocolVersion'] != self.PROTOCOL_VERSION:
-            msg = 'Mismatching BeamNGpy protocol versions. Please ensure both BeamNG.tech and BeamNGpy are using the desired versions.\n' \
-                  f'BeamNGpy\'s is: {self.PROTOCOL_VERSION}\n' \
-                  f'BeamNG.tech\'s is: { resp["protocolVersion"] }'
+        data = dict(type="Hello")
+        data["protocolVersion"] = self.PROTOCOL_VERSION
+        resp = self.send(data).recv("Hello")
+        if resp["protocolVersion"] != self.PROTOCOL_VERSION:
+            msg = (
+                "Mismatching BeamNGpy protocol versions. Please ensure both BeamNG.tech and BeamNGpy are using the desired versions.\n"
+                f"BeamNGpy's is: {self.PROTOCOL_VERSION}\n"
+                f'BeamNG.tech\'s is: { resp["protocolVersion"] }'
+            )
             raise BNGError(msg)
-        self.logger.info('Successfully connected to BeamNG.tech.')
+        self.logger.info("Successfully connected to BeamNG.tech.")
 
 
 class Response:
@@ -267,11 +278,13 @@ class Response:
         message = self.connection.recv(self.req_id)
         if isinstance(message, Exception):
             raise message
-        if type and message['type'] != type:
-            raise BNGValueError(f'Got Message type "{message["type"]}" but expected "{type}".')
+        if type and message["type"] != type:
+            raise BNGValueError(
+                f'Got Message type "{message["type"]}" but expected "{type}".'
+            )
         return message
 
     def ack(self, ack_type: str) -> None:
         message = self.recv()
-        if message['type'] != ack_type:
+        if message["type"] != ack_type:
             raise BNGError(f'Wrong ACK: {ack_type} != {message["type"]}')

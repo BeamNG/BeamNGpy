@@ -18,20 +18,20 @@ class UiApi(Api):
         Args:
             msg: The message to display.
         """
-        data = dict(type='DisplayGuiMessage')
-        data['message'] = msg
-        self._send(data).ack('GuiMessageDisplayed')
+        data = dict(type="DisplayGuiMessage")
+        data["message"] = msg
+        self._send(data).ack("GuiMessageDisplayed")
 
     def hide_hud(self) -> None:
         """
         Hides the HUD in the simulator.
         """
-        data = dict(type='HideHUD')
+        data = dict(type="HideHUD")
         self._send(data)
 
     def show_hud(self) -> None:
         """
         Shows the HUD in the simulator.
         """
-        data = dict(type='ShowHUD')
+        data = dict(type="ShowHUD")
         self._send(data)

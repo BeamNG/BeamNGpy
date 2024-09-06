@@ -34,12 +34,24 @@ class Road:
 
     @property
     def _uuid(self):
-        return get_uuid(f'Road_{self.rid}')
+        return get_uuid(f"Road_{self.rid}")
 
-    def __init__(self, material: str, rid: str | None = None, interpolate: bool = True, default_width: float = 10.0,
-                 drivability: int = 1, one_way: bool = False, flip_direction: bool = False, over_objects: bool = True,
-                 looped: bool = False, smoothness: float = 0.5, break_angle: float = 3, texture_length: int = 5,
-                 render_priority: int = 10):
+    def __init__(
+        self,
+        material: str,
+        rid: str | None = None,
+        interpolate: bool = True,
+        default_width: float = 10.0,
+        drivability: int = 1,
+        one_way: bool = False,
+        flip_direction: bool = False,
+        over_objects: bool = True,
+        looped: bool = False,
+        smoothness: float = 0.5,
+        break_angle: float = 3,
+        texture_length: int = 5,
+        render_priority: int = 10,
+    ):
         self.default_width = default_width
         self.material = material
 
@@ -78,7 +90,8 @@ class Road:
                 self.nodes.append(node)
             else:
                 raise BNGValueError(
-                    'A decal road node should be either a 3-tuple (x, y, z) or a 4-tuple (x, y, z, width).')
+                    "A decal road node should be either a 3-tuple (x, y, z) or a 4-tuple (x, y, z, width)."
+                )
 
 
 class MeshRoad:
@@ -109,11 +122,20 @@ class MeshRoad:
 
     @property
     def _uuid(self):
-        return get_uuid(f'MeshRoad_{self.rid}')
+        return get_uuid(f"MeshRoad_{self.rid}")
 
-    def __init__(self, top_material: str, bottom_material: str | None = None, side_material: str | None = None, rid: str |
-                 None = None, default_width: float = 10.0, default_depth: float = 5.0, texture_length: float = 5,
-                 break_angle: float = 3, width_subdivisions: int = 0):
+    def __init__(
+        self,
+        top_material: str,
+        bottom_material: str | None = None,
+        side_material: str | None = None,
+        rid: str | None = None,
+        default_width: float = 10.0,
+        default_depth: float = 5.0,
+        texture_length: float = 5,
+        break_angle: float = 3,
+        width_subdivisions: int = 0,
+    ):
         self.default_width = default_width
         self.default_depth = default_depth
 
@@ -138,31 +160,31 @@ class MeshRoad:
         """
         for node in nodes:
             if len(node) == 3:
-                self.nodes.append(
-                    (*node, self.default_width, self.default_depth))
+                self.nodes.append((*node, self.default_width, self.default_depth))
             elif len(node) == 4:
                 self.nodes.append((*node, self.default_depth))
             elif len(node) == 5:
                 self.nodes.append(node)
             else:
                 raise BNGValueError(
-                    'A decal road node should be either a 3-tuple (x, y, z), '
-                    '4-tuple (x, y, z, width) or a 5-tuple (x, y, z, width, depth).')
+                    "A decal road node should be either a 3-tuple (x, y, z), "
+                    "4-tuple (x, y, z, width) or a 5-tuple (x, y, z, width, depth)."
+                )
 
 
 class DecalRoad(SceneObject):
     def __init__(self, options: StrDict):
         super(DecalRoad, self).__init__(options)
-        self.lines = options.get('lines', [])
+        self.lines = options.get("lines", [])
 
-        self.annotation = options.get('annotation', None)
-        self.detail = options.get('Detail', None)
-        self.material = options.get('Material', None)
-        self.break_angle = options.get('breakAngle', None)
-        self.drivability = options.get('drivability', None)
-        self.flip_direction = options.get('flipDirection', False)
-        self.improved_spline = options.get('improvedSpline', False)
-        self.lanes_left = options.get('lanesLeft', None)
-        self.lanes_right = options.get('lanesRight', None)
-        self.one_way = options.get('oneWay', False)
-        self.over_objects = options.get('overObjects', False)
+        self.annotation = options.get("annotation", None)
+        self.detail = options.get("Detail", None)
+        self.material = options.get("Material", None)
+        self.break_angle = options.get("breakAngle", None)
+        self.drivability = options.get("drivability", None)
+        self.flip_direction = options.get("flipDirection", False)
+        self.improved_spline = options.get("improvedSpline", False)
+        self.lanes_left = options.get("lanesLeft", None)
+        self.lanes_right = options.get("lanesRight", None)
+        self.one_way = options.get("oneWay", False)
+        self.over_objects = options.get("overObjects", False)

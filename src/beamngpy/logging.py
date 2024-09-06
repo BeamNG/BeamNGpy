@@ -8,11 +8,11 @@ from pathlib import Path
 from shutil import move
 from typing import Any, List
 
-LOGGER_ID = 'beamngpy'
-LOG_FORMAT = '%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s'
+LOGGER_ID = "beamngpy"
+LOG_FORMAT = "%(asctime)-24s|%(levelname)-9s|%(name)-30s|%(message)s"
 bngpy_logger = logging.getLogger(LOGGER_ID)
-module_logger = logging.getLogger(f'{LOGGER_ID}.beamngpycommon')
-comm_logger = logging.getLogger(f'{LOGGER_ID}.communication')
+module_logger = logging.getLogger(f"{LOGGER_ID}.beamngpycommon")
+comm_logger = logging.getLogger(f"{LOGGER_ID}.communication")
 bngpy_handlers = list()
 
 
@@ -20,6 +20,7 @@ class BNGError(Exception):
     """
     Generic BeamNG error.
     """
+
     pass
 
 
@@ -27,6 +28,7 @@ class BNGValueError(ValueError):
     """
     Value error specific to BeamNGpy.
     """
+
     pass
 
 
@@ -34,6 +36,7 @@ class BNGDisconnectedError(ValueError):
     """
     Exception class for BeamNGpy being disconnected when it shouldn't.
     """
+
     pass
 
 
@@ -48,11 +51,13 @@ def create_warning(msg: str, category: Any = None) -> None:
     warnings.warn(msg, category=category, stacklevel=2)
 
 
-def config_logging(handlers: List[logging.Handler],
-                   replace: bool = True,
-                   level: int = logging.DEBUG,
-                   redirect_warnings: bool = True,
-                   log_communication: bool = False) -> None:
+def config_logging(
+    handlers: List[logging.Handler],
+    replace: bool = True,
+    level: int = logging.DEBUG,
+    redirect_warnings: bool = True,
+    log_communication: bool = False,
+) -> None:
     """
     Function to configure logging.
 
@@ -78,20 +83,22 @@ def config_logging(handlers: List[logging.Handler],
 
     if redirect_warnings:
         logging.captureWarnings(redirect_warnings)
-        warn_log = logging.getLogger('py.warnings')
-        warnings.simplefilter('once')
+        warn_log = logging.getLogger("py.warnings")
+        warnings.simplefilter("once")
         for h in handlers:
             warn_log.addHandler(h)
-    bngpy_logger.info('Started BeamNGpy logging.')
+    bngpy_logger.info("Started BeamNGpy logging.")
     for h in handlers:
         if isinstance(h, logging.FileHandler):
-            module_logger.info(f'Logging to file: {h.baseFilename}.')
+            module_logger.info(f"Logging to file: {h.baseFilename}.")
 
 
-def set_up_simple_logging(log_file: str | None = None,
-                          redirect_warnings: bool = True,
-                          level: int = logging.INFO,
-                          log_communication: bool = False) -> None:
+def set_up_simple_logging(
+    log_file: str | None = None,
+    redirect_warnings: bool = True,
+    level: int = logging.INFO,
+    log_communication: bool = False,
+) -> None:
     """
     Helper function that provides high-level control
     over beamng logging. For low-level control over the
@@ -117,17 +124,20 @@ def set_up_simple_logging(log_file: str | None = None,
     fh = None
     if log_file:
         if Path(log_file).exists():
-            move(log_file, f'{log_file}.1')
+            move(log_file, f"{log_file}.1")
             moved_log = True
-        fh = logging.FileHandler(log_file, 'w', 'utf-8')
+        fh = logging.FileHandler(log_file, "w", "utf-8")
         formatter = logging.Formatter(LOG_FORMAT)
         fh.setFormatter(formatter)
         fh.setLevel(level)
         handlers.append(fh)
-    config_logging(handlers, redirect_warnings=redirect_warnings,
-                   log_communication=log_communication)
+    config_logging(
+        handlers,
+        redirect_warnings=redirect_warnings,
+        log_communication=log_communication,
+    )
     if moved_log and fh is not None:
-        module_logger.info(f'Moved old log file to \'{fh.baseFilename}.1\'.')
+        module_logger.info(f"Moved old log file to '{fh.baseFilename}.1'.")
 
 
 def _generate_docstring(obj: Any) -> str:
@@ -135,7 +145,7 @@ def _generate_docstring(obj: Any) -> str:
         buffer = io.StringIO()
         pydoc.doc(obj, output=buffer)
         buffer.seek(0)
-        docstring = buffer.read().split('\n')
-        return '\n'.join(docstring[2:])
+        docstring = buffer.read().split("\n")
+        return "\n".join(docstring[2:])
     except:
-        return ''
+        return ""

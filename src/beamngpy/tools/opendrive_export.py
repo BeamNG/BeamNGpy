@@ -8,7 +8,7 @@ import numpy as np
 from beamngpy import vec3
 from beamngpy.tools.navigraph_data import NavigraphData
 
-__all__ = ['OpenDriveExporter']
+__all__ = ["OpenDriveExporter"]
 
 CACHED_TANGENTS = {}
 
@@ -47,8 +47,21 @@ class Road:
     A container for storing single sections of roads, which can be represented by a single geometric primitive.
     """
 
-    def __init__(self, start, end, p1, length, ref_line_cubic, elev_cubic, width_cubic, super_elev_cubic,
-                 predecessor=None, successor=None, junction=None, contact_point=None):
+    def __init__(
+        self,
+        start,
+        end,
+        p1,
+        length,
+        ref_line_cubic,
+        elev_cubic,
+        width_cubic,
+        super_elev_cubic,
+        predecessor=None,
+        successor=None,
+        junction=None,
+        contact_point=None,
+    ):
         self.start = start
         self.end = end
         self.p1 = p1
@@ -146,8 +159,11 @@ class OpenDriveExporter:
 
     @staticmethod
     def _compute_tangents(pn0, pn1, pn2, pn3):
-        d1, d2, d3 = max(math.sqrt(pn0.distance(pn1)), 1e-12), math.sqrt(pn1.distance(pn2)
-                                                                         ), max(math.sqrt(pn2.distance(pn3)), 1e-12)
+        d1, d2, d3 = (
+            max(math.sqrt(pn0.distance(pn1)), 1e-12),
+            math.sqrt(pn1.distance(pn2)),
+            max(math.sqrt(pn2.distance(pn3)), 1e-12),
+        )
         m = (pn1 - pn0) / d1 + (pn0 - pn2) / (d1 + d2)
         n = (pn1 - pn3) / (d2 + d3) + (pn3 - pn2) / d3
         t1 = d2 * m + pn2 - pn1
@@ -160,14 +176,17 @@ class OpenDriveExporter:
 
     @staticmethod
     def _fit_cubic(p0, p1, p2, p3, length):
-        [tang1, tang2] = OpenDriveExporter._compute_tangents(p0 - p1, vec3(0.0, 0.0, 0.0), p2 - p1, p3 - p1)
+        [tang1, tang2] = OpenDriveExporter._compute_tangents(
+            p0 - p1, vec3(0.0, 0.0, 0.0), p2 - p1, p3 - p1
+        )
         dz = p2.z - p1.z
         length_sq = length * length
         return ExplicitCubic(
             p1.z,
             tang1.z / length,
             ((-2.0 * tang1.z) - tang2.z + (3.0 * dz)) / length_sq,
-            (tang1.z + tang2.z - (2.0 * dz)) / (length_sq * length))
+            (tang1.z + tang2.z - (2.0 * dz)) / (length_sq * length),
+        )
 
     @staticmethod
     def _find_trunk_road_tangent(key, std_tangent):
@@ -273,44 +292,94 @@ class OpenDriveExporter:
                 i0, i2, i3 = max(i1 - 1, 0), i1 + 1, min(i1 + 2, len(seg) - 1)
                 seg0, seg1, seg2, seg3 = seg[i0], seg[i1], seg[i2], seg[i3]
                 p1_2d = navigraph_data.coords2d[seg1]
-                pn0_2d, pn1_2d, pn2_2d, pn3_2d = navigraph_data.coords2d[seg0] - p1_2d, vec3(
-                    0.0, 0.0, 0.0), navigraph_data.coords2d[seg2] - p1_2d, navigraph_data.coords2d[seg3] - p1_2d
+                pn0_2d, pn1_2d, pn2_2d, pn3_2d = (
+                    navigraph_data.coords2d[seg0] - p1_2d,
+                    vec3(0.0, 0.0, 0.0),
+                    navigraph_data.coords2d[seg2] - p1_2d,
+                    navigraph_data.coords2d[seg3] - p1_2d,
+                )
                 geodesic_length_2d = pn1_2d.distance(pn2_2d)
-                [tang1, tang2] = OpenDriveExporter._compute_tangents(pn0_2d, pn1_2d, pn2_2d, pn3_2d)
+                [tang1, tang2] = OpenDriveExporter._compute_tangents(
+                    pn0_2d, pn1_2d, pn2_2d, pn3_2d
+                )
                 if i1 == 0:
                     tang1 = OpenDriveExporter._find_trunk_road_tangent(seg1, tang1)
                 if i1 == len(seg) - 2:
                     tang2 = OpenDriveExporter._find_trunk_road_tangent(seg2, tang2)
-                coeff_C, coeff_D = (-2.0 * tang1) - tang2 + (3.0 * pn2_2d), tang1 + tang2 - (2.0 * pn2_2d)
-                ref_line_cubic = ParametricCubic(pn1_2d.x, tang1.x, coeff_C.x, coeff_D.x,
-                                                 pn1_2d.y, tang1.y, coeff_C.y, coeff_D.y)
+                coeff_C, coeff_D = (-2.0 * tang1) - tang2 + (
+                    3.0 * pn2_2d
+                ), tang1 + tang2 - (2.0 * pn2_2d)
+                ref_line_cubic = ParametricCubic(
+                    pn1_2d.x,
+                    tang1.x,
+                    coeff_C.x,
+                    coeff_D.x,
+                    pn1_2d.y,
+                    tang1.y,
+                    coeff_C.y,
+                    coeff_D.y,
+                )
 
                 # Compute the elevation cubic equation (explicit).
-                p0_3d, p1_3d, p2_3d, p3_3d = navigraph_data.coords3d[seg0], navigraph_data.coords3d[
-                    seg1], navigraph_data.coords3d[seg2], navigraph_data.coords3d[seg3]
-                elev_cubic = OpenDriveExporter._fit_cubic(p0_3d, p1_3d, p2_3d, p3_3d, geodesic_length_2d)
+                p0_3d, p1_3d, p2_3d, p3_3d = (
+                    navigraph_data.coords3d[seg0],
+                    navigraph_data.coords3d[seg1],
+                    navigraph_data.coords3d[seg2],
+                    navigraph_data.coords3d[seg3],
+                )
+                elev_cubic = OpenDriveExporter._fit_cubic(
+                    p0_3d, p1_3d, p2_3d, p3_3d, geodesic_length_2d
+                )
 
                 # Compute the width cubic equation (explicit).
-                w0, w1, w2, w3 = navigraph_data.widths[seg0], navigraph_data.widths[seg1], navigraph_data.widths[seg2], navigraph_data.widths[seg3]
-                width_cubic = OpenDriveExporter._fit_cubic(vec3(p0_3d.x, p0_3d.y, w0), vec3(
-                    p1_3d.x, p1_3d.y, w1), vec3(p2_3d.x, p2_3d.y, w2), vec3(p3_3d.x, p3_3d.y, w3), geodesic_length_2d)
+                w0, w1, w2, w3 = (
+                    navigraph_data.widths[seg0],
+                    navigraph_data.widths[seg1],
+                    navigraph_data.widths[seg2],
+                    navigraph_data.widths[seg3],
+                )
+                width_cubic = OpenDriveExporter._fit_cubic(
+                    vec3(p0_3d.x, p0_3d.y, w0),
+                    vec3(p1_3d.x, p1_3d.y, w1),
+                    vec3(p2_3d.x, p2_3d.y, w2),
+                    vec3(p3_3d.x, p3_3d.y, w3),
+                    geodesic_length_2d,
+                )
 
                 # Compute the super-elevation cubic equation (explicit).
                 [roll0, roll1, roll2, roll3] = OpenDriveExporter._compute_roll_angles(
-                    navigraph_data, seg, i0, i1, i2, i3)
+                    navigraph_data, seg, i0, i1, i2, i3
+                )
                 roll0 = math.pi / 4
                 roll1 = math.pi / 4
                 roll2 = math.pi / 4
                 roll3 = math.pi / 4
-                super_elev_cubic = OpenDriveExporter._fit_cubic(vec3(p0_3d.x, p0_3d.y, roll0), vec3(
-                    p1_3d.x, p1_3d.y, roll1), vec3(p2_3d.x, p2_3d.y, roll2), vec3(p3_3d.x, p3_3d.y, roll3), geodesic_length_2d)
+                super_elev_cubic = OpenDriveExporter._fit_cubic(
+                    vec3(p0_3d.x, p0_3d.y, roll0),
+                    vec3(p1_3d.x, p1_3d.y, roll1),
+                    vec3(p2_3d.x, p2_3d.y, roll2),
+                    vec3(p3_3d.x, p3_3d.y, roll3),
+                    geodesic_length_2d,
+                )
 
                 # Create the road section.
-                roads.append(Road(
-                    seg1, seg2, navigraph_data.coords3d[seg1], geodesic_length_2d, ref_line_cubic, elev_cubic, width_cubic, super_elev_cubic))
+                roads.append(
+                    Road(
+                        seg1,
+                        seg2,
+                        navigraph_data.coords3d[seg1],
+                        geodesic_length_2d,
+                        ref_line_cubic,
+                        elev_cubic,
+                        width_cubic,
+                        super_elev_cubic,
+                    )
+                )
 
         # Create a map between junction key names and unique Id numbers.
-        junction_map = OpenDriveExporter._graph_key_to_junction_map(navigraph_data.graph, path_segments)
+        junction_map = OpenDriveExporter._graph_key_to_junction_map(
+            navigraph_data.graph, path_segments
+        )
 
         # Populate the remaining properties in the roads collection (successor road, predecessor road, junction, and contact point).
         for i in range(len(roads)):
@@ -325,17 +394,21 @@ class OpenDriveExporter:
                     continue
                 if r.start == roads[j].end:
                     predecessor = j
-                    contact_point = 'start'
+                    contact_point = "start"
                 if r.end == roads[j].start:
                     successor = j
-                    contact_point = 'end'
-            if r.start in junction_map:                 # Compute the junction and contact point data for this road, if they exist.
+                    contact_point = "end"
+            if (
+                r.start in junction_map
+            ):  # Compute the junction and contact point data for this road, if they exist.
                 junction = junction_map[r.start]
-                contact_point = 'start'
+                contact_point = "start"
             elif r.end in junction_map:
                 junction = junction_map[r.end]
-                contact_point = 'end'
-            roads[i].update_connection_data(predecessor, successor, junction, contact_point)
+                contact_point = "end"
+            roads[i].update_connection_data(
+                predecessor, successor, junction, contact_point
+            )
 
         # Create a list of uniquely-identifiable junctions, containing all the relevant connection data.
         junctions = []
@@ -344,13 +417,13 @@ class OpenDriveExporter:
             for i in range(len(roads)):
                 r = roads[i]
                 if key == r.start:
-                    connection_roads.append(ConnectionRoad(i, 'start'))
+                    connection_roads.append(ConnectionRoad(i, "start"))
                 if key == r.end:
-                    connection_roads.append(ConnectionRoad(i, 'end'))
+                    connection_roads.append(ConnectionRoad(i, "end"))
             if len(connection_roads) > 0:
                 junctions.append(Junction(id, connection_roads))
 
-        return {'roads': roads, 'junctions': junctions}
+        return {"roads": roads, "junctions": junctions}
 
     @staticmethod
     def export(name, bng):
@@ -370,113 +443,225 @@ class OpenDriveExporter:
         path_segments = navigraph_data.compute_path_segments()
 
         # Get the road data.
-        road_data = OpenDriveExporter.compute_roads_and_junctions(navigraph_data, path_segments)
+        road_data = OpenDriveExporter.compute_roads_and_junctions(
+            navigraph_data, path_segments
+        )
 
         # Write the road network data to .xodr format (xml).
         date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        file_name = name + '.xodr'
-        with open(file_name, 'w') as f:
+        file_name = name + ".xodr"
+        with open(file_name, "w") as f:
 
             # .xodr file pre-amble.
             f.write('<?xml version="1.0" standalone="yes"?>\n')
-            f.write('<OpenDRIVE>\n')
+            f.write("<OpenDRIVE>\n")
             f.write(
-                '\t<header revMajor="1" revMinor="7" name="" version="1.00" date="' + date_time +
-                '" north="0.0000000000000000e+00" south="0.0000000000000000e+00" east="0.0000000000000000e+00" west="0.0000000000000000e+00">\n')
-            f.write('\t</header>\n')
+                '\t<header revMajor="1" revMinor="7" name="" version="1.00" date="'
+                + date_time
+                + '" north="0.0000000000000000e+00" south="0.0000000000000000e+00" east="0.0000000000000000e+00" west="0.0000000000000000e+00">\n'
+            )
+            f.write("\t</header>\n")
 
             # Write the road data, in order.
-            for i in range(len(road_data['roads'])):
-                r = road_data['roads'][i]
+            for i in range(len(road_data["roads"])):
+                r = road_data["roads"][i]
 
                 # Road header data.
-                f.write('\t<road rule="RHT" length="' + str(r.length) + '" id="' +
-                        str(i) + '" junction="' + str(r.junction) + '" >\n')
+                f.write(
+                    '\t<road rule="RHT" length="'
+                    + str(r.length)
+                    + '" id="'
+                    + str(i)
+                    + '" junction="'
+                    + str(r.junction)
+                    + '" >\n'
+                )
 
                 # Road connectivity data.
-                f.write('\t\t<link>\n')
-                if r.predecessor != 'none':
-                    f.write('\t\t\t<predecessor elementType="' + 'road' + '" elementId="' +
-                            str(r.predecessor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
-                if r.successor != 'none':
-                    f.write('\t\t\t<successor elementType="' + 'road' + '" elementId="' +
-                            str(r.successor) + '" contactPoint="' + str(r.contact_point) + '" />\n')
-                f.write('\t\t</link>\n')
+                f.write("\t\t<link>\n")
+                if r.predecessor != "none":
+                    f.write(
+                        '\t\t\t<predecessor elementType="'
+                        + "road"
+                        + '" elementId="'
+                        + str(r.predecessor)
+                        + '" contactPoint="'
+                        + str(r.contact_point)
+                        + '" />\n'
+                    )
+                if r.successor != "none":
+                    f.write(
+                        '\t\t\t<successor elementType="'
+                        + "road"
+                        + '" elementId="'
+                        + str(r.successor)
+                        + '" contactPoint="'
+                        + str(r.contact_point)
+                        + '" />\n'
+                    )
+                f.write("\t\t</link>\n")
 
                 # Geometry data.
-                Au, Bu, Cu, Du = r.ref_line_cubic.Au, r.ref_line_cubic.Bu, r.ref_line_cubic.Cu, r.ref_line_cubic.Du
-                Av, Bv, Cv, Dv = r.ref_line_cubic.Av, r.ref_line_cubic.Bv, r.ref_line_cubic.Cv, r.ref_line_cubic.Dv
-                f.write('\t\t<type s="0.0000000000000000e+00" type="town" country="DE"/>\n')
-                f.write('\t\t<planView>\n')
-                f.write('\t\t\t<geometry s="0.0000000000000000e+00" x="' + str(r.p1.x) + '" y="' +
-                        str(r.p1.y) + '" hdg="' + str(0.0) + '" length="' + str(r.length) + '">\n')
-                f.write('\t\t\t\t<paramPoly3 aU="' + str(Au) + '" bU="' + str(Bu) + '" cU="' + str(Cu) +
-                        '" dU="' + str(Du) + '" aV="' + str(Av) + '" bV="' + str(Bv) + '" cV="' +
-                        str(Cv) + '" dV="' + str(Dv) + '"/>\n')
-                f.write('\t\t\t</geometry>\n')
-                f.write('\t\t</planView>\n')
+                Au, Bu, Cu, Du = (
+                    r.ref_line_cubic.Au,
+                    r.ref_line_cubic.Bu,
+                    r.ref_line_cubic.Cu,
+                    r.ref_line_cubic.Du,
+                )
+                Av, Bv, Cv, Dv = (
+                    r.ref_line_cubic.Av,
+                    r.ref_line_cubic.Bv,
+                    r.ref_line_cubic.Cv,
+                    r.ref_line_cubic.Dv,
+                )
+                f.write(
+                    '\t\t<type s="0.0000000000000000e+00" type="town" country="DE"/>\n'
+                )
+                f.write("\t\t<planView>\n")
+                f.write(
+                    '\t\t\t<geometry s="0.0000000000000000e+00" x="'
+                    + str(r.p1.x)
+                    + '" y="'
+                    + str(r.p1.y)
+                    + '" hdg="'
+                    + str(0.0)
+                    + '" length="'
+                    + str(r.length)
+                    + '">\n'
+                )
+                f.write(
+                    '\t\t\t\t<paramPoly3 aU="'
+                    + str(Au)
+                    + '" bU="'
+                    + str(Bu)
+                    + '" cU="'
+                    + str(Cu)
+                    + '" dU="'
+                    + str(Du)
+                    + '" aV="'
+                    + str(Av)
+                    + '" bV="'
+                    + str(Bv)
+                    + '" cV="'
+                    + str(Cv)
+                    + '" dV="'
+                    + str(Dv)
+                    + '"/>\n'
+                )
+                f.write("\t\t\t</geometry>\n")
+                f.write("\t\t</planView>\n")
 
                 # Elevation data.
-                Ae, Be, Ce, De = r.elev_cubic.a, r.elev_cubic.b, r.elev_cubic.c, r.elev_cubic.d
-                f.write('\t\t<elevationProfile>\n')
-                f.write('\t\t\t<elevation s="0.0" a="' + str(Ae) + '" b="' +
-                        str(Be) + '" c="' + str(Ce) + '" d="' + str(De) + '"/>\n')
-                f.write('\t\t</elevationProfile>\n')
+                Ae, Be, Ce, De = (
+                    r.elev_cubic.a,
+                    r.elev_cubic.b,
+                    r.elev_cubic.c,
+                    r.elev_cubic.d,
+                )
+                f.write("\t\t<elevationProfile>\n")
+                f.write(
+                    '\t\t\t<elevation s="0.0" a="'
+                    + str(Ae)
+                    + '" b="'
+                    + str(Be)
+                    + '" c="'
+                    + str(Ce)
+                    + '" d="'
+                    + str(De)
+                    + '"/>\n'
+                )
+                f.write("\t\t</elevationProfile>\n")
 
                 # Super-elevation data (CURRENTLY NOT USED).
-                Ase, Bse, Cse, Dse = r.super_elev_cubic.a, r.super_elev_cubic.b, r.super_elev_cubic.c, r.super_elev_cubic.d
-                f.write('\t\t<lateralProfile>\n')
-                #f.write('\t\t\t<superelevation s="0.0" a="' + str(Ase) + '" b="' + str(Bse) + '" c="' + str(Cse) + '" d="' + str(Dse) + '"/>\n')
-                f.write('\t\t</lateralProfile>\n')
+                Ase, Bse, Cse, Dse = (
+                    r.super_elev_cubic.a,
+                    r.super_elev_cubic.b,
+                    r.super_elev_cubic.c,
+                    r.super_elev_cubic.d,
+                )
+                f.write("\t\t<lateralProfile>\n")
+                # f.write('\t\t\t<superelevation s="0.0" a="' + str(Ase) + '" b="' + str(Bse) + '" c="' + str(Cse) + '" d="' + str(Dse) + '"/>\n')
+                f.write("\t\t</lateralProfile>\n")
 
                 # Road lane data.
-                Aw, Bw, Cw, Dw = r.width_cubic.a, r.width_cubic.b, r.width_cubic.c, r.width_cubic.d
-                f.write('\t\t<lanes>\n')
+                Aw, Bw, Cw, Dw = (
+                    r.width_cubic.a,
+                    r.width_cubic.b,
+                    r.width_cubic.c,
+                    r.width_cubic.d,
+                )
+                f.write("\t\t<lanes>\n")
                 f.write('\t\t\t<laneSection s="0.0000000000000000e+00">\n')
-                f.write('\t\t\t\t<left>\n')
+                f.write("\t\t\t\t<left>\n")
                 f.write('\t\t\t\t\t<lane id="1" type="driving" level="false">\n')
-                f.write('\t\t\t\t\t\t<link>\n')
-                f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) +
-                        '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
-                f.write('\t\t\t\t\t</lane>\n')
-                f.write('\t\t\t\t</left>\n')
-                f.write('\t\t\t\t<center>\n')
+                f.write("\t\t\t\t\t\t<link>\n")
+                f.write("\t\t\t\t\t\t</link>\n")
+                f.write(
+                    '\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="'
+                    + str(Aw)
+                    + '" b="'
+                    + str(Bw)
+                    + '" c="'
+                    + str(Cw)
+                    + '" d="'
+                    + str(Dw)
+                    + '"/>\n'
+                )
+                f.write("\t\t\t\t\t</lane>\n")
+                f.write("\t\t\t\t</left>\n")
+                f.write("\t\t\t\t<center>\n")
                 f.write('\t\t\t\t\t<lane id="0" type="driving" level="false">\n')
-                f.write('\t\t\t\t\t\t<link>\n')
-                f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<roadMark sOffset="0.0000000000000000e+00" type="broken" weight="standard" color="standard" width="1.2000000000000000e-01" laneChange="both" height="1.9999999552965164e-02">\n')
-                f.write('\t\t\t\t\t\t\t<type name="broken" width="1.2000000000000000e-01">\n')
-                f.write('\t\t\t\t\t\t\t\t<line length="3.0000000000000000e+00" space="6.0000000000000000e+00" tOffset="0.0000000000000000e+00" sOffset="0.0000000000000000e+00" rule="caution" width="1.2000000000000000e-01"/>\n')
-                f.write('\t\t\t\t\t\t\t</type>\n')
-                f.write('\t\t\t\t\t\t</roadMark>\n')
-                f.write('\t\t\t\t\t</lane>\n')
-                f.write('\t\t\t\t</center>\n')
-                f.write('\t\t\t\t<right>\n')
+                f.write("\t\t\t\t\t\t<link>\n")
+                f.write("\t\t\t\t\t\t</link>\n")
+                f.write(
+                    '\t\t\t\t\t\t<roadMark sOffset="0.0000000000000000e+00" type="broken" weight="standard" color="standard" width="1.2000000000000000e-01" laneChange="both" height="1.9999999552965164e-02">\n'
+                )
+                f.write(
+                    '\t\t\t\t\t\t\t<type name="broken" width="1.2000000000000000e-01">\n'
+                )
+                f.write(
+                    '\t\t\t\t\t\t\t\t<line length="3.0000000000000000e+00" space="6.0000000000000000e+00" tOffset="0.0000000000000000e+00" sOffset="0.0000000000000000e+00" rule="caution" width="1.2000000000000000e-01"/>\n'
+                )
+                f.write("\t\t\t\t\t\t\t</type>\n")
+                f.write("\t\t\t\t\t\t</roadMark>\n")
+                f.write("\t\t\t\t\t</lane>\n")
+                f.write("\t\t\t\t</center>\n")
+                f.write("\t\t\t\t<right>\n")
                 f.write('\t\t\t\t\t<lane id="-1" type="driving" level="false">\n')
-                f.write('\t\t\t\t\t\t<link>\n')
-                f.write('\t\t\t\t\t\t</link>\n')
-                f.write('\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="' + str(Aw) +
-                        '" b="' + str(Bw) + '" c="' + str(Cw) + '" d="' + str(Dw) + '"/>\n')
-                f.write('\t\t\t\t\t</lane>\n')
-                f.write('\t\t\t\t</right>\n')
-                f.write('\t\t\t</laneSection>\n')
-                f.write('\t\t</lanes>\n')
+                f.write("\t\t\t\t\t\t<link>\n")
+                f.write("\t\t\t\t\t\t</link>\n")
+                f.write(
+                    '\t\t\t\t\t\t<width sOffset="0.0000000000000000e+00" a="'
+                    + str(Aw)
+                    + '" b="'
+                    + str(Bw)
+                    + '" c="'
+                    + str(Cw)
+                    + '" d="'
+                    + str(Dw)
+                    + '"/>\n'
+                )
+                f.write("\t\t\t\t\t</lane>\n")
+                f.write("\t\t\t\t</right>\n")
+                f.write("\t\t\t</laneSection>\n")
+                f.write("\t\t</lanes>\n")
 
                 # TODO : WE DO NOT CURRENTLY MAKE USE OF THESE SECTIONS.
-                f.write('\t\t<objects>\n')
-                f.write('\t\t</objects>\n')
-                f.write('\t\t<signals>\n')
-                f.write('\t\t</signals>\n')
-                f.write('\t\t<surface>\n')
-                f.write('\t\t</surface>\n')
+                f.write("\t\t<objects>\n")
+                f.write("\t\t</objects>\n")
+                f.write("\t\t<signals>\n")
+                f.write("\t\t</signals>\n")
+                f.write("\t\t<surface>\n")
+                f.write("\t\t</surface>\n")
 
-                f.write('\t</road>\n')
+                f.write("\t</road>\n")
 
             # Write the junction data, in order.
-            for i in range(len(road_data['junctions'])):
-                jct = road_data['junctions'][i]
-                f.write('\t<junction name="" id="' + str(jct.id) + '" type="default">\n')
+            for i in range(len(road_data["junctions"])):
+                jct = road_data["junctions"][i]
+                f.write(
+                    '\t<junction name="" id="' + str(jct.id) + '" type="default">\n'
+                )
                 ctr = 0
                 for j in range(len(jct.connection_roads)):
                     ra = jct.connection_roads[j]
@@ -484,14 +669,23 @@ class OpenDriveExporter:
                         if j == k:
                             continue
                         rb = jct.connection_roads[k]
-                        f.write('\t\t<connection id="' + str(ctr) + '" incomingRoad="' + str(ra.id) +
-                                '" connectingRoad="' + str(rb.id) + '" contactPoint="' + str(ra.contact_point) + '">\n')
-                        if ra.contact_point == 'start':
+                        f.write(
+                            '\t\t<connection id="'
+                            + str(ctr)
+                            + '" incomingRoad="'
+                            + str(ra.id)
+                            + '" connectingRoad="'
+                            + str(rb.id)
+                            + '" contactPoint="'
+                            + str(ra.contact_point)
+                            + '">\n'
+                        )
+                        if ra.contact_point == "start":
                             f.write('\t\t\t<laneLink from="-1" to="1"/>\n')
                         else:
                             f.write('\t\t\t<laneLink from="1" to="-1"/>\n')
-                        f.write('\t\t</connection>\n')
+                        f.write("\t\t</connection>\n")
                         ctr = ctr + 1
-                f.write('\t</junction>\n')
+                f.write("\t</junction>\n")
 
-            f.write('</OpenDRIVE>\n')
+            f.write("</OpenDRIVE>\n")

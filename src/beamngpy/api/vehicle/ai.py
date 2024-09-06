@@ -22,7 +22,7 @@ class AIApi(VehicleApi):
 
         TODO: use beamngpy protocol
         """
-        self._vehicle.queue_lua_command('ai.toggleTrafficMode()')
+        self._vehicle.queue_lua_command("ai.toggleTrafficMode()")
 
     def set_mode(self, mode: str) -> None:
         """
@@ -44,11 +44,11 @@ class AIApi(VehicleApi):
         Args:
             mode: The AI mode to set.
         """
-        data = dict(type='SetAiMode')
-        data['mode'] = mode
-        self._send(data).ack('AiModeSet')
+        data = dict(type="SetAiMode")
+        data["mode"] = mode
+        self._send(data).ack("AiModeSet")
 
-    def set_speed(self, speed: float, mode: str = 'limit') -> None:
+    def set_speed(self, speed: float, mode: str = "limit") -> None:
         """
         Sets the target speed for the AI in m/s. Speed can be maintained in two
         modes:
@@ -61,12 +61,12 @@ class AIApi(VehicleApi):
             speed: The target speed in m/s.
             mode: The speed mode.
         """
-        data: StrDict = dict(type='SetAiSpeed')
-        data['speed'] = speed
-        data['mode'] = mode
-        self._send(data).ack('AiSpeedSet')
+        data: StrDict = dict(type="SetAiSpeed")
+        data["speed"] = speed
+        data["mode"] = mode
+        self._send(data).ack("AiSpeedSet")
 
-    def set_target(self, target: str, mode: str = 'chase') -> None:
+    def set_target(self, target: str, mode: str = "chase") -> None:
         """
         Sets the target to chase or flee. The target should be the ID of
         another vehicle in the simulation. The AI is automatically set to the
@@ -78,9 +78,9 @@ class AIApi(VehicleApi):
                        target, ``flee`` to flee from it.
         """
         self.set_mode(mode)
-        data = dict(type='SetAiTarget')
-        data['target'] = target
-        self._send(data).ack('AiTargetSet')
+        data = dict(type="SetAiTarget")
+        data["target"] = target
+        self._send(data).ack("AiTargetSet")
 
     def set_waypoint(self, waypoint: str) -> None:
         """
@@ -90,10 +90,10 @@ class AIApi(VehicleApi):
         Args:
             waypoint: ID of the target waypoint as a string.
         """
-        self.set_mode('manual')
-        data = dict(type='SetAiWaypoint')
-        data['target'] = waypoint
-        self._send(data).ack('AiWaypointSet')
+        self.set_mode("manual")
+        data = dict(type="SetAiWaypoint")
+        data["target"] = waypoint
+        self._send(data).ack("AiWaypointSet")
 
     def drive_in_lane(self, lane: bool) -> None:
         """
@@ -103,11 +103,13 @@ class AIApi(VehicleApi):
         Args:
             lane: Lane flag to set.
         """
-        data = dict(type='SetDriveInLane')
-        data['lane'] = 'on' if lane else 'off'
-        self._send(data).ack('AiDriveInLaneSet')
+        data = dict(type="SetDriveInLane")
+        data["lane"] = "on" if lane else "off"
+        self._send(data).ack("AiDriveInLaneSet")
 
-    def set_line(self, line: List[Dict[str, Float3 | float]], cling: bool = True) -> None:
+    def set_line(
+        self, line: List[Dict[str, Float3 | float]], cling: bool = True
+    ) -> None:
         """
         Makes the AI follow a given polyline. The line is specified as a list
         of dictionaries where each dictionary has a ``pos`` entry specifying the
@@ -118,10 +120,10 @@ class AIApi(VehicleApi):
             line: Polyline as list of dicts as described above.
             cling: Whether or not to align the ``z`` coordinate of the polyline to the ground.
         """
-        data: StrDict = dict(type='SetAiLine')
-        data['line'] = line
-        data['cling'] = cling
-        return self._send(data).ack('AiLineSet')
+        data: StrDict = dict(type="SetAiLine")
+        data["line"] = line
+        data["cling"] = cling
+        return self._send(data).ack("AiLineSet")
 
     def set_script(self, script: List[Dict[str, float]], cling: bool = True) -> None:
         """
@@ -156,36 +158,42 @@ class AIApi(VehicleApi):
                            minimum length of a script.
         """
         if len(script) < 3:
-            raise BNGValueError('AI script must have at least 3 nodes.')
+            raise BNGValueError("AI script must have at least 3 nodes.")
 
-        data: StrDict = dict(type='SetAiScript')
-        data['script'] = script
-        data['cling'] = cling
-        self._send(data).ack('AiScriptSet')
+        data: StrDict = dict(type="SetAiScript")
+        data["script"] = script
+        data["cling"] = cling
+        self._send(data).ack("AiScriptSet")
 
     def set_aggression(self, aggr: float) -> None:
-        data: StrDict = dict(type='SetAiAggression')
-        data['aggression'] = aggr
-        self._send(data).ack('AiAggressionSet')
+        data: StrDict = dict(type="SetAiAggression")
+        data["aggression"] = aggr
+        self._send(data).ack("AiAggressionSet")
 
     def start_recording(self) -> None:
-        data = dict(type='StartRecording')
-        self._send(data).ack('CompletedStartRecording')
+        data = dict(type="StartRecording")
+        self._send(data).ack("CompletedStartRecording")
 
     def stop_recording(self, filename) -> None:
-        data = dict(type='StopRecording')
-        data['filename'] = filename
-        self._send(data).ack('CompletedStopRecording')
+        data = dict(type="StopRecording")
+        data["filename"] = filename
+        self._send(data).ack("CompletedStopRecording")
 
-    def execute_script(self, script, cling: bool = True, start_delay: float = 0.0, no_reset: bool = False) -> None:
-        data: StrDict = dict(type='ExecuteScript')
-        data['script'] = script
-        data['cling'] = cling
-        data['startDelay'] = start_delay
-        data['noReset'] = no_reset
-        self._send(data).ack('CompletedExecuteScript')
+    def execute_script(
+        self,
+        script,
+        cling: bool = True,
+        start_delay: float = 0.0,
+        no_reset: bool = False,
+    ) -> None:
+        data: StrDict = dict(type="ExecuteScript")
+        data["script"] = script
+        data["cling"] = cling
+        data["startDelay"] = start_delay
+        data["noReset"] = no_reset
+        self._send(data).ack("CompletedExecuteScript")
 
     def get_initial_spawn_position_orientation(self, script):
-        data = dict(type='GetInitialSpawnPositionOrientation')
-        data['script'] = script
-        return self._send(data).recv()['data']
+        data = dict(type="GetInitialSpawnPositionOrientation")
+        data["script"] = script
+        return self._send(data).recv()["data"]

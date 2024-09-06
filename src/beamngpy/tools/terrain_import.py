@@ -11,7 +11,9 @@ from beamngpy import BeamNGpy
 class Terrain_Importer:
 
     @staticmethod
-    def import_heightmap(bng: BeamNGpy, data, w, h, scale = 1, zMin = 0, zMax = 100, isYFlipped = True):
+    def import_heightmap(
+        bng: BeamNGpy, data, w, h, scale=1, zMin=0, zMax=100, isYFlipped=True
+    ):
         """
         Imports a heightmap from a 2D structure of 'pixel' values in the range given by [zMin, zMax].  The array should be indexable as [x][y].
         The scale describes the resolution of the final generated heightmap - in both x and y, in metres-per-pixel. The scale is isotropic.
@@ -31,12 +33,21 @@ class Terrain_Importer:
             zMax: The largest elevation value in the data, in metres.
             isYFlipped: A flag which indicates if the heightmap should be flipped in the Y dimension.
         """
-        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger = getLogger(f"{LOGGER_ID}.Terrain_Importer")
         logger.setLevel(DEBUG)
-        d = dict(type = 'ImportHeightmap', data = data, w = w, h = h, scale = scale, zMin = zMin, zMax = zMax, isYFlipped = isYFlipped)
+        d = dict(
+            type="ImportHeightmap",
+            data=data,
+            w=w,
+            h=h,
+            scale=scale,
+            zMin=zMin,
+            zMax=zMax,
+            isYFlipped=isYFlipped,
+        )
         response = bng.connection.send(d)
-        response.ack('CompletedImportHeightmap')
-        logger.debug('Terrain_Importer - terrain imported.')
+        response.ack("CompletedImportHeightmap")
+        logger.debug("Terrain_Importer - terrain imported.")
 
     @staticmethod
     def terrain_and_road_import(bng: BeamNGpy, png_path, roads, DOI, margin, zMax):
@@ -52,12 +63,19 @@ class Terrain_Importer:
             margin: The margin parameter (around the roads).
             zMax: Sets the terrain prominence, which will be [0, zMax]. This is how the .png values will be scaled when modifying the terrain.
         """
-        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger = getLogger(f"{LOGGER_ID}.Terrain_Importer")
         logger.setLevel(DEBUG)
-        d = dict(type = 'TerrainAndRoadImport', pngPath = png_path, roads = roads, DOI = DOI, margin = margin, zMax = zMax)
+        d = dict(
+            type="TerrainAndRoadImport",
+            pngPath=png_path,
+            roads=roads,
+            DOI=DOI,
+            margin=margin,
+            zMax=zMax,
+        )
         response = bng.connection.send(d)
-        response.ack('CompletedTerrainAndRoadImport')
-        logger.debug('Terrain_Importer - terrain and roads imported.')
+        response.ack("CompletedTerrainAndRoadImport")
+        logger.debug("Terrain_Importer - terrain and roads imported.")
 
     @staticmethod
     def peaks_and_road_import(bng: BeamNGpy, peaks, roads, DOI, margin):
@@ -72,12 +90,14 @@ class Terrain_Importer:
             DOI: The domain of influence parameter of the terraforming process.
             margin: The margin parameter (around the roads).
         """
-        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger = getLogger(f"{LOGGER_ID}.Terrain_Importer")
         logger.setLevel(DEBUG)
-        d = dict(type = 'PeaksAndRoadImport', peaks = peaks, roads = roads, DOI = DOI, margin = margin)
+        d = dict(
+            type="PeaksAndRoadImport", peaks=peaks, roads=roads, DOI=DOI, margin=margin
+        )
         response = bng.connection.send(d)
-        response.ack('CompletedPeaksAndRoadImport')
-        logger.debug('Terrain_Importer - peaks and roads imported.')
+        response.ack("CompletedPeaksAndRoadImport")
+        logger.debug("Terrain_Importer - peaks and roads imported.")
 
     @staticmethod
     def reset(bng: BeamNGpy):
@@ -87,12 +107,12 @@ class Terrain_Importer:
         Args:
             bng: The BeamNG instance.
         """
-        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger = getLogger(f"{LOGGER_ID}.Terrain_Importer")
         logger.setLevel(DEBUG)
-        d = dict(type = 'ResetTerrain', data = {})
+        d = dict(type="ResetTerrain", data={})
         response = bng.connection.send(d)
-        response.ack('CompletedResetTerrain')
-        logger.debug('Terrain_Importer - reset.')
+        response.ack("CompletedResetTerrain")
+        logger.debug("Terrain_Importer - reset.")
 
     @staticmethod
     def open_close_world_editor(bng: BeamNGpy, is_open):
@@ -103,9 +123,9 @@ class Terrain_Importer:
             bng: The BeamNG instance.
             is_open: A flag which indicates if the world editor should be switched to open (True) or closed (False).
         """
-        logger = getLogger(f'{LOGGER_ID}.Terrain_Importer')
+        logger = getLogger(f"{LOGGER_ID}.Terrain_Importer")
         logger.setLevel(DEBUG)
-        d = dict(type = 'OpenCloseWorldEditor', isOpen = is_open)
+        d = dict(type="OpenCloseWorldEditor", isOpen=is_open)
         response = bng.connection.send(d)
-        response.ack('CompletedOpenCloseWorldEditor')
-        logger.debug('Terrain_Importer - open/close world editor.')
+        response.ack("CompletedOpenCloseWorldEditor")
+        logger.debug("Terrain_Importer - open/close world editor.")

@@ -68,15 +68,18 @@ def compute_rotation_matrix(quat: Quat) -> ndarray:
     if np.abs(norm - 1) > eps:
         quat = tuple(q / float(norm) for q in quat)
     x, y, z, w = quat[0], quat[1], quat[2], quat[3]
-    rot_mat = np.array([
-        [1-2*(y**2+z**2), 2*(x*y-z*w), 2*(x*z+y*w)],
-        [2*(x*y+z*w), 1-2*(x**2+z**2), 2*(y*z-x*w)],
-        [2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x**2+y**2)]
-    ], dtype=float)
+    rot_mat = np.array(
+        [
+            [1 - 2 * (y**2 + z**2), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+            [2 * (x * y + z * w), 1 - 2 * (x**2 + z**2), 2 * (y * z - x * w)],
+            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x**2 + y**2)],
+        ],
+        dtype=float,
+    )
     return rot_mat
 
 
-def quat_as_rotation_mat_str(quat: Quat, delimiter: str = ' ') -> str:
+def quat_as_rotation_mat_str(quat: Quat, delimiter: str = " ") -> str:
     """
     For a given quaternion, the function computes the corresponding rotation
     matrix and converts it into a string.
@@ -104,10 +107,12 @@ def quat_multiply(a: Quat, b: Quat) -> Quat:
     Returns:
         The product of ``a`` and ``b`` as a quaternion.
     """
-    return (a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
-            a[3] * b[1] + a[1] * b[3] + a[2] * b[0] - a[0] * b[2],
-            a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0],
-            a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2])
+    return (
+        a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+        a[3] * b[1] + a[1] * b[3] + a[2] * b[0] - a[0] * b[2],
+        a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0],
+        a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+    )
 
 
 def flip_y_axis(q: Quat) -> Quat:

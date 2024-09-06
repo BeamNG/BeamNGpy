@@ -1,3 +1,3 @@
 from .camera import Camera
 
-__all__ = ['Camera']
+__all__ = ["Camera"]

@@ -40,7 +40,7 @@ class PrefixedLengthSocket:
                 self.reconnect()
                 received = self.skt.recv(min(BUF_SIZE, length))
             if not received:
-                raise BNGDisconnectedError('The simulator ended the connection.')
+                raise BNGDisconnectedError("The simulator ended the connection.")
             recv_buffer.append(received)
             length -= len(received)
         assert length == 0
@@ -60,7 +60,9 @@ class PrefixedLengthSocket:
         return id(self)
 
     def send(self, data: bytes) -> None:
-        length = pack('!I', len(data))  # Prefix the message length to the front of the message data.
+        length = pack(
+            "!I", len(data)
+        )  # Prefix the message length to the front of the message data.
         data = length + data
         with self.SEND_LOCK:
             self.skt.sendall(data)
@@ -68,7 +70,7 @@ class PrefixedLengthSocket:
     def recv(self) -> bytes:
         with self.RECV_LOCK:
             packed_length = self._recv_exactly(self.HEADER_BYTES)
-            length = unpack('!I', packed_length)[0]
+            length = unpack("!I", packed_length)[0]
 
             message = self._recv_exactly(length)
         return message

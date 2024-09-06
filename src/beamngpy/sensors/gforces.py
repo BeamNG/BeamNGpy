@@ -12,5 +12,5 @@ class GForces(Sensor):
         super().__init__()
 
     def encode_vehicle_request(self):
-        req = dict(type='GForces')
+        req = dict(type="GForces")
         return req

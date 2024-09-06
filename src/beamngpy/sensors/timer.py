@@ -17,5 +17,5 @@ class Timer(Sensor):
         super().__init__()
 
     def encode_engine_request(self):
-        req = dict(type='Timer')
+        req = dict(type="Timer")
         return req
