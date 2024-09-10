@@ -52,11 +52,11 @@ Vehicles and the environment can be equipped with various sensors that provide
 simulated sensor data. These sensors include:
 
  - Cameras
-  - Color camera
-  - Depth camera
-  - Semantic and Instance annotations
+   - Color camera
+   - Depth camera
+   - Semantic and Instance annotations
  - Lidars
- - Inertial Measurement Units
+ - Inertial Measurement Units (IMU)
  - Ultrasonic Distance Measurements
 
 ![Multiple cameras](https://github.com/BeamNG/BeamNGpy/raw/master/media/camera.png)
@@ -159,7 +159,7 @@ vehicle.ai.set_mode('span')
 input('Hit enter when done...')
 ```
 
-We have a [guide][6] helping you getting started and navigating our collection of examples and
+We have a [guide][6] helping you to get started and navigating our collection of examples and
 the documentation of the library is available [here][7].
 
 ## Compatibility
@@ -168,10 +168,10 @@ BeamNG.tech is not a finished product but is still under development.
 Thus frequent changes on the simulation side are to be expected.
 While the BeamNGpy library maintains compatibility between minor versions for the user, this doesn't extend to the BeamNG.tech side. Not all BeamNGpy versions are compatible with all BeamNG.tech versions.
 Below is a list of compatible BeamNG.tech and BeamNGpy versions.
-However we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
+However, we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
 
 | BeamNG.tech version | BeamNGpy version                                          |
-| ------------------- | --------------------------------------------------------- |
+|---------------------|-----------------------------------------------------------|
 | 0.32                | [1.29](https://github.com/BeamNG/BeamNGpy/tree/v1.29)     |
 | 0.31                | [1.28](https://github.com/BeamNG/BeamNGpy/tree/v1.28)     |
 | 0.30                | [1.27.1](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1) |
@@ -194,7 +194,7 @@ recommended to consult the documentation on BeamNG.drive here:
 
 ### BeamNGpy cannot establish a connection
 
- - Be sure to complete the initial set up step described in the Usage section and to repeat it with every newly released BeamNG.tech version.
+ - Be sure to complete the initial set-up step described in the Usage section and to repeat it with every newly released BeamNG.tech version.
  - Make sure BeamNG.tech and Python are allowed to connect to your current
    network in Windows Firewall.
 

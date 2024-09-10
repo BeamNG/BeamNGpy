@@ -40,4 +40,4 @@ def test_camera_control(beamng: BeamNGpy):
         current_camera = bng.camera.get_player_modes(ego)
 
         assert current_camera["orbit"]["focused"]
-        assert abs(current_camera["orbit"]["camDist"] - 50) < 0.5
+        assert (abs(current_camera["orbit"]["camDist"])-50) < 0.5
