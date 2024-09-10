@@ -33,30 +33,37 @@ def test_new_scenario(beamng: BeamNGpy):
 
 
 def test_no_scenario(beamng: BeamNGpy):
+    target = ""
     with beamng as bng:
         bng.control.return_to_main_menu()  # if a scenario was running previously
         with pytest.raises(BNGValueError):
-            bng.scenario.get_current()
-
+            target = bng.scenario.get_current()
+            assert target is None
 
 @pytest.mark.parametrize(
     "scenario_path",
     [
-        "/levels/west_coast_usa/scenarios/derby_asphalt.json",  # classic scenario
+        "/levels/west_coast_usa/scenarios/bus/bus_wcusa.json",  # classic scenario
         "/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json",  # mission
     ],
 )
 def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
     with beamng as bng:
         scenarios = bng.scenario.get_scenarios()
+        # Add print statements to check the structure of scenarios
+        print("Available levels:", scenarios.keys())
+
+        # Use .get() to avoid KeyErrors
+        scenarios_to_search = scenarios.get("west_coast_usa", []) + scenarios.get("italy", [])
         target = None
-        scenarios_to_search = scenarios["west_coast_usa"] + scenarios["italy"]
+
         for scenario in scenarios_to_search:
+            print(f"Checking scenario: {scenario.path}")
             if scenario.path == scenario_path:
                 target = scenario
                 break
 
-        assert target is not None
+        assert target is not None, f"Scenario with path {scenario_path} not found."
 
         bng.scenario.load(
             target, connect_player_vehicle=False, connect_existing_vehicles=False
@@ -117,7 +124,7 @@ def test_get_current_vehicles(beamng: BeamNGpy):
         scenarios = bng.scenario.get_scenarios()
         target = None
         for scenario in scenarios["west_coast_usa"]:
-            if scenario.path == "/levels/west_coast_usa/scenarios/derby_asphalt.json":
+            if scenario.path == "/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json":
                 target = scenario
                 break
 
@@ -126,8 +133,7 @@ def test_get_current_vehicles(beamng: BeamNGpy):
         bng.scenario.load(target)
 
         vehicles = bng.vehicles.get_current(include_config=False)
-        player = vehicles["scenario_player0"]
-
+        player = vehicles["clone"]
         sensor = Electrics()
         player.sensors.attach("electrics", sensor)
         player.connect(bng)

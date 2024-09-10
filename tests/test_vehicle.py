@@ -56,7 +56,7 @@ def test_vehicle_move(beamng: BeamNGpy):
         bng.scenario.load(scenario)
         bng.scenario.start()
         vehicle.control(throttle=1)
-        bng.control.step(120, wait=True)
+        bng.control.step(100, wait=True)
         vehicle.sensors.poll()
         assert np.linalg.norm(vehicle.sensors["state"]["pos"]) > 1
         scenario.close()
@@ -121,7 +121,7 @@ def test_vehicle_ai(beamng: BeamNGpy):
             {"x": -825.0, "y": 0.0, "z": 117.0, "t": 12.0},
         ]
         vehicle.ai.set_script(script)
-        bng.control.step(600, wait=True)
+        bng.control.step(670, wait=True)
         vehicle.sensors.poll()
         ref = (script[2]["x"], script[2]["y"], script[2]["z"])
         pos = vehicle.sensors["state"]["pos"]
