@@ -3,7 +3,7 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from beamngpy.api.vehicle import AIApi, LoggingApi, RootApi, AccApi
+from beamngpy.api.vehicle import AccApi, AIApi, LoggingApi, RootApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
