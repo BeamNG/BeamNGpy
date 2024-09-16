@@ -16,14 +16,6 @@ class AIApi(VehicleApi):
         vehicle: An instance of a vehicle object.
     """
 
-    def toggle_traffic_mode(self) -> None:
-        """
-        Toggles the vehicle to use AI to act like traffic.
-
-        TODO: use beamngpy protocol
-        """
-        self._vehicle.queue_lua_command("ai.toggleTrafficMode()")
-
     def set_mode(self, mode: str) -> None:
         """
         Sets the desired mode of the simulator's built-in AI for this vehicle.
