@@ -26,6 +26,7 @@ class RoadsSensor(CommBase):
         gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
         physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
+        is_visualised: A flag which indicates if the sensor will visualize its debug outputs.
     """
 
     def __init__(
@@ -36,6 +37,7 @@ class RoadsSensor(CommBase):
         gfx_update_time: float = 0.0,
         physics_update_time: float = 0.01,
         is_send_immediately: bool = False,
+        is_visualised: bool = False,
     ):
         super().__init__(bng, vehicle)
 
@@ -46,10 +48,16 @@ class RoadsSensor(CommBase):
         self.name = name
         self.vehicle = vehicle
         self.is_send_immediately = is_send_immediately
+        self.is_visualised = is_visualised
 
         # Create and initialise this sensor in the simulation.
         self._open_roads_sensor(
-            name, vehicle, gfx_update_time, physics_update_time, is_send_immediately
+            name,
+            vehicle,
+            gfx_update_time,
+            physics_update_time,
+            is_send_immediately,
+            is_visualised,
         )
 
         # Fetch the unique Id number (in the simulator) for this roads sensor.  We will need this later.
@@ -197,6 +205,7 @@ class RoadsSensor(CommBase):
         gfx_update_time: float,
         physics_update_time: float,
         is_send_immediately: bool,
+        is_visualised: bool,
     ) -> None:
         data: StrDict = dict()
         data["name"] = name
@@ -204,6 +213,7 @@ class RoadsSensor(CommBase):
         data["GFXUpdateTime"] = gfx_update_time
         data["physicsUpdateTime"] = physics_update_time
         data["isSendImmediately"] = is_send_immediately
+        data["isVisualised"] = is_visualised
         self.send_ack_ge(type="OpenRoadsSensor", ack="OpenedRoadsSensor", **data)
         self.logger.info(f'Opened RoadsSensor: "{name}"')
 

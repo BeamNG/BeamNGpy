@@ -8,8 +8,8 @@ from PIL import Image
 
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
-from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 from beamngpy.sensors.shmem import BNGSharedMemory
+from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 
 from . import utils
 
@@ -43,7 +43,7 @@ class Camera(CommBase):
         is_render_instance: A flag which indicates if this sensor should render instance annotation data.
         is_render_depth: A flag which indicates if this sensor should render depth data.
         is_depth_inverted: A flag which indicates if the depth values should be shown white->black or black->white, as distance increases.
-        is_visualised: A flag which indicates if this LiDAR sensor should appear visualised or not.
+        is_visualised: A flag which indicates if this camera sensor should appear visualised or not.
         is_streaming: Whether or not to stream the data directly to shared memory (no poll required, for efficiency - BeamNGpy won't block.)
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
