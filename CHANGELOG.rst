@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.30
+============
+TODO
+
 Version 1.29
 ============
 - Added documentation on the sensors output signals.

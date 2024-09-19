@@ -171,7 +171,8 @@ Below is a list of compatible BeamNG.tech and BeamNGpy versions.
 However, we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
 
 | BeamNG.tech version | BeamNGpy version                                          |
-|---------------------|-----------------------------------------------------------|
+| ------------------- | --------------------------------------------------------- |
+| 0.33                | [1.30](https://github.com/BeamNG/BeamNGpy/tree/v1.30)     |
 | 0.32                | [1.29](https://github.com/BeamNG/BeamNGpy/tree/v1.29)     |
 | 0.31                | [1.28](https://github.com/BeamNG/BeamNGpy/tree/v1.28)     |
 | 0.30                | [1.27.1](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1) |
