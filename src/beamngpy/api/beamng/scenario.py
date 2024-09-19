@@ -213,7 +213,7 @@ class ScenarioApi(Api):
             data["rot"] = rot_quat
         self._send(data).ack("ScenarioObjectTeleported")
 
-    def start(self, restrict_actions: bool = False) -> None:
+    def start(self, restrict_actions: bool | None = None) -> None:
         """
         Starts the scenario; equivalent to clicking the "Start" button in the
         game after loading a scenario. This method blocks until the countdown
@@ -221,11 +221,17 @@ class ScenarioApi(Api):
 
         Args:
             restrict_actions: Whether to keep scenario restrictions,
-                            such as limited menu options and controls.
-                            Defaults to False.
+                              such as limited menu options and controls.
+                              If None, defaults to the value set in the current Scenario object.
         """
+        if not self._beamng._scenario:
+            raise BNGError("Need to have a scenario loaded to start it.")
+
         data: StrDict = dict(type="StartScenario")
-        data["restrict_actions"] = restrict_actions
+        if restrict_actions is not None:
+            data["restrict_actions"] = restrict_actions
+        else:
+            data["restrict_actions"] = self._beamng._scenario.restrict_actions
         self._send(data).ack("ScenarioStarted")
         self._logger.info("Starting scenario.")
 
@@ -242,7 +248,10 @@ class ScenarioApi(Api):
         self._beamng._scenario.restart()
 
         self._logger.info("Restarting scenario.")
-        data = dict(type="RestartScenario")
+        data = dict(
+            type="RestartScenario",
+            restrict_actions=self._beamng._scenario.restrict_actions,
+        )
         self._send(data).ack("ScenarioRestarted")
 
         self._beamng._scenario._load_existing_vehicles()

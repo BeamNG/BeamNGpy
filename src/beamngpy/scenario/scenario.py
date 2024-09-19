@@ -68,7 +68,9 @@ class Scenario:
         description: The description of the scenario displayed in the simulator.
         difficulty: The difficulty of the scenario displayed in the simulator.
         authors: Names of the authors. Defaults to ``BeamNGpy``.
-        options: Other pptions of the scenario object, not used at the moment.
+        restrict_actions: Whether to keep scenario restrictions, such as limited menu options and controls.
+                          Defaults to False.
+        options: Other options of the scenario object, not used at the moment.
     """
 
     scenetree_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
@@ -119,6 +121,7 @@ class Scenario:
         description: str | None = None,
         difficulty: int = 0,
         authors: str = "BeamNGpy",
+        restrict_actions: bool = False,
         **options: Any,
     ):
         self.level = level
@@ -128,6 +131,7 @@ class Scenario:
         self.description = description
         self.difficulty = difficulty
         self.authors = authors
+        self.restrict_actions = restrict_actions
         self.options = options
 
         self.vehicles: Dict[str, Vehicle] = {}
