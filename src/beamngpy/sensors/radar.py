@@ -183,6 +183,10 @@ class Radar(CommBase):
         # Send and receive a request for readings data from this sensor.
         binary = self.send_recv_ge("PollRadar", name=self.name)["data"]
 
+        # Ensure that the binary data is in bytes-like format
+        if isinstance(binary, str):
+            binary = binary.encode('utf-8')  # Convert the string to bytes
+
         # Convert the binary string into an array of floats.
         radar_data = self._decode_poll_data(binary)
         self.logger.debug(
