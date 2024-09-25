@@ -7,8 +7,16 @@ from pathlib import Path
 
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 
-BINARIES = ["Bin64/BeamNG.x64.exe"]
-BINARIES_LINUX = ["BinLinux/BeamNG.x64"]
+BINARIES = [
+    "Bin64/BeamNG.tech.x64.exe",
+    "Bin64/BeamNG.x64.exe",
+    "Bin64/BeamNG.drive.x64.exe",
+]
+BINARIES_LINUX = [
+    "BinLinux/BeamNG.tech.x64",
+    "BinLinux/BeamNG.x64",
+    "BinLinux/BeamNG.drive.x64",
+]
 
 logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
 logger.setLevel(logging.DEBUG)
