@@ -272,6 +272,8 @@ class Radar(CommBase):
         binary = self.send_recv_ge(
             "CollectAdHocPollRequestRadar", requestId=request_id
         )["data"]["radarData"]
+        if len(binary) == 0:
+            binary = bytes()
         radar_data = self._decode_poll_data(binary)
 
         self.logger.debug(
