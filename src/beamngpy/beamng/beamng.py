@@ -59,10 +59,14 @@ class BeamNGpy:
               will be placed if the home folder shall not be touched.
         quit_on_close: Whether the simulator should be closed when :func:`close()` is called.
                        Defaults to True.
-        crash_lua_on_error: If True, then sets BeamNG to not respond to BeamNGpy requests when a Lua error
-                            happens and prints the stacktrace instead.
-                            Is applicable only when the process is launched by this instance of BeamNGpy,
-                            as it sets a launch argument of the process. Defaults to False.
+        debug: If True, then sets BeamNG.tech communication to debug mode. That means:
+               1. BeamNG will not respond to BeamNGpy requests when a Lua error
+                  happens and prints the stacktrace instead.
+               2. The `techCapture.*.log` files are created automatically in the userfolder,
+                  they log every protocol call and can be replayed using the `tech/capturePlayer`
+                  Lua extension.
+               This option is applicable only when the process is launched by this instance
+               of BeamNGpy, as it sets a launch argument of the process. Defaults to False.
 
     Attributes
     ----------
@@ -103,7 +107,7 @@ class BeamNGpy:
         binary: str | None = None,
         user: str | None = None,
         quit_on_close: bool = True,
-        crash_lua_on_error: bool | None = None,
+        debug: bool | None = None,
     ):
         self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
         self.logger.setLevel(logging.DEBUG)
@@ -114,7 +118,7 @@ class BeamNGpy:
         self.user = user
         self.process = None
         self.quit_on_close = quit_on_close
-        self.crash_lua_on_error = crash_lua_on_error
+        self.debug = debug
         self.connection: Connection | None = None
         self._scenario: Scenario | None = None
         self._host_os: str | None = None
@@ -139,7 +143,7 @@ class BeamNGpy:
         extensions: List[str] | None = None,
         *args: str,
         launch: bool = True,
-        crash_lua_on_error: bool | None = None,
+        debug: bool | None = None,
         listen_ip: str = "127.0.0.1",
         **opts: str,
     ) -> BeamNGpy:
@@ -151,10 +155,14 @@ class BeamNGpy:
             extensions: A list of non-default BeamNG Lua extensions to be loaded on start.
             launch: Whether to launch a new process or connect to a running one on the configured host/port.
                     Defaults to True.
-            crash_lua_on_error: If True, then sets BeamNG to not respond to BeamNGpy requests when a Lua error
-                                happens and prints the stacktrace instead.
-                                Is applicable only when the process is launched by this instance of BeamNGpy,
-                                as it sets a launch argument of the process. Defaults to False.
+            debug: If True, then sets BeamNG.tech communication to debug mode. That means:
+                   1. BeamNG will not respond to BeamNGpy requests when a Lua error
+                      happens and prints the stacktrace instead.
+                   2. The `techCapture.*.log` files are created automatically in the userfolder,
+                      they log every protocol call and can be replayed using the `tech/capturePlayer`
+                      Lua extension.
+                   This option is applicable only when the process is launched by this instance
+                   of BeamNGpy, as it sets a launch argument of the process. Defaults to False.
             listen_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
                      Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
         """
@@ -170,11 +178,11 @@ class BeamNGpy:
             self.logger.info("Opening BeamNGpy instance.")
             arg_list = list(args)
 
-            if crash_lua_on_error is None:
-                crash_lua_on_error = self.crash_lua_on_error
-            if crash_lua_on_error == True:
+            if debug is None:
+                debug = self.debug
+            if debug == True:
                 arg_list.append("-tcom-debug")
-            elif crash_lua_on_error == False:
+            elif debug == False:
                 arg_list.append("-no-tcom-debug")
             arg_list.extend(("-tcom-listen-ip", listen_ip))
 
