@@ -36,11 +36,13 @@ def determine_home(home: str | None) -> Path:
     return Path(home).resolve()
 
 
-def determine_userpath(binary: Path) -> Path:
+def determine_userpath(binary: Path) -> Path | None:
     """
     Tries to find the userpath based on the beamng installation if the user
     did not provide a custom userpath.
     """
+    if platform.system() == "Linux":
+        return None
     user = Path.home() / "AppData"
     user = user / "Local"
     if ".research" in binary.name:
