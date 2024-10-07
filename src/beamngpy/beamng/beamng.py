@@ -9,18 +9,9 @@ from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, List
 
-from beamngpy.api.beamng import (
-    CameraApi,
-    ControlApi,
-    DebugApi,
-    EnvironmentApi,
-    ScenarioApi,
-    SettingsApi,
-    SystemApi,
-    TrafficApi,
-    UiApi,
-    VehiclesApi,
-)
+from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
+                                 EnvironmentApi, ScenarioApi, SettingsApi,
+                                 SystemApi, TrafficApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning
@@ -60,11 +51,13 @@ class BeamNGpy:
         quit_on_close: Whether the simulator should be closed when :func:`close()` is called.
                        Defaults to True.
         debug: If True, then sets BeamNG.tech communication to debug mode. That means:
-               1. BeamNG will not respond to BeamNGpy requests when a Lua error
-                  happens and prints the stacktrace instead.
-               2. The `techCapture.*.log` files are created automatically in the userfolder,
-                  they log every protocol call and can be replayed using the `tech/capturePlayer`
-                  Lua extension.
+
+                1. BeamNG will not respond to BeamNGpy requests when a Lua error
+                    happens and prints the stacktrace instead.
+                2. The ``techCapture.*.log`` files are created automatically in the userfolder,
+                    they log every protocol call and can be replayed using the ``tech/capturePlayer``
+                    Lua extension.
+
                This option is applicable only when the process is launched by this instance
                of BeamNGpy, as it sets a launch argument of the process. Defaults to False.
 
@@ -156,13 +149,15 @@ class BeamNGpy:
             launch: Whether to launch a new process or connect to a running one on the configured host/port.
                     Defaults to True.
             debug: If True, then sets BeamNG.tech communication to debug mode. That means:
-                   1. BeamNG will not respond to BeamNGpy requests when a Lua error
-                      happens and prints the stacktrace instead.
-                   2. The `techCapture.*.log` files are created automatically in the userfolder,
-                      they log every protocol call and can be replayed using the `tech/capturePlayer`
-                      Lua extension.
-                   This option is applicable only when the process is launched by this instance
-                   of BeamNGpy, as it sets a launch argument of the process. Defaults to False.
+
+                    1. BeamNG will not respond to BeamNGpy requests when a Lua error
+                    happens and prints the stacktrace instead.
+                    2. The ``techCapture.*.log`` files are created automatically in the userfolder,
+                    they log every protocol call and can be replayed using the ``tech/capturePlayer``
+                    Lua extension.
+
+                This option is applicable only when the process is launched by this instance
+                of BeamNGpy, as it sets a launch argument of the process. Defaults to False.
             listen_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
                      Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
         """

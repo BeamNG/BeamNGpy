@@ -4,7 +4,19 @@ Changelog
 
 Version 1.30
 ============
-TODO
+- Added a new API for attaching and detaching `couplers`.
+- Added a flag to disable `RoadsSensor <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#roads-sensor>`__ debug visualization.
+- Fixed `BeamNGpy.scenario.restart <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Scenario.restart>`__ breaking some keyboard shortcuts after calling it.
+- The `BeamNGpy <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.BeamNGpy>`__ and `Vehicle <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle>`__ objects are threadsafe now.
+- Fixed the `set_part_config <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle.set_part_config>`__ function losing the connection to the `Vehicle <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle>`__ object
+- Fixed `Lidar <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#lidar>`__ with ``is_streaming=True``.
+- New tool for recording/replaying BeamNGpy protocol runs - `Tech Capture Player <https://documentation.beamng.com/beamng_tech/beamngpy/tools/capture_player/>`__.
+- New debugging tool for BeamNGpy communication - Wireshark plugin:
+
+  - decodes all messages exchanged between BeamNGpy and BeamNG
+  - included with instructions in the `debug <https://github.com/BeamNG/BeamNGpy/tree/v1.30/debug>`__ folder of the BeamNGpy repository
+- The ``determine_userpath`` function is skipped on Linux
+- Renamed the ``crash_lua_on_error`` argument of `BeamNGpy <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.BeamNGpy>`__ to ``debug``, as the argument also changes other behavior (it starts recording the Tech Captures).
 
 Version 1.29
 ============
