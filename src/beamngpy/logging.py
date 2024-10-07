@@ -133,6 +133,7 @@ def set_up_simple_logging(
         handlers.append(fh)
     config_logging(
         handlers,
+        level=level,
         redirect_warnings=redirect_warnings,
         log_communication=log_communication,
     )
