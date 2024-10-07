@@ -29,12 +29,14 @@ class CameraApi(Api):
             pos: The position of the camera as a (x, y, z) triplet.
             direction: The directional vector of the camera as a (x, y, z) triplet.
         """
-        data: StrDict = dict(type='SetFreeCamera')
-        data['pos'] = pos
-        data['dir'] = direction
-        self._send(data).ack('FreeCameraSet')
+        data: StrDict = dict(type="SetFreeCamera")
+        data["pos"] = pos
+        data["dir"] = direction
+        self._send(data).ack("FreeCameraSet")
 
-    def set_relative(self, pos: Float3, dir: Float3, up: Float3 = (0.0, 0.0, 1.0)) -> None:
+    def set_relative(
+        self, pos: Float3, dir: Float3, up: Float3 = (0.0, 0.0, 1.0)
+    ) -> None:
         """
         Switches the camera mode for the currently-entered vehicle to the
         'relative' mode in which the camera can be placed at an arbitrary point
@@ -46,14 +48,20 @@ class CameraApi(Api):
             dir (x, y, z): The cameras direction vector.
             up (x, y, z): The camera up vector (optional).
         """
-        data: StrDict = dict(type='SetRelativeCam')
-        data['pos'] = pos
-        data['up'] = up
+        data: StrDict = dict(type="SetRelativeCam")
+        data["pos"] = pos
+        data["up"] = up
         if dir:
-            data['dir'] = dir
-        self._send(data).ack('RelativeCamSet')
+            data["dir"] = dir
+        self._send(data).ack("RelativeCamSet")
 
-    def set_player_mode(self, vehicle: str | Vehicle, mode: str, config: StrDict, custom_data: StrDict | None = None) -> None:
+    def set_player_mode(
+        self,
+        vehicle: str | Vehicle,
+        mode: str,
+        config: StrDict,
+        custom_data: StrDict | None = None,
+    ) -> None:
         """
         Sets the camera mode of the vehicle identified by the given vehicle ID.
         The mode is given as a string that identifies one of the valid modes
@@ -81,12 +89,12 @@ class CameraApi(Api):
             config: Dictionary of further properties to set in the mode.
             custom_data: Custom data used by the specific camera mode. Defaults to None.
         """
-        data: StrDict = dict(type='SetPlayerCameraMode')
-        data['vid'] = vehicle if isinstance(vehicle, str) else vehicle.vid
-        data['mode'] = mode
-        data['config'] = config
-        data['customData'] = custom_data
-        self._send(data).ack('PlayerCameraModeSet')
+        data: StrDict = dict(type="SetPlayerCameraMode")
+        data["vid"] = vehicle if isinstance(vehicle, str) else vehicle.vid
+        data["mode"] = mode
+        data["config"] = config
+        data["customData"] = custom_data
+        self._send(data).ack("PlayerCameraModeSet")
 
     def get_player_modes(self, vehicle: str | Vehicle) -> StrDict:
         """
@@ -99,10 +107,10 @@ class CameraApi(Api):
         Returns:
             A dictionary mapping camera mode names to configuration options.
         """
-        data = dict(type='GetPlayerCameraMode')
-        data['vid'] = vehicle if isinstance(vehicle, str) else vehicle.vid
-        resp = self._send(data).recv('PlayerCameraMode')
-        return resp['cameraData']
+        data = dict(type="GetPlayerCameraMode")
+        data["vid"] = vehicle if isinstance(vehicle, str) else vehicle.vid
+        resp = self._send(data).recv("PlayerCameraMode")
+        return resp["cameraData"]
 
     def get_annotations(self) -> Dict[str, Int3]:
         """
@@ -112,9 +120,12 @@ class CameraApi(Api):
             A mapping of object classes to lists containing the ``[R, G, B]``
             values of the colors objects of that class are rendered with.
         """
-        data = dict(type='GetAnnotations')
-        resp = self._send(data).recv('Annotations')
-        return {key: tuple(int(v) for v in value) for key, value in resp['annotations'].items()}
+        data = dict(type="GetAnnotations")
+        resp = self._send(data).recv("Annotations")
+        return {
+            key: tuple(int(v) for v in value)
+            for key, value in resp["annotations"].items()
+        }
 
     def get_annotation_classes(self, annotations: Dict[str, Int3]) -> Dict[int, str]:
         """

@@ -27,12 +27,17 @@ class TrafficApi(Api):
                         These vehicles need to be spawned beforehand and the
                         simulation will take control of them.
         """
-        data: StrDict = dict(type='StartTraffic')
-        data['participants'] = [p.vid for p in participants]
-        self._send(data).ack('TrafficStarted')
+        data: StrDict = dict(type="StartTraffic")
+        data["participants"] = [p.vid for p in participants]
+        self._send(data).ack("TrafficStarted")
 
-    def spawn(self, max_amount: int | None = None, police_ratio: float = 0,
-              extra_amount: int | None = None, parked_amount: int | None = None) -> None:
+    def spawn(
+        self,
+        max_amount: int | None = None,
+        police_ratio: float = 0,
+        extra_amount: int | None = None,
+        parked_amount: int | None = None,
+    ) -> None:
         """
         Enables traffic simulation with freshly spawned vehicles.
 
@@ -43,12 +48,12 @@ class TrafficApi(Api):
                           If None, defaults to in-game settings.
             parked_amount: The maximum amount of parked vehicles to spawn. If None, defaults to in-game settings.
         """
-        data: StrDict = dict(type='SpawnTraffic')
-        data['max_amount'] = max_amount
-        data['police_ratio'] = police_ratio
-        data['extra_amount'] = extra_amount
-        data['parked_amount'] = parked_amount
-        self._send(data).ack('TrafficSpawned')
+        data: StrDict = dict(type="SpawnTraffic")
+        data["max_amount"] = max_amount
+        data["police_ratio"] = police_ratio
+        data["extra_amount"] = extra_amount
+        data["parked_amount"] = parked_amount
+        self._send(data).ack("TrafficSpawned")
 
     def reset(self) -> None:
         """
@@ -56,8 +61,8 @@ class TrafficApi(Api):
         Useful for resolving traffic jam situations.
 
         """
-        data = dict(type='ResetTraffic')
-        self._send(data).ack('TrafficReset')
+        data = dict(type="ResetTraffic")
+        self._send(data).ack("TrafficReset")
 
     def stop(self, stop: bool = False) -> None:
         """
@@ -68,6 +73,6 @@ class TrafficApi(Api):
                 traffic. If True, vehicles will come to a halt, if
                 False, the AI will simply stop controlling the vehicle.
         """
-        data: StrDict = dict(type='StopTraffic')
-        data['stop'] = stop
-        self._send(data).ack('TrafficStopped')
+        data: StrDict = dict(type="StopTraffic")
+        data["stop"] = stop
+        self._send(data).ack("TrafficStopped")

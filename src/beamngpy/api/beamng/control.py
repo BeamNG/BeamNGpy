@@ -34,30 +34,30 @@ class ControlApi(Api):
             BNGError: If the wait flag is set but the simulator doesn't respond
                       appropriately.
         """
-        data: StrDict = dict(type='Step', count=count)
-        data['ack'] = wait
+        data: StrDict = dict(type="Step", count=count)
+        data["ack"] = wait
         resp = self._send(data)
         if wait:
-            resp.ack('Stepped')
-        self._logger.info(f'Advancing the simulation by {count} steps.')
+            resp.ack("Stepped")
+        self._logger.info(f"Advancing the simulation by {count} steps.")
 
     def pause(self) -> None:
         """
         Sends a pause request to BeamNG.*, blocking until the simulation is
         paused.
         """
-        data = dict(type='Pause')
-        self._send(data).ack('Paused')
-        self._logger.info('Pausing the simulation.')
+        data = dict(type="Pause")
+        self._send(data).ack("Paused")
+        self._logger.info("Pausing the simulation.")
 
     def resume(self) -> None:
         """
         Sends a resume request to BeamNG.*, blocking until the simulation
         is resumed.
         """
-        data = dict(type='Resume')
-        self._send(data).ack('Resumed')
-        self._logger.info('Resuming the simulation.')
+        data = dict(type="Resume")
+        self._send(data).ack("Resumed")
+        self._logger.info("Resuming the simulation.")
 
     def get_gamestate(self) -> Dict[str, str]:
         """
@@ -74,8 +74,8 @@ class ControlApi(Api):
         Returns:
             The game state as a dictionary as described above.
         """
-        data = dict(type='GameStateRequest')
-        resp = self._send(data).recv('GameState')
+        data = dict(type="GameStateRequest")
+        resp = self._send(data).recv("GameState")
         return resp
 
     def queue_lua_command(self, chunk: str) -> None:
@@ -85,20 +85,20 @@ class ControlApi(Api):
         Args:
             chunk: lua chunk as a string
         """
-        data = dict(type='QueueLuaCommandGE')
-        data['chunk'] = chunk
-        self._send(data).ack('ExecutedLuaChunkGE')
+        data = dict(type="QueueLuaCommandGE")
+        data["chunk"] = chunk
+        self._send(data).ack("ExecutedLuaChunkGE")
 
     def return_to_main_menu(self) -> None:
         """
         Returns to the main menu, possibly closing the loaded scenario.
         """
-        data = dict(type='StopScenario')
-        self._send(data).ack('ScenarioStopped')
+        data = dict(type="StopScenario")
+        self._send(data).ack("ScenarioStopped")
 
     def quit_beamng(self) -> None:
         """
         Sends the quit request to the simulator, which also closes the process.
         """
-        data = dict(type='Quit')
-        self._send(data).ack('Quit')
+        data = dict(type="Quit")
+        self._send(data).ack("Quit")

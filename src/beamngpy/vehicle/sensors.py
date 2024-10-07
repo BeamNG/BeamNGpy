@@ -37,7 +37,9 @@ class Sensors:
             sensor: The sensor to attach to the vehicle.
         """
         if name in self._sensors.keys():
-            raise BNGValueError('One vehicle cannot have multiple sensors with the same name: "{name}"')
+            raise BNGValueError(
+                'One vehicle cannot have multiple sensors with the same name: "{name}"'
+            )
         self._sensors[name] = sensor
         sensor.attach(self.vehicle, name)
 
@@ -72,13 +74,13 @@ class Sensors:
             vehicle_req = sensor.encode_vehicle_request()
 
             if engine_req:
-                engine_req['vehicle'] = self.vehicle.vid
+                engine_req["vehicle"] = self.vehicle.vid
                 engine_reqs[name] = engine_req
             if vehicle_req:
                 vehicle_reqs[name] = vehicle_req
 
-        engine_reqs = dict(type='SensorRequest', sensors=engine_reqs)
-        vehicle_reqs = dict(type='SensorRequest', sensors=vehicle_reqs)
+        engine_reqs = dict(type="SensorRequest", sensors=engine_reqs)
+        vehicle_reqs = dict(type="SensorRequest", sensors=vehicle_reqs)
         return engine_reqs, vehicle_reqs
 
     def _decode_response(self, sensor_data: StrDict) -> StrDict:
@@ -122,23 +124,27 @@ class Sensors:
         engine_reqs, vehicle_reqs = self._encode_requests(sensor_names)
         sensor_data = dict()
 
-        engine_resp = self.vehicle.bng._send(engine_reqs) if engine_reqs['sensors'] else None
-        vehicle_resp = self.vehicle._send(vehicle_reqs) if vehicle_reqs['sensors'] else None
+        engine_resp = (
+            self.vehicle.bng._send(engine_reqs) if engine_reqs["sensors"] else None
+        )
+        vehicle_resp = (
+            self.vehicle._send(vehicle_reqs) if vehicle_reqs["sensors"] else None
+        )
 
         if engine_resp:
-            resp = engine_resp.recv('SensorData')
-            sensor_data.update(resp['data'])
+            resp = engine_resp.recv("SensorData")
+            sensor_data.update(resp["data"])
 
         if vehicle_resp:
-            resp = vehicle_resp.recv('SensorData')
-            sensor_data.update(resp['data'])
+            resp = vehicle_resp.recv("SensorData")
+            sensor_data.update(resp["data"])
         result = self._decode_response(sensor_data)
 
         for sensor, data in result.items():
             self._sensors[sensor].replace(data)
 
     def __repr__(self):
-        return f'Sensors[{self.vehicle.vid}]: {self._sensors}'
+        return f"Sensors[{self.vehicle.vid}]: {self._sensors}"
 
     def __getitem__(self, __key: str) -> Sensor:
         return self._sensors.__getitem__(__key)

@@ -9,6 +9,7 @@
 .. moduleauthor:: Sedonas <https://github.com/Sedonas>
 .. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
 """
+
 from __future__ import annotations
 
 import copy
@@ -34,15 +35,15 @@ if TYPE_CHECKING:
     from beamngpy.scenario.procedural import ProceduralMesh
     from beamngpy.scenario.road import MeshRoad, Road
 
-TEMPLATE_ENV = Environment(loader=PackageLoader('beamngpy'))
-TEMPLATE_ENV.filters['bool'] = bool_to_str
+TEMPLATE_ENV = Environment(loader=PackageLoader("beamngpy"))
+TEMPLATE_ENV.filters["bool"] = bool_to_str
 
-module_logger = getLogger(f'{LOGGER_ID}.scenario')
+module_logger = getLogger(f"{LOGGER_ID}.scenario")
 module_logger.setLevel(DEBUG)
 
 
 def _list_to_str(list: Iterable[Any]) -> str:
-    return '[' + ', '.join([str(p) for p in list]) + ']'
+    return "[" + ", ".join([str(p) for p in list]) + "]"
 
 
 class Scenario:
@@ -67,39 +68,41 @@ class Scenario:
         description: The description of the scenario displayed in the simulator.
         difficulty: The difficulty of the scenario displayed in the simulator.
         authors: Names of the authors. Defaults to ``BeamNGpy``.
-        options: Other pptions of the scenario object, not used at the moment.
+        restrict_actions: Whether to keep scenario restrictions, such as limited menu options and controls.
+                          Defaults to False.
+        options: Other options of the scenario object, not used at the moment.
     """
 
     scenetree_classes: Dict[str, Callable[[StrDict], SceneObject]] = {
-        'MissionGroup': lambda d: SceneObject(d),
-        'DecalRoad': lambda d: DecalRoad(d),
+        "MissionGroup": lambda d: SceneObject(d),
+        "DecalRoad": lambda d: DecalRoad(d),
     }
 
     @staticmethod
     def from_dict(d: StrDict) -> Scenario:
-        if 'sourceFile' in d:
-            path = d['sourceFile']
-            del d['sourceFile']
-        elif 'scenarioName' in d:  # mission file
-            path = '/gameplay/missions/' + d['scenarioName'] + '/info.json'
-            del d['scenarioName']
+        if "sourceFile" in d:
+            path = d["sourceFile"]
+            del d["sourceFile"]
+        elif "scenarioName" in d:  # mission file
+            path = "/gameplay/missions/" + d["scenarioName"] + "/info.json"
+            del d["scenarioName"]
         else:
             path = None
 
-        if 'level' in d:
-            level = Level.from_dict(d['level'])
-            del d['level']
-        elif 'levelName' in d:
-            level = d['levelName']
-            del d['levelName']
+        if "level" in d:
+            level = Level.from_dict(d["level"])
+            del d["level"]
+        elif "levelName" in d:
+            level = d["levelName"]
+            del d["levelName"]
         else:
-            level = 'unknown'
+            level = "unknown"
 
-        if 'name' in d:
-            name = d['name']
-            del d['name']
+        if "name" in d:
+            name = d["name"]
+            del d["name"]
         else:
-            name = 'unknown'
+            name = "unknown"
 
         scenario = Scenario(level, name, path, **d)
 
@@ -107,11 +110,20 @@ class Scenario:
 
     @property
     def _uuid(self):
-        return get_uuid(f'Scenario_{self.name}')
+        return get_uuid(f"Scenario_{self.name}")
 
-    def __init__(self, level: str | Level, name: str, path: str | None = None,
-                 human_name: str | None = None, description: str | None = None,
-                 difficulty: int = 0, authors: str = 'BeamNGpy', **options: Any):
+    def __init__(
+        self,
+        level: str | Level,
+        name: str,
+        path: str | None = None,
+        human_name: str | None = None,
+        description: str | None = None,
+        difficulty: int = 0,
+        authors: str = "BeamNGpy",
+        restrict_actions: bool = False,
+        **options: Any,
+    ):
         self.level = level
         self.name = name
         self.path = path
@@ -119,10 +131,13 @@ class Scenario:
         self.description = description
         self.difficulty = difficulty
         self.authors = authors
+        self.restrict_actions = restrict_actions
         self.options = options
 
         self.vehicles: Dict[str, Vehicle] = {}
-        self.transient_vehicles: Dict[str, Vehicle] = {}  # Vehicles added during scenario
+        self.transient_vehicles: Dict[str, Vehicle] = (
+            {}
+        )  # Vehicles added during scenario
         self._vehicle_locations: Dict[str, Tuple[Float3, Quat]] = {}
         self._focus_vehicle: str | None = None
 
@@ -136,11 +151,11 @@ class Scenario:
 
         self.bng: BeamNGpy | None = None
 
-        self.logger = getLogger(f'{LOGGER_ID}.Scenario')
+        self.logger = getLogger(f"{LOGGER_ID}.Scenario")
         self.logger.setLevel(DEBUG)
 
     def __repr__(self):
-        return f'<Scenario(level=\'{self.level}\', name=\'{self.human_name}\', path=\'{self.path}\')>'
+        return f"<Scenario(level='{self.level}', name='{self.human_name}', path='{self.path}')>"
 
     def _get_objects_list(self) -> List[StrDict]:
         """
@@ -154,20 +169,26 @@ class Scenario:
         objs: List[StrDict] = list()
         for obj in self.objects:
             obj_dict: StrDict = dict(type=obj.type, id=obj.id)
-            obj_dict['_uuid'] = obj._uuid
-            obj_dict['options'] = copy.deepcopy(obj.opts)
+            obj_dict["_uuid"] = obj._uuid
+            obj_dict["options"] = copy.deepcopy(obj.opts)
 
             assert isinstance(obj.rot, tuple)
-            for option in obj_dict['options']:
-                if isinstance(obj_dict['options'][option], str):
-                    obj_dict['options'][option] = '"' + obj_dict['options'][option] + '"'
-            obj_dict['options']['position'] = _list_to_str(obj.pos)
-            obj_dict['options']['rotationMatrix'] = '[' + quat_as_rotation_mat_str(obj.rot, ', ') + ']'
-            obj_dict['options']['scale'] = _list_to_str(obj.scale)
+            for option in obj_dict["options"]:
+                if isinstance(obj_dict["options"][option], str):
+                    obj_dict["options"][option] = (
+                        '"' + obj_dict["options"][option] + '"'
+                    )
+            obj_dict["options"]["position"] = _list_to_str(obj.pos)
+            obj_dict["options"]["rotationMatrix"] = (
+                "[" + quat_as_rotation_mat_str(obj.rot, ", ") + "]"
+            )
+            obj_dict["options"]["scale"] = _list_to_str(obj.scale)
 
             objs.append(obj_dict)
-        self.logger.debug(f'The scenario {self.name} has {len(objs)} '
-                          'objects of type `beamngpy.ScenarioObject`')
+        self.logger.debug(
+            f"The scenario {self.name} has {len(objs)} "
+            "objects of type `beamngpy.ScenarioObject`"
+        )
         return objs
 
     def _get_info_dict(self) -> StrDict:
@@ -184,21 +205,21 @@ class Scenario:
             description=self.description,
             difficulty=self.difficulty,
             authors=self.authors,
-            lapConfig=self.checkpoints
+            lapConfig=self.checkpoints,
         )
 
         vehicles_dict = dict()
         for vid in self.vehicles:
-            vehicles_dict[vid] = {'playerUsable': True}
+            vehicles_dict[vid] = {"playerUsable": True}
 
         if self.vehicles:
             if self._focus_vehicle is None:
                 self._focus_vehicle = next(iter(self.vehicles))
 
-            vehicles_dict[self._focus_vehicle]['startFocus'] = True
+            vehicles_dict[self._focus_vehicle]["startFocus"] = True
 
-        info['vehicles'] = vehicles_dict
-        info['prefabs'] = [f'levels/{self.level}/scenarios/{self.name}.prefab.json']
+        info["vehicles"] = vehicles_dict
+        info["prefabs"] = [f"levels/{self.level}/scenarios/{self.name}.prefab.json"]
 
         return info
 
@@ -216,17 +237,23 @@ class Scenario:
             pos, rot = self._vehicle_locations[vid]
             vehicle_dict = dict(vid=vid)
             vehicle_dict.update(vehicle.options)
-            vehicle_dict['position'] = _list_to_str(pos)
-            vehicle_dict['rotationMatrix'] = '[' + quat_as_rotation_mat_str(rot, ', ') + ']'
-            vehicle_dict['_uuid'] = vehicle._uuid
-            if vehicle_dict['color'] is None:
-                del vehicle_dict['color']
+            vehicle_dict["position"] = _list_to_str(pos)
+            vehicle_dict["rotationMatrix"] = (
+                "[" + quat_as_rotation_mat_str(rot, ", ") + "]"
+            )
+            vehicle_dict["_uuid"] = vehicle._uuid
+            if vehicle_dict["color"] is None:
+                del vehicle_dict["color"]
             else:
-                vehicle_dict['color'] = _list_to_str(coerce_color(vehicle_dict['color']))
+                vehicle_dict["color"] = _list_to_str(
+                    coerce_color(vehicle_dict["color"])
+                )
             vehicles.append(vehicle_dict)
-        vehicles = sorted(vehicles, key=lambda v: v['vid'])
-        self.logger.debug(f'The scenario {self.name} has {len(vehicles)} '
-                          f'vehicles: {", ".join(self.vehicles.keys())}')
+        vehicles = sorted(vehicles, key=lambda v: v["vid"])
+        self.logger.debug(
+            f"The scenario {self.name} has {len(vehicles)} "
+            f'vehicles: {", ".join(self.vehicles.keys())}'
+        )
         return vehicles
 
     def _get_roads_list(self) -> List[StrDict]:
@@ -240,14 +267,17 @@ class Scenario:
         ret: List[StrDict] = list()
         for idx, road in enumerate(self.roads):
             road_dict = dict(**road.__dict__)
-            road_dict['road_id'] = f'beamngpy_road_{self.name}_{idx:03}' if road.rid is None else road.rid
-            road.rid = road_dict['road_id']
-            road_dict['_uuid'] = road._uuid
-            road_dict['render_priority'] = idx
+            road_dict["road_id"] = (
+                f"beamngpy_road_{self.name}_{idx:03}" if road.rid is None else road.rid
+            )
+            road.rid = road_dict["road_id"]
+            road_dict["_uuid"] = road._uuid
+            road_dict["render_priority"] = idx
 
             ret.append(road_dict)
-        self.logger.debug(f'The scenario {self.name} has {len(ret)} '
-                          'scenario-specific roads.')
+        self.logger.debug(
+            f"The scenario {self.name} has {len(ret)} " "scenario-specific roads."
+        )
         return ret
 
     def _get_mesh_roads_list(self) -> List[StrDict]:
@@ -261,14 +291,19 @@ class Scenario:
         ret: List[StrDict] = list()
         for idx, road in enumerate(self.mesh_roads):
             road_dict = dict(**road.__dict__)
-            road_dict['road_id'] = f'beamngpy_mesh_road_{self.name}_{idx:03}' if road.rid is None else road.rid
-            road.rid = road_dict['road_id']
-            road_dict['_uuid'] = road._uuid
-            road_dict['render_priority'] = idx
+            road_dict["road_id"] = (
+                f"beamngpy_mesh_road_{self.name}_{idx:03}"
+                if road.rid is None
+                else road.rid
+            )
+            road.rid = road_dict["road_id"]
+            road_dict["_uuid"] = road._uuid
+            road_dict["render_priority"] = idx
 
             ret.append(road_dict)
-        self.logger.debug(f'The scenario {self.name} has {len(ret)} '
-                          'scenario-specific mesh roads.')
+        self.logger.debug(
+            f"The scenario {self.name} has {len(ret)} " "scenario-specific mesh roads."
+        )
         return ret
 
     def _get_prefab(self) -> str:
@@ -279,15 +314,21 @@ class Scenario:
         Returns:
             Prefab code for the simulator.
         """
-        template = TEMPLATE_ENV.get_template('prefab.json')
+        template = TEMPLATE_ENV.get_template("prefab.json")
 
         vehicles = self._get_vehicles_list()
         roads = self._get_roads_list()
         mesh_roads = self._get_mesh_roads_list()
         objs = self._get_objects_list()
 
-        prefab = template.render(scenario=self, vehicles=vehicles, roads=roads, mesh_roads=mesh_roads, objects=objs)
-        prefab = prefab.replace('\n', '').replace('|---|', '\n')
+        prefab = template.render(
+            scenario=self,
+            vehicles=vehicles,
+            roads=roads,
+            mesh_roads=mesh_roads,
+            objects=objs,
+        )
+        prefab = prefab.replace("\n", "").replace("|---|", "\n")
         return prefab
 
     def _get_level_name(self) -> str:
@@ -300,8 +341,7 @@ class Scenario:
         assert self.bng
 
         current_vehicles = self.bng.vehicles.get_current(include_config=False)
-        self.logger.debug(
-            f'Got {len(current_vehicles)} vehicles from scenario.')
+        self.logger.debug(f"Got {len(current_vehicles)} vehicles from scenario.")
         self.transient_vehicles = current_vehicles.copy()
 
         for vid, vehicle in self.vehicles.items():
@@ -318,7 +358,13 @@ class Scenario:
         """
         self.objects.append(obj)
 
-    def add_vehicle(self, vehicle: Vehicle, pos: Float3 = (0, 0, 0), rot_quat: Quat = (0, 0, 0, 1), cling: bool = True) -> None:
+    def add_vehicle(
+        self,
+        vehicle: Vehicle,
+        pos: Float3 = (0, 0, 0),
+        rot_quat: Quat = (0, 0, 0, 1),
+        cling: bool = True,
+    ) -> None:
         """
         Adds a :class:`.Vehicle`: to this scenario at the given position with the given
         orientation.
@@ -331,12 +377,14 @@ class Scenario:
                    position to avoid spawning the vehicle below ground or in the air.
         """
         if self.name == vehicle.vid:
-            error = 'Cannot have vehicle with the same name as the scenario:' \
-                    f' Scenario={self.name}, Vehicle={vehicle.vid}'
+            error = (
+                "Cannot have vehicle with the same name as the scenario:"
+                f" Scenario={self.name}, Vehicle={vehicle.vid}"
+            )
             raise BNGValueError(error)
 
         if vehicle.vid in self.vehicles:
-            error = f'The vehicle \'{vehicle.vid}\' is already in the scenario.'
+            error = f"The vehicle '{vehicle.vid}' is already in the scenario."
             raise BNGValueError(error)
 
         if vehicle.connection:
@@ -344,15 +392,17 @@ class Scenario:
 
         self.vehicles[vehicle.vid] = vehicle
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
-        self.logger.debug(f'Added vehicle with id \'{vehicle.vid}\'.')
+        self.logger.debug(f"Added vehicle with id '{vehicle.vid}'.")
 
         if self.bng:
             self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, cling=cling)
             self.transient_vehicles[vehicle.vid] = vehicle
             vehicle.connect(self.bng)
         else:
-            self.logger.debug('No BeamNGpy instance available. '
-                              f'Did not spawn vehicle with id \'{vehicle.vid}\'.')
+            self.logger.debug(
+                "No BeamNGpy instance available. "
+                f"Did not spawn vehicle with id '{vehicle.vid}'."
+            )
 
     def remove_vehicle(self, vehicle: Vehicle) -> None:
         """
@@ -367,14 +417,16 @@ class Scenario:
                 self.bng.vehicles.despawn(vehicle)
                 self.transient_vehicles.pop(vehicle.vid, None)
             else:
-                self.logger.debug('No beamngpy instance available, cannot '
-                                  f'despawn vehicle with id \'{vehicle.vid}\'')
+                self.logger.debug(
+                    "No beamngpy instance available, cannot "
+                    f"despawn vehicle with id '{vehicle.vid}'"
+                )
 
             if vehicle.vid in self._vehicle_locations:
                 del self._vehicle_locations[vehicle.vid]
             del self.vehicles[vehicle.vid]
         else:
-            self.logger.debug(f'No vehicle with id {vehicle.vid} found.')
+            self.logger.debug(f"No vehicle with id {vehicle.vid} found.")
 
     def get_vehicle(self, vehicle_id: str) -> Vehicle | None:
         """
@@ -388,7 +440,7 @@ class Scenario:
         """
         if vehicle_id in self.vehicles:
             return self.vehicles[vehicle_id]
-        self.logger.debug(f'Could not find vehicle with id {vehicle_id}')
+        self.logger.debug(f"Could not find vehicle with id {vehicle_id}")
         return None
 
     def set_initial_focus(self, vehicle_id: str) -> None:
@@ -447,9 +499,14 @@ class Scenario:
             mesh.remove(self.bng)
             deleted = True
         if not deleted:
-            raise BNGError(f'The mesh \'{mesh.name}\' was not found in the scenario.')
+            raise BNGError(f"The mesh '{mesh.name}' was not found in the scenario.")
 
-    def add_checkpoints(self, positions: List[Float3], scales: List[Float3], ids: List[str] | None = None) -> None:
+    def add_checkpoints(
+        self,
+        positions: List[Float3],
+        scales: List[Float3],
+        ids: List[str] | None = None,
+    ) -> None:
         """
         Adds checkpoints to the scenario.
 
@@ -459,35 +516,34 @@ class Scenario:
             ids: Optional, names of the individual points.
         """
         if ids is None:
-            ids = [f'wp{i}' for i in range(len(positions))]
-        assert(len(positions) == len(scales) == len(ids))
-        options = dict(rot_quat=(0, 0, 0, 1),
-                       drawDebug='0',
-                       directionalWaypoint='0',
-                       mode='Ignore',
-                       canSave='1',
-                       canSaveDynamicFields='1')
+            ids = [f"wp{i}" for i in range(len(positions))]
+        assert len(positions) == len(scales) == len(ids)
+        options = dict(
+            rot_quat=(0, 0, 0, 1),
+            drawDebug="0",
+            directionalWaypoint="0",
+            mode="Ignore",
+            canSave="1",
+            canSaveDynamicFields="1",
+        )
         for oid, p, s in zip(ids, positions, scales):
-            cp = ScenarioObject(oid=oid,
-                                name=oid,
-                                otype='BeamNGWaypoint',
-                                pos=p,
-                                scale=s,
-                                **options)
+            cp = ScenarioObject(
+                oid=oid, name=oid, otype="BeamNGWaypoint", pos=p, scale=s, **options
+            )
             self.add_object(cp)
         self.checkpoints.extend(ids)
 
     def _convert_scene_object(self, obj: StrDict) -> SceneObject:
         assert self.bng
-        data = self.bng._message('GetObject', id=obj['id'])
-        clazz = data['class']
+        data = self.bng._message("GetObject", id=obj["id"])
+        clazz = data["class"]
         if clazz in Scenario.scenetree_classes:
             converted = Scenario.scenetree_classes[clazz](data)
         else:
             converted = SceneObject(data)
 
-        if 'children' in obj:
-            for child in obj['children']:
+        if "children" in obj:
+            for child in obj["children"]:
                 child = self._convert_scene_object(child)
                 converted.children.append(child)
 
@@ -501,11 +557,13 @@ class Scenario:
         in the ``scene`` field of this class.
         """
         assert self.bng
-        scenetree = self.bng._message('GetSceneTree')
-        assert scenetree['class'] == 'SimGroup'
+        scenetree = self.bng._message("GetSceneTree")
+        assert scenetree["class"] == "SimGroup"
         self.scene = self._convert_scene_object(scenetree)
 
-    def connect(self, bng: BeamNGpy, connect_player: bool = True, connect_existing: bool = True) -> None:
+    def connect(
+        self, bng: BeamNGpy, connect_player: bool = True, connect_existing: bool = True
+    ) -> None:
         """
         Connects this scenario to the simulator.
 
@@ -518,23 +576,23 @@ class Scenario:
         """
         self.bng = bng
 
-        self.logger.debug(f'{len(self.proc_meshes)} procedural meshes.')
+        self.logger.debug(f"{len(self.proc_meshes)} procedural meshes.")
         for mesh in self.proc_meshes.values():
             mesh.place(self.bng)
 
         if connect_existing or connect_player:
             self._load_existing_vehicles()
         try:
-            player_vid = bng.vehicles.get_player_vehicle_id()['vid']
+            player_vid = bng.vehicles.get_player_vehicle_id()["vid"]
         except BNGError:
             player_vid = None
 
-        self.logger.debug(f'Connecting to {len(self.vehicles)} vehicles.')
+        self.logger.debug(f"Connecting to {len(self.vehicles)} vehicles.")
         for vehicle in self.vehicles.values():
             if connect_existing or (connect_player and vehicle.vid == player_vid):
                 vehicle.connect(bng)
 
-        self.logger.info(f'Connected to scenario: {self.name}')
+        self.logger.info(f"Connected to scenario: {self.name}")
 
     def make(self, bng: BeamNGpy) -> None:
         """
@@ -548,17 +606,23 @@ class Scenario:
             BNGError: If the scenario already has set its info .json file included.
         """
         if self.path is not None:
-            raise BNGError('This scenario already has an info file.')
+            raise BNGError("This scenario already has an info file.")
 
         level_name = self._get_level_name()
 
         prefab = self._get_prefab()
         info = self._get_info_dict()
-        self.logger.debug(f'Generated prefab:\n{prefab}\n')
-        self.logger.debug(f'Generated scenarios info dict:\n{info}\n')
+        self.logger.debug(f"Generated prefab:\n{prefab}\n")
+        self.logger.debug(f"Generated scenarios info dict:\n{info}\n")
 
-        self.path = bng._message('CreateScenario', level=level_name, name=self.name,
-                                 prefab=prefab, info=info, json=True)
+        self.path = bng._message(
+            "CreateScenario",
+            level=level_name,
+            name=self.name,
+            prefab=prefab,
+            info=info,
+            json=True,
+        )
 
     def find(self, bng: BeamNGpy) -> str | None:
         """
@@ -586,7 +650,7 @@ class Scenario:
         """
         if self.path is None:
             self.find(bng)
-        bng._message('DeleteScenario', path=self.path)
+        bng._message("DeleteScenario", path=self.path)
         self.logger.info(f'Deleted scenario from simulation: "{self.name}".')
 
     def restart(self) -> None:
@@ -603,8 +667,10 @@ class Scenario:
             BNGError: If the scenario has not been loaded.
         """
         if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to be restarted.')
+            raise BNGError(
+                "Scenario needs to be loaded into a BeamNGpy "
+                "instance to be restarted."
+            )
 
         while self.transient_vehicles:
             vid, vehicle = self.transient_vehicles.popitem()
@@ -621,19 +687,22 @@ class Scenario:
             BNGError: If the scenario has not been loaded.
         """
         if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to be stopped.')
+            raise BNGError(
+                "Scenario needs to be loaded into a BeamNGpy " "instance to be stopped."
+            )
 
         for vehicle in self.vehicles.values():
             vehicle.close()
 
         self.bng = None
-        self.logger.debug('Removed beamngpy instance from scenario class.')
+        self.logger.debug("Removed beamngpy instance from scenario class.")
 
     def _find_objects_class(self, clazz: str) -> List[ScenarioObject]:
         if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to find objects.')
+            raise BNGError(
+                "Scenario needs to be loaded into a BeamNGpy "
+                "instance to find objects."
+            )
 
         return self.bng.scenario.find_objects_class(clazz)
 
@@ -648,7 +717,7 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        waypoints = self._find_objects_class('BeamNGWaypoint')
+        waypoints = self._find_objects_class("BeamNGWaypoint")
         return waypoints
 
     def find_procedural_meshes(self) -> List[ScenarioObject]:
@@ -662,7 +731,7 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        meshes = self._find_objects_class('ProceduralMesh')
+        meshes = self._find_objects_class("ProceduralMesh")
         return meshes
 
     def find_static_objects(self) -> List[ScenarioObject]:
@@ -676,7 +745,7 @@ class Scenario:
         Raises:
             BNGError: If the scenario is not currently loaded.
         """
-        return self._find_objects_class('TSStatic')
+        return self._find_objects_class("TSStatic")
 
     def update(self) -> None:
         """
@@ -688,8 +757,10 @@ class Scenario:
             BNGError: If the scenario is currently not loaded.
         """
         if not self.bng:
-            raise BNGError('Scenario needs to be loaded into a BeamNGpy '
-                           'instance to update its state.')
+            raise BNGError(
+                "Scenario needs to be loaded into a BeamNGpy "
+                "instance to update its state."
+            )
 
         for vehicle in self.vehicles.values():
-            vehicle.sensors.poll('state')
+            vehicle.sensors.poll("state")

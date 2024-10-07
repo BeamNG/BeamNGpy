@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['RoadsSensor']
+__all__ = ["RoadsSensor"]
 
 
 class RoadsSensor(CommBase):
@@ -26,26 +26,43 @@ class RoadsSensor(CommBase):
         gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
         physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
+        is_visualised: A flag which indicates if the sensor will visualize its debug outputs.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
-                 is_send_immediately: bool = False):
+    def __init__(
+        self,
+        name: str,
+        bng: BeamNGpy,
+        vehicle: Vehicle,
+        gfx_update_time: float = 0.0,
+        physics_update_time: float = 0.01,
+        is_send_immediately: bool = False,
+        is_visualised: bool = False,
+    ):
         super().__init__(bng, vehicle)
 
-        self.logger = getLogger(f'{LOGGER_ID}.RoadsSensor')
+        self.logger = getLogger(f"{LOGGER_ID}.RoadsSensor")
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
         self.name = name
         self.vehicle = vehicle
         self.is_send_immediately = is_send_immediately
+        self.is_visualised = is_visualised
 
         # Create and initialise this sensor in the simulation.
-        self._open_roads_sensor(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
+        self._open_roads_sensor(
+            name,
+            vehicle,
+            gfx_update_time,
+            physics_update_time,
+            is_send_immediately,
+            is_visualised,
+        )
 
         # Fetch the unique Id number (in the simulator) for this roads sensor.  We will need this later.
         self.sensor_id = self._get_id()
-        self.logger.debug('roadsSensor created: 'f'{self.name}')
+        self.logger.debug("roadsSensor created: " f"{self.name}")
 
     def remove(self) -> None:
         """
@@ -53,7 +70,7 @@ class RoadsSensor(CommBase):
         """
         # Remove this sensor from the simulation.
         self._close_roads_sensor()
-        self.logger.debug('roadsSensor removed: 'f'{self.name}')
+        self.logger.debug("roadsSensor removed: " f"{self.name}")
 
     def poll(self) -> StrDict:
         """
@@ -85,7 +102,7 @@ class RoadsSensor(CommBase):
             vAofLeftRE, vBofLeftRE, vCofLeftRE, vDofLeftRE: left roadedge Parametric Cubic Polynomial V equation; constant, linear, quadratic and cubic term.
             uAofRightRE, uBofRightRE, uCofRightRE, uDofRightRE: right roadedge Parametric Cubic Polynomial U equation; constant, linear, quadratic and cubic term.
             vAofRightRE, vBofRightRE, vCofRightRE, vDofRightRE: right roadedge Parametric Cubic Polynomial V equation; constant, linear, quadratic and cubic term.
-            
+
             start points on the road:
             xStartCL, yStartCL, zStartCL: the starting point of the road centerline.
             xStartL, yStartL, zStartL: the coordinates of the starting point of the left roadedge (estimated).
@@ -105,7 +122,9 @@ class RoadsSensor(CommBase):
             # Get the bulk data from ge lua.
             readings_data = self._poll_roads_sensor_GE()
 
-        self.logger.debug('roadsSensor readings received from simulation: 'f'{self.name}')
+        self.logger.debug(
+            "roadsSensor readings received from simulation: " f"{self.name}"
+        )
         return readings_data
 
     def send_ad_hoc_poll_request(self) -> int:
@@ -117,8 +136,12 @@ class RoadsSensor(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('roadsSensor - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self.send_recv_ge('SendAdHocRequestRoadsSensor', name=self.name, vid=self.vehicle.vid)['data'])
+        self.logger.debug("roadsSensor - ad-hoc polling request sent: " f"{self.name}")
+        return int(
+            self.send_recv_ge(
+                "SendAdHocRequestRoadsSensor", name=self.name, vid=self.vehicle.vid
+            )["data"]
+        )
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -130,8 +153,13 @@ class RoadsSensor(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('roadsSensor - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self.send_recv_ge('IsAdHocPollRequestReadyRoadsSensor', requestId=request_id)['data']
+        self.logger.debug(
+            "roadsSensor - ad-hoc polling request checked for completion: "
+            f"{self.name}"
+        )
+        return self.send_recv_ge(
+            "IsAdHocPollRequestReadyRoadsSensor", requestId=request_id
+        )["data"]
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -143,8 +171,13 @@ class RoadsSensor(CommBase):
         Returns:
             The readings data.
         """
-        readings = self.send_recv_ge('CollectAdHocPollRequestRoadsSensor', requestId=request_id)['data']
-        self.logger.debug('roadsSensor - ad-hoc polling request returned and processed: 'f'{self.name}')
+        readings = self.send_recv_ge(
+            "CollectAdHocPollRequestRoadsSensor", requestId=request_id
+        )["data"]
+        self.logger.debug(
+            "roadsSensor - ad-hoc polling request returned and processed: "
+            f"{self.name}"
+        )
         return readings
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
@@ -155,28 +188,48 @@ class RoadsSensor(CommBase):
             requested_update_time: The new requested update time.
         """
         self.send_ack_ge(
-            'SetRoadsSensorRequestedUpdateTime', ack='CompletedSetRoadsSensorRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
-            GFXUpdateTime=requested_update_time)
+            "SetRoadsSensorRequestedUpdateTime",
+            ack="CompletedSetRoadsSensorRequestedUpdateTime",
+            name=self.name,
+            vid=self.vehicle.vid,
+            GFXUpdateTime=requested_update_time,
+        )
 
     def _get_id(self) -> int:
-        return int(self.send_recv_ge('GetRoadsSensorId', name=self.name)['data'])
+        return int(self.send_recv_ge("GetRoadsSensorId", name=self.name)["data"])
 
-    def _open_roads_sensor(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
+    def _open_roads_sensor(
+        self,
+        name: str,
+        vehicle: Vehicle,
+        gfx_update_time: float,
+        physics_update_time: float,
+        is_send_immediately: bool,
+        is_visualised: bool,
+    ) -> None:
         data: StrDict = dict()
-        data['name'] = name
-        data['vid'] = vehicle.vid
-        data['GFXUpdateTime'] = gfx_update_time
-        data['physicsUpdateTime'] = physics_update_time
-        data['isSendImmediately'] = is_send_immediately
-        self.send_ack_ge(type='OpenRoadsSensor', ack='OpenedRoadsSensor', **data)
+        data["name"] = name
+        data["vid"] = vehicle.vid
+        data["GFXUpdateTime"] = gfx_update_time
+        data["physicsUpdateTime"] = physics_update_time
+        data["isSendImmediately"] = is_send_immediately
+        data["isVisualised"] = is_visualised
+        self.send_ack_ge(type="OpenRoadsSensor", ack="OpenedRoadsSensor", **data)
         self.logger.info(f'Opened RoadsSensor: "{name}"')
 
     def _close_roads_sensor(self) -> None:
-        self.send_ack_ge(type='CloseRoadsSensor', ack='ClosedRoadsSensor', name=self.name, vid=self.vehicle.vid)
+        self.send_ack_ge(
+            type="CloseRoadsSensor",
+            ack="ClosedRoadsSensor",
+            name=self.name,
+            vid=self.vehicle.vid,
+        )
         self.logger.info(f'Closed roadsSensor: "{self.name}"')
 
     def _poll_roads_sensor_GE(self) -> StrDict:
-        return self.send_recv_ge('PollRoadsSensorGE', name=self.name)['data']
+        return self.send_recv_ge("PollRoadsSensorGE", name=self.name)["data"]
 
     def _poll_roads_sensor_VE(self) -> StrDict:
-        return self.send_recv_veh('PollRoadsSensorVE', name=self.name, sensorId=self.sensor_id)['data']
+        return self.send_recv_veh(
+            "PollRoadsSensorVE", name=self.name, sensorId=self.sensor_id
+        )["data"]

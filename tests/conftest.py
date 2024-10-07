@@ -6,11 +6,13 @@ import pytest
 from beamngpy import BeamNGpy
 
 
-@pytest.fixture(autouse=True, scope='session')
+@pytest.fixture(autouse=True, scope="session")
 def run_before_tests():
-    matplotlib.use('Agg')  # do not show matplotlib plots in tests so they can be run automatically
+    matplotlib.use(
+        "Agg"
+    )  # do not show matplotlib plots in tests so they can be run automatically
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def beamng() -> BeamNGpy:
-    return BeamNGpy('localhost', 64256, quit_on_close=False, crash_lua_on_error=True)
+    return BeamNGpy("localhost", 64256, quit_on_close=False, debug=False)

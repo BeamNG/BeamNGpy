@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['IdealRadar']
+__all__ = ["IdealRadar"]
 
 
 class IdealRadar(CommBase):
@@ -28,11 +28,18 @@ class IdealRadar(CommBase):
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01,
-                 is_send_immediately: bool = False):
+    def __init__(
+        self,
+        name: str,
+        bng: BeamNGpy,
+        vehicle: Vehicle,
+        gfx_update_time: float = 0.0,
+        physics_update_time: float = 0.01,
+        is_send_immediately: bool = False,
+    ):
         super().__init__(bng, vehicle)
 
-        self.logger = getLogger(f'{LOGGER_ID}.IdealRADAR')
+        self.logger = getLogger(f"{LOGGER_ID}.IdealRADAR")
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -41,11 +48,13 @@ class IdealRadar(CommBase):
         self.is_send_immediately = is_send_immediately
 
         # Create and initialise this sensor in the simulation.
-        self._open_ideal_radar(name, vehicle, gfx_update_time, physics_update_time, is_send_immediately)
+        self._open_ideal_radar(
+            name, vehicle, gfx_update_time, physics_update_time, is_send_immediately
+        )
 
         # Fetch the unique Id number (in the simulator) for this ideal RADAR sensor.
         self.sensor_id = self._get_id()
-        self.logger.debug('idealRADAR - sensor created: 'f'{self.name}')
+        self.logger.debug("idealRADAR - sensor created: " f"{self.name}")
 
     def remove(self) -> None:
         """
@@ -53,7 +62,7 @@ class IdealRadar(CommBase):
         """
         # Remove this sensor from the simulation.
         self._close_ideal_radar()
-        self.logger.debug('idealRADAR - sensor removed: 'f'{self.name}')
+        self.logger.debug("idealRADAR - sensor removed: " f"{self.name}")
 
     def poll(self) -> StrDict:
         """
@@ -85,7 +94,9 @@ class IdealRadar(CommBase):
             # Get the bulk data from ge lua.
             readings_data = self._poll_ideal_radar_GE()
 
-        self.logger.debug('Powertrain - sensor readings received from simulation: 'f'{self.name}')
+        self.logger.debug(
+            "Powertrain - sensor readings received from simulation: " f"{self.name}"
+        )
         return readings_data
 
     def send_ad_hoc_poll_request(self) -> int:
@@ -97,8 +108,12 @@ class IdealRadar(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('idealRADAR - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self.send_recv_ge('SendAdHocRequestIdealRADAR', name=self.name, vid=self.vehicle.vid)['data'])
+        self.logger.debug("idealRADAR - ad-hoc polling request sent: " f"{self.name}")
+        return int(
+            self.send_recv_ge(
+                "SendAdHocRequestIdealRADAR", name=self.name, vid=self.vehicle.vid
+            )["data"]
+        )
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -110,8 +125,13 @@ class IdealRadar(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('idealRADAR - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self.send_recv_ge('IsAdHocPollRequestReadyIdealRADAR', requestId=request_id)['data']
+        self.logger.debug(
+            "idealRADAR - ad-hoc polling request checked for completion: "
+            f"{self.name}"
+        )
+        return self.send_recv_ge(
+            "IsAdHocPollRequestReadyIdealRADAR", requestId=request_id
+        )["data"]
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -123,8 +143,13 @@ class IdealRadar(CommBase):
         Returns:
             The readings data.
         """
-        readings = self.send_recv_ge('CollectAdHocPollRequestIdealRADAR', requestId=request_id)['data']
-        self.logger.debug('idealRADAR - ad-hoc polling request returned and processed: 'f'{self.name}')
+        readings = self.send_recv_ge(
+            "CollectAdHocPollRequestIdealRADAR", requestId=request_id
+        )["data"]
+        self.logger.debug(
+            "idealRADAR - ad-hoc polling request returned and processed: "
+            f"{self.name}"
+        )
         return readings
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
@@ -135,28 +160,46 @@ class IdealRadar(CommBase):
             requested_update_time: The new requested update time.
         """
         self.send_ack_ge(
-            'SetIdealRADARRequestedUpdateTime', ack='CompletedSetIdealRADARRequestedUpdateTime', name=self.name, vid=self.vehicle.vid,
-            GFXUpdateTime=requested_update_time)
+            "SetIdealRADARRequestedUpdateTime",
+            ack="CompletedSetIdealRADARRequestedUpdateTime",
+            name=self.name,
+            vid=self.vehicle.vid,
+            GFXUpdateTime=requested_update_time,
+        )
 
     def _get_id(self) -> int:
-        return int(self.send_recv_ge('GetIdealRADARId', name=self.name)['data'])
+        return int(self.send_recv_ge("GetIdealRADARId", name=self.name)["data"])
 
-    def _open_ideal_radar(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, is_send_immediately: bool) -> None:
+    def _open_ideal_radar(
+        self,
+        name: str,
+        vehicle: Vehicle,
+        gfx_update_time: float,
+        physics_update_time: float,
+        is_send_immediately: bool,
+    ) -> None:
         data: StrDict = dict()
-        data['name'] = name
-        data['vid'] = vehicle.vid
-        data['GFXUpdateTime'] = gfx_update_time
-        data['physicsUpdateTime'] = physics_update_time
-        data['isSendImmediately'] = is_send_immediately
-        self.send_ack_ge(type='OpenIdealRADAR', ack='OpenedIdealRADAR', **data)
+        data["name"] = name
+        data["vid"] = vehicle.vid
+        data["GFXUpdateTime"] = gfx_update_time
+        data["physicsUpdateTime"] = physics_update_time
+        data["isSendImmediately"] = is_send_immediately
+        self.send_ack_ge(type="OpenIdealRADAR", ack="OpenedIdealRADAR", **data)
         self.logger.info(f'Opened idealRADAR sensor: "{name}"')
 
     def _close_ideal_radar(self) -> None:
-        self.send_ack_ge(type='CloseIdealRADAR', ack='ClosedIdealRADAR', name=self.name, vid=self.vehicle.vid)
+        self.send_ack_ge(
+            type="CloseIdealRADAR",
+            ack="ClosedIdealRADAR",
+            name=self.name,
+            vid=self.vehicle.vid,
+        )
         self.logger.info(f'Closed idealRADAR sensor: "{self.name}"')
 
     def _poll_ideal_radar_GE(self) -> StrDict:
-        return self.send_recv_ge('PollIdealRADARGE', name=self.name)['data']
+        return self.send_recv_ge("PollIdealRADARGE", name=self.name)["data"]
 
     def _poll_ideal_radar_VE(self) -> StrDict:
-        return self.send_recv_veh('PollIdealRADARVE', name=self.name, sensorId=self.sensor_id)['data']
+        return self.send_recv_veh(
+            "PollIdealRADARVE", name=self.name, sensorId=self.sensor_id
+        )["data"]

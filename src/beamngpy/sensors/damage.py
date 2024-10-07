@@ -18,7 +18,7 @@ class Damage(Sensor):
         super().__init__()
 
     def encode_vehicle_request(self):
-        req: StrDict = dict(type='Damage')
-        if 'part_damage' in req.keys():
-            req['part_damage'] = req['part_damage'] if req['part_damage'] else {}
+        req: StrDict = dict(type="Damage")
+        if "part_damage" in req.keys():
+            req["part_damage"] = req["part_damage"] if req["part_damage"] else {}
         return req

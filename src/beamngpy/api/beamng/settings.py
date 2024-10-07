@@ -24,10 +24,10 @@ class SettingsApi(Api):
             key: The key of the setting that is to be changed
             value: The desired value.
         """
-        data = dict(type='ChangeSetting')
-        data['key'] = key
-        data['value'] = value
-        return self._send(data).ack('SettingsChanged')
+        data = dict(type="ChangeSetting")
+        data["key"] = key
+        data["value"] = value
+        return self._send(data).ack("SettingsChanged")
 
     def apply_graphics(self) -> None:
         """
@@ -37,8 +37,8 @@ class SettingsApi(Api):
         in fullscreen or the resolution, otherwise those settings will only
         take effect after the next launch.
         """
-        data = dict(type='ApplyGraphicsSetting')
-        self._send(data).ack('GraphicsSettingApplied')
+        data = dict(type="ApplyGraphicsSetting")
+        self._send(data).ack("GraphicsSettingApplied")
 
     def set_deterministic(self, steps_per_second=None) -> None:
         """
@@ -47,8 +47,8 @@ class SettingsApi(Api):
         in the simulator's settings, through this function or through
         :meth:`BeamNGpy.settings.set_steps_per_second`.
         """
-        data = dict(type='SetPhysicsDeterministic')
-        self._send(data).ack('SetPhysicsDeterministic')
+        data = dict(type="SetPhysicsDeterministic")
+        self._send(data).ack("SetPhysicsDeterministic")
 
         if steps_per_second:
             self.set_steps_per_second(steps_per_second)
@@ -58,8 +58,8 @@ class SettingsApi(Api):
         Disables the deterministic mode of the simulator. Any steps per second
         setting is retained.
         """
-        data = dict(type='SetPhysicsNonDeterministic')
-        self._send(data).ack('SetPhysicsNonDeterministic')
+        data = dict(type="SetPhysicsNonDeterministic")
+        self._send(data).ack("SetPhysicsNonDeterministic")
 
     def set_steps_per_second(self, sps: int) -> None:
         """
@@ -72,16 +72,16 @@ class SettingsApi(Api):
         Args:
             sps: The steps per second to set.
         """
-        data = dict(type='FPSLimit', fps=sps)
-        self._send(data).ack('SetFPSLimit')
+        data = dict(type="FPSLimit", fps=sps)
+        self._send(data).ack("SetFPSLimit")
 
     def remove_step_limit(self) -> None:
         """
         Removes the steps-per-second setting, making the simulation run at
         undefined time slices.
         """
-        data = dict(type='RemoveFPSLimit')
-        self._send(data).ack('RemovedFPSLimit')
+        data = dict(type="RemoveFPSLimit")
+        self._send(data).ack("RemovedFPSLimit")
 
     def set_particles_enabled(self, enabled: bool) -> None:
         """
@@ -90,6 +90,6 @@ class SettingsApi(Api):
         Args:
             enabled: Whether to enable or disable effects.
         """
-        data: StrDict = dict(type='ParticlesEnabled')
-        data['enabled'] = enabled
-        self._send(data).ack('ParticlesSet')
+        data: StrDict = dict(type="ParticlesEnabled")
+        data["enabled"] = enabled
+        self._send(data).ack("ParticlesSet")

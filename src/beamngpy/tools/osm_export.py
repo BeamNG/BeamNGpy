@@ -5,7 +5,7 @@ from datetime import datetime
 from beamngpy import vec3
 from beamngpy.tools.navigraph_data import NavigraphData
 
-__all__ = ['OpenStreetMapExporter']
+__all__ = ["OpenStreetMapExporter"]
 
 
 class OpenStreetMapExporter:
@@ -28,7 +28,9 @@ class OpenStreetMapExporter:
         path_segments = navigraph_data.compute_path_segments()
 
         # Create the nodes data: A unique list of nodes, a map from graph keys to unique node id, and bounds info.
-        scale_factor = 1.0 / 1e7  # to convert metres into reasonable lattitude/longitude values.
+        scale_factor = (
+            1.0 / 1e7
+        )  # to convert metres into reasonable lattitude/longitude values.
         nodes = []
         keys_to_node_map = {}
         minlat = 1e99
@@ -55,26 +57,50 @@ class OpenStreetMapExporter:
             ways.append(n)
 
         # Write the road network data to .osm format (xml).
-        file_name = name + '.osm'
+        file_name = name + ".osm"
         date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        with open(file_name, 'w') as f:
+        with open(file_name, "w") as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<osm version="0.6" generator="BeamNGPy">\n')
-            f.write('\t<bounds minlat="' + str(minlat) + '" minlon="' + str(minlon) +
-                    '" maxlat="' + str(maxlat) + '" maxlon="' + str(maxlon) + '"/>\n')
+            f.write(
+                '\t<bounds minlat="'
+                + str(minlat)
+                + '" minlon="'
+                + str(minlon)
+                + '" maxlat="'
+                + str(maxlat)
+                + '" maxlon="'
+                + str(maxlon)
+                + '"/>\n'
+            )
             for i in range(len(nodes)):
                 nodeId = i + 1
                 lat = str(nodes[i][0])
                 lon = str(nodes[i][1])
                 ele = str(nodes[i][2])
-                f.write('\t<node id="' + str(nodeId) + '" lat="' + lat + '" lon="' + lon + '" ele="' + ele +
-                        '" user="BeamNG" uid="1" visible="true" version="1" changeset="1" timestamp="' + date_time + '"/>\n')
+                f.write(
+                    '\t<node id="'
+                    + str(nodeId)
+                    + '" lat="'
+                    + lat
+                    + '" lon="'
+                    + lon
+                    + '" ele="'
+                    + ele
+                    + '" user="BeamNG" uid="1" visible="true" version="1" changeset="1" timestamp="'
+                    + date_time
+                    + '"/>\n'
+                )
             for i in range(len(ways)):
                 wayId = i + 1  # the OpenStreetMap Id numbers start at 1 not 0.
-                f.write('\t<way id="' + str(wayId) + '" user="BeamNG" uid="1" visible="true" version="1" changeset="1">\n')
+                f.write(
+                    '\t<way id="'
+                    + str(wayId)
+                    + '" user="BeamNG" uid="1" visible="true" version="1" changeset="1">\n'
+                )
                 seg = ways[i]
                 for j in range(len(seg)):
                     nodeId = seg[j] + 1
                     f.write('\t\t<nd ref="' + str(nodeId) + '"/>\n')
-                f.write('\t</way>\n')
-            f.write('</osm>\n')
+                f.write("\t</way>\n")
+            f.write("</osm>\n")

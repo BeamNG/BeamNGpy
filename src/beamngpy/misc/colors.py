@@ -15,7 +15,7 @@ def rgba_to_str(color: Float4) -> str:
     Returns:
         The converted string of format 'R G B A'.
     """
-    return ' '.join(map(str, color))
+    return " ".join(map(str, color))
 
 
 def coerce_color(color: Color, alpha=0.0) -> Float4:

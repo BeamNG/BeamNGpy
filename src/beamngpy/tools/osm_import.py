@@ -51,23 +51,29 @@ class OpenStreetMapImporter:
         ways = {}
         width = DEFAULT_WIDTH
         for i in root:
-            if i.tag == 'bounds':
-                minLat, maxLat, minLon, maxLon = float(i.attrib['minlat']), float(
-                    i.attrib['maxlat']), float(i.attrib['minlon']), float(i.attrib['maxlon'])
-            elif i.tag == 'node':
-                nodes[i.attrib['id']] = vec3(float(i.attrib['lon']), float(i.attrib['lat']))
-            elif i.tag == 'way':
+            if i.tag == "bounds":
+                minLat, maxLat, minLon, maxLon = (
+                    float(i.attrib["minlat"]),
+                    float(i.attrib["maxlat"]),
+                    float(i.attrib["minlon"]),
+                    float(i.attrib["maxlon"]),
+                )
+            elif i.tag == "node":
+                nodes[i.attrib["id"]] = vec3(
+                    float(i.attrib["lon"]), float(i.attrib["lat"])
+                )
+            elif i.tag == "way":
                 nd = []
                 for j in i:
-                    if j.tag == 'nd':
-                        nd.append(j.attrib['ref'])
-                    elif j.tag == 'tag' and j.attrib['k'] == 'width':
+                    if j.tag == "nd":
+                        nd.append(j.attrib["ref"])
+                    elif j.tag == "tag" and j.attrib["k"] == "width":
                         try:
-                            width = float(j.attrib['v'])
+                            width = float(j.attrib["v"])
                         except ValueError:
-                            temp = re.findall(r'\d+', j.attrib['v'])
+                            temp = re.findall(r"\d+", j.attrib["v"])
                             width = list(map(float, temp))
-                ways[int(i.attrib['id'])] = Way(nd, width)
+                ways[int(i.attrib["id"])] = Way(nd, width)
         return nodes, ways, minLat, maxLat, minLon, maxLon
 
     @staticmethod
@@ -75,7 +81,9 @@ class OpenStreetMapImporter:
 
         # Extract the road data primitives from the OpenStreetMap file.
         print("Extracting road data from file...")
-        nodes, ways, minLat, maxLat, minLon, maxLon = OpenStreetMapImporter.extract_road_data(filename)
+        nodes, ways, minLat, maxLat, minLon, maxLon = (
+            OpenStreetMapImporter.extract_road_data(filename)
+        )
         print("Primitives to import:  nodes:", len(nodes), "; ways:", len(ways))
 
         # Convert from lattitude/longitude to metres, with world origin (0, 0) at the (minLon, minLat) position.
@@ -93,7 +101,7 @@ class OpenStreetMapImporter:
             for i in range(len(w.nodes)):
                 nd = nodes[w.nodes[i]]
                 nds.append([nd.x, nd.y, DEFAULT_ELEVATION, w.width, DEFAULT_DEPTH])
-            roads.append(Road('imported_' + str(id), nds))
+            roads.append(Road("imported_" + str(id), nds))
 
         # Create the all the roads from the road polyline data.
         print("Loading import in scenario...")

@@ -7,10 +7,10 @@ def main():
 
     # Initialize BeamNG.
     print("Initializing BeamNG...")
-    beamng = BeamNGpy('localhost', 64256)
+    beamng = BeamNGpy("localhost", 64256)
     beamng.open(launch=True)
-    scenario = Scenario('template_tech', 'heightmap_importer')
-    vehicle = Vehicle('ego_vehicle', model='etk800')
+    scenario = Scenario("template_tech", "heightmap_importer")
+    vehicle = Vehicle("ego_vehicle", model="etk800")
     scenario.add_vehicle(vehicle)
 
     # Start up BeamNG.
@@ -20,10 +20,10 @@ def main():
     beamng.scenario.start()
 
     # Set the core terrain properties.
-    w, h = 1000, 1000                                                                       # The width and height of the terrain.
-    scale = 1                                                                               # The scale of the data (in metres-per-pixel).
-    z_min, z_max = 0, 250                                                                   # The min and max elevation values in the data.
-    is_y_flipped = False                                                                    # Whether to flip the heightmap in the Y dimension.
+    w, h = 1000, 1000  # The width and height of the terrain.
+    scale = 1  # The scale of the data (in metres-per-pixel).
+    z_min, z_max = 0, 250  # The min and max elevation values in the data.
+    is_y_flipped = False  # Whether to flip the heightmap in the Y dimension.
 
     # Create a paraboloid terrain.
     a, b = 1, 1
@@ -34,18 +34,20 @@ def main():
         x_comp = (x * x) * a_sq_inv
         for y in range(h):
             raw_val = x_comp + (y * y) * b_sq_inv
-            d_inner[y] = min(z_max, max(z_min, raw_val  * 0.0004))
+            d_inner[y] = min(z_max, max(z_min, raw_val * 0.0004))
         hmap[x] = d_inner
 
     # Import the terrain to BeamNG.
-    Terrain_Importer.import_heightmap(beamng, hmap, w, h, scale, z_min, z_max, is_y_flipped)
+    Terrain_Importer.import_heightmap(
+        beamng, hmap, w, h, scale, z_min, z_max, is_y_flipped
+    )
 
     # Execute BeamNG until the user closes it.
     print("Completed.")
-    while(True):
+    while True:
         pass
     beamng.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

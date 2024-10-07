@@ -26,11 +26,11 @@ class State(Sensor):
         self.connected = False
 
     def encode_vehicle_request(self):
-        req = dict(type='State')
+        req = dict(type="State")
         return req
 
     def decode_response(self, resp):
-        if 'state' in resp:
-            return resp['state']
+        if "state" in resp:
+            return resp["state"]
 
         return None

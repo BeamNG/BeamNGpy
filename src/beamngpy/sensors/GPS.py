@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-__all__ = ['GPS']
+__all__ = ["GPS"]
 
 
 class GPS(CommBase):
@@ -33,12 +33,25 @@ class GPS(CommBase):
         is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, gfx_update_time: float = 0.0, physics_update_time: float = 0.01, pos: Float3 = (0, 0, 1.7),
-                 ref_lon: float = 0.0, ref_lat: float = 0.0, is_send_immediately: bool = False, is_visualised: bool = True, is_snapping_desired: bool = False,
-                 is_force_inside_triangle: bool = False, is_dir_world_space: bool = False):
+    def __init__(
+        self,
+        name: str,
+        bng: BeamNGpy,
+        vehicle: Vehicle,
+        gfx_update_time: float = 0.0,
+        physics_update_time: float = 0.01,
+        pos: Float3 = (0, 0, 1.7),
+        ref_lon: float = 0.0,
+        ref_lat: float = 0.0,
+        is_send_immediately: bool = False,
+        is_visualised: bool = True,
+        is_snapping_desired: bool = False,
+        is_force_inside_triangle: bool = False,
+        is_dir_world_space: bool = False,
+    ):
         super().__init__(bng, vehicle)
 
-        self.logger = getLogger(f'{LOGGER_ID}.GPS')
+        self.logger = getLogger(f"{LOGGER_ID}.GPS")
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -47,13 +60,25 @@ class GPS(CommBase):
         self.vehicle = vehicle
 
         # Create and initialise this sensor in the simulation.
-        self._open_GPS(name, vehicle, gfx_update_time, physics_update_time, pos, ref_lon, ref_lat, is_send_immediately,
-                       is_visualised, is_snapping_desired, is_force_inside_triangle, is_dir_world_space)
+        self._open_GPS(
+            name,
+            vehicle,
+            gfx_update_time,
+            physics_update_time,
+            pos,
+            ref_lon,
+            ref_lat,
+            is_send_immediately,
+            is_visualised,
+            is_snapping_desired,
+            is_force_inside_triangle,
+            is_dir_world_space,
+        )
 
         # Fetch the unique Id number (in the simulator) for this GPS sensor.  We will need this later.
         self.sensorId = self._get_GPS_id()
 
-        self.logger.debug('GPS - sensor created: 'f'{self.name}')
+        self.logger.debug("GPS - sensor created: " f"{self.name}")
 
     def remove(self) -> None:
         """
@@ -61,7 +86,7 @@ class GPS(CommBase):
         """
         # Remove this sensor from the simulation.
         self._close_GPS()
-        self.logger.debug('GPS - sensor removed: 'f'{self.name}')
+        self.logger.debug("GPS - sensor removed: " f"{self.name}")
 
     def poll(self) -> StrDict:
         """
@@ -85,7 +110,9 @@ class GPS(CommBase):
             # Get the bulk data from ge lua.
             readings_data = self._poll_GPS_GE()
 
-        self.logger.debug('GPS - sensor readings received from simulation: 'f'{self.name}')
+        self.logger.debug(
+            "GPS - sensor readings received from simulation: " f"{self.name}"
+        )
         return readings_data
 
     def send_ad_hoc_poll_request(self) -> int:
@@ -97,8 +124,12 @@ class GPS(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('GPS - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self.send_recv_ge('SendAdHocRequestGPS', name=self.name, vid=self.vehicle.vid)['data'])
+        self.logger.debug("GPS - ad-hoc polling request sent: " f"{self.name}")
+        return int(
+            self.send_recv_ge(
+                "SendAdHocRequestGPS", name=self.name, vid=self.vehicle.vid
+            )["data"]
+        )
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -110,8 +141,12 @@ class GPS(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('GPS - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self.send_recv_ge('IsAdHocPollRequestReadyGPS', requestId=request_id)['data']
+        self.logger.debug(
+            "GPS - ad-hoc polling request checked for completion: " f"{self.name}"
+        )
+        return self.send_recv_ge("IsAdHocPollRequestReadyGPS", requestId=request_id)[
+            "data"
+        ]
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -123,8 +158,12 @@ class GPS(CommBase):
         Returns:
             The readings data.
         """
-        readings = self.send_recv_ge('CollectAdHocPollRequestGPS', requestId=request_id)['data']
-        self.logger.debug('GPS - ad-hoc polling request returned and processed: 'f'{self.name}')
+        readings = self.send_recv_ge(
+            "CollectAdHocPollRequestGPS", requestId=request_id
+        )["data"]
+        self.logger.debug(
+            "GPS - ad-hoc polling request returned and processed: " f"{self.name}"
+        )
         return readings
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
@@ -134,8 +173,13 @@ class GPS(CommBase):
         Args:
             requested_update_time: The new requested update time.
         """
-        self.send_ack_ge('SetGPSRequestedUpdateTime', ack='CompletedSetGPSRequestedUpdateTime',
-                         name=self.name, vid=self.vehicle.vid, GFXUpdateTime=requested_update_time)
+        self.send_ack_ge(
+            "SetGPSRequestedUpdateTime",
+            ack="CompletedSetGPSRequestedUpdateTime",
+            name=self.name,
+            vid=self.vehicle.vid,
+            GFXUpdateTime=requested_update_time,
+        )
 
     def set_is_visualised(self, is_visualised: bool) -> None:
         """
@@ -144,36 +188,58 @@ class GPS(CommBase):
         Args:
             is_visualised: A flag which indicates if this sensor is to be visualised or not.
         """
-        self.send_ack_ge('SetGPSIsVisualised', ack='CompletedSetGPSIsVisualised',
-                         name=self.name, vid=self.vehicle.vid, isVisualised=is_visualised)
+        self.send_ack_ge(
+            "SetGPSIsVisualised",
+            ack="CompletedSetGPSIsVisualised",
+            name=self.name,
+            vid=self.vehicle.vid,
+            isVisualised=is_visualised,
+        )
 
     def _get_GPS_id(self) -> int:
-        return int(self.send_recv_ge('GetGPSId', name=self.name)['data'])
+        return int(self.send_recv_ge("GetGPSId", name=self.name)["data"])
 
-    def _open_GPS(self, name: str, vehicle: Vehicle, gfx_update_time: float, physics_update_time: float, pos: Float3, ref_lon: float, ref_lat: float,
-                  is_send_immediately: bool, is_visualised: bool, is_snapping_desired: bool, is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
+    def _open_GPS(
+        self,
+        name: str,
+        vehicle: Vehicle,
+        gfx_update_time: float,
+        physics_update_time: float,
+        pos: Float3,
+        ref_lon: float,
+        ref_lat: float,
+        is_send_immediately: bool,
+        is_visualised: bool,
+        is_snapping_desired: bool,
+        is_force_inside_triangle: bool,
+        is_dir_world_space: bool,
+    ) -> None:
         data: StrDict = dict()
-        data['name'] = name
-        data['vid'] = vehicle.vid
-        data['GFXUpdateTime'] = gfx_update_time
-        data['physicsUpdateTime'] = physics_update_time
-        data['pos'] = pos
-        data['refLon'] = ref_lon
-        data['refLat'] = ref_lat
-        data['isSendImmediately'] = is_send_immediately
-        data['isVisualised'] = is_visualised
-        data['isSnappingDesired'] = is_snapping_desired
-        data['isForceInsideTriangle'] = is_force_inside_triangle
-        data['isDirWorldSpace'] = is_dir_world_space
-        self.send_ack_ge(type='OpenGPS', ack='OpenedGPS', **data)
+        data["name"] = name
+        data["vid"] = vehicle.vid
+        data["GFXUpdateTime"] = gfx_update_time
+        data["physicsUpdateTime"] = physics_update_time
+        data["pos"] = pos
+        data["refLon"] = ref_lon
+        data["refLat"] = ref_lat
+        data["isSendImmediately"] = is_send_immediately
+        data["isVisualised"] = is_visualised
+        data["isSnappingDesired"] = is_snapping_desired
+        data["isForceInsideTriangle"] = is_force_inside_triangle
+        data["isDirWorldSpace"] = is_dir_world_space
+        self.send_ack_ge(type="OpenGPS", ack="OpenedGPS", **data)
         self.logger.info(f'Opened GPS sensor: "{name}"')
 
     def _close_GPS(self) -> None:
-        self.send_ack_ge(type='CloseGPS', ack='ClosedGPS', name=self.name, vid=self.vehicle.vid)
+        self.send_ack_ge(
+            type="CloseGPS", ack="ClosedGPS", name=self.name, vid=self.vehicle.vid
+        )
         self.logger.info(f'Closed GPS sensor: "{self.name}"')
 
     def _poll_GPS_GE(self) -> StrDict:
-        return self.send_recv_ge('PollGPSGE', name=self.name)['data']
+        return self.send_recv_ge("PollGPSGE", name=self.name)["data"]
 
     def _poll_GPS_VE(self) -> StrDict:
-        return self.send_recv_veh('PollGPSVE', name=self.name, sensorId=self.sensorId)['data']
+        return self.send_recv_veh("PollGPSVE", name=self.name, sensorId=self.sensorId)[
+            "data"
+        ]

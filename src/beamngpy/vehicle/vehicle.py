@@ -3,7 +3,7 @@ from __future__ import annotations
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from beamngpy.api.vehicle import AIApi, LoggingApi, RootApi
+from beamngpy.api.vehicle import AccApi, AIApi, CouplersApi, LoggingApi, RootApi
 from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.sensors import State
@@ -53,43 +53,53 @@ class Vehicle:
 
     @staticmethod
     def from_dict(d: StrDict) -> Vehicle:
-        if 'name' in d:
-            vid = d['name']
-            del d['name']
+        if "name" in d:
+            vid = d["name"]
+            del d["name"]
         else:
-            vid = d['id']
+            vid = d["id"]
 
         model = None
-        if 'model' in d:
-            model = d['model']
-            del d['model']
+        if "model" in d:
+            model = d["model"]
+            del d["model"]
 
         port = None
-        if 'port' in d:
-            port = int(d['port'])
-            del d['port']
+        if "port" in d:
+            port = int(d["port"])
+            del d["port"]
 
         options = {}
-        if 'options' in d:
-            options = d['options']
-            del d['options']
+        if "options" in d:
+            options = d["options"]
+            del d["options"]
 
         if not model:
-            raise BNGError('The model of the vehicle is not specified!')
+            raise BNGError("The model of the vehicle is not specified!")
         vehicle = Vehicle(vid, model, port=port, **options)
         return vehicle
 
     @property
     def _uuid(self):
-        return get_uuid(f'Vehicle_{self.vid}')
+        return get_uuid(f"Vehicle_{self.vid}")
 
-    def __init__(self, vid: str, model: str, port: int | None = None, license: str | None = None,
-                 color: Color | None = None, color2: Color | None = None, color3: Color | None = None,
-                 extensions: List[str] | None = None, part_config: str | None = None, **options: Any):
-        self.logger = getLogger(f'{LOGGER_ID}.Vehicle')
+    def __init__(
+        self,
+        vid: str,
+        model: str,
+        port: int | None = None,
+        license: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        color3: Color | None = None,
+        extensions: List[str] | None = None,
+        part_config: str | None = None,
+        **options: Any,
+    ):
+        self.logger = getLogger(f"{LOGGER_ID}.Vehicle")
         self.logger.setLevel(DEBUG)
 
-        self.vid = vid.replace(' ', '_')
+        self.vid = vid.replace(" ", "_")
         validate_object_name(self.vid)
         self.model = model
 
@@ -98,19 +108,21 @@ class Vehicle:
 
         self.sensors = Sensors(self)
 
-        options['model'] = model
-        options['licenseText'] = license or options.get('licence') or options.get('licenseText')
-        options['color'] = color or options.get('colour')
-        options['color2'] = color2 or options.get('colour2')
-        options['color3'] = color3 or options.get('colour3')
-        options['partConfig'] = part_config or options.get('partConfig')
-        for key in ('licenseText', 'partConfig'):
+        options["model"] = model
+        options["licenseText"] = (
+            license or options.get("licence") or options.get("licenseText")
+        )
+        options["color"] = color or options.get("colour")
+        options["color2"] = color2 or options.get("colour2")
+        options["color3"] = color3 or options.get("colour3")
+        options["partConfig"] = part_config or options.get("partConfig")
+        for key in ("licenseText", "partConfig"):
             if options[key] is None:
                 del options[key]
         self.options = options
 
         self.extensions = extensions
-        self.sensors.attach('state', State())
+        self.sensors.attach("state", State())
 
         self._init_api()
         self._init_beamng_api()
@@ -126,7 +138,9 @@ class Vehicle:
         self.ai_set_script = self.ai.set_script
         self.ai_set_aggression = self.ai.set_aggression
 
-        self._root = RootApi(self)  # this API is meant to be at the global level, so it is not meant to be public
+        self._root = RootApi(
+            self
+        )  # this API is meant to be at the global level, so it is not meant to be public
 
         self.logging = LoggingApi(self)
         self.set_in_game_logging_options_from_json = self.logging.set_options_from_json
@@ -138,13 +152,20 @@ class Vehicle:
         self.detach_sensor = self.sensors.detach
         self.poll_sensors = self.sensors.poll
 
+        self.acc = AccApi(self)  # this API is for ACC handling
+        self.acc_load = self.acc.start
+        self.acc_unload = self.acc.stop
+
+        self.couplers = CouplersApi(self)
+
     def _init_beamng_api(self, beamng: BeamNGpy | None = None):
         from beamngpy.api.beamng import GEVehiclesApi
 
         # create dummy BeamNGpy object for API hints to work properly (it will be replaced during `connect`)
         if beamng is None:
             from beamngpy.beamng import BeamNGpy
-            beamng = BeamNGpy('', -1)
+
+            beamng = BeamNGpy("", -1)
 
         self._ge_api = GEVehiclesApi(beamng, self)
         self.focus = self.switch  # alias
@@ -158,7 +179,7 @@ class Vehicle:
         return False
 
     def __str__(self) -> str:
-        return f'V:{self.vid}'
+        return f"V:{self.vid}"
 
     def is_connected(self) -> bool:
         """
@@ -181,19 +202,19 @@ class Vehicle:
         Note that the ``state`` variable represents a *snapshot* of the last state. It has to be updated with a call to :meth:`.Sensors.poll`
         or to :meth:`.Scenario.update`.
         """
-        return self.sensors['state']
+        return self.sensors["state"]
 
     @state.setter
     def state(self, value: StrDict) -> None:
-        self.sensors['state'].replace(value)
+        self.sensors["state"].replace(value)
 
     @state.deleter
     def state(self) -> None:
-        self.sensors['state'].clear()
+        self.sensors["state"].clear()
 
     def _send(self, data: StrDict) -> Response:
         if not self.connection:
-            raise BNGError('Not connected to the vehicle!')
+            raise BNGError("Not connected to the vehicle!")
         return self.connection.send(data)
 
     def connect(self, bng: BeamNGpy) -> None:
@@ -204,18 +225,20 @@ class Vehicle:
             bng: An instance of the simulator.
         """
         if not bng.connection:
-            raise BNGError('The simulator is not connected to BeamNGpy!')
+            raise BNGError("The simulator is not connected to BeamNGpy!")
         if self.connection is None:
             self.connection = Connection(bng.host, self.port)
 
             # If we do not have a port (ie because it is the first time we wish to send to the given vehicle), then fetch a new port from the simulator.
             if self.connection.port is None:
                 resp = bng.vehicles.start_connection(self, self.extensions)
-                vid = resp['vid']
+                vid = resp["vid"]
                 assert vid == self.vid
-                self.connection.port = int(resp['result'])
-                self.logger.debug(f'Created new vehicle connection on port {self.connection.port}')
-                self.logger.info(f'Vehicle {vid} connected to simulation.')
+                self.connection.port = int(resp["result"])
+                self.logger.debug(
+                    f"Created new vehicle connection on port {self.connection.port}"
+                )
+                self.logger.info(f"Vehicle {vid} connected to simulation.")
 
         # Now attempt to connect to the given vehicle.
         self.connection.connect_to_vehicle(self)
@@ -231,7 +254,7 @@ class Vehicle:
         Closes socket communication with the corresponding vehicle.
         """
         for name, sensor in self.sensors.items():
-            if name != 'state':
+            if name != "state":
                 sensor.disconnect(self.bng, self)
 
         if self.connection is not None:
@@ -249,7 +272,7 @@ class Vehicle:
             sensor.detach(self, name)
 
         self.sensors = Sensors(self)
-        self.logger.info(f'Disconnected from vehicle {self.vid} and detached sensors.')
+        self.logger.info(f"Disconnected from vehicle {self.vid} and detached sensors.")
 
     def set_shift_mode(self, mode: str) -> None:
         """
@@ -274,8 +297,15 @@ class Vehicle:
         """
         return self._root.set_shift_mode(mode)
 
-    def control(self, steering: float | None = None, throttle: float | None = None, brake: float | None = None,
-                parkingbrake: float | None = None, clutch: float | None = None, gear: int | None = None) -> None:
+    def control(
+        self,
+        steering: float | None = None,
+        throttle: float | None = None,
+        brake: float | None = None,
+        parkingbrake: float | None = None,
+        clutch: float | None = None,
+        gear: int | None = None,
+    ) -> None:
         """
         Sends a control message to the vehicle, setting vehicle inputs
         accordingly.
@@ -290,7 +320,7 @@ class Vehicle:
         """
         return self._root.control(steering, throttle, brake, parkingbrake, clutch, gear)
 
-    def set_color(self, rgba: Color = (1., 1., 1., 1.)) -> None:
+    def set_color(self, rgba: Color = (1.0, 1.0, 1.0, 1.0)) -> None:
         """
         Sets the color of this vehicle. Colour can be adjusted on the RGB
         spectrum and the "shininess" of the paint.
@@ -319,9 +349,14 @@ class Vehicle:
         return self._root.set_velocity(velocity, dt)
 
     def set_lights(
-            self, left_signal: bool | None = None, right_signal: bool | None = None, hazard_signal:
-            bool | None = None, headlights: int | None = None, fog_lights: int | None = None,
-            lightbar: int | None = None) -> None:
+        self,
+        left_signal: bool | None = None,
+        right_signal: bool | None = None,
+        hazard_signal: bool | None = None,
+        headlights: int | None = None,
+        fog_lights: int | None = None,
+        lightbar: int | None = None,
+    ) -> None:
         """
         Sets the vehicle's lights to given intensity values. The lighting
         system features lights that are simply binary on/off, but also ones
@@ -366,7 +401,9 @@ class Vehicle:
             Nothing. To query light states, attach an
             :class:`.sensors.Electrics` sensor and poll it.
         """
-        return self._root.set_lights(left_signal, right_signal, hazard_signal, headlights, fog_lights, lightbar)
+        return self._root.set_lights(
+            left_signal, right_signal, hazard_signal, headlights, fog_lights, lightbar
+        )
 
     def queue_lua_command(self, chunk: str) -> None:
         """
@@ -454,7 +491,9 @@ class Vehicle:
         """
         return self._ge_api.switch()
 
-    def teleport(self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True) -> bool:
+    def teleport(
+        self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True
+    ) -> bool:
         """
         Teleports the vehicle to the given position with the given
         rotation.

@@ -30,12 +30,14 @@ class ScenarioApi(Api):
             A dictionary of available level names to a corresponding instance
             of the :class:`.Level` class.
         """
-        levels = self._message('GetLevels')
+        levels = self._message("GetLevels")
         levels = [Level.from_dict(l) for l in levels]
         levels = {l.name: l for l in levels}
         return levels
 
-    def get_scenarios(self, levels: Iterable[str | Level] | None = None) -> Dict[str, List[Scenario]]:
+    def get_scenarios(
+        self, levels: Iterable[str | Level] | None = None
+    ) -> Dict[str, List[Scenario]]:
         """
         Queries the available scenarios and returns them as a mapping of
         paths to :class:`.Scenario` instances. The scenarios are constructed
@@ -53,15 +55,19 @@ class ScenarioApi(Api):
         """
         if levels is None:
             levels = self.get_levels()
-        elif not(all(isinstance(level, Level) for level in levels)):
+        elif not (all(isinstance(level, Level) for level in levels)):
             levels_sim = self.get_levels()
-            levels = {levels_sim[str(level)].name: levels_sim[str(level)] for level in levels}
+            levels = {
+                levels_sim[str(level)].name: levels_sim[str(level)] for level in levels
+            }
         else:
             levels = {str(level): level for level in levels}
         levels = cast(Dict[str, Level], levels)  # for the type checker
 
-        scenarios = self._message('GetScenarios', levels=list(str(level) for level in levels))
-        scenarios_levels = {'unknown': []}
+        scenarios = self._message(
+            "GetScenarios", levels=list(str(level) for level in levels)
+        )
+        scenarios_levels = {"unknown": []}
 
         # allow case-independent level names in the scenarios
         levels_lower = {str(level).lower(): str(level) for level in levels}
@@ -80,8 +86,8 @@ class ScenarioApi(Api):
                 scenarios_levels[level_name] = []
             scenarios_levels[level_name].append(scenario)
 
-        if not scenarios_levels['unknown']:
-            del scenarios_levels['unknown']
+        if not scenarios_levels["unknown"]:
+            del scenarios_levels["unknown"]
 
         return scenarios_levels
 
@@ -99,7 +105,9 @@ class ScenarioApi(Api):
         level_name = level.name if isinstance(level, Level) else level
         return self.get_scenarios([level]).get(level_name, [])
 
-    def get_levels_and_scenarios(self) -> Tuple[Dict[str, Level], Dict[str, List[Scenario]]]:
+    def get_levels_and_scenarios(
+        self,
+    ) -> Tuple[Dict[str, Level], Dict[str, List[Scenario]]]:
         """
         Utility method that retrieves all levels and scenarios and returns
         them as a tuple of (levels, scenarios).
@@ -126,9 +134,9 @@ class ScenarioApi(Api):
             A :class:`.Scenario` instance of the currently-loaded scenario.
             The scenario's parent level field will be filled in accordingly.
         """
-        scenario = self._message('GetCurrentScenario')
+        scenario = self._message("GetCurrentScenario")
         if not scenario:
-            raise BNGValueError('The current scenario could not be retrieved.')
+            raise BNGValueError("The current scenario could not be retrieved.")
         scenario = Scenario.from_dict(scenario)
 
         if connect:
@@ -143,12 +151,17 @@ class ScenarioApi(Api):
         Returns:
             The name of the loaded scenario as a string.
         """
-        data = dict(type='GetScenarioName')
-        resp = self._send(data).recv('ScenarioName')
-        return resp['name']
+        data = dict(type="GetScenarioName")
+        resp = self._send(data).recv("ScenarioName")
+        return resp["name"]
 
-    def load(self, scenario: Scenario, precompile_shaders: bool = True,
-             connect_player_vehicle: bool = True, connect_existing_vehicles: bool = True) -> None:
+    def load(
+        self,
+        scenario: Scenario,
+        precompile_shaders: bool = True,
+        connect_player_vehicle: bool = True,
+        connect_existing_vehicles: bool = True,
+    ) -> None:
         """
         Loads the given scenario in the simulation and returns once loading
         is finished.
@@ -169,13 +182,21 @@ class ScenarioApi(Api):
             if vehicle.connection:
                 vehicle.disconnect()
 
-        data = {'type': 'LoadScenario', 'path': scenario.path, 'precompileShaders': precompile_shaders}
-        self._send(data).ack('MapLoaded')
-        self._logger.info('Loaded map.')
+        data = {
+            "type": "LoadScenario",
+            "path": scenario.path,
+            "precompileShaders": precompile_shaders,
+        }
+        self._send(data).ack("MapLoaded")
+        self._logger.info("Loaded map.")
         self._beamng._scenario = scenario
-        self._beamng._scenario.connect(self._beamng, connect_player_vehicle, connect_existing_vehicles)
+        self._beamng._scenario.connect(
+            self._beamng, connect_player_vehicle, connect_existing_vehicles
+        )
 
-    def teleport_object(self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None) -> None:
+    def teleport_object(
+        self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None
+    ) -> None:
         """
         Teleports the given scenario object to the given position with the
         given rotation.
@@ -185,14 +206,14 @@ class ScenarioApi(Api):
             pos: The target position as an (x,y,z) tuple containing world-space coordinates.
             rot_quat: Optional tuple specifying object rotation as a quaternion.
         """
-        data: StrDict = dict(type='TeleportScenarioObject')
-        data['id'] = scenario_object.id
-        data['pos'] = pos
+        data: StrDict = dict(type="TeleportScenarioObject")
+        data["id"] = scenario_object.id
+        data["pos"] = pos
         if rot_quat:
-            data['rot'] = rot_quat
-        self._send(data).ack('ScenarioObjectTeleported')
+            data["rot"] = rot_quat
+        self._send(data).ack("ScenarioObjectTeleported")
 
-    def start(self, restrict_actions: bool = False) -> None:
+    def start(self, restrict_actions: bool | None = None) -> None:
         """
         Starts the scenario; equivalent to clicking the "Start" button in the
         game after loading a scenario. This method blocks until the countdown
@@ -200,27 +221,38 @@ class ScenarioApi(Api):
 
         Args:
             restrict_actions: Whether to keep scenario restrictions,
-                            such as limited menu options and controls.
-                            Defaults to False.
+                              such as limited menu options and controls.
+                              If None, defaults to the value set in the current Scenario object.
         """
-        data: StrDict = dict(type='StartScenario')
-        data['restrict_actions'] = restrict_actions
-        self._send(data).ack('ScenarioStarted')
-        self._logger.info('Starting scenario.')
+        if not self._beamng._scenario:
+            raise BNGError("Need to have a scenario loaded to start it.")
+
+        data: StrDict = dict(type="StartScenario")
+        if restrict_actions is not None:
+            data["restrict_actions"] = restrict_actions
+        else:
+            data["restrict_actions"] = self._beamng._scenario.restrict_actions
+        self._send(data).ack("ScenarioStarted")
+        self._logger.info("Starting scenario.")
 
     def restart(self) -> None:
         """
         Restarts a running scenario.
         """
         if not self._beamng._scenario:
-            raise BNGError('Need to have a scenario loaded to restart it.')
+            raise BNGError("Need to have a scenario loaded to restart it.")
 
-        vehicles_to_reconnect = [v.vid for v in self._beamng._scenario.vehicles.values() if v.is_connected()]
+        vehicles_to_reconnect = [
+            v.vid for v in self._beamng._scenario.vehicles.values() if v.is_connected()
+        ]
         self._beamng._scenario.restart()
 
-        self._logger.info('Restarting scenario.')
-        data = dict(type='RestartScenario')
-        self._send(data).ack('ScenarioRestarted')
+        self._logger.info("Restarting scenario.")
+        data = dict(
+            type="RestartScenario",
+            restrict_actions=self._beamng._scenario.restrict_actions,
+        )
+        self._send(data).ack("ScenarioRestarted")
 
         self._beamng._scenario._load_existing_vehicles()
         for vehicle in self._beamng._scenario.vehicles.values():
@@ -232,14 +264,14 @@ class ScenarioApi(Api):
         Stops a running scenario and returns to the main menu.
         """
         if not self._beamng._scenario:
-            raise BNGError('Need to have a scenario loaded to stop it.')
+            raise BNGError("Need to have a scenario loaded to stop it.")
 
         self._beamng._scenario.close()
         self._beamng._scenario = None
 
-        data = dict(type='StopScenario')
-        self._send(data).ack('ScenarioStopped')
-        self._logger.info('Stopping scenario.')
+        data = dict(type="StopScenario")
+        self._send(data).ack("ScenarioStopped")
+        self._logger.info("Stopping scenario.")
 
     def get_roads(self) -> StrDict:
         """
@@ -251,12 +283,13 @@ class ScenarioApi(Api):
             A dict mapping DecalRoad IDs to their metadata..
         """
         if not self._beamng._scenario:
-            raise BNGError('Need to be in a started scenario to get its '
-                           'DecalRoad data.')
+            raise BNGError(
+                "Need to be in a started scenario to get its " "DecalRoad data."
+            )
 
-        data = dict(type='GetDecalRoadData')
-        resp = self._send(data).recv('DecalRoadData')
-        return resp['data']
+        data = dict(type="GetDecalRoadData")
+        resp = self._send(data).recv("DecalRoadData")
+        return resp["data"]
 
     def get_road_edges(self, road: str) -> List[Dict[str, Dict[str, Float3]]]:
         """
@@ -275,10 +308,10 @@ class ScenarioApi(Api):
             The road edges as a list of dictionaries with (``left``, ``middle``, ``right``) points.
             Each point is an ``(X, Y, Z)`` coordinate triplet.
         """
-        data = dict(type='GetDecalRoadEdges')
-        data['road'] = road
-        resp = self._send(data).recv('DecalRoadEdges')
-        return resp['edges']
+        data = dict(type="GetDecalRoadEdges")
+        data["road"] = road
+        resp = self._send(data).recv("DecalRoadEdges")
+        return resp["edges"]
 
     def load_trackbuilder_track(self, path: str):
         """
@@ -288,9 +321,9 @@ class ScenarioApi(Api):
         Args:
             path: Path to a ``.json`` file created by TrackBuilder.
         """
-        data = dict(type='LoadTrackBuilderTrack')
-        data['path'] = path
-        return self._send(data).ack('TrackBuilderTrackLoaded')
+        data = dict(type="LoadTrackBuilderTrack")
+        data["path"] = path
+        return self._send(data).ack("TrackBuilderTrackLoaded")
 
     def find_objects_class(self, clazz: str) -> List[ScenarioObject]:
         """
@@ -306,16 +339,20 @@ class ScenarioApi(Api):
         Returns:
             Found objects as a list.
         """
-        data = dict(type='FindObjectsClass')
-        data['class'] = clazz
+        data = dict(type="FindObjectsClass")
+        data["class"] = clazz
         resp = self._send(data).recv()
         ret: List[ScenarioObject] = list()
-        for obj in resp['objects']:
-            sobj = ScenarioObject(obj['id'], obj['name'], obj['type'],
-                                  tuple(obj['position']),
-                                  tuple(obj['scale']),
-                                  rot_quat=tuple(obj['rotation']),
-                                  **obj['options'])
+        for obj in resp["objects"]:
+            sobj = ScenarioObject(
+                obj["id"],
+                obj["name"],
+                obj["type"],
+                tuple(obj["position"]),
+                tuple(obj["scale"]),
+                rot_quat=tuple(obj["rotation"]),
+                **obj["options"],
+            )
             ret.append(sobj)
         return ret
 

@@ -58,13 +58,15 @@ class CommBase:
         Returns:
             The response of the simulator.
         """
-        if kwargs.get('ack'):
-            create_warning('You are sending an `ack` argument to the `send_recv_ge` function, '
-                           'which does not waits for acknowledgements. You may be looking for '
-                           'the `send_ack_ge` function.')
+        if kwargs.get("ack"):
+            create_warning(
+                "You are sending an `ack` argument to the `send_recv_ge` function, "
+                "which does not waits for acknowledgements. You may be looking for "
+                "the `send_ack_ge` function."
+            )
 
         if not self.bng.connection:
-            raise BNGDisconnectedError('The simulator is not connected!')
+            raise BNGDisconnectedError("The simulator is not connected!")
         return CommBase._send_recv(self.bng.connection, type, **kwargs)
 
     def send_ack_ge(self, type: str, ack: str, **kwargs: Any) -> None:
@@ -81,7 +83,7 @@ class CommBase:
             The response of the simulator.
         """
         if not self.bng.connection:
-            raise BNGDisconnectedError('The simulator is not connected!')
+            raise BNGDisconnectedError("The simulator is not connected!")
         CommBase._send_ack(self.bng.connection, type, ack=ack, **kwargs)
 
     def send_recv_veh(self, type: str, **kwargs: Any) -> StrDict:
@@ -96,13 +98,15 @@ class CommBase:
         Returns:
             The response of the simulator.
         """
-        if kwargs.get('ack'):
-            create_warning('You are sending an `ack` argument to the `send_recv_veh` function, '
-                           'which does not waits for acknowledgements. You may be looking for '
-                           'the `send_ack_veh` function.')
+        if kwargs.get("ack"):
+            create_warning(
+                "You are sending an `ack` argument to the `send_recv_veh` function, "
+                "which does not waits for acknowledgements. You may be looking for "
+                "the `send_ack_veh` function."
+            )
 
         if not self.vehicle or not self.vehicle.connection:
-            raise BNGDisconnectedError('The vehicle is not connected!')
+            raise BNGDisconnectedError("The vehicle is not connected!")
         return CommBase._send_recv(self.vehicle.connection, type, **kwargs)
 
     def send_ack_veh(self, type: str, ack: str, **kwargs: Any) -> None:
@@ -119,5 +123,5 @@ class CommBase:
             The response of the simulator.
         """
         if not self.vehicle or not self.vehicle.connection:
-            raise BNGDisconnectedError('The vehicle is not connected!')
+            raise BNGDisconnectedError("The vehicle is not connected!")
         CommBase._send_ack(self.vehicle.connection, type, ack=ack, **kwargs)

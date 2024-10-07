@@ -6,18 +6,15 @@ from typing import TYPE_CHECKING
 from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID
 from beamngpy.types import Float2, Float3, Int2, StrDict
+import numpy as np
+
+from beamngpy.sensors.shmem import BNGSharedMemory
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
 
-import os
-
-import numpy as np
-
-import beamngpy.sensors.shmem as shmem
-
-__all__ = ['Ultrasonic']
+__all__ = ["Ultrasonic"]
 
 
 class Ultrasonic(CommBase):
@@ -56,17 +53,37 @@ class Ultrasonic(CommBase):
         is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
     """
 
-    def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle | None = None, requested_update_time: float = 0.1,
-                 update_priority: float = 0.0, pos: Float3 = (0, 0, 1.7),
-                 dir: Float3 = (0, -1, 0), up: Float3 = (0, 0, 1), resolution: Int2 = (200, 200),
-                 field_of_view_y: float = 5.7, near_far_planes: Float2 = (0.1, 5.1),
-                 range_roundness: float = -1.15, range_cutoff_sensitivity: float = 0.0, range_shape: float = 0.3,
-                 range_focus: float = 0.376, range_min_cutoff: float = 0.1, range_direct_max_cutoff: float = 5.0,
-                 sensitivity: float = 3.0, fixed_window_size: float = 10, is_visualised: bool = True, is_streaming: bool = False, is_static: bool = False,
-                 is_snapping_desired: bool = False, is_force_inside_triangle: bool = False, is_dir_world_space: bool = False):
+    def __init__(
+        self,
+        name: str,
+        bng: BeamNGpy,
+        vehicle: Vehicle | None = None,
+        requested_update_time: float = 0.1,
+        update_priority: float = 0.0,
+        pos: Float3 = (0, 0, 1.7),
+        dir: Float3 = (0, -1, 0),
+        up: Float3 = (0, 0, 1),
+        resolution: Int2 = (200, 200),
+        field_of_view_y: float = 5.7,
+        near_far_planes: Float2 = (0.1, 5.1),
+        range_roundness: float = -1.15,
+        range_cutoff_sensitivity: float = 0.0,
+        range_shape: float = 0.3,
+        range_focus: float = 0.376,
+        range_min_cutoff: float = 0.1,
+        range_direct_max_cutoff: float = 5.0,
+        sensitivity: float = 3.0,
+        fixed_window_size: float = 10,
+        is_visualised: bool = True,
+        is_streaming: bool = False,
+        is_static: bool = False,
+        is_snapping_desired: bool = False,
+        is_force_inside_triangle: bool = False,
+        is_dir_world_space: bool = False,
+    ):
         super().__init__(bng, vehicle)
 
-        self.logger = getLogger(f'{LOGGER_ID}.Ultrasonic')
+        self.logger = getLogger(f"{LOGGER_ID}.Ultrasonic")
         self.logger.setLevel(DEBUG)
 
         # Cache some properties we will need later.
@@ -75,21 +92,41 @@ class Ultrasonic(CommBase):
 
         # Shared memory for velocity data streaming.
         self.shmem_size = None
-        self.shmem_handle = None
         self.shmem = None
         if is_streaming == True:
-            pid = os.getpid()
             self.shmem_size = 4
-            self.shmem_handle = f'{pid}.{name}.Ultrasonic'
-            self.shmem = shmem.allocate(self.shmem_size, self.shmem_handle)
+            self.shmem = BNGSharedMemory(self.shmem_size)
 
         # Create and initialise this sensor in the simulation.
         self._open_ultrasonic(
-            name, vehicle, self.shmem_handle, self.shmem_size, requested_update_time, update_priority, pos, dir, up, resolution, field_of_view_y,
-            near_far_planes, range_roundness, range_cutoff_sensitivity, range_shape, range_focus, range_min_cutoff,
-            range_direct_max_cutoff, sensitivity, fixed_window_size, is_visualised, is_streaming, is_static, is_snapping_desired,
-            is_force_inside_triangle, is_dir_world_space)
-        self.logger.debug('Ultrasonic - sensor created: 'f'{self.name}')
+            name,
+            vehicle,
+            self.shmem.name if self.shmem else None,
+            self.shmem_size,
+            requested_update_time,
+            update_priority,
+            pos,
+            dir,
+            up,
+            resolution,
+            field_of_view_y,
+            near_far_planes,
+            range_roundness,
+            range_cutoff_sensitivity,
+            range_shape,
+            range_focus,
+            range_min_cutoff,
+            range_direct_max_cutoff,
+            sensitivity,
+            fixed_window_size,
+            is_visualised,
+            is_streaming,
+            is_static,
+            is_snapping_desired,
+            is_force_inside_triangle,
+            is_dir_world_space,
+        )
+        self.logger.debug("Ultrasonic - sensor created: " f"{self.name}")
 
     def remove(self):
         """
@@ -97,7 +134,7 @@ class Ultrasonic(CommBase):
         """
         # Remove this sensor from the simulation.
         self._close_ultrasonic()
-        self.logger.debug('Ultrasonic - sensor removed: 'f'{self.name}')
+        self.logger.debug("Ultrasonic - sensor removed: " f"{self.name}")
 
     def poll(self) -> StrDict:
         """
@@ -112,8 +149,12 @@ class Ultrasonic(CommBase):
             windowMax: (internal parameter) which indicates the maximum size of the data filtering window used in post-processing. This can usually be ignored.
         """
         # Send and receive a request for readings data from this sensor.
-        distance_measurement = self.send_recv_ge('PollUltrasonic', name=self.name)['data']
-        self.logger.debug('Ultrasonic - sensor readings received from simulation: 'f'{self.name}')
+        distance_measurement = self.send_recv_ge("PollUltrasonic", name=self.name)[
+            "data"
+        ]
+        self.logger.debug(
+            "Ultrasonic - sensor readings received from simulation: " f"{self.name}"
+        )
 
         return distance_measurement
 
@@ -124,7 +165,7 @@ class Ultrasonic(CommBase):
         Returns:
             The latest Ultrasonic distance reading from shared memory.
         """
-        return np.frombuffer(shmem.read(self.shmem, self.shmem_size), dtype=np.float32)
+        return np.frombuffer(self.shmem.read(self.shmem_size), dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -135,8 +176,10 @@ class Ultrasonic(CommBase):
         Returns:
             A unique Id number for the ad-hoc request.
         """
-        self.logger.debug('Ultrasonic - ad-hoc polling request sent: 'f'{self.name}')
-        return int(self.send_recv_ge('SendAdHocRequestUltrasonic', name=self.name)['data'])
+        self.logger.debug("Ultrasonic - ad-hoc polling request sent: " f"{self.name}")
+        return int(
+            self.send_recv_ge("SendAdHocRequestUltrasonic", name=self.name)["data"]
+        )
 
     def is_ad_hoc_poll_request_ready(self, request_id: int) -> bool:
         """
@@ -148,8 +191,13 @@ class Ultrasonic(CommBase):
         Returns:
             A flag which indicates if the ad-hoc polling request is complete.
         """
-        self.logger.debug('Ultrasonic - ad-hoc polling request checked for completion: 'f'{self.name}')
-        return self.send_recv_ge('IsAdHocPollRequestReadyUltrasonic', requestId=request_id)['data']
+        self.logger.debug(
+            "Ultrasonic - ad-hoc polling request checked for completion: "
+            f"{self.name}"
+        )
+        return self.send_recv_ge(
+            "IsAdHocPollRequestReadyUltrasonic", requestId=request_id
+        )["data"]
 
     def collect_ad_hoc_poll_request(self, request_id: int) -> StrDict:
         """
@@ -161,8 +209,13 @@ class Ultrasonic(CommBase):
         Returns:
             The readings data.
         """
-        readings = self.send_recv_ge('CollectAdHocPollRequestUltrasonic', requestId=request_id)['data']
-        self.logger.debug('Ultrasonic - ad-hoc polling request returned and processed: 'f'{self.name}')
+        readings = self.send_recv_ge(
+            "CollectAdHocPollRequestUltrasonic", requestId=request_id
+        )["data"]
+        self.logger.debug(
+            "Ultrasonic - ad-hoc polling request returned and processed: "
+            f"{self.name}"
+        )
 
         return readings
 
@@ -173,7 +226,9 @@ class Ultrasonic(CommBase):
         Returns:
             (float): The requested update time.
         """
-        return self.send_recv_ge('GetUltrasonicRequestedUpdateTime', name=self.name)['data']
+        return self.send_recv_ge("GetUltrasonicRequestedUpdateTime", name=self.name)[
+            "data"
+        ]
 
     def get_update_priority(self) -> float:
         """
@@ -182,7 +237,7 @@ class Ultrasonic(CommBase):
         Returns:
             The update priority value.
         """
-        return self.send_recv_ge('GetUltrasonicUpdatePriority', name=self.name)['data']
+        return self.send_recv_ge("GetUltrasonicUpdatePriority", name=self.name)["data"]
 
     def get_position(self) -> Float3:
         """
@@ -191,8 +246,8 @@ class Ultrasonic(CommBase):
         Returns:
             The sensor position.
         """
-        table = self.send_recv_ge('GetUltrasonicSensorPosition', name=self.name)['data']
-        return (table['x'], table['y'], table['z'])
+        table = self.send_recv_ge("GetUltrasonicSensorPosition", name=self.name)["data"]
+        return (table["x"], table["y"], table["z"])
 
     def get_direction(self) -> Float3:
         """
@@ -201,8 +256,10 @@ class Ultrasonic(CommBase):
         Returns:
             The sensor direction.
         """
-        table = self.send_recv_ge('GetUltrasonicSensorDirection', name=self.name)['data']
-        return (table['x'], table['y'], table['z'])
+        table = self.send_recv_ge("GetUltrasonicSensorDirection", name=self.name)[
+            "data"
+        ]
+        return (table["x"], table["y"], table["z"])
 
     def get_max_pending_requests(self) -> int:
         """
@@ -211,7 +268,11 @@ class Ultrasonic(CommBase):
         Returns:
             The max pending requests value.
         """
-        return int(self.send_recv_ge('GetUltrasonicMaxPendingGpuRequests', name=self.name)['data'])
+        return int(
+            self.send_recv_ge("GetUltrasonicMaxPendingGpuRequests", name=self.name)[
+                "data"
+            ]
+        )
 
     def get_is_visualised(self) -> bool:
         """
@@ -220,7 +281,7 @@ class Ultrasonic(CommBase):
         Returns:
             A flag which indicates if this ultrasonic sensor is visualised or not.
         """
-        return self.send_recv_ge('GetUltrasonicIsVisualised', name=self.name)['data']
+        return self.send_recv_ge("GetUltrasonicIsVisualised", name=self.name)["data"]
 
     def set_requested_update_time(self, requested_update_time: float):
         """
@@ -230,8 +291,11 @@ class Ultrasonic(CommBase):
             requested_update_time: The new requested update time.
         """
         return self.send_ack_ge(
-            'SetUltrasonicRequestedUpdateTime', ack='CompletedSetUltrasonicRequestedUpdateTime', name=self.name,
-            updateTime=requested_update_time)
+            "SetUltrasonicRequestedUpdateTime",
+            ack="CompletedSetUltrasonicRequestedUpdateTime",
+            name=self.name,
+            updateTime=requested_update_time,
+        )
 
     def set_update_priority(self, update_priority: float) -> None:
         """
@@ -241,8 +305,11 @@ class Ultrasonic(CommBase):
             update_priority: The new update priority
         """
         return self.send_ack_ge(
-            'SetUltrasonicUpdatePriority', ack='CompletedSetUltrasonicUpdatePriority', name=self.name,
-            updatePriority=update_priority)
+            "SetUltrasonicUpdatePriority",
+            ack="CompletedSetUltrasonicUpdatePriority",
+            name=self.name,
+            updatePriority=update_priority,
+        )
 
     def set_max_pending_requests(self, max_pending_requests: int) -> None:
         """
@@ -252,8 +319,11 @@ class Ultrasonic(CommBase):
             max_pending_requests: The new max pending requests value.
         """
         self.send_ack_ge(
-            'SetUltrasonicMaxPendingGpuRequests', ack='CompletedSetUltrasonicMaxPendingGpuRequests', name=self.name,
-            maxPendingGpuRequests=max_pending_requests)
+            "SetUltrasonicMaxPendingGpuRequests",
+            ack="CompletedSetUltrasonicMaxPendingGpuRequests",
+            name=self.name,
+            maxPendingGpuRequests=max_pending_requests,
+        )
 
     def set_is_visualised(self, is_visualised: bool) -> None:
         """
@@ -262,48 +332,75 @@ class Ultrasonic(CommBase):
         Args:
             is_visualised: A flag which indicates if this ultrasonic sensor is to be visualised or not.
         """
-        self.send_ack_ge('SetUltrasonicIsVisualised', ack='CompletedSetUltrasonicIsVisualised',
-                         name=self.name, isVisualised=is_visualised)
+        self.send_ack_ge(
+            "SetUltrasonicIsVisualised",
+            ack="CompletedSetUltrasonicIsVisualised",
+            name=self.name,
+            isVisualised=is_visualised,
+        )
 
     def _open_ultrasonic(
-            self, name: str, vehicle: Vehicle | None, shmem_handle: str | None, shmem_size: int, requested_update_time: float, update_priority: float, pos: Float3,
-            dir: Float3, up: Float3, size: Int2, field_of_view_y: float, near_far_planes: Float2,
-            range_roundness: float, range_cutoff_sensitivity: float, range_shape: float, range_focus: float,
-            range_min_cutoff: float, range_direct_max_cutoff: float, sensitivity: float, fixed_window_size: float,
-            is_visualised: bool, is_streaming: bool, is_static: bool, is_snapping_desired: bool, is_force_inside_triangle: bool, is_dir_world_space: bool) -> None:
+        self,
+        name: str,
+        vehicle: Vehicle | None,
+        shmem_name: str | None,
+        shmem_size: int,
+        requested_update_time: float,
+        update_priority: float,
+        pos: Float3,
+        dir: Float3,
+        up: Float3,
+        size: Int2,
+        field_of_view_y: float,
+        near_far_planes: Float2,
+        range_roundness: float,
+        range_cutoff_sensitivity: float,
+        range_shape: float,
+        range_focus: float,
+        range_min_cutoff: float,
+        range_direct_max_cutoff: float,
+        sensitivity: float,
+        fixed_window_size: float,
+        is_visualised: bool,
+        is_streaming: bool,
+        is_static: bool,
+        is_snapping_desired: bool,
+        is_force_inside_triangle: bool,
+        is_dir_world_space: bool,
+    ) -> None:
         data: StrDict = dict()
-        data['name'] = name
-        data['shmemHandle'] = shmem_handle
-        data['shmemSize'] = shmem_size
-        data['vid'] = 0
+        data["name"] = name
+        data["shmemHandle"] = shmem_name
+        data["shmemSize"] = shmem_size
+        data["vid"] = 0
         if vehicle is not None:
-            data['vid'] = vehicle.vid
-        data['updateTime'] = requested_update_time
-        data['priority'] = update_priority
-        data['pos'] = pos
-        data['dir'] = dir
-        data['up'] = up
-        data['size'] = size
-        data['fovY'] = field_of_view_y
-        data['near_far_planes'] = near_far_planes
-        data['range_roundness'] = range_roundness
-        data['range_cutoff_sensitivity'] = range_cutoff_sensitivity
-        data['range_shape'] = range_shape
-        data['range_focus'] = range_focus
-        data['range_min_cutoff'] = range_min_cutoff
-        data['range_direct_max_cutoff'] = range_direct_max_cutoff
-        data['sensitivity'] = sensitivity
-        data['fixed_window_size'] = fixed_window_size
-        data['isVisualised'] = is_visualised
-        data['isStreaming'] = is_streaming
-        data['isStatic'] = is_static
-        data['isSnappingDesired'] = is_snapping_desired
-        data['isForceInsideTriangle'] = is_force_inside_triangle
-        data['isDirWorldSpace'] = is_dir_world_space
+            data["vid"] = vehicle.vid
+        data["updateTime"] = requested_update_time
+        data["priority"] = update_priority
+        data["pos"] = pos
+        data["dir"] = dir
+        data["up"] = up
+        data["size"] = size
+        data["fovY"] = field_of_view_y
+        data["near_far_planes"] = near_far_planes
+        data["range_roundness"] = range_roundness
+        data["range_cutoff_sensitivity"] = range_cutoff_sensitivity
+        data["range_shape"] = range_shape
+        data["range_focus"] = range_focus
+        data["range_min_cutoff"] = range_min_cutoff
+        data["range_direct_max_cutoff"] = range_direct_max_cutoff
+        data["sensitivity"] = sensitivity
+        data["fixed_window_size"] = fixed_window_size
+        data["isVisualised"] = is_visualised
+        data["isStreaming"] = is_streaming
+        data["isStatic"] = is_static
+        data["isSnappingDesired"] = is_snapping_desired
+        data["isForceInsideTriangle"] = is_force_inside_triangle
+        data["isDirWorldSpace"] = is_dir_world_space
 
-        self.send_ack_ge('OpenUltrasonic', ack='OpenedUltrasonic', **data)
+        self.send_ack_ge("OpenUltrasonic", ack="OpenedUltrasonic", **data)
         self.logger.info(f'Opened ultrasonic sensor: "{name}"')
 
     def _close_ultrasonic(self) -> None:
-        self.send_ack_ge('CloseUltrasonic', ack='ClosedUltrasonic', name=self.name)
+        self.send_ack_ge("CloseUltrasonic", ack="ClosedUltrasonic", name=self.name)
         self.logger.info(f'Closed ultrasonic sensor: "{self.name}"')
