@@ -4,7 +4,7 @@ Changelog
 
 Version 1.30
 ============
-- Added a new API for attaching and detaching `couplers`.
+- Added a new API for attaching and detaching couplers: `CouplersApi <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.vehicle.CouplersApi>`__.
 - Added a flag to disable `RoadsSensor <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#roads-sensor>`__ debug visualization.
 - Fixed `BeamNGpy.scenario.restart <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Scenario.restart>`__ breaking some keyboard shortcuts after calling it.
 - The `BeamNGpy <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.BeamNGpy>`__ and `Vehicle <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle>`__ objects are threadsafe now.
