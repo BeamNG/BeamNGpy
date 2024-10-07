@@ -4,6 +4,13 @@ Changelog
 
 Version 1.30
 ============
+- BeamNGpy sensors are supported on Vulkan and Linux now.
+
+  - including shared memory
+  - **Known issues:**
+
+      - ``Radar`` sensor doesn't return any data on Vulkan
+      - ``Camera`` sensor doesn't work correctly with annotations on
 - Added a new API for attaching and detaching couplers: `CouplersApi <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.vehicle.CouplersApi>`__.
 - Added a flag to disable `RoadsSensor <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#roads-sensor>`__ debug visualization.
 - Fixed `BeamNGpy.scenario.restart <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Scenario.restart>`__ breaking some keyboard shortcuts after calling it.
