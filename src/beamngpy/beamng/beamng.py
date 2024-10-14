@@ -111,7 +111,7 @@ class BeamNGpy:
         self.user = user
         self.process = None
         self.quit_on_close = quit_on_close
-        self.debug = debug
+        self._debug = debug
         self.connection: Connection | None = None
         self._scenario: Scenario | None = None
         self._host_os: str | None = None
@@ -174,7 +174,7 @@ class BeamNGpy:
             arg_list = list(args)
 
             if debug is None:
-                debug = self.debug
+                debug = self._debug
             if debug == True:
                 arg_list.append("-tcom-debug")
             elif debug == False:
