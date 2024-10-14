@@ -206,6 +206,7 @@ class Scenario:
             difficulty=self.difficulty,
             authors=self.authors,
             lapConfig=self.checkpoints,
+            forceNoCountDown=True
         )
 
         vehicles_dict = dict()
