@@ -405,14 +405,15 @@ class Vehicle:
             left_signal, right_signal, hazard_signal, headlights, fog_lights, lightbar
         )
 
-    def queue_lua_command(self, chunk: str) -> None:
+    def queue_lua_command(self, chunk: str, response: bool = False) -> StrDict:
         """
         Executes a chunk of Lua code in the vehicle engine VM.
 
         Args:
-            chunk: chunk of Lua code as a string
+            chunk: A chunk of Lua code as a string.
+            response: If True, then the response is sent back to BeamNGpy.
         """
-        return self._root.queue_lua_command(chunk)
+        return self._root.queue_lua_command(chunk, response)
 
     def recover(self) -> None:
         """

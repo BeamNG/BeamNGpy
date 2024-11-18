@@ -136,10 +136,11 @@ class RootApi(VehicleApi):
         lights["type"] = "SetLights"
         self._send(lights).ack("LightsSet")
 
-    def queue_lua_command(self, chunk: str) -> None:
+    def queue_lua_command(self, chunk: str, response: bool) -> StrDict:
         data = dict(type="QueueLuaCommandVE")
         data["chunk"] = chunk
-        self._send(data).ack("ExecutedLuaChunkVE")
+        data["resp"] = response
+        return self._send(data).recv("ExecutedLuaChunkVE").get("resp", None)
 
     def recover(self) -> None:
         data = dict(type="Recover")

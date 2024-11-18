@@ -78,16 +78,18 @@ class ControlApi(Api):
         resp = self._send(data).recv("GameState")
         return resp
 
-    def queue_lua_command(self, chunk: str) -> None:
+    def queue_lua_command(self, chunk: str, response: bool = False) -> StrDict:
         """
         Executes one lua chunk in the game engine VM.
 
         Args:
             chunk: lua chunk as a string
+            response: If True, then the response is sent back to BeamNGpy.
         """
         data = dict(type="QueueLuaCommandGE")
         data["chunk"] = chunk
-        self._send(data).ack("ExecutedLuaChunkGE")
+        data["resp"] = response
+        return self._send(data).recv("ExecutedLuaChunkGE").get("resp", None)
 
     def return_to_main_menu(self) -> None:
         """
