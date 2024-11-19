@@ -138,8 +138,8 @@ that spans the area is:
 from beamngpy import BeamNGpy, Scenario, Vehicle
 
 # Instantiate BeamNGpy instance running the simulator from the given path,
-# communicating over localhost:64256
-bng = BeamNGpy('localhost', 64256, home='/path/to/bng/tech', user='/path/to/bng/tech/userfolder')
+# communicating over localhost:25252
+bng = BeamNGpy('localhost', 25252, home='/path/to/bng/tech', user='/path/to/bng/tech/userfolder')
 # Launch BeamNG.tech
 bng.open()
 # Create a scenario in west_coast_usa called 'example'

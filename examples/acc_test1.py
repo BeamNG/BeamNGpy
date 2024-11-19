@@ -1,16 +1,17 @@
 from time import sleep
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging, angle_to_quat
-from beamngpy.sensors import IdealRadar, State
-
 import matplotlib.pyplot as plt
+
+from beamngpy import (BeamNGpy, Scenario, Vehicle, angle_to_quat,
+                      set_up_simple_logging)
+from beamngpy.sensors import IdealRadar, State
 
 
 def main():
     set_up_simple_logging()
 
     # Start up the simulator.
-    bng = BeamNGpy("localhost", 64256)
+    bng = BeamNGpy("localhost", 25252)
 
     bng.open(None, "-gfx", "dx11")
 

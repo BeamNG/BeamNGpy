@@ -22,7 +22,7 @@ def test_multi_vehicle(beamng: BeamNGpy):
         a_client.scenario.load(scenario)
         a_client.scenario.start()
 
-        b_client = BeamNGpy("localhost", 64256)
+        b_client = BeamNGpy("localhost", 25252)
         #  Do not launch new process
         b_client.open(launch=False)
         vehicles = b_client.vehicles.get_current(include_config=False)
@@ -64,7 +64,7 @@ def test_multi_scenario(beamng: BeamNGpy):
         scenario.add_vehicle(vehicle, pos=(0, 0, 100))
         scenario.make(a_client)
 
-        b_client = BeamNGpy("localhost", 64256)
+        b_client = BeamNGpy("localhost", 25252)
         b_client.open(launch=False)
 
         with pytest.raises(BNGValueError):

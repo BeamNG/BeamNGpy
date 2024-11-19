@@ -80,5 +80,5 @@ def test_state(beamng: BeamNGpy):
 
 
 if __name__ == "__main__":
-    bng = BeamNGpy("localhost", 64256)
+    bng = BeamNGpy("localhost", 25252)
     test_electrics(bng)

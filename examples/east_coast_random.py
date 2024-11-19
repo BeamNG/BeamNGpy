@@ -34,7 +34,7 @@ def main():
 
     plt.ion()
 
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     bng = beamng.open(launch=True)
 
     # Create a scenario in east_coast_usa

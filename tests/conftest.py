@@ -15,4 +15,4 @@ def run_before_tests():
 
 @pytest.fixture(scope="session")
 def beamng() -> BeamNGpy:
-    return BeamNGpy("localhost", 64256, quit_on_close=False, debug=False)
+    return BeamNGpy("localhost", 25252, quit_on_close=False, debug=False)

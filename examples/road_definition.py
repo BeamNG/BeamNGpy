@@ -13,7 +13,7 @@ from beamngpy import BeamNGpy, MeshRoad, Road, Scenario, Vehicle
 
 
 def main():
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
 
     scenario = Scenario("gridmap_v2", "road_test")

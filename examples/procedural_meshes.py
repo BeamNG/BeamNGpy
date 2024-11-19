@@ -22,7 +22,7 @@ from beamngpy import (
 
 
 def main():
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
 
     scenario = Scenario("tech_ground", "mesh_test")

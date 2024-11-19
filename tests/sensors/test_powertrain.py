@@ -70,5 +70,5 @@ if __name__ == "__main__":
     set_up_simple_logging()
 
     # Start up the simulator.
-    bng = BeamNGpy("localhost", 64256)
+    bng = BeamNGpy("localhost", 25252)
     test_powertrain(bng)

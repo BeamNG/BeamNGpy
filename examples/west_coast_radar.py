@@ -11,7 +11,7 @@ sns.set_theme()  # Let seaborn apply better styling to all matplotlib graphs
 def main():
     set_up_simple_logging()
 
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     bng = beamng.open(launch=True)
 
     scenario = Scenario(

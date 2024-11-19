@@ -2,7 +2,7 @@
 
 To debug the TCP protocol that BeamNGpy uses to talk with BeamNG.tech,
 you can use this Wireshark BeamNGpy plugin. It tries to decode messages
-on TCP port 64256, which is the default for BeamNGpy. If the plugin finds
+on TCP port 25252, which is the default for BeamNGpy. If the plugin finds
 a BeamNGpy `StartVehicleConnection` message, it also starts decoding the
 TCP communication happening between BeamNG vehicles and BeamNGpy.
 

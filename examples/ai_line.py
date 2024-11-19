@@ -8,7 +8,7 @@ SIZE = 1024
 def main():
     set_up_simple_logging()
 
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
 
     scenario = Scenario("west_coast_usa", "ai_sine")

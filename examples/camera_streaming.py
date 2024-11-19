@@ -2,7 +2,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle
 from beamngpy.sensors import Camera
 
 if __name__ == "__main__":
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     beamng.open()
 
     scenario = Scenario("italy", "camera_streaming")

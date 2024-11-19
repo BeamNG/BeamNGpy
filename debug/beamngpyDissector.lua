@@ -12,7 +12,7 @@
 local mp = require('MessagePack')
 
 local NAME = 'beamngpy'
-local PORT = 64256
+local PORT = 25252
 
 -- we create our new protocol
 local proto = Proto(NAME, "BeamNGpy TCP")
@@ -148,5 +148,5 @@ function proto.dissector(buffer, pinfo, tree)
   return message_length
 end
 
--- we register our protocol on TCP port 64256
+-- we register our protocol on TCP port 25252
 local tcp_table = DissectorTable.get("tcp.port"):add(PORT, proto)

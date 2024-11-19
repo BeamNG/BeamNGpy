@@ -17,7 +17,7 @@ def main():
     random.seed(1703)
     set_up_simple_logging()
 
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     bng = beamng.open(launch=True)
 
     scenario = Scenario(

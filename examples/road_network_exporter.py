@@ -5,7 +5,7 @@ from beamngpy.tools import OpenDriveExporter, OpenStreetMapExporter, SumoExporte
 def main():
     set_up_simple_logging()
 
-    bng = BeamNGpy("localhost", 64256)
+    bng = BeamNGpy("localhost", 25252)
     bng.open(launch=True)
     scenario = Scenario(
         "west_coast_usa", "Road Network Exporter Demo", description="Exports map data"

@@ -7,7 +7,7 @@ def main():
 
     # Initialize BeamNG.
     print("Initializing BeamNG...")
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
     scenario = Scenario("template_tech", "heightmap_importer")
     vehicle = Vehicle("ego_vehicle", model="etk800")

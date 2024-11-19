@@ -3,7 +3,7 @@ from time import sleep
 
 
 def main():
-    beamng = BeamNGpy("localhost", 64256)
+    beamng = BeamNGpy("localhost", 25252)
     beamng.open()
 
     scenario = Scenario("italy", "vehicle logging")

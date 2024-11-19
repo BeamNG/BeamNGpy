@@ -2,14 +2,8 @@ from __future__ import annotations
 
 import socket
 
-from beamngpy import (
-    BeamNGpy,
-    Scenario,
-    ScenarioObject,
-    Vehicle,
-    angle_to_quat,
-    set_up_simple_logging,
-)
+from beamngpy import (BeamNGpy, Scenario, ScenarioObject, Vehicle,
+                      angle_to_quat, set_up_simple_logging)
 
 
 def test_quats(beamng: BeamNGpy):
@@ -99,5 +93,5 @@ def test_quats(beamng: BeamNGpy):
 
 
 if __name__ == "__main__":
-    bng = BeamNGpy("localhost", 64256)
+    bng = BeamNGpy("localhost", 25252)
     test_quats(bng)
