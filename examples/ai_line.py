@@ -20,6 +20,7 @@ def main():
     scenario.add_vehicle(vehicle, pos=orig, rot_quat=(0, 0, 1, 0))
     scenario.make(beamng)
 
+    beamng.control.pause()
     beamng.settings.set_deterministic(60)
 
     script = []
@@ -30,7 +31,7 @@ def main():
     sphere_radii = []
     sphere_colors = []
 
-    for i in range(3600):
+    for i in range(2400):
         node = {
             #  Calculate the position as a sine curve that makes the vehicle
             #  drive from left to right. The z-coordinate is not calculated in
@@ -52,20 +53,21 @@ def main():
             sphere_radii.append(np.abs(np.sin(np.radians(i))) * 0.25)
             sphere_colors.append((np.sin(np.radians(i)), 0, 0, 0.8))
 
-    try:
-        beamng.scenario.load(scenario)
+    beamng.scenario.load(scenario)
 
-        beamng.scenario.start()
-        beamng.debug.add_spheres(
-            sphere_coordinates, sphere_radii, sphere_colors, cling=True, offset=0.1
-        )
-        beamng.debug.add_polyline(points, point_color, cling=True, offset=0.1)
-        vehicle.ai.set_script(script)
+    beamng.scenario.start()
+    beamng.debug.add_spheres(
+        sphere_coordinates, sphere_radii, sphere_colors, cling=True, offset=0.1
+    )
+    beamng.debug.add_polyline(points, point_color, cling=True, offset=0.1)
+    vehicle.ai.set_script(script)
 
-        while True:
-            beamng.control.step(60)
-    finally:
-        beamng.close()
+    for i in range(65):
+        beamng.control.step(60)
+
+    beamng.control.resume()
+    print("Scenario finished!")
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":
