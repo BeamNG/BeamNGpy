@@ -286,4 +286,4 @@ class VehiclesApi(Api):
         data: StrDict = dict(type="SetLicensePlate")
         data["vid"] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
         data["text"] = text
-        self._send(data)
+        self._send(data).ack("SetLicensePlate")

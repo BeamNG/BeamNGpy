@@ -86,4 +86,4 @@ class GEVehiclesApi(Api):
         data: StrDict = dict(type="SetLicensePlate")
         data["vid"] = self.vehicle.vid
         data["text"] = text
-        self._send(data)
+        self._send(data).ack("SetLicensePlate")
