@@ -169,8 +169,8 @@ class BeamNGpy:
             self.logger.info(
                 "BeamNGpy successfully connected to existing BeamNG instance."
             )
-            cmd = ';'.join((f'extensions.load(\'{extension}\')' for extension in extensions))
-            if cmd:
+            if extensions:
+                cmd = ';'.join((f'extensions.load(\'{extension}\')' for extension in extensions))
                 self.control.queue_lua_command(cmd)
         elif launch:
             self.logger.info("Opening BeamNGpy instance.")

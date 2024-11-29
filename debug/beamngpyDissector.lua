@@ -30,14 +30,17 @@ proto.fields = fields
 
 -- Function to create a dynamic ProtoField based on field name and type
 local function pf_dynamic_field(name, title, field_type)
-  name = name:gsub("./", "."):gsub("/", "_"):gsub("*", "ALL")
+  name = name:gsub("%./", ".")
+  name = name:gsub("/", "_")
+  name = name:gsub("*", "ALL")
+  name = name:gsub("%.%.", ".0.")
   if field_type == "number" then
     return ProtoField.int32(name, title, base.DEC)
   end
   if field_type == "boolean" then
     return ProtoField.bool(name, title)
   end
-  
+
   return ProtoField.string(name, title)
 end
 
