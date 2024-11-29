@@ -13,6 +13,7 @@ local mp = require('MessagePack')
 
 local NAME = 'beamngpy'
 local PORT = 25252
+local LEGACY_PORT = 64256
 
 -- we create our new protocol
 local proto = Proto(NAME, "BeamNGpy TCP")
@@ -29,12 +30,14 @@ proto.fields = fields
 
 -- Function to create a dynamic ProtoField based on field name and type
 local function pf_dynamic_field(name, title, field_type)
+  name = name:gsub("./", "."):gsub("/", "_"):gsub("*", "ALL")
   if field_type == "number" then
     return ProtoField.int32(name, title, base.DEC)
   end
   if field_type == "boolean" then
     return ProtoField.bool(name, title)
   end
+  
   return ProtoField.string(name, title)
 end
 
@@ -94,9 +97,9 @@ function proto.dissector(buffer, pinfo, tree)
 
   local direction = nil
   local src = 'GE'
-  if pinfo.src_port == PORT then
+  if pinfo.src_port == PORT or pinfo.src_port == LEGACY_PORT then
     direction = '←'
-  elseif pinfo.dst_port == PORT then
+  elseif pinfo.dst_port == PORT or pinfo.dst_port == LEGACY_PORT then
     direction = '→'
   end
   for vid, port in pairs(BEAMNG_VEHICLES) do
@@ -149,4 +152,6 @@ function proto.dissector(buffer, pinfo, tree)
 end
 
 -- we register our protocol on TCP port 25252
-local tcp_table = DissectorTable.get("tcp.port"):add(PORT, proto)
+local tcp_table = DissectorTable.get("tcp.port")
+tcp_table:add(PORT, proto)
+tcp_table:add(LEGACY_PORT, proto)
