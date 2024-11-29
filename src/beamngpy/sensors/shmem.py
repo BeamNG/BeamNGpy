@@ -16,10 +16,10 @@ class BNGSharedMemory(SharedMemory):
         if not self.closed:
             try:
                 self.close()
-                self.unlink()
                 self.closed = True
+                self.unlink()
             except Exception as e:
-                bngpy_logger.error(f"Cannot close shared memory. Original error: {e}")
+                bngpy_logger.warning(f"Cannot close shared memory. Original error: {e}")
 
     def __del__(self):
         self.close_and_unlink()
