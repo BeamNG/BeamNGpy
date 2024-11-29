@@ -1,12 +1,9 @@
 local M = {}
 
-local _log = log
-local function log(level, msg)
-  _log(level, 'gameEngineCode', msg)
-end
+local logTag = 'gameEngineCode'
 
 local function handleFoo(request)
-    log('I', 'Hello ' .. request['someName'] .. '!\n')
+    log('I', logTag, 'Hello ' .. request['someName'] .. '!\n')
     request:sendACK('FooAck')
     return true
 end
@@ -30,10 +27,16 @@ local function onSocketMessage(request)
     if handler ~= nil then
         handler(request)
     else
-        log('E', 'handler does not exist: ' .. msgType)
+        log('E', logTag, 'handler does not exist: ' .. msgType)
     end
 end
 
+local function onInit()
+    log('I', logTag, 'Extension loaded.')
+    setExtensionUnloadMode(M, 'manual') -- this is needed for the extension to survive through level loads
+end
+
+M.onInit = onInit
 M.onSocketMessage = onSocketMessage
 M.handleFoo = handleFoo
 M.handleGetListOfVehicleModels = handleGetListOfVehicleModels
