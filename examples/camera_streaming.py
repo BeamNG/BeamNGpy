@@ -39,7 +39,7 @@ if __name__ == "__main__":
         is_render_depth=True,
     )
 
-    for i in range(1000000):
+    for i in range(10):
         beamng.control.step(10)
 
         # Getting raw bytes from the simulator -> the fastest you can get
@@ -61,3 +61,4 @@ if __name__ == "__main__":
                 images["annotation"].show()
             if camera.is_render_depth:
                 images["depth"].show()
+    beamng.control.resume()

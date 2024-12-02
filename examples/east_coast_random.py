@@ -140,7 +140,7 @@ def main():
 
             plt.pause(1.0)
     finally:
-        bng.close()
+        bng.control.resume()
 
 
 if __name__ == "__main__":
