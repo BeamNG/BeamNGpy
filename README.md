@@ -155,7 +155,7 @@ scenario.make(bng)
 bng.scenario.load(scenario)
 bng.scenario.start()
 # Make the vehicle's AI span the map
-vehicle.ai.set_mode('span')
+vehicle.ai.set_mode('traffic')
 input('Hit enter when done...')
 ```
 
