@@ -58,7 +58,7 @@ def main():
     )
 
     print("Driving around, storing GPS readings every second, for a few seconds...")
-    vehicle.ai.set_mode("span")
+    vehicle.ai.set_mode("traffic")
     sleep(3.0)
     front_lon, front_lat, rear_lon, rear_lat = [], [], [], []
     for _ in range(20):
@@ -74,7 +74,9 @@ def main():
 
         sleep(1.0)
 
-    bng.close()
+    gps_front.remove()
+    gps_rear.remove()
+    bng.ui.show_hud()
 
     # Plot the recorded trajectory.
     fig, ax = plt.subplots()
@@ -85,6 +87,8 @@ def main():
     ax.plot(rear_lon, rear_lat, "bo")
     plt.legend(["GPS front", "GPS rear"])
     plt.show()
+
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

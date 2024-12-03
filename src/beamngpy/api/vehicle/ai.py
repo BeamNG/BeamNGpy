@@ -23,6 +23,7 @@ class AIApi(VehicleApi):
 
          * ``disabled``: Turn the AI off (default state)
          * ``random``: Drive from random points to random points on the map
+         * ``traffic``: Act like a traffic vehicle
          * ``span``: Drive along the entire road network of the map
          * ``manual``: Drive to a specific waypoint, target set separately
          * ``chase``: Chase a target vehicle, target set separately

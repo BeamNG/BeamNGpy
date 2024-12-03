@@ -1,12 +1,6 @@
 """
-.. module:: procedural_meshes
-
-    :platform: Windows
-    :synopsis: Example code that places procedurally generated primitive
-               shapes in the environment.
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-
+Example code that places procedurally generated primitive
+shapes in the environment.
 """
 
 from beamngpy import (
@@ -68,12 +62,9 @@ def main():
 
     scenario.make(beamng)
 
-    try:
-        beamng.scenario.load(scenario)
-        beamng.scenario.start()
-        input("Press enter when done...")
-    finally:
-        beamng.close()
+    beamng.scenario.load(scenario)
+    beamng.scenario.start()
+    input("Press Enter when done...")
 
 
 if __name__ == "__main__":

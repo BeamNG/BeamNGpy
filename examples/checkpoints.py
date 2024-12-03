@@ -1,11 +1,3 @@
-"""
-.. module:: checkpoints
-    :platform: Windows
-    :synopsis: Simple demo on how to use checkpoints in a scenario.
-
-.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
-"""
-
 from beamngpy import BeamNGpy, Scenario, Vehicle
 
 if __name__ == "__main__":
@@ -21,4 +13,4 @@ if __name__ == "__main__":
 
         bng.scenario.load(scenario)
         bng.scenario.start()
-        input("press 'Enter' to exit demo")
+        input("Press Enter to exit...")

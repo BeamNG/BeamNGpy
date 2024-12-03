@@ -75,17 +75,18 @@ def main():
     margin = 6.0
     Terrain_Importer.peaks_and_road_import(beamng, peaks, roads, DOI, margin)
 
+    vehicle.teleport((100.0, 100.0, 250.0))
+    vehicle.switch()
+
     # Pause for a few seconds, then clear the terrain and roads (ready for another batch iteration, as prefered). NOTE: reset needs unsilenced.
     print("Completed...")
-    time.sleep(60)
 
+    # time.sleep(60)
     # print("Resetting heightmap/roads...")
     # Terrain_Importer.reset(beamng)
 
     # Execute BeamNG until the user closes it.
-    while True:
-        pass
-    beamng.close()
+    input("Press Enter to close...")
 
 
 if __name__ == "__main__":

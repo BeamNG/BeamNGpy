@@ -31,7 +31,7 @@ def main():
         )
         bng.settings.apply_graphics()
 
-        input("Press enter when done...")
+        input("Press Enter when done...")
 
 
 if __name__ == "__main__":

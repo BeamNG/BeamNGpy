@@ -32,7 +32,7 @@ def main():
     print("Current node positions from simulator:")
     print(nodes)
 
-    # vehicle.ai.set_mode('span')
+    # vehicle.ai.set_mode('traffic')
     for _ in range(100000):
         sleep(5)
         data = mesh.poll()

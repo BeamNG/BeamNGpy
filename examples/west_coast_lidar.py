@@ -1,11 +1,3 @@
-"""
-.. module:: west_coast_lidar
-    :platform: Windows
-    :synopsis: Example code making a scenario in west_coast_usa and having the
-               vehicle span the map while emitting Lidar.
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-"""
-
 import random
 from time import sleep
 
@@ -62,9 +54,9 @@ def main():
 
     # lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)    # Does NOT use shared memory.  Sends data through lua socket instead.
 
-    vehicle.ai.set_mode("span")
+    vehicle.ai.set_mode("traffic")
     print("Driving around, polling the LiDAR sensor every 5 seconds...")
-    for i in range(100):
+    for i in range(6):
         sleep(5)
         readings_data = (
             lidar.poll()
@@ -72,13 +64,15 @@ def main():
         print(
             "LiDAR Point Cloud Data after ",
             i * 5,
-            " seconds: ",
+            " seconds: \n",
             readings_data["pointCloud"][0:10],
         )  # The first 10 points from LiDAR point cloud data.
         # print('LiDAR Colour Data after ', i * 5, ' seconds: ', readings_data['colours'][0:10])             # The colour data (corresponds to each point).
 
     lidar.remove()
-    bng.close()
+    vehicle.ai.set_mode("disabled")
+    bng.ui.show_hud()
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

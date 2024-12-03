@@ -31,13 +31,13 @@ def main():
     bng.ui.hide_hud()
     bng.scenario.start()
 
-    vehicle.ai.set_mode("span")
+    vehicle.ai.set_mode("traffic")
 
     # Path to config file is relative to user folder ie: /AppData/Local/BeamNG.drive/0.XX/
-    config = MapSensorConfig("config1", bng, "mconfig.json")
+    config = MapSensorConfig("config1", bng, "/tech/mconfig.json")
 
     print("Driving around, polling all sensors of the configuration periodically...")
-    for _ in range(60):
+    for _ in range(20):
         sleep(1)
         for s in range(len(config.sensors)):
             sensor = config.sensors[s]
@@ -45,7 +45,8 @@ def main():
             print(sensor.poll())
 
     config.remove()
-    bng.close()
+    print("Scenario finished.")
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

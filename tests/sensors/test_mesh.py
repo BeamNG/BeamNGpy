@@ -28,7 +28,7 @@ def test_mesh(beamng: BeamNGpy, steps: int = 3):
         print("Current node positions from simulator:")
         print(nodes)
 
-        # vehicle.ai.set_mode('span')
+        # vehicle.ai.set_mode('traffic')
         for _ in range(steps):
             sleep(5)
             data = mesh.poll()

@@ -64,10 +64,10 @@ def main():
     )
 
     print("Collecting ideal RADAR readings...")
-    vehicleB.ai.set_mode("span")
+    vehicleB.ai.set_mode("traffic")
     vehicleB.ai.set_speed(150.0, "set")
-    vehicleD.ai.set_mode("span")
-    vehicleA.ai.set_mode("span")
+    vehicleD.ai.set_mode("traffic")
+    vehicleA.ai.set_mode("traffic")
     vehicleC.ai.set_target("vehicleB", "flee")
     sleep(3.0)
     listIDs1st, listIDs2nd, listIDs3rd, listtime1st, listtime2nd, listtime3rd = (
@@ -95,6 +95,7 @@ def main():
             listIDs3rd.append(data3rdVehicle["vehicleID"])
             listtime3rd.append(latest_reading["time"])
         sleep(1.0)
+
     bng.close()
 
     # Plot the data

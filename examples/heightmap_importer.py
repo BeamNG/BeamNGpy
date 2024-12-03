@@ -43,10 +43,7 @@ def main():
     )
 
     # Execute BeamNG until the user closes it.
-    print("Completed.")
-    while True:
-        pass
-    beamng.close()
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

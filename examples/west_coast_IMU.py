@@ -31,18 +31,20 @@ def main():
     bng.scenario.start()
 
     # NOTE: Create sensor after scenario has started.
-    IMU = AdvancedIMU("accel1", bng, vehicle, gfx_update_time=0.01)
+    imu = AdvancedIMU("accel1", bng, vehicle, gfx_update_time=0.01)
     # IMU = AdvancedIMU('accel1', bng, vehicle, gfx_update_time=0.01, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1)) # if we want to specify a local frame
 
-    vehicle.ai.set_mode("span")
+    vehicle.ai.set_mode("traffic")
     print("Driving around, polling the advanced IMU sensor at regular intervals...")
-    for i in range(10000):
+    for i in range(300):
         sleep(0.1)  # Include a small delay between each reading.
-        data = IMU.poll()  # Fetch the latest readings from the sensor.
+        data = imu.poll()  # Fetch the latest readings from the sensor.
         print("Acceleration in each axis of the sensor: ", data)
 
-    IMU.remove()
-    bng.close()
+    imu.remove()
+    bng.ui.show_hud()
+    vehicle.ai.set_mode("disabled")
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

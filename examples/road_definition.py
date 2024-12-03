@@ -1,12 +1,5 @@
 """
-.. module:: road_definition
-
-    :platform: Windows
-    :synopsis: Example code making a scenario that defines new roads to drive
-               on.
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-
+Example code making a scenario that defines new roads to drive on.
 """
 
 from beamngpy import BeamNGpy, MeshRoad, Road, Scenario, Vehicle
@@ -53,14 +46,11 @@ def main():
 
     scenario.make(beamng)
 
-    try:
-        beamng.scenario.load(scenario)
-        beamng.scenario.start()
-        input("Press Enter to teleport to the other road...")
-        vehicle.teleport((-107, 20, 100), reset=False)
-        input("Press Enter when done...")
-    finally:
-        beamng.close()
+    beamng.scenario.load(scenario)
+    beamng.scenario.start()
+    input("Press Enter to teleport to the other road...")
+    vehicle.teleport((-107, 20, 100), reset=False)
+    input("Press Enter when done...")
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ def main():
     )
 
     print("Collecting ideal RADAR readings...")
-    vehicle2.ai.set_mode("span")
+    vehicle2.ai.set_mode("traffic")
     vehicle1.ai.set_mode("follow")
 
     sleep(3.0)

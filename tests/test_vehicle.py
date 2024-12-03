@@ -83,7 +83,7 @@ def test_vehicle_ai(beamng: BeamNGpy):
 
         vehicle.switch()
 
-        vehicle.ai.set_mode("span")
+        vehicle.ai.set_mode("traffic")
         bng.control.step(500)
         assert_continued_movement(bng, vehicle, pos)
 
@@ -186,7 +186,7 @@ def test_vehicle_bbox(beamng: BeamNGpy):
         bng.scenario.start()
 
         bbox_beg = vehicle_a.get_bbox()
-        vehicle_a.ai.set_mode("span")
+        vehicle_a.ai.set_mode("traffic")
         bng.control.step(2000, wait=True)
         bbox_end = vehicle_a.get_bbox()
 

@@ -1,13 +1,3 @@
-"""
-.. module:: east_coast_random
-    :platform: Windows
-    :synopsis: Example code making a scenario in east_coast_usa and having a
-               car drive around randomly.
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-
-"""
-
 import random
 
 from matplotlib import pyplot as plt
@@ -113,7 +103,7 @@ def main():
         )
 
         # Send random inputs to vehice and advance the simulation 20 steps
-        for _ in range(1024):
+        for _ in range(30):
             throttle = random.uniform(0.0, 1.0)
             steering = random.uniform(-1.0, 1.0)
             brake = random.choice([0, 0, 0, 1])
@@ -140,7 +130,10 @@ def main():
 
             plt.pause(1.0)
     finally:
+        print("Scenario finished!")
         bng.control.resume()
+        bng.ui.show_hud()
+        input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

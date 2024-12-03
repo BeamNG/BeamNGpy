@@ -33,7 +33,7 @@ def main():
     bng.ui.hide_hud()
     bng.scenario.start()
 
-    vehicle.ai.set_mode("span")
+    vehicle.ai.set_mode("traffic")
 
     # NOTE: Create sensor after scenario has started.
     RANGE_MIN = 0.1
@@ -59,14 +59,16 @@ def main():
         range_direct_max_cutoff=RANGE_MAX,
     )
 
-    for _ in range(1000):
+    for _ in range(6):
         sleep(5)
         # Fetch the latest readings from the sensor, over either shared memory or the lua socket.
         readings_data = radar.poll()
         radar.plot_data(readings_data, RESOLUTION, FOV, RANGE_MIN, RANGE_MAX, 200, 200)
 
     radar.remove()
-    bng.close()
+    vehicle.ai.set_mode("disabled")
+    bng.ui.show_hud()
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     beamng.scenario.load(scenario)
     beamng.scenario.start()
 
-    ego.ai.set_mode("span")
+    ego.ai.set_mode("traffic")
 
     camera = Camera(
         "camera1",
@@ -62,3 +62,4 @@ if __name__ == "__main__":
             if camera.is_render_depth:
                 images["depth"].show()
     beamng.control.resume()
+    input("Press Enter to exit...")

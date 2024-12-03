@@ -20,6 +20,8 @@ def main():
     bng.ui.hide_hud()
     bng.scenario.start()
 
+    print("Exporting road network data...")
+
     # Export OpenDrive (.xodr).
     OpenDriveExporter.export("test_od", bng)
 
@@ -30,10 +32,8 @@ def main():
     # SumoExporter.export('test', bng)
 
     # Execute the simulation until user is finished.  The data file(s) have been written.
-    vehicle.ai.set_mode("span")
-    while True:
-        pass
-    bng.close()
+    print("Road network data exported.")
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":
