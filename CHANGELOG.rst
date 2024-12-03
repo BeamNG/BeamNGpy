@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.31
+============
+TODO
+
 Version 1.30
 ============
 - BeamNGpy sensors are supported on Vulkan and Linux now.
