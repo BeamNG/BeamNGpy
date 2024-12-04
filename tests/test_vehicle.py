@@ -305,7 +305,7 @@ def test_lights(beamng: BeamNGpy):
 
 def test_traffic(beamng: BeamNGpy):
     with beamng as bng:
-        bng.settings.set_deterministic(50)
+        bng.settings.set_steps_per_second(2000)
 
         scenario = Scenario("west_coast_usa", "ai_test")
         vehicle = Vehicle("ego", model="etk800")
@@ -323,9 +323,12 @@ def test_traffic(beamng: BeamNGpy):
         bng.traffic.start([other])
         other.switch()
 
-        bng.control.step(300, wait=True)  # Give vehicle ~5 seconds to start
+        bng.control.step(3000, wait=True)  # Give vehicle ~5 seconds to start
 
         assert_continued_movement(bng, other, pos)
+
+
+
 
 
 def test_part_configs(beamng: BeamNGpy):
