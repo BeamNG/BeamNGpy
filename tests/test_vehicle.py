@@ -307,12 +307,12 @@ def test_traffic(beamng: BeamNGpy):
     with beamng as bng:
         bng.settings.set_deterministic(50)
 
-        scenario = Scenario("west_coast_usa", "ai_test")
-        vehicle = Vehicle("ego", model="etk800")
-        other = Vehicle("traffic", model="etk800")
+        scenario = Scenario("west_coast_usa", "traffic_test")
+        vehicle = Vehicle("ego", model="etk800", color="maroon")
+        other = Vehicle("traffic", model="etk800", color="darkgreen")
         pos = (-717.121, 101, 118.675)
-        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
-        pos = (-453, 700, 75)
+        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
+        pos = (-425, 675, 75)
         scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
         scenario.make(bng)
 
@@ -325,7 +325,10 @@ def test_traffic(beamng: BeamNGpy):
 
         bng.control.step(300, wait=True)  # Give vehicle ~5 seconds to start
 
-        assert_continued_movement(bng, other, pos)
+        try:
+            assert_continued_movement(bng, other, pos)
+        finally:
+            bng.control.resume()
 
 
 def test_part_configs(beamng: BeamNGpy):
