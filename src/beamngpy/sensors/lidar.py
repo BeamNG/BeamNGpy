@@ -207,13 +207,13 @@ class Lidar(CommBase):
             self.logger.debug(
                 "Lidar - Unbinding shared memory: " f"{self.point_cloud_shmem.name}"
             )
-            self.point_cloud_shmem.close_and_unlink()
+            self.point_cloud_shmem.try_close()
 
             assert self.colour_shmem
             self.logger.debug(
                 "Lidar - Unbinding shared memory: " f"{self.colour_shmem.name}"
             )
-            self.colour_shmem.close_and_unlink()
+            self.colour_shmem.try_close()
 
         # Remove this sensor from the simulation.
         self._close_lidar()

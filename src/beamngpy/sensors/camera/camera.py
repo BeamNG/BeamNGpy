@@ -384,28 +384,28 @@ class Camera(CommBase):
                     "Camera - Unbinding shared memory for colour: "
                     f"{self.colour_shmem.name}"
                 )
-                self.colour_shmem.close_and_unlink()
+                self.colour_shmem.try_close()
 
             if self.annotation_shmem:
                 self.logger.debug(
                     "Camera - Unbinding shared memory for semantic annotations: "
                     f"{self.annotation_shmem.name}"
                 )
-                self.annotation_shmem.close_and_unlink()
+                self.annotation_shmem.try_close()
 
             if self.instance_shmem:
                 self.logger.debug(
                     "Camera - Unbinding shared memory for instance annotations: "
                     f"{self.instance_shmem.name}"
                 )
-                self.instance_shmem.close_and_unlink()
+                self.instance_shmem.try_close()
 
             if self.depth_shmem:
                 self.logger.debug(
                     "Camera - Unbinding shared memory for depth: "
                     f"{self.depth_shmem.name}"
                 )
-                self.depth_shmem.close_and_unlink()
+                self.depth_shmem.try_close()
 
         # Remove this sensor from the simulation.
         self._close_camera()
