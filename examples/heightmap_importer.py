@@ -44,7 +44,7 @@ def main():
 
     # Execute BeamNG until the user closes it.
     input("Press Enter to exit...")
-    beamng.disconnect()
+    beamng.close()
 
 
 if __name__ == "__main__":

@@ -54,7 +54,11 @@ class PrefixedLengthSocket:
         self.RECV_LOCK = threading.Lock()
         self.recv_buffer = []
         self.skt = self._initialize_socket()
-        self.skt.connect((host, port))
+        try:
+            self.skt.connect((host, port))
+        except: # cleanup resources
+            self.skt.close()
+            raise
 
     def __hash__(self) -> int:
         return id(self)
