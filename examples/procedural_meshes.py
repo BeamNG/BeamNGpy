@@ -12,10 +12,12 @@ from beamngpy import (
     ProceduralRing,
     Scenario,
     Vehicle,
+    set_up_simple_logging,
 )
 
 
 def main():
+    set_up_simple_logging()
     beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
 
@@ -65,6 +67,7 @@ def main():
     beamng.scenario.load(scenario)
     beamng.scenario.start()
     input("Press Enter when done...")
+    beamng.close()
 
 
 if __name__ == "__main__":
