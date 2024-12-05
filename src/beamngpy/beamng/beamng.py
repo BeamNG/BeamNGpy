@@ -328,6 +328,8 @@ class BeamNGpy:
                 "cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine"
             )
             return
+        if self.process.stdin:
+            self.process.stdin.close()
         if os.name == "nt":
             os.kill(self.process.pid, signal.CTRL_C_EVENT)
             self.process.wait()
