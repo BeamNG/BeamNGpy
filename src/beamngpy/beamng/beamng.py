@@ -14,7 +14,7 @@ from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  SystemApi, TrafficApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
-from beamngpy.logging import LOGGER_ID, BNGError, create_warning
+from beamngpy.logging import LOGGER_ID, BNGError
 from beamngpy.types import StrDict
 
 if TYPE_CHECKING:
@@ -329,15 +329,12 @@ class BeamNGpy:
             )
             return
         if os.name == "nt":
-            with open(os.devnull, "w") as devnull:
-                subprocess.call(
-                    ["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
-                    stdout=devnull,
-                    stderr=devnull,
-                )
+            os.kill(self.process.pid, signal.CTRL_C_EVENT)
+            self.process.wait()
         else:
             try:
                 os.kill(self.process.pid, signal.SIGTERM)
+                self.process.wait()
             except:
                 pass
         self.process = None
