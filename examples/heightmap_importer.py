@@ -9,7 +9,7 @@ def main():
     print("Initializing BeamNG...")
     beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
-    scenario = Scenario("template_tech", "heightmap_importer")
+    scenario = Scenario("tech_ground", "heightmap_importer")
     vehicle = Vehicle("ego_vehicle", model="etk800")
     scenario.add_vehicle(vehicle)
 
@@ -44,6 +44,7 @@ def main():
 
     # Execute BeamNG until the user closes it.
     input("Press Enter to exit...")
+    beamng.disconnect()
 
 
 if __name__ == "__main__":

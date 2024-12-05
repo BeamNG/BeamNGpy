@@ -194,6 +194,13 @@ class BeamNGpy:
         """
         Disconnects from the BeamNG simulator.
         """
+        if self._scenario:
+            for vehicle in self._scenario.vehicles.values():
+                try:
+                    if vehicle.is_connected():
+                        vehicle.disconnect()
+                except Exception as e:
+                    module_logger.debug(f"Cannot disconnect vehicle: {e}")
         if self.connection:
             self.connection.disconnect()
             self.connection = None
