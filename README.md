@@ -156,7 +156,13 @@ bng.scenario.load(scenario)
 bng.scenario.start()
 # Make the vehicle's AI span the map
 vehicle.ai.set_mode('traffic')
-input('Hit enter when done...')
+input('Hit Enter when done...')
+
+# Disconnect BeamNG
+bng.disconnect()
+
+# Or close the simulator
+# bng.close()
 ```
 
 We have a [guide][6] helping you to get started and navigating our collection of examples and

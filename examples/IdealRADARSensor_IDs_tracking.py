@@ -96,7 +96,7 @@ def main():
             listtime3rd.append(latest_reading["time"])
         sleep(1.0)
 
-    bng.close()
+    bng.disconnect()
 
     # Plot the data
     fig, ax = plt.subplots(1, 3, figsize=(9, 3), sharey=False)

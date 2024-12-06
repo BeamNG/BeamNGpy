@@ -67,7 +67,7 @@ def main():
     beamng.scenario.load(scenario)
     beamng.scenario.start()
     input("Press Enter when done...")
-    beamng.close()
+    beamng.disconnect()
 
 
 if __name__ == "__main__":
