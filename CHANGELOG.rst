@@ -4,7 +4,27 @@ Changelog
 
 Version 1.31
 ============
-TODO
+- Changed the default BeamNGpy TCP port to a non-ephemeral port **25252**. This should fix the "permission denied" error while trying to open a BeamNGpy connection. Please update your scripts appropriately (you can keep using the previous default port 64256 without issues).
+- Added Camera/Lidar/Radar outputs to the `Tech Capture Player <https://documentation.beamng.com/beamng_tech/beamngpy/tools/capture_player/>`__.
+- Fixed tech captures on case-sensitive filesystems.
+- Fixed scenario loading on case-sensitive filesystems.
+- Fixed some issues related to blocking in the BeamNGpy protocol on Lua side.
+- Optimized TCP buffer copying on Lua side.
+- Fixed hanging caused by `BeamNGpy.scenario.start() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.start>`__ in some cases.
+- `BeamNGpy.control.queue_lua_command <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.queue_lua_command>`__ and `Vehicle.queue_lua_command <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle.queue_lua_command>`__ now accept the ``response`` argument to get Lua responses from the simulator.
+- `BeamNGpy.open <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.BeamNGpy.open>`__ now loads the extensions specified in the ``extensions`` argument also in the case the simulator was already open.
+- Fixed BeamNGpy examples which were using an invalid navigation waypoint on the ``west_coast_usa`` map.
+- Fixed `BeamNGpy.scenario.load <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.load>`__ when the scenario was located in a non-standard location.
+- Fixed the `ai_line.py <https://github.com/BeamNG/BeamNGpy/blob/v1.31/examples/ai_line.py>`__ example to have an end.
+- `Vehicle.set_license_plate <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.VehiclesApi.set_license_plate>`__ now raises an error if the license plate cannot be set (when the "Dynamic license plates" option is disabled).
+- Fixed the `beamngpyDissector.lua <https://github.com/BeamNG/BeamNGpy/tree/v1.31/debug>`__ debug plugin to properly parse ``GetScenarios`` and other messages.
+- Updated most BeamNGpy examples.
+- Fixed the warnings related to resources cleanup (shared memory, sockets, processes) on closing.
+- **Known issues:**
+
+  - ``Radar`` sensor doesn't return any data on Vulkan.
+  - Some multi-sensor configurations on Vulkan can cause BeamNG to stop responding.
+  - The annotation camera doesn't update in some multi-sensor configurations.
 
 Version 1.30
 ============
@@ -43,7 +63,7 @@ Version 1.29
 
 - `BeamNGpy.scenario.load <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.load>`__ does not resume the physics anymore
 
-  - to pause the physics (`BeamNGpy.control.pause() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.load>`__) and allow stepping (`BeamNGpy.control.step() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.step>`__), it is preferred to call ``BeamNGpy.control.pause()`` before ``BeamNGpy.scenario.load()`` )
+  - to pause the physics (`BeamNGpy.control.pause() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.pause>`__) and allow stepping (`BeamNGpy.control.step() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.step>`__), it is preferred to call ``BeamNGpy.control.pause()`` before ``BeamNGpy.scenario.load()`` )
 
 - Bugfixes
 
