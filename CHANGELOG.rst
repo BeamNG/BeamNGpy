@@ -15,6 +15,7 @@ Version 1.31
   - new output added ``numlane`` (number of lanes in current travel direction)
 
 - Added Camera/Lidar/Radar outputs to the `Tech Capture Player <https://documentation.beamng.com/beamng_tech/beamngpy/tools/capture_player/>`__.
+- Fixed Radar sensor outputs on Vulkan.
 - Fixed captures on case-sensitive filesystems.
 - Fixed scenario loading on case-sensitive filesystems.
 - Fixed some issues related to blocking in the BeamNGpy protocol on Lua side.
@@ -31,7 +32,6 @@ Version 1.31
 - Fixed the warnings related to resources cleanup (shared memory, sockets, processes) on closing.
 - **Known issues:**
 
-  - ``Radar`` sensor doesn't return any data on Vulkan.
   - Some multi-sensor configurations on Vulkan can cause BeamNG to stop responding.
   - The annotation camera doesn't update in some multi-sensor configurations.
 
