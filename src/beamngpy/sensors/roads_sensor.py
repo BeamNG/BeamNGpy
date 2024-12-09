@@ -112,6 +112,7 @@ class RoadsSensor(CommBase):
             drivability: the 'drivability' number of the road, where smaller = dirt/country roads and larger = highways etc.
             speedLimit: the speed limit of the road, in m/s.
             flag1way: a flag which indicates if the road is bi-directional (val = 0.0), or one-way (val = 1.0).
+            numlane: number of lanes in the current travel direction.
         """
         # Send and receive a request for readings data from this sensor.
         readings_data = []
