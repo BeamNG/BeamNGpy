@@ -168,6 +168,8 @@ bng.disconnect()
 We have a [guide][6] helping you to get started and navigating our collection of examples and
 the documentation of the library is available [here][7].
 
+BeamNG.tech is also customizable with various command-line arguments. Check the [documentation][12] for reference.
+
 ## Compatibility
 
 BeamNG.tech is not a finished product but is still under development.
@@ -178,6 +180,7 @@ However, we do not maintain minor versions: bug fixes and new features will only
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
+| 0.34                | [1.31](https://github.com/BeamNG/BeamNGpy/tree/v1.31)     |
 | 0.33                | [1.30](https://github.com/BeamNG/BeamNGpy/tree/v1.30)     |
 | 0.32                | [1.29](https://github.com/BeamNG/BeamNGpy/tree/v1.29)     |
 | 0.31                | [1.28](https://github.com/BeamNG/BeamNGpy/tree/v1.28)     |
@@ -231,3 +234,4 @@ format the code you want to contribute.
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
 [10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb
 [11]: https://beamng.tech/
+[12]: https://documentation.beamng.com/beamng_tech/arguments_and_settings/

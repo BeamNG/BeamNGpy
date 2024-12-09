@@ -5,8 +5,17 @@ Changelog
 Version 1.31
 ============
 - Changed the default BeamNGpy TCP port to a non-ephemeral port **25252**. This should fix the "permission denied" error while trying to open a BeamNGpy connection. Please update your scripts appropriately (you can keep using the previous default port 64256 without issues).
+- Various Linux fixes and a Docker template released, read the `BeamNG.tech 0.34 changelog <https://beamng.tech/blog/beamng-tech-034/>`__ for details.
+- New version of `RoadsSensor <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#roads-sensor>`__ with:
+
+  - spline interpolation for road width
+  - filtered heading error
+  - linear interpolation for curvature estimation
+  - bugs fixed
+  - new output added ``numlane`` (number of lanes in current travel direction)
+
 - Added Camera/Lidar/Radar outputs to the `Tech Capture Player <https://documentation.beamng.com/beamng_tech/beamngpy/tools/capture_player/>`__.
-- Fixed tech captures on case-sensitive filesystems.
+- Fixed captures on case-sensitive filesystems.
 - Fixed scenario loading on case-sensitive filesystems.
 - Fixed some issues related to blocking in the BeamNGpy protocol on Lua side.
 - Optimized TCP buffer copying on Lua side.
