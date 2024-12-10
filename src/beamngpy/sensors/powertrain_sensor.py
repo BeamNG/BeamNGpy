@@ -105,7 +105,6 @@ class PowertrainSensor(CommBase):
         return int(
             self.send_recv_ge(
                 "SendAdHocRequestPowertrain",
-                ack="CompletedSendAdHocRequestPowertrain",
                 name=self.name,
                 vid=self.vehicle.vid,
             )["data"]
