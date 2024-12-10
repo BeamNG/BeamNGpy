@@ -331,8 +331,13 @@ class BeamNGpy:
         if self.process.stdin:
             self.process.stdin.close()
         if os.name == "nt":
-            os.kill(self.process.pid, signal.CTRL_C_EVENT)
-            self.process.wait()
+            with open(os.devnull, "w") as devnull:
+                subprocess.call(
+                    ["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
+                    stdout=devnull,
+                    stderr=devnull,
+                )
+                self.process.wait()
         else:
             try:
                 os.kill(self.process.pid, signal.SIGTERM)
