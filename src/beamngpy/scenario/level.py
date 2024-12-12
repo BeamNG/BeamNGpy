@@ -1,13 +1,3 @@
-"""
-.. module:: beamng
-    :platform: Windows
-    :synopsis: Contains level-related classes.
-    :noindex:
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
-"""
-
 from __future__ import annotations
 
 from logging import DEBUG, getLogger

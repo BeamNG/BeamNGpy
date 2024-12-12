@@ -1,15 +1,3 @@
-"""
-.. module:: scenario
-    :platform: Windows
-    :synopsis: Contains the main :py:class:`.beamngpy.Scenario` class used to
-               define scenarios.
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
-.. moduleauthor:: Sedonas <https://github.com/Sedonas>
-.. moduleauthor:: Adam Ivora <aivora@beamng.gmbh>
-"""
-
 from __future__ import annotations
 
 import copy

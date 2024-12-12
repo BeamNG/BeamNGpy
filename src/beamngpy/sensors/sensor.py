@@ -1,15 +1,4 @@
 """
-.. module:: sensors
-    :platform: Windows
-    :synopsis: Module containing the various sensors one can attach to a
-               vehicle.
-    :noindex:
-
-.. moduleauthor:: Marc Müller <mmueller@beamng.gmbh>
-.. moduleauthor:: Pascale Maul <pmaul@beamng.gmbh>
-.. moduleauthor:: Sedonas <https://github.com/Sedonas>
-.. moduleauthor:: Dave Stark <dstark@beamng.gmbh>
-
 This module implements various sensors that can be attached to vehicles to
 extract data from simulations.
 """
