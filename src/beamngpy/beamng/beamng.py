@@ -9,9 +9,18 @@ from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, List
 
-from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
-                                 EnvironmentApi, ScenarioApi, SettingsApi,
-                                 SystemApi, TrafficApi, UiApi, VehiclesApi)
+from beamngpy.api.beamng import (
+    CameraApi,
+    ControlApi,
+    DebugApi,
+    EnvironmentApi,
+    ScenarioApi,
+    SettingsApi,
+    SystemApi,
+    TrafficApi,
+    UiApi,
+    VehiclesApi,
+)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError
@@ -170,7 +179,9 @@ class BeamNGpy:
                 "BeamNGpy successfully connected to existing BeamNG instance."
             )
             if extensions:
-                cmd = ';'.join((f'extensions.load(\'{extension}\')' for extension in extensions))
+                cmd = ";".join(
+                    (f"extensions.load('{extension}')" for extension in extensions)
+                )
                 self.control.queue_lua_command(cmd)
         elif launch:
             self.logger.info("Opening BeamNGpy instance.")
@@ -180,8 +191,6 @@ class BeamNGpy:
                 debug = self._debug
             if debug == True:
                 arg_list.append("-tcom-debug")
-            elif debug == False:
-                arg_list.append("-no-tcom-debug")
             arg_list.extend(("-tcom-listen-ip", listen_ip))
 
             self._start_beamng(extensions, *arg_list, **opts)
@@ -321,7 +330,11 @@ class BeamNGpy:
                 self.control.quit_beamng()
                 self.connection.disconnect()
                 self.connection = None
-            except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError):
+            except (
+                ConnectionResetError,
+                ConnectionAbortedError,
+                ConnectionRefusedError,
+            ):
                 self.connection = None
         if not self.process:
             self.logger.info(
@@ -375,17 +388,18 @@ class BeamNGpy:
         if extensions is None:
             extensions = []
 
-        extensions.insert(0, "tech/techCore")
         lua = "extensions.load('{}');" * len(extensions)
-        lua = lua.format(*extensions) + f"tech_techCore.openServer({self.port})"
-        call = [binary, "-nosteam"]
+        lua = lua.format(*extensions)
+        call = [binary, "-nosteam", "-tcom", "-tport", str(self.port)]
         if platform.system() != "Linux":  # console is not supported for Linux hosts yet
             call.append("-console")
 
         for arg in args:
             call.append(arg)
 
-        call_opts = {"lua": lua}
+        call_opts = {}
+        if lua:
+            call_opts["lua"] = lua
         if "lua" in usr_opts.keys():
             call_opts["lua"] = usr_opts["lua"]
 
