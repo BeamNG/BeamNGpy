@@ -118,7 +118,7 @@ class Lidar(CommBase):
         self.is_streaming = is_streaming
         self.point_cloud_shmem_size = MAX_LIDAR_POINTS * 3 * 4
         self.point_cloud_shmem: BNGSharedMemory | None = None
-        self.colour_shmem_size = MAX_LIDAR_POINTS * 4
+        self.colour_shmem_size = MAX_LIDAR_POINTS * 3
         self.colour_shmem: BNGSharedMemory | None = None
         if is_using_shared_memory:
             self.point_cloud_shmem = BNGSharedMemory(self.point_cloud_shmem_size)
@@ -192,8 +192,8 @@ class Lidar(CommBase):
         # Format the corresponding colour data.
         colours = np.frombuffer(binary["colours"], dtype=np.uint8)
         if self.is_streaming:
-            colours = colours[: 4 * n_points]
-        processed_readings["colours"] = colours.reshape((-1, 4)).copy()  # rgba
+            colours = colours[: 3 * n_points]
+        processed_readings["colours"] = colours.reshape((-1, 3)).copy()  # rgb
 
         return processed_readings
 
