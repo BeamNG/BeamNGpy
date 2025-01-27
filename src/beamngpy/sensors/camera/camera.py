@@ -176,6 +176,7 @@ class Camera(CommBase):
         self.integer_depth = integer_depth
 
         if self.postprocess_depth:
+            integer_depth = False
             self.integer_depth = False  # depth postprocessing needs full precision
 
         # Set up the shared memory for this sensor, if requested.
