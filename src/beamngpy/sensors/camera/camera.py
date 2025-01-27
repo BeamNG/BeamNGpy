@@ -51,7 +51,8 @@ class Camera(CommBase):
         postprocess_depth: If True, the raw depth data will be postprocessed to better represent values with middle intensity. Defaults to False,
                            as the postprocessing is computationally intensive.
         is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
-        integer_depth: TODO
+        integer_depth: If True, depth values will be quantized to the integer range 0-255. If False, depth values will be sent as 32-bit floats in the range
+                       of 0.0-1.0. Will be set to False is ``postprocess_depth=True`` as full precision is needed for postprocessing. Defaults to True.
     """
 
     @staticmethod
@@ -277,7 +278,10 @@ class Camera(CommBase):
             raw_data: The 1D buffer to be processed.
             width: The width of the image to be rendered.
             height: The height of the image to be rendered.
-            palette: TODO
+            palette: Whether the bitmap uses a palette format. If True, then the first
+                     byte N represents number of palette colors, followed by N RGBA colors,
+                     followed by bytes in range [0; N) representing pixels. If N=0,
+                     then there is no palette included and RGB pixels in range [0, 255] follow.
 
         Returns:
             The processed image.
