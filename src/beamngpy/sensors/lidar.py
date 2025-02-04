@@ -185,6 +185,7 @@ class Lidar(CommBase):
         # Format the point cloud data.
         floats = np.frombuffer(binary["pointCloud"], dtype=np.float32)
         if self.is_streaming:
+            
             # Add safety checks
             if len(floats) < 1:
                 processed_readings["pointCloud"] = np.empty(0, dtype=np.float32)
