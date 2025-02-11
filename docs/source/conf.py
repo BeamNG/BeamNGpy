@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # -- Project information -----------------------------------------------------
 
 project = "BeamNGpy"
-copyright = "2024, BeamNG GmbH"
+copyright = "2025, BeamNG GmbH"
 author = "BeamNG GmbH"
 
 
