@@ -1,0 +1,14 @@
+default:
+  image: python:3.11
+  tags:
+    - docker
+
+deploy-pages:
+  script:
+    - bash docs/build.sh
+  pages: true  # specifies that this is a Pages job
+  artifacts:
+    paths:
+      - docs/build
+  only:
+    - docs-multiversion
