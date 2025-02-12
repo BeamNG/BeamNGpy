@@ -5,6 +5,8 @@ default:
 
 deploy-pages:
   stage: deploy
+  variables:
+    USE_DEV_BRANCH: "true"
   script:
     - bash docs/build.sh
   pages: true  # specifies that this is a Pages job
