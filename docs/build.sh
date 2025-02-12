@@ -6,6 +6,9 @@ set -eo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR"
 
+# Add relevant branches locally
+git fetch origin master:master
+
 # Build docs
 pip install -r source/requirements.txt
 sphinx-multiversion source build
