@@ -26,6 +26,7 @@ Build all versions:
 ```
 cd docs
 sphinx-multiversion source build
+cp root_template.html build/index.html
 ```
 
 Note: Some older version tags will be ignored because the directory structure of the `docs` directory changed at some point.
