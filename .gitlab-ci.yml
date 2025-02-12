@@ -4,9 +4,11 @@ default:
     - docker
 
 deploy-pages:
+  stage: deploy
   script:
     - bash docs/build.sh
-  pages: true  # specifies that this is a Pages job
+  pages:
+    publish: docs/build
   artifacts:
     paths:
       - docs/build
