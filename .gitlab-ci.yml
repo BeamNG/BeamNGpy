@@ -7,8 +7,8 @@ deploy-pages:
   stage: deploy
   script:
     - bash docs/build.sh
-  pages:
-    publish: docs/build
+  pages: true  # specifies that this is a Pages job
+  publish: docs/build  # should be nested under "pages" property starting from GitLab 17.9
   artifacts:
     paths:
       - docs/build
