@@ -27,7 +27,13 @@ author = "BeamNG GmbH"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx_rtd_theme", "m2r2"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx_rtd_theme",
+    "m2r2",
+    "sphinx_multiversion",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -73,3 +79,7 @@ autodoc_type_aliases = {
     "Quat": "Quat",
     "Color": "Color",
 }
+
+# -- Multi-version config ----------------------------------------------------
+smv_tag_whitelist = r'^v.*$'
+smv_branch_whitelist = r'^(master|dev)$'
