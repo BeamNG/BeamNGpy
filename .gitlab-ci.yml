@@ -6,6 +6,7 @@ default:
 deploy-pages:
   stage: deploy
   variables:
+    GIT_STRATEGY: clone  # use fresh clone of repository (avoiding any old branches)
     USE_DEV_BRANCH: "false"
   script:
     - bash docs/build.sh
