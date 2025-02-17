@@ -2,15 +2,13 @@ BeamNG ROS Integration
 **********************
 
 To support the interoperability between BeamNG.tech and ROS we published the BeamNG ROS Integration.
-It is an independent ROS package that translates a range of BeamNGpy features to the ROS framework. `beamng-ros-integration <https://github.com/BeamNG/beamng-ros-integration>`_ is an repository contains packages to support the interoperability between BeamNG.tech and ROS 1 distributions Melodic Morenia and Noetic Ninjemys.
+It is an independent ROS package that translates a range of BeamNGpy features to the ROS framework. `beamng-ros-integration <https://github.com/BeamNG/beamng-ros-integration>`_ is a repository that contains packages to support the interoperability between BeamNG.tech and ROS 1 distributions Melodic Morenia and Noetic Ninjemys.
 
-Basic ROS functionality are included i.e., sensors streaming, `Rviz <http://wiki.ros.org/rviz>`_ simulation, direct keyboard control (Teleop). ROS topics for Sensor Suite:  multiple filters of the camera (Annotated, instance, Depth, and RGB), 3D Lidar, Ultrasonic, IMU, and vehicle electrics (speed, fuel, temperature, gear, signals, lights, etc).
-
+Basic ROS functionality is included, i.e., sensors streaming, `Rviz <http://wiki.ros.org/rviz>`_ simulation, direct keyboard control (Teleop). ROS topics for Sensor Suite: multiple filters of the camera (Annotated, instance, Depth, and RGB), 3D Lidar, Ultrasonic, IMU, and vehicle electrics (speed, fuel, temperature, gear, signals, lights, etc).
 
 - Installation Prerequisites:
 
-you must have the following softwares/packages installed i.e., `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_, `BeamNGpy <https://pypi.org/project/beamngpy/>`__,and `WSL2 <https://jack-kawell.com/2020/06/12/ros-wsl2/>`_.
-
+  You must have the following software/packages installed: `BeamNG.Tech <https://documentation.beamng.com/beamng_tech/>`_, `BeamNGpy <https://pypi.org/project/beamngpy/>`_, and `WSL2 <https://jack-kawell.com/2020/06/12/ros-wsl2/>`_.
 
 ROS packages
 ^^^^^^^^^^^^
@@ -282,12 +280,11 @@ Note that although the bounding_box option is given, this feature is still under
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``name``            | String           | Unique sensor id.                                                                     | Mandatory  |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``position``        | Array            | Array of 3 floats, specifying the ``x``, ``y``, and ``x`` position of the sensor.     | Mandatory  |
+|``position``        | Array            | Array of 3 floats, specifying the ``x``, ``y``, and ``z`` position of the sensor.     | Mandatory  |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``orientation``     | Array            | Array of 4 floats, specifying the vehicle rotation quaternion                         | Mandatory  |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``resolution``      | Array            | Tuple of ints, defining the ``x`` and ``y`` resolution of                             | Optional   |
-|                    |                  | the resulting images.                                                                 |            |
+|``resolution``      | Array            | Tuple of ints, defining the ``x`` and ``y`` resolution of the resulting images.       | Optional   |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``fov``             | Integer          | Camera field of view.                                                                 | Optional   |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
@@ -299,8 +296,7 @@ Note that although the bounding_box option is given, this feature is still under
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
 |``instance``        | Boolean          | Dis-/Enables ground truth generation for instance annotation.                         | Optional   |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
-|``bounding_box``    | Boolean          | This feature is not supoprted at the moment                                           | Optional   |
-|                    |                  | and will be **automatically disabled**.                                               |            |
+|``bounding_box``    | Boolean          | This feature is not supported at the moment and will be **automatically disabled**.   | Optional   |
 +--------------------+------------------+---------------------------------------------------------------------------------------+------------+
 
 .. .. image:: https://github.com/BeamNG/BeamNGpy/raw/master/media/rqt_camera.png
