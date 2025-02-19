@@ -7,7 +7,7 @@ deploy-pages:
   stage: deploy
   variables:
     GIT_STRATEGY: clone  # use fresh clone of repository (avoiding any old branches)
-    USE_DEV_BRANCH: "false"
+    USE_DEV_BRANCH: "true"
   script:
     - bash docs/build.sh
   pages: true  # specifies that this is a Pages job
