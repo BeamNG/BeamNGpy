@@ -1,8 +1,0 @@
-PublishRoadNetwork
-==================
-This is a ROS service definition.
-
-**Source**
-
-.. literalinclude:: ../../../../../../beamng_msgs/srv/PublishRoadNetwork.srv
-
