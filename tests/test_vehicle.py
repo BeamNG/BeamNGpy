@@ -351,7 +351,5 @@ def test_part_configs(beamng: BeamNGpy):
         vehicle.set_part_config({"parts": config})
 
         current = vehicle.get_part_config()
-        # Only check parts that exist in the current configuration
-        for k, v in current["parts"].items():
-            if k in config:
-                assert v == config[k]
+        for k, v in config.items():
+            assert v == current["parts"][k]
