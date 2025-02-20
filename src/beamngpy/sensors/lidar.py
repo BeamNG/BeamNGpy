@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 # The maximum number of LiDAR points which can be used.
 # TODO: Make this more efficient by instead computing the number of LiDAR points based on the sensor parameter values.
-MAX_LIDAR_POINTS = 2000000
+MAX_LIDAR_POINTS = 3200000
 
 
 class Lidar(CommBase):
