@@ -73,6 +73,7 @@ def main():
     vehicle.ai.set_mode("disabled")
     bng.ui.show_hud()
     input("Press Enter to exit...")
+    bng.disconnect()
 
 
 if __name__ == "__main__":
