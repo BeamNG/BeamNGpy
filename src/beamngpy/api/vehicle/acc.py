@@ -11,7 +11,7 @@ class AccApi(VehicleApi):
         vehicle: An instance of a vehicle object.
     """
 
-    def start(self, sp: float, inputFlag: bool) -> None:
+    def start(self, vehid: str, sp: float, inputFlag: bool) -> None:
         """
         Starts ACC
 
@@ -21,6 +21,7 @@ class AccApi(VehicleApi):
         data = dict(
             type="LoadACC"
         )  # dict(type='LoadACC', speed=sp, debugFlag=inputFlag)
+        data["vid"] = vehid  # The vehicle’s ID
         data["speed"] = sp
         data["debugFlag"] = inputFlag
         self._send(data).ack("ACCloaded")
