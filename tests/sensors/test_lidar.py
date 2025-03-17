@@ -19,7 +19,7 @@ def validate_distribution(pointCloud):
 
     return count_difference < max_count / 5
 
-def test_polling(lidar: Lidar, is360: bool):
+def polling_test(lidar: Lidar, is360: bool, isRotate: bool):
     data_total = []
     prev_first_point = None
     data = None
@@ -32,28 +32,23 @@ def test_polling(lidar: Lidar, is360: bool):
         print("\nAutomatic polling attempt " + str(i + 1))
         data = lidar.poll()
         print("LiDAR point cloud data (automatic polling): ", data["pointCloud"])
-        if len(data["pointCloud"]) == 0:
-            print("FAIL: Point cloud empty")
-        else:
-            print("PASS: Point cloud is present")
-            if is360 and not validate_distribution(data["pointCloud"]):
-                print("FAIL: Point cloud data is not uniform.")
-            else:
-                print("PASS: Data is present and uniform")
-            if i != attempts - 1: prev_first_point = data["pointCloud"][0]
+        assert len(data["pointCloud"]) > 0
+        print("PASS: Point cloud is present")
 
-        data_total.append(len(data["pointCloud"]))
+        if is360:
+            assert validate_distribution(data["pointCloud"]), "360 point cloud data is not uniform."
+        print("PASS: Data is uniform")
+
+        if i != attempts - 1: prev_first_point = data["pointCloud"][0]
+        if not isRotate: data_total.append(len(data["pointCloud"]))
         print("LiDAR colour data (automatic polling): ", data["colours"])
 
-    if prev_first_point is not None and (data["pointCloud"][0] != prev_first_point).all():
-        print("PASS: Data gets updated")
-    else:
-        print("FAIL: Data doesn't get updated")
+    assert prev_first_point is not None and (data["pointCloud"][0] != prev_first_point).all(), "Point cloud doesn't get updated"
+    print("PASS: Point cloud gets updated")
 
-    if np.max(data_total) - np.min(data_total) > np.max(data_total) * 0.01:
-        print("FAIL: LiDAR point cloud data is inconsistent")
-    else:
-        print("PASS: LiDAR point cloud data is consistent")
+    if not isRotate:
+        assert np.max(data_total) - np.min(data_total) < np.max(data_total) * 0.01, "360 or static point cloud data is inconsistent"
+    print("PASS: LiDAR point cloud data is consistent")
 
     prev_first_point = None
 
@@ -75,27 +70,21 @@ def test_polling(lidar: Lidar, is360: bool):
         print("LiDAR point cloud data (ad-hoc polling): ", data["pointCloud"])
         print("LiDAR colour data (ad-hoc polling): ", data["colours"])
 
-        if len(data["pointCloud"]) > 0:
-            print("PASS: Ad-hoc point cloud present")
-            if i != attempts - 1: prev_first_point = data["pointCloud"][0]
-        else:
-            print("FAIL: Ad-hoc point cloud not present")
+        assert len(data["pointCloud"]) > 0, "Ad-hoc point cloud not present"
+        print("PASS: Ad-hoc point cloud present")
+        if i != attempts - 1: prev_first_point = data["pointCloud"][0]
 
-    if prev_first_point is not None and (data["pointCloud"][0] != prev_first_point).all():
-        print("PASS: Ad-hoc point cloud gets updated")
-    else:
-        print("FAIL: Ad-hoc point cloud get updated")
+    assert prev_first_point is not None and (data["pointCloud"][0] != prev_first_point).all(), "Ad-hoc point cloud doesn't get updated"
+    print("PASS: Ad-hoc point cloud gets updated")
 
-def test_negative_update(lidar: Lidar):
+def negative_update_test(lidar: Lidar):
     sleep(2)
     data = lidar.poll()
     print("LiDAR point cloud data (should be zeros): ", data["pointCloud"])
     print("LiDAR colour data (should be zeros): ", data["colours"])
 
-    if len(data["pointCloud"]) == 0 and len(data["colours"]) == 0:
-        print("PASS: No data is present")
-    else:
-        print("FAIL: Data is present")
+    assert len(data["pointCloud"]) == 0 and len(data["colours"]) == 0
+    print("PASS: No data is present")
 
 def test_lidar(beamng: BeamNGpy):
     with beamng as bng:
@@ -121,7 +110,7 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor which uses shared memory...")
 
         # Test the polling functionality of the LiDAR sensor, to make sure we retrieve the point cloud data via shared memory.
-        test_polling(lidar1, True)
+        polling_test(lidar1, True, False)
         lidar1.remove()
         print("LiDAR sensor removed.")
 
@@ -130,7 +119,7 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor which DOES NOT use shared memory...")
 
         # Test the polling functionality of the LiDAR sensor, to make sure we retrieve the point cloud data without shared memory.
-        test_polling(lidar2, True)
+        polling_test(lidar2, True, False)
         lidar2.remove()
         print("LiDAR sensor removed.")
 
@@ -139,7 +128,7 @@ def test_lidar(beamng: BeamNGpy):
         print(
             "Testing a LiDAR sensor with a negative requested update time (WITH shared memory)..."
         )
-        test_negative_update(lidar3)
+        negative_update_test(lidar3)
         lidar3.remove()
 
         # And the same again WITHOUT shared memory.
@@ -153,7 +142,7 @@ def test_lidar(beamng: BeamNGpy):
         print(
             "Testing a LiDAR sensor with a negative requested update time (WITHOUT shared memory)..."
         )
-        test_negative_update(lidar4)
+        negative_update_test(lidar4)
         lidar4.remove()
 
         # Create a LiDAR sensor that works in LFO mode
@@ -161,7 +150,7 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor in LFO mode...")
 
         # Test the polling functionality of the LiDAR sensor in LFO mode.
-        test_polling(lidar5, False)
+        polling_test(lidar5, False, True)
         lidar5.remove()
         print("LiDAR sensor removed.")
 
@@ -170,7 +159,7 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor in static mode...")
 
         # Test the polling functionality of the LiDAR sensor in LFO mode.
-        test_polling(lidar6, False)
+        polling_test(lidar6, False, False)
         lidar6.remove()
         print("LiDAR sensor removed.")
 
@@ -231,10 +220,5 @@ if __name__ == "__main__":
     set_up_simple_logging()
 
     # Start up the simulator.
-    print("Starting DX11 test")
-    bng = BeamNGpy("localhost", 25252, is_vulkan=False)
+    bng = BeamNGpy("localhost", 25252)
     test_lidar(bng)
-    print("DX11 test complete.\n\nStarting Vulkan test")
-    bng = BeamNGpy("localhost", 25252, is_vulkan=True)
-    test_lidar(bng)
-    print("Vulkan test complete")

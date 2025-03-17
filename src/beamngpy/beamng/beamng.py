@@ -110,7 +110,6 @@ class BeamNGpy:
         user: str | None = None,
         quit_on_close: bool = True,
         debug: bool | None = None,
-        is_vulkan: bool | None = None,
     ):
         self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
         self.logger.setLevel(logging.DEBUG)
@@ -122,7 +121,6 @@ class BeamNGpy:
         self.process = None
         self.quit_on_close = quit_on_close
         self._debug = debug
-        self._is_vulkan = is_vulkan
         self.connection: Connection | None = None
         self._scenario: Scenario | None = None
         self._host_os: str | None = None
@@ -462,12 +460,7 @@ class BeamNGpy:
         self.logger.info("Started BeamNG.")
 
     def __enter__(self):
-        if self._is_vulkan is None:
-            self.open()
-        elif self._is_vulkan == True:
-            self.open(None, "-gfx", "vk")
-        else:
-            self.open(None, "-gfx", "dx11")
+        self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
