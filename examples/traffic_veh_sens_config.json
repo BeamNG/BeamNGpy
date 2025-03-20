@@ -1,0 +1,3 @@
+{
+  "data":"a{3A6configB29vehicles/etk800/854_190d_A.pcA7sensors[1{22B14updatePriority-0B20rangeDirectMaxCutoff-10B22rangeCutoffSensitivity-0A3pos^-2.0448608398438=0.32918813824654-0.60805118083954A4nameB12Ultrasonic 1A4typeB10ultrasonicA4size[2-200-200A2id-9B14rangeRoundness=2B14rangeMinCutoff-0.10000000149012B12isVisualised|B13nearFarPlanes[2-0.10000000149012-11B17isSnappingDesired~B10rangeShape-0.090000003576279B11sensitivity-0.10000002384186A2up^-0-0-1B10updateTime-0.050000000745058B15fixedWindowSize-10A6isLive|B10rangeFocus-0.68599998950958A4fovY-70A3dir^-1-0-0A5jBeamA6etk800~"
+}
