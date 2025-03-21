@@ -524,7 +524,7 @@ class Vehicle:
         part.
 
         Returns:
-            The current vehicle configuration as a dictionary.
+            The current vehicle configuration tree as a dictionary.
         """
         return self._ge_api.get_part_config()
 

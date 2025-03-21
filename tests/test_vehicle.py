@@ -330,6 +330,18 @@ def test_traffic(beamng: BeamNGpy):
         finally:
             bng.control.resume()
 
+def _get_parts_from_part_config_tree(config):
+    parts = {}
+    nodes = [config['partsTree']]
+    while nodes:
+        node = nodes.pop()
+        if not 'id' in node:
+            continue
+        parts[node['id']] = node.get('chosenPartName')
+        children = node.get('children', {})
+        if len(children) > 0:
+            nodes.extend(children.values())
+    return parts
 
 def test_part_configs(beamng: BeamNGpy):
     with beamng as bng:
@@ -351,5 +363,10 @@ def test_part_configs(beamng: BeamNGpy):
         vehicle.set_part_config({"parts": config})
 
         current = vehicle.get_part_config()
+        parts = _get_parts_from_part_config_tree(current)
         for k, v in config.items():
-            assert v == current["parts"][k]
+            assert v == parts[k]
+
+if __name__ == '__main__':
+    beamng = BeamNGpy('localhost', 25252)
+    test_part_configs(beamng)
