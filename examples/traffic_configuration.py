@@ -9,7 +9,7 @@ def main():
     beamng = BeamNGpy('localhost', 25252)
     bng = beamng.open()
 
-    traffic = TrafficConfig(bng, "C:/Users/igrga/AppData/Local/BeamNG.drive/0.35/", "/traffic_config_ex.json")
+    traffic = TrafficConfig(bng, "/traffic_config_ex.json")
     # With TrafficConfig.vehicles[vehicle name set from traffic configuration] you can access the related Vehicle object
     veh_sensors = VehicleSensorConfig("vehicle_sensors", bng, traffic.vehicles["etk"], "/traffic_veh_sens_config.json")
     map_sensors = MapSensorConfig("map_sensors", bng, "/traffic_map_sens_config.json")

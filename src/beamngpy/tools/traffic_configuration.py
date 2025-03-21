@@ -13,19 +13,18 @@ class TrafficConfig():
     A class used for loading traffic configurations.
     For traffic configurations with a set of vehicles/props with unique AI settings.
     """
-    def __init__(self, bng: BeamNGpy, home_path: str, config_path: str):
+    def __init__(self, bng: BeamNGpy, config_path: str):
         """
         Creates and starts a scenario based on the provided traffic configuration.
 
         Args:
-            home_path: The path of the BeamNG user folder (ex: 'C:/Users/user/AppData/Local/BeamNG.tech/0.35/')
             config_path: The BeamNG local path to the wanted traffic configuration file (ex: '/traffic.json')
         """
         self.logger = getLogger(f"{LOGGER_ID}.TrafficConfig")
         self.logger.setLevel(DEBUG)
 
         # load json as dict
-        with open(self.__merge_dir(home_path, config_path), "r", encoding="utf-8") as f:
+        with open(self.__merge_dir(bng.user, config_path), "r", encoding="utf-8") as f:
             self.json = json.load(f)
 
         scenario = Scenario(self.json["level"], self.json["name"])
@@ -50,13 +49,13 @@ class TrafficConfig():
                     self.vehicles[veh_data["name"]].ai_drive_in_lane(veh_data["aiData"]["driveInLane"])
                     self.vehicles[veh_data["name"]].ai_set_speed(veh_data["aiData"]["speed"], "limit")
                 elif veh_data["aiType"] == "script":
-                    self.vehicles[veh_data["name"]].ai.execute_script(self.__convert_json_trajectory(self.__merge_dir(home_path, veh_data["aiData"]["scriptFile"])))
+                    self.vehicles[veh_data["name"]].ai.execute_script(self.__convert_json_trajectory(self.__merge_dir(bng.user, veh_data["aiData"]["scriptFile"])))
                 self.vehicles[veh_data["name"]].ai_set_mode(veh_data["aiMode"])
 
         self.logger.info("Started scenario with AI")
 
-    def __merge_dir(self, home, other):
-        return home.rstrip('/') + '/' + other.lstrip('/')
+    def __merge_dir(self, user: str, other: str):
+        return user.replace('\\', '/') + other.lstrip('/')
 
     def __change_rotation(self, rot):
         # rotate 180 regrees to face forward
