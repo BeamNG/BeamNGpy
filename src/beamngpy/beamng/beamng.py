@@ -9,18 +9,9 @@ from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, List
 
-from beamngpy.api.beamng import (
-    CameraApi,
-    ControlApi,
-    DebugApi,
-    EnvironmentApi,
-    ScenarioApi,
-    SettingsApi,
-    SystemApi,
-    TrafficApi,
-    UiApi,
-    VehiclesApi,
-)
+from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
+                                 EnvironmentApi, ScenarioApi, SettingsApi,
+                                 SystemApi, TrafficApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError
@@ -229,6 +220,9 @@ class BeamNGpy:
 
     def _load_system_info(self) -> None:
         info = self.system.get_info()
+        paths = self.system.get_environment_paths()
+        self.home = paths['home']
+        self.user = paths['user']
         self._host_os = info["os"]["type"]
         self._tech_enabled = info["tech"]
 
