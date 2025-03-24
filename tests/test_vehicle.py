@@ -8,7 +8,7 @@ import pytest
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat, sensors
 from beamngpy.logging import BNGValueError
-from beamngpy.types import Float3
+from beamngpy.types import Float3, StrDict
 
 
 def test_get_available_vehicles(beamng: BeamNGpy):
@@ -330,14 +330,25 @@ def test_traffic(beamng: BeamNGpy):
         finally:
             bng.control.resume()
 
-def _get_parts_from_part_config_tree(config):
+def _generate_random_config(options: StrDict):
+    nodes = [options['partsTree']]
+    while nodes:
+        node = nodes.pop()
+        node['chosenPartName'] = random.choice(node['suitablePartNames'])
+        node['decisionMethod'] = 'user'
+        children = node.get('children', {})
+        if len(children) > 0:
+            nodes.extend(children.values())
+    return options
+
+def _flatten_config_tree(config):
     parts = {}
     nodes = [config['partsTree']]
     while nodes:
         node = nodes.pop()
         if not 'id' in node:
             continue
-        parts[node['id']] = node.get('chosenPartName')
+        parts[node['path']] = node.get('chosenPartName')
         children = node.get('children', {})
         if len(children) > 0:
             nodes.extend(children.values())
@@ -353,19 +364,19 @@ def test_part_configs(beamng: BeamNGpy):
         bng.scenario.load(scenario)
         bng.scenario.start()
 
-        options = vehicle.get_part_options()
+        options = vehicle.get_part_config()
         assert len(options) > 0
 
-        config = {}
-        for k, v in options.items():
-            if k.startswith("etk800"):
-                config[k] = random.choice(v)
-        vehicle.set_part_config({"parts": config})
+        options = _generate_random_config(options)
+        vehicle.set_part_config(options)
 
         current = vehicle.get_part_config()
-        parts = _get_parts_from_part_config_tree(current)
-        for k, v in config.items():
-            assert v == parts[k]
+
+        options_flat =_flatten_config_tree(options)
+        current_flat = _flatten_config_tree(current)
+        for k, v in current_flat.items():
+            if k in options_flat:
+                assert v == options_flat[k]
 
 if __name__ == '__main__':
     beamng = BeamNGpy('localhost', 25252)
