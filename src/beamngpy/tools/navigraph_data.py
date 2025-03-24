@@ -17,6 +17,23 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
 
+class ExportOpenDriveMap(CommBase):
+
+    def __init__(self, bng: BeamNGpy,file_name):
+        """
+        Fetches the raw navigraph data from the simulator.
+
+        Args:
+            bng: The BeamNG instance.
+        """
+        super().__init__(bng, None)
+
+        self.logger = getLogger(f"{LOGGER_ID}.Road_Graph")
+        self.logger.setLevel(DEBUG)
+        # Get the road graph data for the current map.
+        self.send_recv_ge("ExportOpenDrive", filename=file_name)
+
+
 class NavigraphData(CommBase):
 
     def __init__(self, bng: BeamNGpy):
