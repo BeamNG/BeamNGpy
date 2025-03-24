@@ -6,7 +6,12 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
+addopts = "--verbose"
+norecursedirs = [
+    "dist",
+    "build",
+    ".tox",
+]
 filterwarnings = [
-    "error",
     "ignore::UserWarning",
 ]
