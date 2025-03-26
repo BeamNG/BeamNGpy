@@ -168,6 +168,8 @@ class Mesh(CommBase):
 
         # Send and receive a request for readings data from this sensor.
         self.raw_data = self._poll_mesh_VE()
+        if len(self.raw_data) == 0:
+            return {}
 
         # Convert dict indices to int.
         self.node_positions = {}
