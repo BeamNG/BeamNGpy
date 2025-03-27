@@ -222,7 +222,8 @@ class BeamNGpy:
         info = self.system.get_info()
         paths = self.system.get_environment_paths()
         self.home = paths['home']
-        self.user = paths['user']
+        self.user_with_version = paths['user']
+        self.user = str(Path(self.user_with_version).parent)
         self._host_os = info["os"]["type"]
         self._tech_enabled = info["tech"]
 
