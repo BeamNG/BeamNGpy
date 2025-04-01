@@ -1,9 +1,10 @@
 from time import sleep
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging, angle_to_quat
-from beamngpy.sensors import IdealRadar
-
 import matplotlib.pyplot as plt
+
+from beamngpy import (BeamNGpy, Scenario, Vehicle, angle_to_quat,
+                      set_up_simple_logging)
+from beamngpy.sensors import IdealRadar
 
 
 def main():
@@ -96,6 +97,7 @@ def main():
             listtime3rd.append(latest_reading["time"])
         sleep(1.0)
 
+    bng.ui.show_hud()
     bng.disconnect()
 
     # Plot the data

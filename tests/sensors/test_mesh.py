@@ -40,6 +40,7 @@ def test_mesh(beamng: BeamNGpy, steps: int = 3):
             mesh.force_direction_plot(data["nodes"])
             mesh.velocity_distribution_plot(data["nodes"])
             mesh.velocity_direction_plot(data["nodes"])
+        bng.ui.show_hud()
 
 
 if __name__ == "__main__":

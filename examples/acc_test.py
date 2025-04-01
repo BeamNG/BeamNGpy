@@ -1,9 +1,10 @@
 from time import sleep
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging, angle_to_quat
-from beamngpy.sensors import IdealRadar, State
-
 import matplotlib.pyplot as plt
+
+from beamngpy import (BeamNGpy, Scenario, Vehicle, angle_to_quat,
+                      set_up_simple_logging)
+from beamngpy.sensors import IdealRadar, State
 
 
 def main():
@@ -80,7 +81,8 @@ def main():
           velx_veh2.append(vel_veh2['x'])
           vely_veh2.append(vel_veh2['y'])
         sleep(1.0)
-    bng.close()
+    bng.ui.show_hud()
+    bng.disconnect()
 
     # Plot the data
     print("data plot...")

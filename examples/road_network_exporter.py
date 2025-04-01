@@ -1,5 +1,6 @@
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.tools import OpenDriveExporter, OpenStreetMapExporter, SumoExporter
+from beamngpy.tools import (OpenDriveExporter, OpenStreetMapExporter,
+                            SumoExporter)
 
 
 def main():
@@ -33,6 +34,7 @@ def main():
 
     # Execute the simulation until user is finished.  The data file(s) have been written.
     print("Road network data exported.")
+    bng.ui.show_hud()
     input("Press Enter to exit...")
 
 

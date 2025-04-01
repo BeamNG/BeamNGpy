@@ -46,6 +46,7 @@ def main():
 
     config.remove()
     print("Scenario finished.")
+    bng.ui.show_hud()
     input("Press Enter to exit...")
 
 

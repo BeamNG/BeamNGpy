@@ -45,7 +45,8 @@ def main():
         mesh.velocity_distribution_plot(data["nodes"])
         mesh.velocity_direction_plot(data["nodes"])
 
-    bng.close()
+    bng.ui.show_hud()
+    bng.disconnect()
 
 
 if __name__ == "__main__":

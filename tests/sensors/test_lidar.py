@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from time import sleep
+
 import numpy as np
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Lidar
+
 
 def validate_distribution(pointCloud):
     x, y = pointCloud[:, 0], pointCloud[:, 1]
@@ -212,6 +214,7 @@ def test_lidar(beamng: BeamNGpy):
 
         sleep(3)
         print("LiDAR test complete.")
+        bng.ui.show_hud()
 
 
 # Executing this file will perform various tests on all available functionality relating to the LiDAR sensor.
