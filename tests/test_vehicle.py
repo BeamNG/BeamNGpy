@@ -334,7 +334,8 @@ def _generate_random_config(options: StrDict):
     nodes = [options['partsTree']]
     while nodes:
         node = nodes.pop()
-        node['chosenPartName'] = random.choice(node['suitablePartNames'])
+        if node['suitablePartNames']:
+            node['chosenPartName'] = random.choice(node['suitablePartNames'])
         node['decisionMethod'] = 'user'
         children = node.get('children', {})
         if len(children) > 0:
@@ -379,5 +380,5 @@ def test_part_configs(beamng: BeamNGpy):
                 assert v == options_flat[k]
 
 if __name__ == '__main__':
-    beamng = BeamNGpy('localhost', 25252)
+    beamng = BeamNGpy('localhost', 25252, quit_on_close=False)
     test_part_configs(beamng)
