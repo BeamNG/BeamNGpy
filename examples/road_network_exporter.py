@@ -1,6 +1,5 @@
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.tools import (OpenDriveExporter, OpenStreetMapExporter,
-                            SumoExporter)
+from beamngpy.tools import OpenDriveExporter, OpenStreetMapExporter, SumoExporter
 
 
 def main():
@@ -36,6 +35,7 @@ def main():
     print("Road network data exported.")
     bng.ui.show_hud()
     input("Press Enter to exit...")
+    bng.disconnect()
 
 
 if __name__ == "__main__":

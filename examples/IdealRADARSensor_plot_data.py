@@ -2,8 +2,7 @@ from time import sleep
 
 import matplotlib.pyplot as plt
 
-from beamngpy import (BeamNGpy, Scenario, Vehicle, angle_to_quat,
-                      set_up_simple_logging)
+from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat, set_up_simple_logging
 from beamngpy.sensors import IdealRadar
 
 
@@ -51,6 +50,7 @@ def main():
 
     print("Collecting ideal RADAR readings...")
     vehicle2.ai.set_mode("traffic")
+    vehicle1.ai.drive_in_lane(True)
     vehicle1.ai.set_mode("follow")
 
     sleep(3.0)

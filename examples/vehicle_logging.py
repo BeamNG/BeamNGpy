@@ -1,5 +1,6 @@
-from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat
 from time import sleep
+
+from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat
 
 
 def main():
@@ -32,8 +33,9 @@ def main():
     vehicle.logging.stop()
     vehicle.ai.set_mode("disabled")
     beamng.ui.show_hud()
-    print("Vehicle data saved to userfolder.")
+    print(f"Vehicle data saved to {beamng.user_with_version}.")
     input("Press Enter to exit...")
+    beamng.disconnect()
 
 
 if __name__ == "__main__":

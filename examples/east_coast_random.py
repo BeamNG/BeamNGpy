@@ -29,7 +29,7 @@ def main():
 
     # Create a scenario in east_coast_usa
     scenario = Scenario(
-        "east_coast_usa", "tech_test", description="Random driving for research"
+        "east_coast_usa", "east_coast_random", description="Random driving for research"
     )
 
     # Set up first vehicle, with two cameras, gforces sensor, lidar, electrical
@@ -133,6 +133,7 @@ def main():
         print("Scenario finished!")
         bng.control.resume()
         bng.ui.show_hud()
+        bng.disconnect()
         input("Press Enter to exit...")
 
 

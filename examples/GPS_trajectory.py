@@ -1,9 +1,9 @@
 from time import sleep
 
+import matplotlib.pyplot as plt
+
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import GPS
-
-import matplotlib.pyplot as plt
 
 
 def main():
@@ -88,6 +88,7 @@ def main():
     plt.legend(["GPS front", "GPS rear"])
     plt.show()
 
+    bng.disconnect()
     input("Press Enter to exit...")
 
 
