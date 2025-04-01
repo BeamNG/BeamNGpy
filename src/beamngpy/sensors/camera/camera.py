@@ -401,6 +401,8 @@ class Camera(CommBase):
             if binary.get("depth") is None or len(binary["depth"]) == 0:
                 processed_readings["depth"] = None
             else:
+                if type(binary["depth"]) == str:
+                    binary["depth"] = binary["depth"].encode()
                 if self.integer_depth:
                     depth = np.frombuffer(binary["depth"], dtype=np.uint8)
                 else:
