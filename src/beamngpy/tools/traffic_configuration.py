@@ -25,7 +25,7 @@ class TrafficConfig:
         self.logger.setLevel(DEBUG)
 
         # load json as dict
-        with open(self.__merge_dir(bng.user, config_path), "r", encoding="utf-8") as f:
+        with open(self.__merge_dir(bng.user_with_version, config_path), "r", encoding="utf-8") as f:
             self.json = json.load(f)
 
         scenario = Scenario(self.json["level"], self.json["name"])
@@ -67,7 +67,7 @@ class TrafficConfig:
                 elif veh_data["aiType"] == "script":
                     self.vehicles[veh_data["name"]].ai.execute_script(
                         self.__convert_json_trajectory(
-                            self.__merge_dir(bng.user, veh_data["aiData"]["scriptFile"])
+                            self.__merge_dir(bng.user_with_version, veh_data["aiData"]["scriptFile"])
                         )
                     )
                 self.vehicles[veh_data["name"]].ai_set_mode(veh_data["aiMode"])
