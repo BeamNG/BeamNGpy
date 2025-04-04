@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.32
+============
+- 
+
 Version 1.31
 ============
 - Changed the default BeamNGpy TCP port to a non-ephemeral port **25252**. This should fix the "permission denied" error while trying to open a BeamNGpy connection. Please update your scripts appropriately (you can keep using the previous default port 64256 without issues).

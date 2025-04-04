@@ -178,24 +178,15 @@ BeamNG.tech is also customizable with various command-line arguments. Check the 
 BeamNG.tech is not a finished product but is still under development.
 Thus frequent changes on the simulation side are to be expected.
 While the BeamNGpy library maintains compatibility between minor versions for the user, this doesn't extend to the BeamNG.tech side. Not all BeamNGpy versions are compatible with all BeamNG.tech versions.
-Below is a list of compatible BeamNG.tech and BeamNGpy versions.
+Below is a list of recent compatible BeamNG.tech and BeamNGpy versions. For older versions check [COMPATIBILITY.md](COMPATIBILITY.md).
 However, we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
+| 0.35                | [1.32](https://github.com/BeamNG/BeamNGpy/tree/v1.32)     |
 | 0.34                | [1.31](https://github.com/BeamNG/BeamNGpy/tree/v1.31)     |
 | 0.33                | [1.30](https://github.com/BeamNG/BeamNGpy/tree/v1.30)     |
 | 0.32                | [1.29](https://github.com/BeamNG/BeamNGpy/tree/v1.29)     |
-| 0.31                | [1.28](https://github.com/BeamNG/BeamNGpy/tree/v1.28)     |
-| 0.30                | [1.27.1](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1) |
-| 0.28, 0.29          | [1.26.1](https://github.com/BeamNG/BeamNGpy/tree/v1.26.1) |
-| 0.27                | [1.25.1](https://github.com/BeamNG/BeamNGpy/tree/v1.25.1) |
-| 0.26                | [1.24](https://github.com/BeamNG/BeamNGpy/tree/v1.24)     |
-| 0.25                | [1.23.1](https://github.com/BeamNG/BeamNGpy/tree/v1.23.1) |
-| 0.24                | [1.22](https://github.com/BeamNG/BeamNGpy/tree/v1.22)     |
-| 0.23                | [1.21.1](https://github.com/BeamNG/BeamNGpy/tree/v1.21.1) |
-| 0.22                | [1.20](https://github.com/BeamNG/BeamNGpy/tree/v1.20)     |
-| 0.21                | [1.19.1](https://github.com/BeamNG/BeamNGpy/tree/v1.19.1) |
 
 ## Troubleshooting
 
