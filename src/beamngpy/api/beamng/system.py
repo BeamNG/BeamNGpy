@@ -32,8 +32,10 @@ class SystemApi(Api):
         """
         Returns the environment filesystem paths of the BeamNG simulator.
 
-        Returns:
-            A dictionary with the following keys:
+        Returns: 
+
+            A dictionary
+            with the following keys:
 
             * ``home``: The root directory of the simulator.
             * ``user``: The directory of the user path.

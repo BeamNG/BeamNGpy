@@ -63,6 +63,12 @@ class BeamNGpy:
 
     Attributes
     ----------
+        user: str
+            The user path of the simulator, automatically filled in after connecting to the
+            BeamNG instance with :func:`BeamNGpy.open`.
+        user_with_version: str
+            The user path of the simulator, including the version subdirectory, automatically
+            filled in after connecting to the BeamNG instance with :func:`BeamNGpy.open`.
         camera: CameraApi
             The API module to control the camera in the simulator.
             See :class:`.CameraApi` for details.
@@ -108,7 +114,8 @@ class BeamNGpy:
         self.port = port
         self.home = home
         self.binary = binary
-        self.user = user
+        self.user: str | None = user
+        self.user_with_version: str | None = None
         self.process = None
         self.quit_on_close = quit_on_close
         self._debug = debug

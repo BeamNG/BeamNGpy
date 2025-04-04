@@ -242,7 +242,7 @@ class Lidar(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary with values being the unprocessed bytes representing the RGBA data from the sensors and
+            A dictionary with values being the unprocessed bytes representing the RGB data from the sensors and
             the following keys
 
             * ``pointCloud``: The colour data.

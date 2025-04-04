@@ -30,6 +30,7 @@ author = "BeamNG GmbH"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx.ext.extlinks",
     "sphinx_rtd_theme",
     "m2r2",
     "sphinx_multiversion",
@@ -78,6 +79,16 @@ autodoc_type_aliases = {
     "Int3": "Int3",
     "Quat": "Quat",
     "Color": "Color",
+}
+
+# -- Extlinks options --------------------------------------------------------
+extlinks = {
+    'pydocs132': ('https://beamngpy.readthedocs.io/en/v1.32/beamngpy.html#%s', '%s'),
+    #'pydocs132': ('http://localhost:8000/beamngpy.html#beamngpy.%s', '%s'),
+    'repo132': ('https://github.com/BeamNG/BeamNGpy/blob/v1.32/beamng%s', '%s'),
+    'blog': ('https://beamng.tech/blog/%s', None),
+    'techdocs': ('https://docs.beamng.com/beamng_tech/%s', None),
+    'drivedocs': ('https://docs.beamng.com/%s', None),
 }
 
 # -- Multi-version config ----------------------------------------------------

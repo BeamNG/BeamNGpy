@@ -4,7 +4,23 @@ Changelog
 
 Version 1.32
 ============
-- 
+- Headless mode added and various Linux fixes, read the :blog:`BeamNG.tech 0.35 changelog <beamng-tech-035>` for details.
+- Added an 'Export to Python' button to Sensor Configuration Editors.
+- Optimized :pydocs132:`Scenario.sync_scene`.
+- Created optimized :pydocs132:`get_road_network <api.beamng.ScenarioApi.get_road_network>`, which replaces ``get_roads`` and ``get_road_edges``.
+- New command-line arguments ``-tcom`` and ``-tport`` are used to launch BeamNG, read the :techdocs:`documentation <arguments_and_settings/#connect-to-beamngpy>` for more details.
+- Optimized the :pydocs132:`Mesh sensor <mesh-sensor>` message size.
+- The :pydocs132:`Camera <camera>` and :pydocs132:`Lidar <lidar>` sensors were optimized to send RGB instead of RGBA data for colors.
+- Added the ``integer_depth`` parameter to the ``Camera`` sensor which quantizes depth data to 1 byte per pixel on BeamNG side.
+- Added the ``density`` parameter to the ``Lidar`` sensor used to control density of the point cloud.
+- Updated examples to prefer disconnecting from the simulator over closing it.
+- Added the adaptive cruise control API :pydocs132:`AccApi <api.vehicle.AccApi>`. Example available at :repo132:`examples/acc_test.py`.
+- Improved the Lidar tests.
+- Added :pydocs132:`BeamNGpy.system.get_environment_paths <api.beamng.SystemApi.get_environment_paths>` to get BeamNG environment paths at runtime. This is used to fill in the :pydocs132:`BeamNGpy.user` and :pydocs132:`BeamNGpy.user_with_version` fields after connecting to BeamNG.
+- Added the :pydocs132:`tools.TrafficConfig` tool for loading traffic configurations. Example available at :repo132:`examples/traffic_configuration.py`.
+- The :pydocs132:`Vehicle.get_part_config` and :pydocs132:`Vehicle.set_part_config` functions now use a tree of parts instead of a list. This is to conform with BeamNG's changes of the part/slot system (check out the :drivedocs:`docs <modding/vehicle/intro_jbeam/partslotsystem>`).
+- Deprecated :pydocs132:`Vehicle.get_part_options` because of the part configuration tree change.
+- Fixed a bug where some levels (Johnson Valley) could not be loaded using :pydocs132:`BeamNGpy.scenario.load`.
 
 Version 1.31
 ============
@@ -665,4 +681,3 @@ Version 0.1.2
 Version 0.1
 ===========
 - Basic IPC and example functions
-
