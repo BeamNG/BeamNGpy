@@ -111,7 +111,7 @@ using common methods like `pip`:
 
     pip install beamngpy
 
-If you use [Anaconda](https://www.anaconda.com/products/distribution#download-section), you can
+If you use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html), you can
 install BeamNGpy from the `conda-forge` channel by:
 
     conda install beamngpy -c conda-forge
@@ -131,7 +131,7 @@ if you installed it using `conda`.
 ## Usage
 
 **DISCLAIMER:** If you are using an older version of `beamngpy` and BeamNG.tech, please follow the
-instructions of the corresponding `README` file (for example, [1.27.1 instructions](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1)). If you are using the latest version of BeamNGpy, continue following the instructions located in this README file.
+instructions of the corresponding `README` file (for example, [1.27.1 instructions](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1)). If you are using the latest version of BeamNGpy, continue following the instructions located in the repository [README file](https://github.com/BeamNG/BeamNGpy).
 
 The library can be imported using `import beamngpy`. A short
 usage example setting up a scenario with one vehicle in the West Coast USA map
@@ -171,13 +171,17 @@ bng.disconnect()
 We have a [guide][6] helping you to get started and navigating our collection of examples and
 the documentation of the library is available [here][7].
 
+You can use BeamNGpy to spawn new BeamNG.tech processes or to connect to already launched instances ([learn more in documentation](https://documentation.beamng.com/beamng_tech/arguments_and_settings/#connect-to-beamngpy)).
+
 BeamNG.tech is also customizable with various command-line arguments. Check the [documentation][12] for reference.
 
 ## Compatibility
 
 BeamNG.tech is not a finished product but is still under development.
 Thus frequent changes on the simulation side are to be expected.
+
 While the BeamNGpy library maintains compatibility between minor versions for the user, this doesn't extend to the BeamNG.tech side. Not all BeamNGpy versions are compatible with all BeamNG.tech versions.
+
 Below is a list of recent compatible BeamNG.tech and BeamNGpy versions. For older versions check [COMPATIBILITY.md](COMPATIBILITY.md).
 However, we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
 
@@ -187,6 +191,7 @@ However, we do not maintain minor versions: bug fixes and new features will only
 | 0.34                | [1.31](https://github.com/BeamNG/BeamNGpy/tree/v1.31)     |
 | 0.33                | [1.30](https://github.com/BeamNG/BeamNGpy/tree/v1.30)     |
 | 0.32                | [1.29](https://github.com/BeamNG/BeamNGpy/tree/v1.29)     |
+| older               | [see here](COMPATIBILITY.md)                      |
 
 ## Troubleshooting
 
