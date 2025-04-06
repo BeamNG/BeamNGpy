@@ -10,17 +10,18 @@ from beamngpy.logging import LOGGER_ID
 
 class TrafficConfig:
     """
-    A class used for loading traffic configurations.
-    For traffic configurations with a set of vehicles/props with unique AI settings.
+    Creates and starts a scenario based on a traffic configuration save file.
+    Loads level with a set of vehicles/props with unique AI settings.
+
+    Vehicle objects, created by this tool, should be accessed like so: ``TrafficConfig.vehicles[<vehicle_name>]``
+
+    Args:
+            bng: The BeamNGpy instance, with which to communicate to the simulation.
+            config_path: The BeamNG local path to the wanted traffic configuration file (example: "/traffic.json")
+
     """
 
     def __init__(self, bng: BeamNGpy, config_path: str):
-        """
-        Creates and starts a scenario based on the provided traffic configuration.
-
-        Args:
-            config_path: The BeamNG local path to the wanted traffic configuration file (ex: '/traffic.json')
-        """
         self.logger = getLogger(f"{LOGGER_ID}.TrafficConfig")
         self.logger.setLevel(DEBUG)
 
