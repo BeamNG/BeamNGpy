@@ -36,4 +36,4 @@ cd "$LOCAL_REPO_PATH"
 git add --all
 git commit -m "Update $DOCUMENTATION_TARGET_PATH"
 git status
-#git push
+git push
