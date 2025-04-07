@@ -14,7 +14,9 @@ echo $DOCUMENTATION_TARGET_PATH
 mkdir -p ~/.ssh
 echo $DOCUMENTATION_SSH_PRIVATE_KEY > ~/.ssh/id_ed25519
 chmod 600 ~/.ssh/id_ed25519
-ssh-keyscan -t ed25519 $DOCUMENTATION_REPOSITORY >> ~/.ssh/known_hosts
+REPO_HOST=${DOCUMENTATION_REPOSITORY#*@}
+REPO_HOST=${REPO_HOST%:*}
+ssh-keyscan -t ed25519 $REPO_HOST >> ~/.ssh/known_hosts
 
 # Clone repository
 LOCAL_REPO_PATH="docs/production"
