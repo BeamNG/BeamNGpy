@@ -42,5 +42,4 @@ deploy-production:
     paths:
       - docs/build
   only:
-    #- master
-    - dev
+    - master
