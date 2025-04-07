@@ -1,6 +1,6 @@
 # BeamNGpy
 
-[![Documentation](https://img.shields.io/badge/Documentation-blue?logo=readthedocs&logoColor=white)](https://beamngpy.readthedocs.io/)
+[![Documentation](https://img.shields.io/badge/Documentation-blue?logo=readthedocs&logoColor=white)](https://documentation.beamng.com/api/beamngpy/)
 [![Repository](https://img.shields.io/badge/Repository-grey?logo=github&logoColor=white)](https://github.com/BeamNG/BeamNGpy)
 [![Releases](https://img.shields.io/badge/Package-grey?logo=python&logoColor=white)](https://pypi.org/project/beamngpy)
 
@@ -222,13 +222,13 @@ We always welcome user contributions, be sure to check out our [contribution gui
 The Python code is formatted using [Black](https://github.com/psf/black), please use it to
 format the code you want to contribute.
 
-[1]: https://beamngpy.readthedocs.io/en/latest/
+[1]: https://documentation.beamng.com/api/beamngpy/
 [2]: https://register.beamng.tech/
 [3]: mailto:licensing@beamng.gmbh
 [4]: https://store.steampowered.com/app/284160/BeamNGdrive/
 [5]: https://pypi.org/project/beamngpy/
 [6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/README.md
-[7]: https://beamngpy.readthedocs.io/en/latest/
+[7]: https://documentation.beamng.com/api/beamngpy/
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
 [10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb
