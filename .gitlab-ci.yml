@@ -7,7 +7,7 @@ stages:
   - build
   - deploy
 
-deploy-pages:
+build-pages:
   stage: build
   variables:
     GIT_STRATEGY: clone  # use fresh clone of repository (avoiding any old branches)
