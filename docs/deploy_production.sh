@@ -27,6 +27,7 @@ git config --global user.email "$DOCUMENTATION_GIT_EMAIL"
 # Copy artifacts
 DEST_PATH="$PWD/$LOCAL_REPO_PATH/$DOCUMENTATION_TARGET_PATH"
 rm -rf "$DEST_PATH"
+mkdir -p "$(dirname "$DEST_PATH")"
 cp -r "$DOCUMENTATION_ARTIFACTS_PATH" "$DEST_PATH"
 ls -al "$DEST_PATH"
 
