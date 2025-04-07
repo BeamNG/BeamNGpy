@@ -17,3 +17,25 @@ deploy-pages:
       - docs/build
   only:
     - dev
+
+deploy-production:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: clone  # use fresh clone of repository (avoiding any old branches)
+    USE_DEV_BRANCH: "false"
+    DOCUMENTATION_REPOSITORY: "REPLACE_ME"
+    DOCUMENTATION_BRANCH: "master"
+    DOCUMENTATION_SSH_PRIVATE_KEY: "$SSH_PRIVATE_KEY"
+    DOCUMENTATION_GIT_USERNAME: "$GITLAB_USER_NAME"
+    DOCUMENTATION_GIT_EMAIL: "$GITLAB_USER_EMAIL"
+    DOCUMENTATION_ARTIFACTS_PATH: "docs/build"
+    DOCUMENTATION_TARGET_PATH: "static/api/beamngpy"
+  script:
+    - bash docs/build.sh
+    - bash docs/deploy_production.sh
+  artifacts:
+    paths:
+      - docs/build
+  only:
+    #- master
+    - dev

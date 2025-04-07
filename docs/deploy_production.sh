@@ -1,0 +1,12 @@
+#!/bin/bash
+# Deploy script for documentation pages
+set -eo pipefail
+
+# Variables
+echo $DOCUMENTATION_REPOSITORY
+echo $DOCUMENTATION_BRANCH
+echo $DOCUMENTATION_GIT_USERNAME
+echo $DOCUMENTATION_GIT_EMAIL
+echo $DOCUMENTATION_ARTIFACTS_PATH
+echo $DOCUMENTATION_TARGET_PATH
+
