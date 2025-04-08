@@ -1,6 +1,6 @@
 # BeamNGpy
 
-[![Documentation](https://img.shields.io/badge/Documentation-blue?logo=readthedocs&logoColor=white)](https://documentation.beamng.com/api/beamngpy/)
+[![Documentation](https://img.shields.io/badge/Documentation-blue?logo=googledocs&logoColor=white)](https://documentation.beamng.com/api/beamngpy/)
 [![Repository](https://img.shields.io/badge/Repository-grey?logo=github&logoColor=white)](https://github.com/BeamNG/BeamNGpy)
 [![Releases](https://img.shields.io/badge/Package-grey?logo=python&logoColor=white)](https://pypi.org/project/beamngpy)
 
