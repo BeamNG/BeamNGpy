@@ -83,18 +83,16 @@ autodoc_type_aliases = {
 
 # -- Extlinks options --------------------------------------------------------
 extlinks = {
-    'pydocs132': ('https://documentation.beamng.com/api/beamngpy/v1.32/beamngpy.html#%s', '%s'),
-    #'pydocs132': ('http://localhost:8000/beamngpy.html#beamngpy.%s', '%s'),
-    'repo132': ('https://github.com/BeamNG/BeamNGpy/blob/v1.32/beamng%s', '%s'),
-    'pydocs131': ('https://documentation.beamng.com/api/beamngpy/v1.31/beamngpy.html#%s', '%s'),
-    'pydocs130': ('https://documentation.beamng.com/api/beamngpy/v1.30/beamngpy.html#%s', '%s'),
-    'pydocs129': ('https://documentation.beamng.com/api/beamngpy/v1.29/beamngpy.html#%s', '%s'),
-    'pydocs126': ('https://documentation.beamng.com/api/beamngpy/v1.26/beamngpy.html#%s', '%s'),
-    'blog': ('https://beamng.tech/blog/%s', None),
-    'techdocs': ('https://docs.beamng.com/beamng_tech/%s', None),
-    'drivedocs': ('https://docs.beamng.com/%s', None),
+    "pydocs": (
+        "beamngpy.html#%s",
+        "%s",
+    ),
+    "repo132": ("https://github.com/BeamNG/BeamNGpy/blob/v1.32/%s", "%s"),
+    "blog": ("https://beamng.tech/blog/%s", None),
+    "techdocs": ("https://docs.beamng.com/beamng_tech/%s", None),
+    "drivedocs": ("https://docs.beamng.com/%s", None),
 }
 
 # -- Multi-version config ----------------------------------------------------
-smv_tag_whitelist = r'^v.*$'
-smv_branch_whitelist = r'^(master|dev)$'
+smv_tag_whitelist = r"^v.*$"
+smv_branch_whitelist = r"^(master|dev)$"
