@@ -287,7 +287,7 @@ Version 1.25.1
 Version 1.25
 ============
 - Added type hints to the whole BeamNGpy codebase
-- Updated `documentation <https://beamngpy.readthedocs.io/en/latest/>`_ to be more readable
+- Updated `documentation <https://documentation.beamng.com/api/beamngpy/>`_ to be more readable
 
 - Modularized BeamNGpy API
 
@@ -308,7 +308,7 @@ Version 1.25
     - ``Vehicle.ai`` - controlling the AI of the vehicle
     - ``Vehicle.logging`` - controlling the in-game logging
   - the previous, not modularized API is still available for backwards compatibility reasons
-  - see more in the `documentation <https://beamngpy.readthedocs.io/en/latest/>`_
+  - see more in the `documentation <https://documentation.beamng.com/api/beamngpy/>`_
 
 - Advanced IMU sensor
 

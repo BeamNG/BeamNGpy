@@ -83,7 +83,7 @@ autodoc_type_aliases = {
 
 # -- Extlinks options --------------------------------------------------------
 extlinks = {
-    'pydocs132': ('https://beamngpy.readthedocs.io/en/v1.32/beamngpy.html#%s', '%s'),
+    'pydocs132': ('https://documentation.beamng.com/api/beamngpy/v1.32/beamngpy.html#%s', '%s'),
     #'pydocs132': ('http://localhost:8000/beamngpy.html#beamngpy.%s', '%s'),
     'repo132': ('https://github.com/BeamNG/BeamNGpy/blob/v1.32/beamng%s', '%s'),
     'blog': ('https://beamng.tech/blog/%s', None),
