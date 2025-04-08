@@ -26,7 +26,7 @@ Version 1.31
 ============
 - Changed the default BeamNGpy TCP port to a non-ephemeral port **25252**. This should fix the "permission denied" error while trying to open a BeamNGpy connection. Please update your scripts appropriately (you can keep using the previous default port 64256 without issues).
 - Various Linux fixes and a Docker template released, read the `BeamNG.tech 0.34 changelog <https://beamng.tech/blog/beamng-tech-034/>`__ for details.
-- New version of `RoadsSensor <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#roads-sensor>`__ with:
+- New version of :pydocs131:`RoadsSensor <roads-sensor>` with:
 
   - spline interpolation for road width
   - filtered heading error
@@ -40,13 +40,13 @@ Version 1.31
 - Fixed scenario loading on case-sensitive filesystems.
 - Fixed some issues related to blocking in the BeamNGpy protocol on Lua side.
 - Optimized TCP buffer copying on Lua side.
-- Fixed hanging caused by `BeamNGpy.scenario.start() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.start>`__ in some cases.
-- `BeamNGpy.control.queue_lua_command <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.queue_lua_command>`__ and `Vehicle.queue_lua_command <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle.queue_lua_command>`__ now accept the ``response`` argument to get Lua responses from the simulator.
-- `BeamNGpy.open <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.BeamNGpy.open>`__ now loads the extensions specified in the ``extensions`` argument also in the case the simulator was already open.
+- Fixed hanging caused by :pydocs131:`BeamNGpy.scenario.start() <beamngpy.api.beamng.ScenarioApi.start>` in some cases.
+- :pydocs131:`BeamNGpy.control.queue_lua_command <beamngpy.api.beamng.ControlApi.queue_lua_command>` and :pydocs131:`Vehicle.queue_lua_command <beamngpy.Vehicle.queue_lua_command>` now accept the ``response`` argument to get Lua responses from the simulator.
+- :pydocs131:`BeamNGpy.open <beamngpy.BeamNGpy.open>` now loads the extensions specified in the ``extensions`` argument also in the case the simulator was already open.
 - Fixed BeamNGpy examples which were using an invalid navigation waypoint on the ``west_coast_usa`` map.
-- Fixed `BeamNGpy.scenario.load <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.load>`__ when the scenario was located in a non-standard location.
+- Fixed :pydocs131:`BeamNGpy.scenario.load <beamngpy.api.beamng.ScenarioApi.load>` when the scenario was located in a non-standard location.
 - Fixed the `ai_line.py <https://github.com/BeamNG/BeamNGpy/blob/v1.31/examples/ai_line.py>`__ example to have an end.
-- `Vehicle.set_license_plate <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.VehiclesApi.set_license_plate>`__ now raises an error if the license plate cannot be set (when the "Dynamic license plates" option is disabled).
+- :pydocs131:`Vehicle.set_license_plate <beamngpy.api.beamng.VehiclesApi.set_license_plate>` now raises an error if the license plate cannot be set (when the "Dynamic license plates" option is disabled).
 - Fixed the `beamngpyDissector.lua <https://github.com/BeamNG/BeamNGpy/tree/v1.31/debug>`__ debug plugin to properly parse ``GetScenarios`` and other messages.
 - Updated most BeamNGpy examples.
 - Fixed the warnings related to resources cleanup (shared memory, sockets, processes) on closing.
@@ -64,25 +64,25 @@ Version 1.30
 
       - ``Radar`` sensor doesn't return any data on Vulkan
       - ``Camera`` sensor doesn't work correctly with annotations on
-- Added a new API for attaching and detaching couplers: `CouplersApi <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.vehicle.CouplersApi>`__.
-- Added a flag to disable `RoadsSensor <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#roads-sensor>`__ debug visualization.
-- Fixed `BeamNGpy.scenario.restart <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Scenario.restart>`__ breaking some keyboard shortcuts after calling it.
-- The `BeamNGpy <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.BeamNGpy>`__ and `Vehicle <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle>`__ objects are threadsafe now.
-- Fixed the `set_part_config <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle.set_part_config>`__ function losing the connection to the `Vehicle <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.Vehicle>`__ object
-- Fixed `Lidar <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#lidar>`__ with ``is_streaming=True``.
+- Added a new API for attaching and detaching couplers: :pydocs130:`CouplersApi <beamngpy.api.vehicle.CouplersApi>`.
+- Added a flag to disable :pydocs130:`RoadsSensor <roads-sensor>` debug visualization.
+- Fixed :pydocs130:`BeamNGpy.scenario.restart <beamngpy.Scenario.restart>` breaking some keyboard shortcuts after calling it.
+- The :pydocs130:`BeamNGpy <beamngpy.BeamNGpy>` and :pydocs130:`Vehicle <beamngpy.Vehicle>` objects are threadsafe now.
+- Fixed the :pydocs130:`set_part_config <beamngpy.Vehicle.set_part_config>` function losing the connection to the :pydocs130:`Vehicle <beamngpy.Vehicle>` object
+- Fixed :pydocs130:`Lidar <lidar>` with ``is_streaming=True``.
 - New tool for recording/replaying BeamNGpy protocol runs - `Tech Capture Player <https://documentation.beamng.com/beamng_tech/beamngpy/tools/capture_player/>`__.
 - New debugging tool for BeamNGpy communication - Wireshark plugin:
 
   - decodes all messages exchanged between BeamNGpy and BeamNG
   - included with instructions in the `debug <https://github.com/BeamNG/BeamNGpy/tree/v1.30/debug>`__ folder of the BeamNGpy repository
 - The ``determine_userpath`` function is skipped on Linux
-- Renamed the ``crash_lua_on_error`` argument of `BeamNGpy <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.BeamNGpy>`__ to ``debug``, as the argument also changes other behavior (it starts recording the Tech Captures).
+- Renamed the ``crash_lua_on_error`` argument of :pydocs130:`BeamNGpy <beamngpy.BeamNGpy>` to ``debug``, as the argument also changes other behavior (it starts recording the Tech Captures).
 
 Version 1.29
 ============
 - Added documentation on the sensors output signals.
-- Added the ``postprocess_depth`` flag to the `Camera <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#camera>`__ sensor, which makes the distinction of the depth image clearer, but is computationally intensive (off by default)
-- Added ``time`` as a field of the `State <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.sensors.State>`__ sensor, represents the current simulation time (which is different from the ``Timer`` sensor representing the time since the scenario start)
+- Added the ``postprocess_depth`` flag to the :pydocs129:`Camera <camera>` sensor, which makes the distinction of the depth image clearer, but is computationally intensive (off by default)
+- Added ``time`` as a field of the :pydocs129:`State <beamngpy.sensors.State>` sensor, represents the current simulation time (which is different from the ``Timer`` sensor representing the time since the scenario start)
 - Added new flag to automated sensors: ``is_dir_world_space``
 
   - ``False`` by default; if ``True``, then the ``dir`` argument of the sensors represents the world space direction instead of the vehicle space direction vector
@@ -90,9 +90,9 @@ Version 1.29
 - Updated `change_settings.py <https://github.com/BeamNG/BeamNGpy/blob/v1.29/examples/change_settings.py>`__ example with setting a windowed mode resolution
 - Examples changed to use the new Tech Ground level (``tech_ground``) instead of the Smallgrid (``smallgrid``). We encourage the users to use the Tech Ground level as the default flat level in BeamNG.tech for the improved support of annotations and materials.
 
-- `BeamNGpy.scenario.load <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ScenarioApi.load>`__ does not resume the physics anymore
+- :pydocs129:`BeamNGpy.scenario.load <beamngpy.api.beamng.ScenarioApi.load>` does not resume the physics anymore
 
-  - to pause the physics (`BeamNGpy.control.pause() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.pause>`__) and allow stepping (`BeamNGpy.control.step() <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.api.beamng.ControlApi.step>`__), it is preferred to call ``BeamNGpy.control.pause()`` before ``BeamNGpy.scenario.load()`` )
+  - to pause the physics (:pydocs129:`BeamNGpy.control.pause() <beamngpy.api.beamng.ControlApi.pause>`) and allow stepping (:pydocs129:`BeamNGpy.control.step() <beamngpy.api.beamng.ControlApi.step>`), it is preferred to call ``BeamNGpy.control.pause()`` before ``BeamNGpy.scenario.load()`` )
 
 - Bugfixes
 
@@ -106,7 +106,7 @@ Version 1.29
 
 - Removals/Deprecations
 
-  - Removed the IMU sensor. The `AdvancedIMU <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#advanced-imu>`__ is a replacement with more features.
+  - Removed the IMU sensor. The :pydocs129:`AdvancedIMU <advanced-imu>` is a replacement with more features.
   - Removed examples which used the deprecated old IMU sensor.
   - Removed LidarVisualizer and the pyopengl dependency
 
@@ -255,7 +255,7 @@ Version 1.26
   - Fix: LiDAR sensor was not returning the whole point cloud in BeamNGpy
 - Export BeamNG maps as .xodr files (OpenDrive)
 
-  - BeamNGpy now provides the option to export our map road networks as .xodr files (OpenDrive). The exported road networks contain elevation and road wideness data, along with junction connectivity. On top of this, BeamNGpy also includes a new `class <https://beamngpy.readthedocs.io/en/latest/beamngpy.html#beamngpy.tools.RoadNetworkExporter>`_ with which to analyse the road network data oneself, and process it as required.
+  - BeamNGpy now provides the option to export our map road networks as .xodr files (OpenDrive). The exported road networks contain elevation and road wideness data, along with junction connectivity. On top of this, BeamNGpy also includes a new :pydocs126:`class <beamngpy.tools.RoadNetworkExporter>` with which to analyse the road network data oneself, and process it as required.
 - BeamNGpy fixes / improvements
 
   - Optimized the speed of depth camera processing
