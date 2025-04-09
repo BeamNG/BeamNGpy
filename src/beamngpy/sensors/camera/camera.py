@@ -51,6 +51,8 @@ class Camera(CommBase):
         postprocess_depth: If True, the raw depth data will be postprocessed to better represent values with middle intensity. Defaults to False,
                            as the postprocessing is computationally intensive.
         is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
+        integer_depth: If True, depth values will be quantized to the integer range 0-255. If False, depth values will be sent as 32-bit floats in the range
+                       of 0.0-1.0. Will be set to False is ``postprocess_depth=True`` as full precision is needed for postprocessing. Defaults to True.
     """
 
     @staticmethod
@@ -153,6 +155,7 @@ class Camera(CommBase):
         is_force_inside_triangle: bool = False,
         postprocess_depth: bool = False,
         is_dir_world_space: bool = False,
+        integer_depth: bool = True,
     ):
         super().__init__(bng, vehicle)
         self.logger = getLogger(f"{LOGGER_ID}.Camera")
@@ -170,6 +173,11 @@ class Camera(CommBase):
         self.is_render_depth = is_render_depth
         self.is_streaming = is_streaming
         self.postprocess_depth = postprocess_depth
+        self.integer_depth = integer_depth
+
+        if self.postprocess_depth:
+            integer_depth = False
+            self.integer_depth = False  # depth postprocessing needs full precision
 
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
@@ -177,33 +185,42 @@ class Camera(CommBase):
         self.annotation_shmem = None
         self.instance_shmem = None
         self.depth_shmem = None
-        self.shmem_size = -1
+        self.colour_shmem_size = -1
+        self.annotation_shmem_size = -1
+        self.instance_shmem_size = -1
+        self.depth_shmem_size = -1
         if is_using_shared_memory:
             self.logger.debug("Camera - Initializing shared memory.")
-            self.shmem_size = resolution[0] * resolution[1] * 4
+            self.colour_shmem_size = resolution[0] * resolution[1] * 3
             if is_render_colours:
-                self.colour_shmem = BNGSharedMemory(self.shmem_size)
+                self.colour_shmem = BNGSharedMemory(self.colour_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for colour: "
                     f"{self.colour_shmem.name}"
                 )
 
             if is_render_annotations:
-                self.annotation_shmem = BNGSharedMemory(self.shmem_size)
+                self.annotation_shmem_size = resolution[0] * resolution[1] * 3 + 1
+                self.annotation_shmem = BNGSharedMemory(self.annotation_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for semantic annotations: "
                     f"{self.annotation_shmem.name}"
                 )
 
             if is_render_instance:
-                self.instance_shmem = BNGSharedMemory(self.shmem_size)
+                self.instance_shmem_size = resolution[0] * resolution[1] * 3 + 1
+                self.instance_shmem = BNGSharedMemory(self.instance_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for instance annotations: "
                     f"{self.instance_shmem.name}"
                 )
 
             if is_render_depth:
-                self.depth_shmem = BNGSharedMemory(self.shmem_size)
+                if self.integer_depth:
+                    self.depth_shmem_size = resolution[0] * resolution[1]
+                else:
+                    self.depth_shmem_size = resolution[0] * resolution[1] * 4
+                self.depth_shmem = BNGSharedMemory(self.depth_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for depth: "
                     f"{self.depth_shmem.name}"
@@ -228,11 +245,11 @@ class Camera(CommBase):
             up,
             is_using_shared_memory,
             colour_shmem_name,
-            self.shmem_size,
+            self.colour_shmem_size,
             annotation_shmem_name,
-            self.shmem_size,
+            self.annotation_shmem_size,
             depth_shmem_name,
-            self.shmem_size,
+            self.depth_shmem_size,
             is_render_colours,
             is_render_annotations,
             is_render_instance,
@@ -243,12 +260,18 @@ class Camera(CommBase):
             is_snapping_desired,
             is_force_inside_triangle,
             is_dir_world_space,
+            integer_depth,
         )
         self.logger.debug("Camera - sensor created: " f"{self.name}")
 
     def _convert_to_image(
-        self, raw_data: bytes | str | None, width: int, height: int
-    ) -> Image.Image | None:
+        self,
+        raw_data: bytes | str | None,
+        width: int,
+        height: int,
+        palette: bool = False,
+        force_ndarray: bool = False,
+    ) -> Image.Image | np.ndarray | None:
         """
         Converts raw image data from the simulator into image format.
 
@@ -256,6 +279,10 @@ class Camera(CommBase):
             raw_data: The 1D buffer to be processed.
             width: The width of the image to be rendered.
             height: The height of the image to be rendered.
+            palette: Whether the bitmap uses a palette format. If True, then the first
+                     byte N represents number of palette colors, followed by N RGBA colors,
+                     followed by bytes in range [0; N) representing pixels. If N=0,
+                     then there is no palette included and RGB pixels in range [0, 255] follow.
 
         Returns:
             The processed image.
@@ -265,9 +292,30 @@ class Camera(CommBase):
 
         data = raw_data.encode() if isinstance(raw_data, str) else raw_data
 
-        # Re-shape the array, based on the number of channels present in the data.
-        decoded = np.frombuffer(data, dtype=np.uint8)
-        decoded = decoded.reshape(height, width, 4).copy()
+        header_size = palette and 1 or 0
+        palette_bytes = (
+            (palette and len(data) > 0) and data[0] * 4 or 0
+        )  # palette is 4 bytes per color
+        if palette_bytes > 0:  # palette decoding
+            palette = np.frombuffer(
+                data[header_size : header_size + palette_bytes], dtype=np.uint8
+            ).reshape(-1, 4)[:, :3]
+            decoded = np.frombuffer(
+                data[
+                    header_size
+                    + palette_bytes : header_size
+                    + palette_bytes
+                    + width * height
+                ],
+                dtype=np.uint8,
+            )
+            decoded = palette[decoded].reshape(height, width, 3)
+        else:  # simple RGB decoding
+            # Re-shape the array, based on the number of channels present in the data.
+            decoded = np.frombuffer(data[header_size:], dtype=np.uint8)
+            decoded = decoded.reshape(height, width, 3).copy()
+        if force_ndarray:
+            return decoded
 
         # Convert to image format.
         b = Image.fromarray(decoded)
@@ -321,9 +369,7 @@ class Camera(CommBase):
 
         return depth_intensity
 
-    def _binary_to_image(
-        self, binary: StrDict, full_poll_request: bool = False
-    ) -> Dict[str, Image.Image | None]:
+    def _binary_to_image(self, binary: StrDict) -> Dict[str, Image.Image | None]:
         """
         Converts the binary string data from the simulator, which contains the data buffers for colour, annotations, and depth, into images.
 
@@ -343,32 +389,33 @@ class Camera(CommBase):
 
         if self.is_render_annotations:
             processed_readings["annotation"] = self._convert_to_image(
-                binary.get("annotation"), width, height
+                binary.get("annotation"), width, height, palette=True
             )
 
         if self.is_render_instance:
             processed_readings["instance"] = self._convert_to_image(
-                binary.get("instance"), width, height
+                binary.get("instance"), width, height, palette=True
             )
 
         if self.is_render_depth:
             if binary.get("depth") is None or len(binary["depth"]) == 0:
                 processed_readings["depth"] = None
             else:
-                depth = np.frombuffer(binary["depth"], dtype=np.float32)
-                if full_poll_request:  # transform the (NEAR, FAR) range to (0.0, 1.0)
-                    depth = (depth - self.near_far_planes[0]) / (
-                        self.near_far_planes[1] - self.near_far_planes[0]
-                    )
-
-                if self.postprocess_depth:
-                    depth = self.depth_buffer_processing(depth)
-                else:  # scale from (0.0, 1.0) to (0.0, 255.0)
-                    depth = np.clip(depth * 255.0, 0.0, 255.0)
-                reshaped_data = np.array(depth.reshape(height, width), dtype=np.uint8)
+                if type(binary["depth"]) == str:
+                    binary["depth"] = binary["depth"].encode()
+                if self.integer_depth:
+                    depth = np.frombuffer(binary["depth"], dtype=np.uint8)
+                else:
+                    depth = np.frombuffer(binary["depth"], dtype=np.float32)
+                    if self.postprocess_depth:
+                        depth = self.depth_buffer_processing(depth)
+                    else:  # return raw depth values in range [0.0, 1.0]
+                        depth = depth.reshape(height, width)
+                        return depth
+                depth = depth.reshape(height, width)
                 if self.is_depth_inverted:
-                    reshaped_data = 255 - reshaped_data
-                image = Image.fromarray(reshaped_data)
+                    depth = 255 - depth
+                image = Image.fromarray(depth)
                 processed_readings["depth"] = image
 
         return processed_readings
@@ -417,7 +464,7 @@ class Camera(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary with values being the unprocessed bytes representing the RGBA data from the sensors and
+            A dictionary with values being the unprocessed bytes representing the RGB data from the sensors and
             the following keys
 
             * ``colour``: The colour data.
@@ -435,23 +482,21 @@ class Camera(CommBase):
         if self.is_using_shared_memory:
             if self.colour_shmem:
                 if "colour" in raw_readings.keys():
-                    raw_readings["colour"] = self.colour_shmem.read(self.shmem_size)
+                    raw_readings["colour"] = self.colour_shmem.read()
                 else:
                     self.logger.error(
                         "Camera - Colour buffer failed to render. Check that you are not running on low settings."
                     )
             if self.annotation_shmem:
                 if "annotation" in raw_readings.keys():
-                    raw_readings["annotation"] = self.annotation_shmem.read(
-                        self.shmem_size
-                    )
+                    raw_readings["annotation"] = self.annotation_shmem.read()
                 else:
                     self.logger.error(
                         "Camera - Annotation buffer failed to render. Check that you are not running on low settings."
                     )
             if self.depth_shmem:
                 if "depth" in raw_readings.keys():
-                    raw_readings["depth"] = self.depth_shmem.read(self.shmem_size)
+                    raw_readings["depth"] = self.depth_shmem.read()
                 else:
                     self.logger.error(
                         "Camera - Depth buffer failed to render. Check that you are not running on low settings."
@@ -486,7 +531,7 @@ class Camera(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary with values being the unprocessed bytes representing the RGBA data from the sensors and the
+            A dictionary with values being the unprocessed bytes representing the RGB data from the sensors and the
             following keys
 
             * ``colour``: The colour data.
@@ -500,11 +545,11 @@ class Camera(CommBase):
 
         raw_readings = {}
         if self.colour_shmem:
-            raw_readings["colour"] = self.colour_shmem.read(self.shmem_size)
+            raw_readings["colour"] = self.colour_shmem.read()
         if self.annotation_shmem:
-            raw_readings["annotation"] = self.annotation_shmem.read(self.shmem_size)
+            raw_readings["annotation"] = self.annotation_shmem.read()
         if self.depth_shmem:
-            raw_readings["depth"] = self.depth_shmem.read(self.shmem_size)
+            raw_readings["depth"] = self.depth_shmem.read()
 
         return raw_readings
 
@@ -533,50 +578,6 @@ class Camera(CommBase):
             "Camera - raw sensor readings converted to image format: " f"{self.name}"
         )
         return images
-
-    def poll_shmem_colour(self):
-        self.send_recv_ge(
-            "PollCamera",
-            name=self.name,
-            isUsingSharedMemory=self.is_using_shared_memory,
-        )
-        width = self.resolution[0]
-        height = self.resolution[1]
-        img = np.frombuffer(self.colour_shmem.read(width * height * 4), dtype=np.uint8)
-        return [img, width, height]
-
-    def poll_shmem_annotation(self):
-        self.send_recv_ge(
-            "PollCamera",
-            name=self.name,
-            isUsingSharedMemory=self.is_using_shared_memory,
-        )
-        width = self.resolution[0]
-        height = self.resolution[1]
-        img = np.frombuffer(
-            self.annotation_shmem.read(width * height * 4), dtype=np.uint8
-        )
-        return [img, width, height]
-
-    def poll_shmem_depth(self):
-        self.send_recv_ge(
-            "PollCamera",
-            name=self.name,
-            isUsingSharedMemory=self.is_using_shared_memory,
-        )
-        width = self.resolution[0]
-        height = self.resolution[1]
-        img = np.frombuffer(self.depth_shmem.read(width * height * 4), dtype=np.float32)
-        return [img, width, height]
-
-    def stream_colour(self, size):
-        return np.frombuffer(self.colour_shmem.read(size), dtype=np.uint8)
-
-    def stream_annotation(self, size):
-        return np.frombuffer(self.annotation_shmem.read(size), dtype=np.uint8)
-
-    def stream_depth(self, size):
-        return np.frombuffer(self.depth_shmem.read(size), dtype=np.float32)
 
     def send_ad_hoc_poll_request(self) -> int:
         """
@@ -639,7 +640,7 @@ class Camera(CommBase):
         if "data" not in raw_readings:
             raise BNGValueError(f"Camera sensor {self.name} not found.")
         raw_readings = raw_readings["data"]
-        raw_readings = self._binary_to_image(raw_readings, full_poll_request=True)
+        raw_readings = self._binary_to_image(raw_readings)
 
         data = dict(type="data")
         data["colour"] = raw_readings["colour"]
@@ -839,6 +840,7 @@ class Camera(CommBase):
         is_snapping_desired: bool,
         is_force_inside_triangle: bool,
         is_dir_world_space: bool,
+        integer_depth: bool,
     ) -> None:
         data: StrDict = dict()
         data["vid"] = 0
@@ -870,6 +872,7 @@ class Camera(CommBase):
         data["isSnappingDesired"] = is_snapping_desired
         data["isForceInsideTriangle"] = is_force_inside_triangle
         data["isDirWorldSpace"] = is_dir_world_space
+        data["integerDepth"] = integer_depth
         self.send_ack_ge(type="OpenCamera", ack="OpenedCamera", **data)
         self.logger.info(f'Opened Camera: "{name}"')
 

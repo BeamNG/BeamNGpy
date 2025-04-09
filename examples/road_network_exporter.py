@@ -33,7 +33,9 @@ def main():
 
     # Execute the simulation until user is finished.  The data file(s) have been written.
     print("Road network data exported.")
+    bng.ui.show_hud()
     input("Press Enter to exit...")
+    bng.disconnect()
 
 
 if __name__ == "__main__":

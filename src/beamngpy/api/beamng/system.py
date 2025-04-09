@@ -27,3 +27,18 @@ class SystemApi(Api):
         """
         data = dict(type="GetSystemInfo", os=os, cpu=cpu, gpu=gpu, power=power)
         return self._send(data).recv()
+
+    def get_environment_paths(self) -> StrDict:
+        """
+        Returns the environment filesystem paths of the BeamNG simulator.
+
+        Returns: 
+
+            A dictionary
+            with the following keys:
+
+            * ``home``: The root directory of the simulator.
+            * ``user``: The directory of the user path.
+        """
+        data = dict(type="GetEnvironmentPaths")
+        return self._send(data).recv()

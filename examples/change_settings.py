@@ -9,7 +9,7 @@ from beamngpy import BeamNGpy
 
 
 def main():
-    beamng = BeamNGpy("localhost", 25252)
+    beamng = BeamNGpy("localhost", 25252, quit_on_close=False)
 
     with beamng as bng:
         print("Setting BeamNG to fullscreen...")

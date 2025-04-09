@@ -28,12 +28,12 @@ def extract_bounding_boxes(
     for y in range(semantic_data.shape[0]):
         for x in range(semantic_data.shape[1]):
             colour = instance_data[y, x]
-            colour_key = colour[0] * 65536 + colour[1] * 256 + colour[2]
+            colour_key = int(colour[0]) * 65536 + int(colour[1]) * 256 + int(colour[2])
             if colour_key == 0:
                 continue
 
             clazz = semantic_data[y, x]
-            clazz_key = clazz[0] * 65536 + clazz[1] * 256 + clazz[2]
+            clazz_key = int(clazz[0]) * 65536 + int(clazz[1]) * 256 + int(clazz[2])
             if not issued_warning and clazz_key not in classes:
                 create_warning(
                     f"The color ({clazz[0]}, {clazz[1]}, {clazz[2]}) was not found in the class mapping. This may mean that the annotation image is corrupted or that there is a bug in the annotation system."

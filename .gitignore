@@ -154,6 +154,7 @@ docs/api/*
 docs/_build/*
 cover/*
 MANIFEST
+docs/production
 
 # Built documentation
 html

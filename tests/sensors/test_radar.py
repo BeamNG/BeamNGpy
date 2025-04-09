@@ -119,6 +119,7 @@ def test_radar(beamng: BeamNGpy):
 
         sleep(3)
         print("RADAR test complete.")
+        bng.ui.show_hud()
 
 
 # Executing this file will perform various tests on all available functionality relating to the RADAR sensor.

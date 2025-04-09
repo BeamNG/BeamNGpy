@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # -- Project information -----------------------------------------------------
 
 project = "BeamNGpy"
-copyright = "2024, BeamNG GmbH"
+copyright = "2025, BeamNG GmbH"
 author = "BeamNG GmbH"
 
 
@@ -27,7 +27,14 @@ author = "BeamNG GmbH"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx_rtd_theme", "m2r2"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.extlinks",
+    "sphinx_rtd_theme",
+    "m2r2",
+    "sphinx_multiversion",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -73,3 +80,19 @@ autodoc_type_aliases = {
     "Quat": "Quat",
     "Color": "Color",
 }
+
+# -- Extlinks options --------------------------------------------------------
+extlinks = {
+    "pydocs": (
+        "beamngpy.html#%s",
+        "%s",
+    ),
+    "repo132": ("https://github.com/BeamNG/BeamNGpy/blob/v1.32/%s", "%s"),
+    "blog": ("https://beamng.tech/blog/%s", None),
+    "techdocs": ("https://docs.beamng.com/beamng_tech/%s", None),
+    "drivedocs": ("https://docs.beamng.com/%s", None),
+}
+
+# -- Multi-version config ----------------------------------------------------
+smv_tag_whitelist = r"^v.*$"
+smv_branch_whitelist = r"^(master|dev)$"

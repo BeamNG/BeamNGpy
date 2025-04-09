@@ -63,6 +63,12 @@ class BeamNGpy:
 
     Attributes
     ----------
+        user: str
+            The user path of the simulator, automatically filled in after connecting to the
+            BeamNG instance with :func:`BeamNGpy.open`.
+        user_with_version: str
+            The user path of the simulator, including the version subdirectory, automatically
+            filled in after connecting to the BeamNG instance with :func:`BeamNGpy.open`.
         camera: CameraApi
             The API module to control the camera in the simulator.
             See :class:`.CameraApi` for details.
@@ -108,7 +114,8 @@ class BeamNGpy:
         self.port = port
         self.home = home
         self.binary = binary
-        self.user = user
+        self.user: str | None = user
+        self.user_with_version: str | None = None
         self.process = None
         self.quit_on_close = quit_on_close
         self._debug = debug
@@ -170,7 +177,9 @@ class BeamNGpy:
                 "BeamNGpy successfully connected to existing BeamNG instance."
             )
             if extensions:
-                cmd = ';'.join((f'extensions.load(\'{extension}\')' for extension in extensions))
+                cmd = ";".join(
+                    (f"extensions.load('{extension}')" for extension in extensions)
+                )
                 self.control.queue_lua_command(cmd)
         elif launch:
             self.logger.info("Opening BeamNGpy instance.")
@@ -180,8 +189,6 @@ class BeamNGpy:
                 debug = self._debug
             if debug == True:
                 arg_list.append("-tcom-debug")
-            elif debug == False:
-                arg_list.append("-no-tcom-debug")
             arg_list.extend(("-tcom-listen-ip", listen_ip))
 
             self._start_beamng(extensions, *arg_list, **opts)
@@ -220,6 +227,10 @@ class BeamNGpy:
 
     def _load_system_info(self) -> None:
         info = self.system.get_info()
+        paths = self.system.get_environment_paths()
+        self.home = paths['home']
+        self.user_with_version = paths['user']
+        self.user = str(Path(self.user_with_version).parent)
         self._host_os = info["os"]["type"]
         self._tech_enabled = info["tech"]
 
@@ -321,7 +332,11 @@ class BeamNGpy:
                 self.control.quit_beamng()
                 self.connection.disconnect()
                 self.connection = None
-            except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError):
+            except (
+                ConnectionResetError,
+                ConnectionAbortedError,
+                ConnectionRefusedError,
+            ):
                 self.connection = None
         if not self.process:
             self.logger.info(
@@ -375,17 +390,18 @@ class BeamNGpy:
         if extensions is None:
             extensions = []
 
-        extensions.insert(0, "tech/techCore")
         lua = "extensions.load('{}');" * len(extensions)
-        lua = lua.format(*extensions) + f"tech_techCore.openServer({self.port})"
-        call = [binary, "-nosteam"]
+        lua = lua.format(*extensions)
+        call = [binary, "-nosteam", "-tcom", "-tport", str(self.port)]
         if platform.system() != "Linux":  # console is not supported for Linux hosts yet
             call.append("-console")
 
         for arg in args:
             call.append(arg)
 
-        call_opts = {"lua": lua}
+        call_opts = {}
+        if lua:
+            call_opts["lua"] = lua
         if "lua" in usr_opts.keys():
             call_opts["lua"] = usr_opts["lua"]
 

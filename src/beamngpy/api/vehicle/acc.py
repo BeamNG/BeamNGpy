@@ -5,22 +5,27 @@ from .base import VehicleApi
 
 class AccApi(VehicleApi):
     """
-    A base API class from which all the API communicating with a vehicle derive.
+    An API for Adaptive Cruise Control (experimental feature) of BeamNG.tech vehicle.
 
     Args:
         vehicle: An instance of a vehicle object.
+        speed: the target speed of the vehicle, when it doeasn't follow an ACC-eligible preceding vehicle.
+        flag: default set to True
     """
 
-    def start(self, sp: float, inputFlag: bool) -> None:
+    def start(self, vehid: str, sp: float, inputFlag: bool) -> None:
         """
         Starts ACC
 
         Args:
             vehicle: An instance of a vehicle object.
+            speed: the target speed of the vehicle, when it doeasn't follow an ACC-eligible preceding vehicle.
+            input flag: used for debugging purpose
         """
         data = dict(
             type="LoadACC"
-        )  # dict(type='LoadACC', speed=sp, debugFlag=inputFlag)
+        )
+        data["vid"] = vehid  # The vehicle’s ID
         data["speed"] = sp
         data["debugFlag"] = inputFlag
         self._send(data).ack("ACCloaded")
@@ -29,7 +34,7 @@ class AccApi(VehicleApi):
 
     def stop(self) -> None:
         """
-        Stops ACC.
+        This stops ACC function from the associated vehicle.
         """
         data = dict(type="UnloadACC")
         self._send(data).ack("ACCunloaded")

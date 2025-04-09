@@ -15,7 +15,9 @@ def main():
     # Create a scenario.
     scenario = Scenario("industrial", "mesh_test", description="Mesh analysis")
     # Add the vehicle to the scenario.
-    scenario.add_vehicle(vehicle, pos=(408.36, -336.56, 35.54), rot_quat=(0, 0, 0.99, -0.17))
+    scenario.add_vehicle(
+        vehicle, pos=(408.36, -336.56, 35.54), rot_quat=(0, 0, 0.99, -0.17)
+    )
     scenario.make(bng)
     # Set simulator to 60hz temporal resolution
     bng.settings.set_deterministic(60)
@@ -43,6 +45,7 @@ def main():
     vehicle.ai.set_mode("disabled")
     bng.ui.show_hud()
     input("Press Enter to exit...")
+    bng.disconnect()
 
 
 if __name__ == "__main__":

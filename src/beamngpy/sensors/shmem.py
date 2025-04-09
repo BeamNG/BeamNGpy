@@ -49,7 +49,7 @@ class BNGSharedMemory(SharedMemory):
         super().__init__(None, create=True, size=size, track=False)
         self._closed = False
 
-    def read(self, size: int) -> memoryview:
+    def read(self, size: int | None = None) -> memoryview:
         return self.buf[:size]
 
     def try_close(self):

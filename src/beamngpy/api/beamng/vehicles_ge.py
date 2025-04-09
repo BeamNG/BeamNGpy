@@ -67,10 +67,6 @@ class GEVehiclesApi(Api):
         data["vid"] = self.vehicle.vid
         resp = self._send(data).recv("PartConfig")
         resp = resp["config"]
-        if "parts" not in resp or not resp["parts"]:
-            resp["parts"] = dict()
-        if "vars" not in resp or not resp["vars"]:
-            resp["vars"] = dict()
         return resp
 
     def set_part_config(self, cfg: StrDict) -> None:
@@ -79,7 +75,6 @@ class GEVehiclesApi(Api):
         data["config"] = cfg
         self._send(data)
         self._beamng.await_vehicle_spawn(self.vehicle.vid)
-        self.vehicle.disconnect()
         self.vehicle.connect(self._beamng)
 
     def set_license_plate(self, text: str) -> None:

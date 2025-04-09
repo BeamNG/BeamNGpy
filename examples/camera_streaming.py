@@ -39,7 +39,7 @@ if __name__ == "__main__":
         is_render_depth=True,
     )
 
-    for i in range(10):
+    for i in range(41):
         beamng.control.step(10)
 
         # Getting raw bytes from the simulator -> the fastest you can get
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         # if you don't want to use streaming, then use this instead
         # raw_readings = camera.poll_raw()
 
-        if i % 100 == 0:
+        if i % 10 == 0:
             print("Showing images from the stream...")
 
             # Getting PIL.Image images created from the raw bytes -> slower
@@ -62,4 +62,5 @@ if __name__ == "__main__":
             if camera.is_render_depth:
                 images["depth"].show()
     beamng.control.resume()
+    beamng.disconnect()
     input("Press Enter to exit...")

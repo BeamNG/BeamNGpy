@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple, cast
 
-from beamngpy.logging import BNGError, BNGValueError
+from beamngpy.logging import BNGError, BNGValueError, create_warning
 from beamngpy.scenario import Scenario, ScenarioObject
 from beamngpy.scenario.level import Level
 from beamngpy.types import Float3, Quat, StrDict
@@ -273,11 +273,34 @@ class ScenarioApi(Api):
         self._send(data).ack("ScenarioStopped")
         self._logger.info("Stopping scenario.")
 
+    def get_road_network(
+        self, include_edges: bool = True, drivable_only: bool = True
+    ) -> StrDict:
+        """
+        Retrieves the metadata of all DecalRoads in the current scenario
+        and optionally returns the road edges as well.
+
+        Args:
+            include_edges: If True, will include the ``edges`` field in the road data.
+            drivable_only: If True, will not return roads with ``drivability == -1``.
+
+        Returns:
+            A dict mapping DecalRoad IDs to their metadata and edges.
+        """
+        data = dict(
+            type="GetRoadNetwork",
+            includeEdges=include_edges,
+            drivableOnly=drivable_only,
+        )
+        resp = self._send(data).recv("RoadNetwork")
+        return resp["data"]
+
     def get_roads(self) -> StrDict:
         """
-        Retrieves the metadata of all DecalRoads in the current scenario.
-        The metadata of a DecalRoad is formatted as a dictionary with the following keys:
+        DEPRECATED! Use the function :func:`get_road_network` instead, which
+        can also return road edges.
 
+        Retrieves the metadata of all DecalRoads in the current scenario.
 
         Returns:
             A dict mapping DecalRoad IDs to their metadata..
@@ -287,6 +310,9 @@ class ScenarioApi(Api):
                 "Need to be in a started scenario to get its " "DecalRoad data."
             )
 
+        create_warning(
+            "Function get_roads() is deprecated, use get_road_network() instead."
+        )
         data = dict(type="GetDecalRoadData")
         resp = self._send(data).recv("DecalRoadData")
         return resp["data"]

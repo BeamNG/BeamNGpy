@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 # The maximum number of LiDAR points which can be used.
 # TODO: Make this more efficient by instead computing the number of LiDAR points based on the sensor parameter values.
-MAX_LIDAR_POINTS = 2000000
+MAX_LIDAR_POINTS = 3200000
 
 
 class Lidar(CommBase):
@@ -68,6 +68,7 @@ class Lidar(CommBase):
         frequency: The frequency of this LiDAR sensor.
         horizontal_angle: The horizontal angle of this LiDAR sensor.
         max_distance: The maximum distance which this LiDAR sensor will detect, in metres.
+        density: A density factor used for the point cloud (eg 1 = very dense, 100 = sparse).
         is_rotate_mode: Runs the LiDAR sensor in 'LFO rotate'.  Should be used with frequencies in the range [1Hz - 10Hz, or so, for best results].
         is_360_mode: Runs the LiDAR sensor in 'Full 360 Degrees' mode. Note: there is no need to provide a horizontal angle for this mode.
         is_using_shared_memory: A flag which indicates if we should use shared memory to send/recieve the sensor readings data.
@@ -95,6 +96,7 @@ class Lidar(CommBase):
         frequency: float = 20,
         horizontal_angle: float = 360,
         max_distance: float = 120,
+        density: float = 100,
         is_rotate_mode: bool = False,
         is_360_mode: bool = True,
         is_using_shared_memory: bool = True,
@@ -118,7 +120,7 @@ class Lidar(CommBase):
         self.is_streaming = is_streaming
         self.point_cloud_shmem_size = MAX_LIDAR_POINTS * 3 * 4
         self.point_cloud_shmem: BNGSharedMemory | None = None
-        self.colour_shmem_size = MAX_LIDAR_POINTS * 4
+        self.colour_shmem_size = MAX_LIDAR_POINTS * 3
         self.colour_shmem: BNGSharedMemory | None = None
         if is_using_shared_memory:
             self.point_cloud_shmem = BNGSharedMemory(self.point_cloud_shmem_size)
@@ -154,6 +156,7 @@ class Lidar(CommBase):
             frequency,
             horizontal_angle,
             max_distance,
+            density,
             is_rotate_mode,
             is_360_mode,
             is_visualised,
@@ -185,15 +188,29 @@ class Lidar(CommBase):
         # Format the point cloud data.
         floats = np.frombuffer(binary["pointCloud"], dtype=np.float32)
         if self.is_streaming:
+            
+            # Add safety checks
+            if len(floats) < 1:
+                processed_readings["pointCloud"] = np.empty(0, dtype=np.float32)
+                processed_readings["colours"] = np.empty(0, dtype=np.uint8)
+                return processed_readings
+                
             n_points = int(floats[-1])
+            # Validate n_points is reasonable
+            if n_points < 0 or n_points * 3 > len(floats) - 1:
+                self.logger.warning(f"Invalid number of points received: {n_points}")
+                processed_readings["pointCloud"] = np.empty(0, dtype=np.float32)
+                processed_readings["colours"] = np.empty(0, dtype=np.uint8)
+                return processed_readings
+                
             floats = floats[: 3 * n_points]
         processed_readings["pointCloud"] = floats.reshape((-1, 3)).copy()
 
         # Format the corresponding colour data.
         colours = np.frombuffer(binary["colours"], dtype=np.uint8)
         if self.is_streaming:
-            colours = colours[: 4 * n_points]
-        processed_readings["colours"] = colours.reshape((-1, 4)).copy()  # rgba
+            colours = colours[: 3 * n_points]
+        processed_readings["colours"] = colours.reshape((-1, 3)).copy()  # rgb
 
         return processed_readings
 
@@ -225,7 +242,7 @@ class Lidar(CommBase):
         Note: if this sensor was created with a negative update rate, then there may have been no readings taken.
 
         Returns:
-            A dictionary with values being the unprocessed bytes representing the RGBA data from the sensors and
+            A dictionary with values being the unprocessed bytes representing the RGB data from the sensors and
             the following keys
 
             * ``pointCloud``: The colour data.
@@ -501,6 +518,7 @@ class Lidar(CommBase):
         frequency: float,
         horizontal_angle: float,
         max_distance: float,
+        density: float,
         is_rotate_mode: bool,
         is_360_mode: bool,
         is_visualised: bool,
@@ -531,6 +549,7 @@ class Lidar(CommBase):
         data["hz"] = frequency
         data["hAngle"] = horizontal_angle
         data["maxDist"] = max_distance
+        data["density"] = density
         data["isRotate"] = is_rotate_mode
         data["is360"] = is_360_mode
         data["isVisualised"] = is_visualised

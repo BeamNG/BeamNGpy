@@ -1,7 +1,7 @@
+import time
+
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.tools import Terrain_Importer
-
-import time
 
 
 def main():
@@ -87,6 +87,7 @@ def main():
 
     # Execute BeamNG until the user closes it.
     input("Press Enter to close...")
+    beamng.disconnect()
 
 
 if __name__ == "__main__":

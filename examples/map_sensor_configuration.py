@@ -46,7 +46,9 @@ def main():
 
     config.remove()
     print("Scenario finished.")
+    bng.ui.show_hud()
     input("Press Enter to exit...")
+    bng.disconnect()
 
 
 if __name__ == "__main__":

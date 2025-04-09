@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 from beamngpy.api.vehicle import AccApi, AIApi, CouplersApi, LoggingApi, RootApi
 from beamngpy.connection import Connection, Response
-from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.logging import LOGGER_ID, BNGError, create_warning
 from beamngpy.sensors import State
 from beamngpy.types import Color, Float3, Quat, StrDict
 from beamngpy.utils.prefab import get_uuid
@@ -508,34 +508,55 @@ class Vehicle:
 
     def get_part_options(self) -> StrDict:
         """
+        Deprecated in favor of :func:`get_part_config()`.
+
         Retrieves a mapping of part slots for the given vehicle and their
         possible parts.
 
         Returns:
             A mapping of part configuration options for the given.
         """
-        return self._ge_api.get_part_options()
+        create_warning("Function `get_part_options` is deprecated, use the `suitablePartNames` field of the `get_part_config` tree.\n" +
+                       "Calling `get_part_config` instead.")
+        return self._ge_api.get_part_config()
 
     def get_part_config(self) -> StrDict:
         """
-        Retrieves the current part configuration of the given vehicle. The
-        configuration contains both the current values of adjustable vehicle
-        parameters and a mapping of part types to their currently-selected
-        part.
+        Retrieves the current part configuration of the given vehicle.
+
+        The configuration is defined as a part tree with the following fields:
+
+            * ``partPath``
+                The unique path to the part from the root (``/``), containing all parent slots.
+            * ``path``
+                The unique path to the slot from the root (``/``), containing all parent slots and not containing the current part.
+            * ``id``
+                The ID of the slot.
+            * ``chosenPartName``
+                Name of the part if it is equipped.
+            * ``suitablePartNames``
+                List of part names that can be used for this slot.
+            * ``unsuitablePartNames``
+                List of part names that **cannot** be used for this slot.
+            * ``children``
+                A dictionary of the ancestor slots of the part equipped.
+            * ``decisionMethod``
+                Describes the reason why the part is used for the slot. Can be ``user-empty``, ``user``,
+                ``default-empty`` or ``default``.
 
         Returns:
-            The current vehicle configuration as a dictionary.
+            The current vehicle configuration tree as a dictionary.
         """
         return self._ge_api.get_part_config()
 
     def set_part_config(self, cfg: StrDict) -> None:
         """
-        Sets the current part configuration of the given vehicle. The
-        configuration is given as a dictionary containing both adjustable
-        vehicle parameters and a mapping of part types to their selected parts.
+        Sets the current part configuration of the given vehicle. The configuration is
+        a part tree. You can get a valid part configuration tree by calling the
+        :func:`get_part_config()` function.
 
         Args:
-            cfg: The new vehicle configuration as a dictionary.
+            cfg: The new vehicle configuration tree as a dictionary.
 
         Notes:
             Changing parts causes the vehicle to respawn, which repairs it as

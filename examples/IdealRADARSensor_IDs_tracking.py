@@ -1,9 +1,9 @@
 from time import sleep
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging, angle_to_quat
-from beamngpy.sensors import IdealRadar
-
 import matplotlib.pyplot as plt
+
+from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat, set_up_simple_logging
+from beamngpy.sensors import IdealRadar
 
 
 def main():
@@ -14,14 +14,10 @@ def main():
     bng.open(launch=True)
 
     # Create the vehicles
-    vehicleA = Vehicle("ego_vehicle", model="etki", licence="ego vehicle", color="Red")
-    vehicleB = Vehicle("other_vehicle1", model="etki", licence="vehicleB", color="Blue")
-    vehicleC = Vehicle(
-        "other_vehicle2", model="etki", licence="vehicleC", color="Green"
-    )
-    vehicleD = Vehicle(
-        "other_vehicle3", model="etki", licence="vehicleD", color="Black"
-    )
+    vehicleA = Vehicle("vehicleA", model="etki", licence="vehicleA", color="Red")
+    vehicleB = Vehicle("vehicleB", model="etki", licence="vehicleB", color="Blue")
+    vehicleC = Vehicle("vehicleC", model="etki", licence="vehicleC", color="Green")
+    vehicleD = Vehicle("vehicleD", model="etki", licence="vehicleD", color="Black")
     # Create a scenario.
     scenario = Scenario("italy", "IdealRADAR_tracking", description="ideal RADAR")
 
@@ -96,6 +92,7 @@ def main():
             listtime3rd.append(latest_reading["time"])
         sleep(1.0)
 
+    bng.ui.show_hud()
     bng.disconnect()
 
     # Plot the data

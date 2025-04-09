@@ -1,5 +1,8 @@
 # BeamNGpy
-<a href="https://beamngpy.readthedocs.io/en/latest/"><img src="https://github.com/BeamNG/BeamNGpy/raw/master/media/documentation.png" /></a>
+
+[![Documentation](https://img.shields.io/badge/Documentation-blue?logo=googledocs&logoColor=white)](https://documentation.beamng.com/api/beamngpy/)
+[![Repository](https://img.shields.io/badge/Repository-grey?logo=github&logoColor=white)](https://github.com/BeamNG/BeamNGpy)
+[![Releases](https://img.shields.io/badge/Package-grey?logo=python&logoColor=white)](https://pypi.org/project/beamngpy)
 
 **BeamNGpy** is an official library providing a Python API to [BeamNG.tech][11],
 the academia- and industry-oriented fork of the video game [BeamNG.drive][4].
@@ -108,7 +111,7 @@ using common methods like `pip`:
 
     pip install beamngpy
 
-If you use [Anaconda](https://www.anaconda.com/products/distribution#download-section), you can
+If you use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html), you can
 install BeamNGpy from the `conda-forge` channel by:
 
     conda install beamngpy -c conda-forge
@@ -128,7 +131,7 @@ if you installed it using `conda`.
 ## Usage
 
 **DISCLAIMER:** If you are using an older version of `beamngpy` and BeamNG.tech, please follow the
-instructions of the corresponding `README` file (for example, [1.27.1 instructions](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1)). If you are using the latest version of BeamNGpy, continue following the instructions located in this README file.
+instructions of the corresponding `README` file (for example, [1.27.1 instructions](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1)). If you are using the latest version of BeamNGpy, continue following the instructions located in the repository [README file](https://github.com/BeamNG/BeamNGpy).
 
 The library can be imported using `import beamngpy`. A short
 usage example setting up a scenario with one vehicle in the West Coast USA map
@@ -168,31 +171,27 @@ bng.disconnect()
 We have a [guide][6] helping you to get started and navigating our collection of examples and
 the documentation of the library is available [here][7].
 
+You can use BeamNGpy to spawn new BeamNG.tech processes or to connect to already launched instances ([learn more in documentation](https://documentation.beamng.com/beamng_tech/arguments_and_settings/#connect-to-beamngpy)).
+
 BeamNG.tech is also customizable with various command-line arguments. Check the [documentation][12] for reference.
 
 ## Compatibility
 
 BeamNG.tech is not a finished product but is still under development.
 Thus frequent changes on the simulation side are to be expected.
+
 While the BeamNGpy library maintains compatibility between minor versions for the user, this doesn't extend to the BeamNG.tech side. Not all BeamNGpy versions are compatible with all BeamNG.tech versions.
-Below is a list of compatible BeamNG.tech and BeamNGpy versions.
+
+Below is a list of recent compatible BeamNG.tech and BeamNGpy versions. For older versions check [COMPATIBILITY.md](COMPATIBILITY.md).
 However, we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
+| 0.35                | [1.32](https://github.com/BeamNG/BeamNGpy/tree/v1.32)     |
 | 0.34                | [1.31](https://github.com/BeamNG/BeamNGpy/tree/v1.31)     |
 | 0.33                | [1.30](https://github.com/BeamNG/BeamNGpy/tree/v1.30)     |
 | 0.32                | [1.29](https://github.com/BeamNG/BeamNGpy/tree/v1.29)     |
-| 0.31                | [1.28](https://github.com/BeamNG/BeamNGpy/tree/v1.28)     |
-| 0.30                | [1.27.1](https://github.com/BeamNG/BeamNGpy/tree/v1.27.1) |
-| 0.28, 0.29          | [1.26.1](https://github.com/BeamNG/BeamNGpy/tree/v1.26.1) |
-| 0.27                | [1.25.1](https://github.com/BeamNG/BeamNGpy/tree/v1.25.1) |
-| 0.26                | [1.24](https://github.com/BeamNG/BeamNGpy/tree/v1.24)     |
-| 0.25                | [1.23.1](https://github.com/BeamNG/BeamNGpy/tree/v1.23.1) |
-| 0.24                | [1.22](https://github.com/BeamNG/BeamNGpy/tree/v1.22)     |
-| 0.23                | [1.21.1](https://github.com/BeamNG/BeamNGpy/tree/v1.21.1) |
-| 0.22                | [1.20](https://github.com/BeamNG/BeamNGpy/tree/v1.20)     |
-| 0.21                | [1.19.1](https://github.com/BeamNG/BeamNGpy/tree/v1.19.1) |
+| older               | [see here](COMPATIBILITY.md)                      |
 
 ## Troubleshooting
 
@@ -223,13 +222,13 @@ We always welcome user contributions, be sure to check out our [contribution gui
 The Python code is formatted using [Black](https://github.com/psf/black), please use it to
 format the code you want to contribute.
 
-[1]: https://beamngpy.readthedocs.io/en/latest/
+[1]: https://documentation.beamng.com/api/beamngpy/
 [2]: https://register.beamng.tech/
 [3]: mailto:licensing@beamng.gmbh
 [4]: https://store.steampowered.com/app/284160/BeamNGdrive/
 [5]: https://pypi.org/project/beamngpy/
 [6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/README.md
-[7]: https://beamngpy.readthedocs.io/en/latest/
+[7]: https://documentation.beamng.com/api/beamngpy/
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
 [10]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/feature_overview.ipynb

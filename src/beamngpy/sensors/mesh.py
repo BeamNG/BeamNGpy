@@ -33,6 +33,8 @@ class Mesh(CommBase):
         is_track_beams: A flag which indicates if we should keep updating the beam to node maps. This will track broken beams over time, but is slower.
     """
 
+    DATA_KEYS = dict(pos=0, force=1, vel=2, mass=3, partOrigin=4)
+
     def __init__(
         self,
         name: str,
@@ -93,10 +95,7 @@ class Mesh(CommBase):
         Returns:
             True if the node is in one of the selected mesh groups, otherwise false
         """
-        if "partOrigin" not in v:
-            return False
-
-        return v["partOrigin"] in self.groups
+        return v[Mesh.DATA_KEYS["partOrigin"]] in self.groups
 
     def _is_beam_relevant(self, b0, b1):
         """
@@ -169,6 +168,8 @@ class Mesh(CommBase):
 
         # Send and receive a request for readings data from this sensor.
         self.raw_data = self._poll_mesh_VE()
+        if len(self.raw_data) == 0:
+            return {}
 
         # Convert dict indices to int.
         self.node_positions = {}
@@ -307,8 +308,8 @@ class Mesh(CommBase):
         lines3 = []
         c = []
         for _, v in self.beams.items():
-            p1 = self.node_positions[v[0]]["pos"]
-            p2 = self.node_positions[v[1]]["pos"]
+            p1 = self.node_positions[v[0]][Mesh.DATA_KEYS["pos"]]
+            p2 = self.node_positions[v[1]][Mesh.DATA_KEYS["pos"]]
             lines1.append([(p1["x"], p1["y"]), (p2["x"], p2["y"])])
             lines2.append([(p1["x"], p1["z"]), (p2["x"], p2["z"])])
             lines3.append([(p1["y"], p1["z"]), (p2["y"], p2["z"])])
@@ -341,7 +342,7 @@ class Mesh(CommBase):
         ax[1, 1].set_ylabel("z")
         ax[0, 1].axis("off")
         for i in range(len(self.node_positions)):
-            node = self.node_positions[i]["pos"]
+            node = self.node_positions[i][Mesh.DATA_KEYS["pos"]]
             ax[0, 0].plot(node["x"], node["y"], "ro")
             ax[1, 0].plot(node["x"], node["z"], "ro")
             ax[1, 1].plot(node["y"], node["z"], "ro")
@@ -382,11 +383,11 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]["pos"]
+            node = data[i][Mesh.DATA_KEYS["pos"]]
             x.append(node["x"])
             y.append(node["y"])
             z.append(node["z"])
-            colors.append(data[i]["mass"])
+            colors.append(data[i][Mesh.DATA_KEYS["mass"]])
 
         cmap = matplotlib.cm.viridis
         s1 = ax[0, 0].scatter(x, y, s=circle_size, c=colors, cmap=cmap)
@@ -430,11 +431,11 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]["pos"]
+            node = data[i][Mesh.DATA_KEYS["pos"]]
             x.append(node["x"])
             y.append(node["y"])
             z.append(node["z"])
-            force = data[i]["force"]
+            force = data[i][Mesh.DATA_KEYS["force"]]
             fx = force["x"]
             fy = force["y"]
             fz = force["z"]
@@ -482,11 +483,11 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]["pos"]
+            node = data[i][Mesh.DATA_KEYS["pos"]]
             x.append(node["x"])
             y.append(node["y"])
             z.append(node["z"])
-            force = data[i]["force"]
+            force = data[i][Mesh.DATA_KEYS["force"]]
             fx = force["x"]
             fy = force["y"]
             fz = force["z"]
@@ -539,11 +540,11 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]["pos"]
+            node = data[i][Mesh.DATA_KEYS["pos"]]
             x.append(node["x"])
             y.append(node["y"])
             z.append(node["z"])
-            vel = data[i]["vel"]
+            vel = data[i][Mesh.DATA_KEYS["vel"]]
             vx = vel["x"]
             vy = vel["y"]
             vz = vel["z"]
@@ -591,11 +592,11 @@ class Mesh(CommBase):
         colors = []
         circle_size = 3.0
         for i in range(len(data)):
-            node = data[i]["pos"]
+            node = data[i][Mesh.DATA_KEYS["pos"]]
             x.append(node["x"])
             y.append(node["y"])
             z.append(node["z"])
-            vel = data[i]["vel"]
+            vel = data[i][Mesh.DATA_KEYS["vel"]]
             vx = vel["x"]
             vy = vel["y"]
             vz = vel["z"]

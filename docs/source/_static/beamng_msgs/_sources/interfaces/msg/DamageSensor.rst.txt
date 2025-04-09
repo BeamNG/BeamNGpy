@@ -1,8 +1,0 @@
-DamageSensor
-============
-This is a ROS message definition.
-
-**Source**
-
-.. literalinclude:: ../../../../../../beamng_msgs/msg/DamageSensor.msg
-

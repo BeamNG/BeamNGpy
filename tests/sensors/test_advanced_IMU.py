@@ -83,6 +83,7 @@ def test_advanced_IMU(beamng: BeamNGpy):
 
         sleep(3)
         print("advanced IMU test complete.")
+        bng.ui.show_hud()
 
 
 # Executing this file will perform various tests on all available functionality relating to the advanced IMU sensor.
