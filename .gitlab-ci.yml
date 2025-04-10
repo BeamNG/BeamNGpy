@@ -43,4 +43,3 @@ deploy-production:
       - docs/build
   only:
     - master
-    - ci-fix
