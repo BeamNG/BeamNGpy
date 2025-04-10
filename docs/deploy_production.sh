@@ -15,6 +15,7 @@ ssh-keyscan -t ed25519 $REPO_HOST >> ~/.ssh/known_hosts
 # Clone repository
 mkdir -p $DOCUMENTATION_LOCAL_REPO
 git clone -b $DOCUMENTATION_BRANCH $DOCUMENTATION_REPOSITORY $DOCUMENTATION_LOCAL_REPO
+git lfs install  # the repo uses lfs -> initialize it
 
 # Git author config
 git config --global user.name "$DOCUMENTATION_GIT_USERNAME"
