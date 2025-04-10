@@ -3,6 +3,9 @@
 # Will host built documentation on https://documentation.beamng.com/api/beamngpy
 set -eo pipefail
 
+# Install git lfs
+apt-get update && apt-get install git-lfs
+
 # Set up SSH
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
