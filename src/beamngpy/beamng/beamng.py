@@ -448,7 +448,7 @@ class BeamNGpy:
         else:
             binary = filesystem.determine_binary(home)
         userpath = (
-            Path(self.user) if self.user else filesystem.determine_userpath(binary)
+            Path(self.user) if self.user else None
         )
         call = self._prepare_call(str(binary), userpath, extensions, *args, **opts)
 
