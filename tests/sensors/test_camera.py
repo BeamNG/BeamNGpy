@@ -10,7 +10,7 @@ from beamngpy.sensors import Camera
 
 ATTEMPTS = 3
 TOTAL_FIELDS = 4
-VISUALISE = True
+VISUALISE = False
 
 def check_field(sensor_readings, field: str, cam: Camera):
     # Check field is present, correct size, non-zero and with valid rgb values
@@ -19,7 +19,7 @@ def check_field(sensor_readings, field: str, cam: Camera):
     assert (sensor_readings[field] != 0).any()
     assert (sensor_readings[field] >= 0).all() and (sensor_readings[field] <= 255).all()
 
-def check_poll(cam: Camera, is_auto: bool, visualize_img: bool):
+def check_poll(cam: Camera, is_auto: bool, visualize_img: bool, exp_semantic: int | None = None, exp_instance: int | None = None):
     # Generate fields
     fields = []
     if cam.is_render_colours: fields.append("colour")
@@ -52,6 +52,7 @@ def check_poll(cam: Camera, is_auto: bool, visualize_img: bool):
                 cam.is_ad_hoc_poll_request_ready(request_id),
             )
             sensor_readings = cam.collect_ad_hoc_poll_request(request_id)
+
         for field in fields:
             sensor_readings[field] = np.asarray(sensor_readings[field].convert("RGB"))
             print(field + " readings: \n")
@@ -61,6 +62,12 @@ def check_poll(cam: Camera, is_auto: bool, visualize_img: bool):
                 plt.show()
             check_field(sensor_readings, field, cam)
             all_readings[field].append(sensor_readings[field])
+
+        # Check semantic and instance annotations have correct number of solid colors
+        if exp_semantic != None:
+            assert len(np.unique(sensor_readings["annotation"].reshape(-1, 3), axis=0)) == exp_semantic, "Incorrect number of solid colors"
+        if exp_instance != None:
+            assert len(np.unique(sensor_readings["instance"].reshape(-1, 3), axis=0)) == exp_instance, "Incorrect number of solid colors"
 
 def test_camera(beamng: BeamNGpy):
     with beamng as bng:
@@ -150,18 +157,18 @@ def test_camera(beamng: BeamNGpy):
         # We use each camera sensor to take: i) colour, ii) annotation, and iii) depth images, from their given positions.
         sleep(5)
         print("Testing camera 1...")
-        check_poll(cam1, True, VISUALISE)
+        check_poll(cam1, True, VISUALISE, 3, 3)
 
         print("Testing camera 2...")
-        check_poll(cam2, True, VISUALISE)
+        check_poll(cam2, True, VISUALISE, 3, 3)
 
         print("Testing camera 3...")
-        check_poll(cam3, True, VISUALISE)
-        check_poll(cam3, False, VISUALISE)
+        check_poll(cam3, True, VISUALISE, 3)
+        check_poll(cam3, False, VISUALISE, 3)
 
         print("Testing camera 4...")
-        check_poll(cam4, True, VISUALISE)
-        check_poll(cam4, False, VISUALISE)
+        check_poll(cam4, True, VISUALISE, 3)
+        check_poll(cam4, False, VISUALISE, 3)
 
         # Test that the property getter function return the correct data which was set.
         sleep(1)
@@ -194,12 +201,13 @@ def test_camera(beamng: BeamNGpy):
         print("Camera 4 images (after altering position, direction, and up vectors)...")
         sleep(1)
         images = cam4.poll()
-        plt.imshow(np.asarray(images["colour"].convert("RGB")))
-        plt.show()
-        plt.imshow(np.asarray(images["annotation"].convert("RGB")))
-        plt.show()
-        plt.imshow(np.asarray(images["depth"].convert("RGB")))
-        plt.show()
+        if VISUALISE:
+            plt.imshow(np.asarray(images["colour"].convert("RGB")))
+            plt.show()
+            plt.imshow(np.asarray(images["annotation"].convert("RGB")))
+            plt.show()
+            plt.imshow(np.asarray(images["depth"].convert("RGB")))
+            plt.show()
 
         # Test the world-space to camera pixel functionality.
         print(
@@ -242,8 +250,9 @@ def test_camera(beamng: BeamNGpy):
         sleep(3)
         images = idle_cam.poll()
         for field in ["colour", "annotation", "depth"]:
+            images[field] = np.asarray(images[field].convert("RGB"))
             if VISUALISE:
-                plt.imshow(np.asarray(images[field].convert("RGB")))
+                plt.imshow(images[field])
                 plt.show()
             assert np.all(images[field] == 0)
 
