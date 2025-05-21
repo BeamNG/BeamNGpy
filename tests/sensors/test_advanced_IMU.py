@@ -14,10 +14,10 @@ def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
     for i in range(1, attempts + 1):
         sleep(2)
         if is_auto:
-            print("\nAutomatic polling attempt " + str(i))
+            print("\nAutomatic polling attempt ", i)
             sensor_readings = imu.poll()
         else:
-            print("Ad-hoc poll request attempt " + str(i))
+            print("Ad-hoc poll request attempt ", i)
             request_id = (
                 imu.send_ad_hoc_poll_request()
             )  # send an ad-hoc polling request to the simulator.

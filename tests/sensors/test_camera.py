@@ -37,14 +37,14 @@ def check_poll(cam: Camera, is_auto: bool, visualize_img: bool, exp_semantic: in
     for i in range(1, ATTEMPTS + 1):
         sleep(2)
         if len(fields) == TOTAL_FIELDS:
-            print("\nFull poll attempt " + str(i))
+            print("\nFull poll attempt ", i)
             sensor_readings = cam.get_full_poll_request()
         elif is_auto:
-            print("\nAutomatic polling attempt " + str(i))
+            print("\nAutomatic polling attempt ", i)
             sensor_readings = cam.poll()
         else:
             # Test ad-hoc polling
-            print("\nAd-hoc polling attempt " + str(i))
+            print("\nAd-hoc polling attempt ", i)
             request_id = cam.send_ad_hoc_poll_request()
             sleep(3)
             print(
