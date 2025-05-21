@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from time import sleep
+import numpy as np
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Ultrasonic
