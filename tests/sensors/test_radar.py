@@ -20,10 +20,10 @@ def check_consistency_and_update(radar: Radar, is_auto: bool):
     for i in range(1, attempts + 1):
         sleep(2)
         if is_auto:
-            print("\nAutomatic polling attempt " + str(i))
+            print("\nAutomatic polling attempt ", i)
             sensor_readings = radar.poll()
         else:
-            print("Ad-hoc poll request attempt " + str(i))
+            print("Ad-hoc poll request attempt ", i)
             # send an ad-hoc polling request to the simulator.
             request_id = radar.send_ad_hoc_poll_request()
             print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
