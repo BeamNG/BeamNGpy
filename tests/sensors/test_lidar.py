@@ -7,6 +7,7 @@ import numpy as np
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Lidar
 
+ATTEMPTS = 3
 
 def validate_distribution(pointCloud):
     x, y = pointCloud[:, 0], pointCloud[:, 1]
@@ -21,63 +22,53 @@ def validate_distribution(pointCloud):
 
     return count_difference < max_count / 5
 
-def polling_test(lidar: Lidar, is360: bool, isRotate: bool):
+def polling_check(lidar: Lidar, is_auto: bool, is_360: bool, is_rotate: bool):
     data_total = []
     prev_first_point = None
     data = None
-    attempts = 3
 
-    # Test the automatic polling functionality of the LiDAR sensor, to make sure we retrieve the point cloud data.
+    # Test the polling functionality of the LiDAR sensor, to make sure we retrieve the point cloud data.
     # Additionally checks are made for data presence, distribution (360 only) and consistency
-    for i in range(0, attempts):
+    for i in range(0, ATTEMPTS):
         sleep(2)
-        print("\nAutomatic polling attempt " + str(i + 1))
-        data = lidar.poll()
-        print("LiDAR point cloud data (automatic polling): ", data["pointCloud"])
+        if is_auto:
+            print("\nAutomatic polling attempt ", i + 1)
+            data = lidar.poll()
+        else:
+            print("\nAd-hoc poll request test attempt ", i + 1)
+            # send an ad-hoc polling request to the simulator.
+            request_id = lidar.send_ad_hoc_poll_request()
+            print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
+            sleep(3)
+            # Ensure that the data has been processed before collecting.
+            print(
+                "Is ad-hoc request complete? ",
+                lidar.is_ad_hoc_poll_request_ready(request_id),
+            )
+            # Collect the data now that it has been computed.
+            data = lidar.collect_ad_hoc_poll_request(request_id)
+
+        print("LiDAR point cloud data: ", data["pointCloud"])
+        print("LiDAR colour data: ", data["colours"])
+
         assert len(data["pointCloud"]) > 0
         print("PASS: Point cloud is present")
 
-        if is360:
+        if is_360:
             assert validate_distribution(data["pointCloud"]), "360 point cloud data is not uniform."
-        print("PASS: Data is uniform")
+            print("PASS: Data is uniform")
 
-        if i != attempts - 1: prev_first_point = data["pointCloud"][0]
-        if not isRotate: data_total.append(len(data["pointCloud"]))
-        print("LiDAR colour data (automatic polling): ", data["colours"])
+        if i == 0: prev_first_point = data["pointCloud"][0]
+        if not is_rotate: data_total.append(len(data["pointCloud"]))
+        assert len(data["colours"]) > 0
+        print("PASS: Colour data is present")
 
     assert prev_first_point is not None and (data["pointCloud"][0] != prev_first_point).all(), "Point cloud doesn't get updated"
     print("PASS: Point cloud gets updated")
 
-    if not isRotate:
+    if not is_rotate:
         assert np.max(data_total) - np.min(data_total) < np.max(data_total) * 0.01, "360 or static point cloud data is inconsistent"
     print("PASS: LiDAR point cloud data is consistent")
-
-    prev_first_point = None
-
-    # Test the ad-hoc polling functionality of the LiDAR sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
-    for i in range(0, attempts):
-        sleep(1)
-        print("\nAd-hoc poll request test attempt " + str(i + 1))
-        # send an ad-hoc polling request to the simulator.
-        request_id = lidar.send_ad_hoc_poll_request()
-        print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
-        sleep(3)
-        # Ensure that the data has been processed before collecting.
-        print(
-            "Is ad-hoc request complete? ",
-            lidar.is_ad_hoc_poll_request_ready(request_id),
-        )
-        # Collect the data now that it has been computed.
-        data = lidar.collect_ad_hoc_poll_request(request_id)
-        print("LiDAR point cloud data (ad-hoc polling): ", data["pointCloud"])
-        print("LiDAR colour data (ad-hoc polling): ", data["colours"])
-
-        assert len(data["pointCloud"]) > 0, "Ad-hoc point cloud not present"
-        print("PASS: Ad-hoc point cloud present")
-        if i != attempts - 1: prev_first_point = data["pointCloud"][0]
-
-    assert prev_first_point is not None and (data["pointCloud"][0] != prev_first_point).all(), "Ad-hoc point cloud doesn't get updated"
-    print("PASS: Ad-hoc point cloud gets updated")
 
 def negative_update_test(lidar: Lidar):
     sleep(2)
@@ -112,7 +103,8 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor which uses shared memory...")
 
         # Test the polling functionality of the LiDAR sensor, to make sure we retrieve the point cloud data via shared memory.
-        polling_test(lidar1, True, False)
+        polling_check(lidar1, True, True, False)
+        polling_check(lidar1, False, True, False)
         lidar1.remove()
         print("LiDAR sensor removed.")
 
@@ -121,7 +113,8 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor which DOES NOT use shared memory...")
 
         # Test the polling functionality of the LiDAR sensor, to make sure we retrieve the point cloud data without shared memory.
-        polling_test(lidar2, True, False)
+        polling_check(lidar2, True, True, False)
+        polling_check(lidar2, False, True, False)
         lidar2.remove()
         print("LiDAR sensor removed.")
 
@@ -152,7 +145,8 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor in LFO mode...")
 
         # Test the polling functionality of the LiDAR sensor in LFO mode.
-        polling_test(lidar5, False, True)
+        polling_check(lidar5, True, False, True)
+        polling_check(lidar5, False, False, True)
         lidar5.remove()
         print("LiDAR sensor removed.")
 
@@ -161,7 +155,8 @@ def test_lidar(beamng: BeamNGpy):
         print("Testing a LiDAR sensor in static mode...")
 
         # Test the polling functionality of the LiDAR sensor in LFO mode.
-        polling_test(lidar6, False, False)
+        polling_check(lidar6, True, False, False)
+        polling_check(lidar6, False, False, False)
         lidar6.remove()
         print("LiDAR sensor removed.")
 
@@ -215,7 +210,6 @@ def test_lidar(beamng: BeamNGpy):
         sleep(3)
         print("LiDAR test complete.")
         bng.ui.show_hud()
-
 
 # Executing this file will perform various tests on all available functionality relating to the LiDAR sensor.
 # It is provided to give examples on how to use all LiDAR sensor functions currently available in beamngpy.
