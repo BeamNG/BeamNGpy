@@ -28,4 +28,3 @@ class OpenDriveExporter:
             bng: The BeamNG instance.
         """
         ExportOpenDriveMap(bng,name)
-        # bng.send_recv_ge("ExportOpenDrive", filename=name)
