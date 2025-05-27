@@ -1,5 +1,6 @@
 from .navigraph_data import NavigraphData
 from .navigraph_data import ExportOpenDriveMap
+from .navigraph_data import ExportOpenStreetMap
 from .terrain_import import Terrain_Importer
 from .opendrive_export import OpenDriveExporter
 from .opendrive_import import OpenDriveImporter

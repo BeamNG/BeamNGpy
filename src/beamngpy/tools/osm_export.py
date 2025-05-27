@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from beamngpy import vec3
-from beamngpy.tools.navigraph_data import NavigraphData, ExportOpenStreetMap
+from beamngpy.tools.navigraph_data import ExportOpenStreetMap
 
 __all__ = ["OpenStreetMapExporter"]
 
