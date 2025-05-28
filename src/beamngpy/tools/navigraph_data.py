@@ -48,6 +48,20 @@ class ExportOpenStreetMap(CommBase):
         # Get the road graph data for the current map.
         self.send_recv_ge("ExportOpenStreetMap", filename=file_name)
 
+class ExportSumo(CommBase):
+
+    def __init__(self, bng: BeamNGpy,file_name):
+        """
+        Exports the road network data to Sumo (.nod.xml and .edg.xml) format.
+        Args:
+            bng: The BeamNG instance.
+        """
+        super().__init__(bng, None)
+
+        self.logger = getLogger(f"{LOGGER_ID}.Road_Graph")
+        self.logger.setLevel(DEBUG)
+        # Get the road graph data for the current map.
+        self.send_recv_ge("ExportSumo", filename=file_name)
 
 class NavigraphData(CommBase):
 
