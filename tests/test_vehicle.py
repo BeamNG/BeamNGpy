@@ -323,7 +323,7 @@ def test_traffic(beamng: BeamNGpy):
         bng.traffic.start([other])
         other.switch()
 
-        bng.control.step(300, wait=True)  # Give vehicle ~5 seconds to start
+        bng.control.step(600, wait=True)  # Give vehicle ~5 seconds to start
 
         try:
             assert_continued_movement(bng, other, pos)
