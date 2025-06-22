@@ -57,6 +57,18 @@ class PlatoonApi(Api):
         print(data)
         self._send(data).ack("platoonLoaded")
 
+    def launchPlatoon (self, leaderID: str, mode: int, speed: float, inputFlag: bool) ->None:
+        print("techCore launching")
+        data = dict(
+            type="LaunchPlatoon",
+            leaderID=leaderID,
+            mode = mode,
+            speed=speed,
+            debugFlag=inputFlag
+        )
+
+        self._send(data).ack("platoonLaunched")
+
     def setSpeed (self, leaderID: str, speed: float, inputFlag: bool) ->None:
         print("changed speed")
         
@@ -179,3 +191,5 @@ class PlatoonApi(Api):
         self._send(data).ack("updatedLeader")
         log_msg = "Leader updated."
         self._logger.info(log_msg)
+
+    
