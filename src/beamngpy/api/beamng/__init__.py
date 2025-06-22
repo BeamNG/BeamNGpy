@@ -10,3 +10,4 @@ from .traffic import TrafficApi
 from .ui import UiApi
 from .vehicles import VehiclesApi
 from .vehicles_ge import GEVehiclesApi
+from.platoon import PlatoonApi
