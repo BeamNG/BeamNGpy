@@ -54,7 +54,7 @@ class PlatoonApi(Api):
         A function for launching the platoon by setting the leader's driving mode(0: manual, 1: Span, 2: Traffic) and setting its target speed.
 
         Args:
-            leaderID: An instance of a vehicle object of the platoon's leader.
+            leader: An instance of a vehicle object of the platoon's leader.
             mode: Driving mode selected.
             speed: Target speed in m/s.
             debug: Debugging flag.
