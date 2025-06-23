@@ -13,6 +13,6 @@ You can see an example of the plugin here:
 1. Install [Wireshark](https://www.wireshark.org/).
 2. Copy `beamngpyDissector.lua` and `MessagePack.lua` from this folder into
    the Wireshark folder, which should be `%appdata%/Wireshark/plugins` on a Windows
-   system.
+   system and `~/.local/lib/wireshark/plugins` on a Linux system.
 3. Start capturing the traffic on corresponding interface, you can then use the filter
    word `beamngpy` to display only messages that were processed by the plugin.
