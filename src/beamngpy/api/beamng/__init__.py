@@ -3,6 +3,7 @@ from .camera import CameraApi
 from .control import ControlApi
 from .debug import DebugApi
 from .environment import EnvironmentApi
+from .platoon import PlatoonApi
 from .scenario import ScenarioApi
 from .settings import SettingsApi
 from .system import SystemApi
@@ -10,4 +11,3 @@ from .traffic import TrafficApi
 from .ui import UiApi
 from .vehicles import VehiclesApi
 from .vehicles_ge import GEVehiclesApi
-from.platoon import PlatoonApi

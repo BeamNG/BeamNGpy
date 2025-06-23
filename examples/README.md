@@ -37,8 +37,7 @@ More quick usage examples can be found in our [test suite][1].
 |[East Coast Random][20]|<ul><li>create a simple scenario</li><li>use the simulator's AI with BeamNGpy</li></ul>|
 |[Powertrain Analysis][23]|<ul><li>use the Powertrain sensor</li></ul>|
 |[Road Network Exporter][24]|<ul><li>Export BeamNG maps as .xodr files (OpenDRIVE).</li><li>The exported road networks contain elevation and road wideness data, along with junction connectivity.</li><li>BeamNGpy also includes a new class with which to analyse the road network data oneself, and process it as required.</li></ul>|
-
-
+|[Platooning][26]|<ul><li>form a vehicle platooning formation with BeamNGpy</li></ul>|
 
 [1]: https://github.com/BeamNG/BeamNGpy/tree/master/tests
 [2]: https://github.com/BeamNG/BeamNGpy/tree/master/examples/modInterface
@@ -64,3 +63,4 @@ More quick usage examples can be found in our [test suite][1].
 [23]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/powertrain_data.ipynb
 [24]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/road_network_exporter.py
 [25]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/scenario_control.ipynb
+[26]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/platooning.py

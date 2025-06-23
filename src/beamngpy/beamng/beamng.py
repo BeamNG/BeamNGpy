@@ -9,9 +9,19 @@ from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, List
 
-from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
-                                 EnvironmentApi, ScenarioApi, SettingsApi,
-                                 SystemApi, TrafficApi, UiApi, VehiclesApi)
+from beamngpy.api.beamng import (
+    CameraApi,
+    ControlApi,
+    DebugApi,
+    EnvironmentApi,
+    PlatoonApi,
+    ScenarioApi,
+    SettingsApi,
+    SystemApi,
+    TrafficApi,
+    UiApi,
+    VehiclesApi,
+)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError
@@ -228,8 +238,8 @@ class BeamNGpy:
     def _load_system_info(self) -> None:
         info = self.system.get_info()
         paths = self.system.get_environment_paths()
-        self.home = paths['home']
-        self.user_with_version = paths['user']
+        self.home = paths["home"]
+        self.user_with_version = paths["user"]
         self.user = str(Path(self.user_with_version).parent)
         self._host_os = info["os"]["type"]
         self._tech_enabled = info["tech"]
@@ -321,6 +331,8 @@ class BeamNGpy:
         self.get_part_annotations = self.vehicles.get_part_annotations
         self.get_current_vehicles_info = self.vehicles.get_current_info
         self.get_current_vehicles = self.vehicles.get_current
+
+        self.platoon = PlatoonApi(self)
 
     def _kill_beamng(self) -> None:
         """
@@ -447,9 +459,7 @@ class BeamNGpy:
                 )
         else:
             binary = filesystem.determine_binary(home)
-        userpath = (
-            Path(self.user) if self.user else None
-        )
+        userpath = Path(self.user) if self.user else None
         call = self._prepare_call(str(binary), userpath, extensions, *args, **opts)
 
         if platform.system() == "Linux":

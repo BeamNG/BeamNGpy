@@ -1,45 +1,37 @@
-from time import sleep
-
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging, angle_to_quat
-from beamngpy.sensors import IdealRadar, State
-from beamngpy.api.beamng.platoon import PlatoonApi
 
-
+from time import sleep
 import matplotlib.pyplot as plt
 import math
-import csv
-import os
 
 
 def main():
     set_up_simple_logging()
 
     # Start up the simulator.
-
-    bng = BeamNGpy("localhost", 64256)
+    bng = BeamNGpy("localhost", 25252)
     bng.open()
-    platoon_api = PlatoonApi(bng)
 
     # Create the vehicles.
     vehicle1 = Vehicle(
-        "ego_vehicle", model="pickup", licence="ego vehicle", color="Red"
+        "ego_vehicle", model="pickup", license="ego vehicle", color="Red"
     )
     vehicle2 = Vehicle(
-        "relay_vehicle1", model="pickup", licence="vehicle2", color="Blue"
+        "relay_vehicle1", model="pickup", license="vehicle2", color="Blue"
     )
     vehicle3 = Vehicle(
-        "relay_vehicle2", model="pickup", licence="vehicle3", color="Green"
+        "relay_vehicle2", model="pickup", license="vehicle3", color="Green"
     )
 
-    vehicle7 = Vehicle("leader3", model="bastion", licence="vehicle7", color="Orange")
+    vehicle7 = Vehicle("leader3", model="bastion", license="vehicle7", color="Orange")
     vehicle8 = Vehicle(
-        "relayVehicle31", model="bastion", licence="vehicle8", color="Purple"
+        "relay_vehicle31", model="bastion", license="vehicle8", color="Purple"
     )
     vehicle9 = Vehicle(
-        "relayVehicle32", model="bastion", licence="vehicle9", color="Yellow"
+        "relay_vehicle32", model="bastion", license="vehicle9", color="Yellow"
     )
     vehicle10 = Vehicle(
-        "relayVehicle33", model="bastion", licence="vehicle10", color="Black"
+        "relay_vehicle33", model="bastion", license="vehicle10", color="Black"
     )
 
     # Create a scenario.
@@ -49,38 +41,38 @@ def main():
 
     scenario.add_vehicle(
         vehicle1,
-        pos=(252.56326635601, 1205.0963008935, 169.6981158547),
+        pos=(252.56, 1205.09, 169.69),
         rot_quat=angle_to_quat((0, 0, 90)),
     )
     scenario.add_vehicle(
         vehicle2,
-        pos=(262.56326635601, 1205.7963008935, 169.69811585470),
+        pos=(262.56, 1205.79, 169.69),
         rot_quat=angle_to_quat((0, 0, 90)),
     )
     scenario.add_vehicle(
         vehicle3,
-        pos=(270.76326635601, 1206.5963008935, 169.69811585470),
+        pos=(270.76, 1206.59, 169.69),
         rot_quat=angle_to_quat((0, 0, 90)),
     )
 
     scenario.add_vehicle(
         vehicle7,
-        pos=(190.56326635601, 1202.0963008935, 169.6981158547),
+        pos=(190.56, 1202.09, 169.69),
         rot_quat=angle_to_quat((0, 0, 90)),
     )
     scenario.add_vehicle(
         vehicle8,
-        pos=(200.56326635601, 1202.0963008935, 169.69811585470),
+        pos=(200.56, 1202.09, 169.69),
         rot_quat=angle_to_quat((0, 0, 90)),
     )
     scenario.add_vehicle(
         vehicle9,
-        pos=(212.76326635601, 1203.0963008935, 169.69811585470),
+        pos=(212.76, 1203.09, 169.69),
         rot_quat=angle_to_quat((0, 0, 90)),
     )
     scenario.add_vehicle(
         vehicle10,
-        pos=(222.76326635601, 1203.0963008935, 169.69811585470),
+        pos=(222.76, 1203.09, 169.69),
         rot_quat=angle_to_quat((0, 0, 90)),
     )
 
@@ -92,26 +84,15 @@ def main():
     bng.ui.show_hud()
     bng.scenario.start()
 
-    vehicle1.connect(bng)
-    vehicle2.connect(bng)
-    vehicle3.connect(bng)
-
-    vehicle7.connect(bng)
-    vehicle8.connect(bng)
-    vehicle9.connect(bng)
-    vehicle10.connect(bng)
-
     sleep(5)
 
     speed1 = 20.0
     speed3 = 20.0
-    trafficMode = 0
-    platoon_api.load(
-        vehicle1.vid, vehicle2.vid, vehicle3.vid, None, speed1, True
-    )  # second vehicle joins platoon
-    platoon_api.load(
-        vehicle7.vid, vehicle8.vid, vehicle9.vid, vehicle10.vid, speed3, True
-    )
+    traffic_mode = 0
+
+    bng.platoon.load(vehicle1, vehicle2, vehicle3, None, speed1, True)
+    # second vehicle joins platoon
+    bng.platoon.load(vehicle7, vehicle8, vehicle9, vehicle10, speed3, True)
 
     oldTime = 0
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .base import Api
+from beamngpy.vehicle import Vehicle
 
 
 class PlatoonApi(Api):
@@ -8,123 +9,131 @@ class PlatoonApi(Api):
     An API for vehicle platooning formation.
 
     Args:
-        vehicle: An instance of a vehicle object.
+        beamng: An instance of the simulator.
     """
 
     def load(
         self,
-        leaderID: str,
-        veh1ID: str,
-        veh2ID: str,
-        veh3ID: str,
+        leader: Vehicle | str,
+        follower1: Vehicle | str,
+        follower2: Vehicle | str | None,
+        follower3: Vehicle | str | None,
         speed: float,
-        inputFlag: bool,
+        debug: bool = False,
     ) -> None:
         """
-        A function for forming the platoon that starts the platoon with one leader and three followers
+        A function for forming the platoon that starts the platoon with one leader and three followers.
 
         Args:
-            leaderID: An instance of a vehicle object of the platoon's leader
-            follower1ID=An instance of a vehicle object of the following vehicle
-            follower2ID=An instance of a vehicle object of the following vehicle
-            follower3ID=An instance of a vehicle object of the following vehicle
-            speed=target speed,
-            debugFlag=inputFlag
+            leader: An instance of a vehicle object of the platoon's leader.
+            follower1: An instance of a vehicle object of the following vehicle.
+            follower2: An instance of a vehicle object of the following vehicle.
+            follower3: An instance of a vehicle object of the following vehicle.
+            speed: Target speed in m/s.
+            debug: Debugging flag.
         """
-
+        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
+        follower1ID = follower1.vid if isinstance(follower1, Vehicle) else follower1
+        follower2ID = follower2.vid if isinstance(follower2, Vehicle) else follower2
+        follower3ID = follower3.vid if isinstance(follower3, Vehicle) else follower3
         data = dict(
             type="LoadPlatoon",
             leaderID=leaderID,
-            follower1ID=veh1ID,
-            follower2ID=veh2ID,
-            follower3ID=veh3ID,
+            follower1ID=follower1ID,
+            follower2ID=follower2ID,
+            follower3ID=follower3ID,
             speed=speed,
-            debugFlag=inputFlag,
+            debugFlag=debug,
         )
-
         self._send(data).ack("platoonLoaded")
 
     def launch_platoon(
-        self, leaderID: str, mode: int, speed: float, inputFlag: bool
+        self, leader: Vehicle | str, mode: int, speed: float, debug: bool = False
     ) -> None:
         """
-        A function for launching the platoon by setting the leader's driving mode(0: manual, 1: Span, 2: Traffic) and setting its target speed
+        A function for launching the platoon by setting the leader's driving mode(0: manual, 1: Span, 2: Traffic) and setting its target speed.
 
         Args:
-            leaderID: An instance of a vehicle object of the platoon's leader
-            mode: driving mode selected
-            speed: target speed
-            debugFlag=inputFlag
+            leaderID: An instance of a vehicle object of the platoon's leader.
+            mode: Driving mode selected.
+            speed: Target speed in m/s.
+            debug: Debugging flag.
         """
-
+        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
         data = dict(
             type="LaunchPlatoon",
             leaderID=leaderID,
             mode=mode,
             speed=speed,
-            debugFlag=inputFlag,
+            debugFlag=debug,
         )
-
         self._send(data).ack("platoonLaunched")
 
-    def join(self, leaderID: str, vehID: str, speed: float, inputFlag: bool) -> None:
+    def join(
+        self,
+        leader: Vehicle | str,
+        veh: Vehicle | str,
+        speed: float,
+        debug: bool = False,
+    ) -> None:
         """
-         A function for vehicles to join the platoon at the end of the platoon
+        A function for vehicles to join the platoon at the end of the platoon.
 
         Args:
-            leaderID: An instance of a vehicle object of the platoon's leader
-            vehID: An instance of a vehicle object of the external vehicle joining ID
-            speed: speed
-            debugFlag=inputFlag
+            leader: An instance of a vehicle object of the platoon's leader.
+            veh: An instance of a vehicle object of the external vehicle joining.
+            speed: Target speed in m/s.
+            debug: Debugging flag.
         """
-
+        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
+        vid = veh.vid if isinstance(veh, Vehicle) else veh
         data = dict(
             type="JoinPlatoon",
             leaderID=leaderID,
-            vid=vehID,
+            vid=vid,
             speed=speed,
-            debugFlag=inputFlag,
+            debugFlag=debug,
         )
-
         self._send(data).ack("platoonJoined")
 
-    def leave(self, leaderID: str, vehID: str, inputFlag: bool) -> None:
+    def leave(
+        self, leader: Vehicle | str, veh: Vehicle | str, debug: bool = False
+    ) -> None:
         """
-        A function for vehicles to leave the platoon
+        A function for vehicles to leave the platoon.
 
         Args:
-            leaderID: An instance of a vehicle object of the platoon's leader
-            vehID: An instance of a vehicle object of the  vehicle ID leaving the platoon of the vehicle leaving
-            debugFlag=inputFlag
+            leader: An instance of a vehicle object of the platoon's leader.
+            veh: An instance of a vehicle object of the vehicle leaving the platoon.
+            debug: Debugging flag.
         """
-
-        data = dict(
-            type="LeavePlatoon", leaderID=leaderID, vid=vehID, debugFlag=inputFlag
-        )
-
+        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
+        vid = veh.vid if isinstance(veh, Vehicle) else veh
+        data = dict(type="LeavePlatoon", leaderID=leaderID, vid=vid, debugFlag=debug)
         self._send(data).ack("platoonLeft")
 
     def join_middle(
-        self, leaderID: str, vehPID: str, vehID: str, speed: float, inputFlag: bool
+        self, leader: str, veh_platoon: str, veh: str, speed: float, debug: bool = False
     ) -> None:
         """
-        A function for vehicles to join in the middle of the platoon
+        A function for vehicles to join in the middle of the platoon.
 
         Args:
-            leaderID: An instance of a vehicle object of the platoon's leader.
-            vehPID: An instance of a vehicle object of the vehicle in the platoon the external is joining infront of
-            vehID: An instance of a vehicle object of the vehicle joining
-            speed: speed
-            debugFlag: debugFlag
+            leader: An instance of a vehicle object of the platoon's leader.
+            veh_platoon: An instance of a vehicle object of the vehicle in the platoon the external is joining infront of.
+            veh: An instance of a vehicle object of the vehicle joining.
+            speed: Target speed in m/s.
+            debug: Debugging flag.
         """
-
+        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
+        vPid = veh_platoon.vid if isinstance(veh_platoon, Vehicle) else veh_platoon
+        vid = veh.vid if isinstance(veh, Vehicle) else veh
         data = dict(
             type="JoinMiddlePlatoon",
             leaderID=leaderID,
-            vPid=vehPID,
-            vid=vehID,
+            vPid=vPid,
+            vid=vid,
             speed=speed,
-            debugFlag=inputFlag,
+            debugFlag=debug,
         )
-
         self._send(data).ack("platoonJoined")
