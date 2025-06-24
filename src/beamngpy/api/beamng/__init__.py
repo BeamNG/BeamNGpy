@@ -3,6 +3,7 @@ from .camera import CameraApi
 from .control import ControlApi
 from .debug import DebugApi
 from .environment import EnvironmentApi
+from .platoon import PlatoonApi
 from .scenario import ScenarioApi
 from .settings import SettingsApi
 from .system import SystemApi

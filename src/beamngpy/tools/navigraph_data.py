@@ -21,7 +21,7 @@ class ExportOpenDriveMap(CommBase):
 
     def __init__(self, bng: BeamNGpy,file_name):
         """
-        Fetches the raw navigraph data from the simulator.
+        Exports the road network data to OpenDrive (.xodr) format.
 
         Args:
             bng: The BeamNG instance.
@@ -33,6 +33,35 @@ class ExportOpenDriveMap(CommBase):
         # Get the road graph data for the current map.
         self.send_recv_ge("ExportOpenDrive", filename=file_name)
 
+class ExportOpenStreetMap(CommBase):
+
+    def __init__(self, bng: BeamNGpy,file_name):
+        """
+        Exports the road network data to OpenStreetMap (.osm) format.
+        Args:
+            bng: The BeamNG instance.
+        """
+        super().__init__(bng, None)
+
+        self.logger = getLogger(f"{LOGGER_ID}.Road_Graph")
+        self.logger.setLevel(DEBUG)
+        # Get the road graph data for the current map.
+        self.send_recv_ge("ExportOpenStreetMap", filename=file_name)
+
+class ExportSumo(CommBase):
+
+    def __init__(self, bng: BeamNGpy,file_name):
+        """
+        Exports the road network data to Sumo (.nod.xml and .edg.xml) format.
+        Args:
+            bng: The BeamNG instance.
+        """
+        super().__init__(bng, None)
+
+        self.logger = getLogger(f"{LOGGER_ID}.Road_Graph")
+        self.logger.setLevel(DEBUG)
+        # Get the road graph data for the current map.
+        self.send_recv_ge("ExportSumo", filename=file_name)
 
 class NavigraphData(CommBase):
 

@@ -36,25 +36,6 @@ def determine_home(home: str | None) -> Path:
     return Path(home).resolve()
 
 
-def determine_userpath(binary: Path) -> Path | None:
-    """
-    Tries to find the userpath based on the beamng installation if the user
-    did not provide a custom userpath.
-    """
-    if platform.system() == "Linux":
-        return None
-    user = Path.home() / "AppData"
-    user = user / "Local"
-    if ".research" in binary.name:
-        user = user / "BeamNG.research"
-    elif ".tech" in binary.name:
-        user = user / "BeamNG.tech"
-    else:
-        user = user / "BeamNG.drive"
-    logger.debug(f"Userpath is set to {user.as_posix()}")
-    return user
-
-
 def determine_binary(home: Path) -> Path:
     """
     Tries to find one of the common BeamNG-binaries in the specified home

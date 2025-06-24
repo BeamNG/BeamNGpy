@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.33
+============
+- Various fixes for BeamNG.tech included, read the :blog:`BeamNG.tech 0.36 changelog <beamng-tech-036>` for details.
+- Renamed RADAR and ultrasonic parameter from 'resolution' to 'size' for naming consistency with other sensors and outside the Python API.
+- Expanded and/or improved tests for ultrasonic, RADAR, LiDAR, advanced IMU and camera sensors.
+
 Version 1.32
 ============
 - Headless mode added and various Linux fixes, read the :blog:`BeamNG.tech 0.35 changelog <beamng-tech-035>` for details.
