@@ -39,6 +39,7 @@ class RootApi(VehicleApi):
         parkingbrake: float | None = None,
         clutch: float | None = None,
         gear: int | None = None,
+        is_adas: bool | None = None,
     ) -> None:
         options = {}
         if steering is not None:
@@ -53,6 +54,8 @@ class RootApi(VehicleApi):
             options["clutch"] = clutch
         if gear is not None:
             options["gear"] = gear
+        if is_adas:
+            options["is_adas"] = is_adas
 
         data = dict(type="Control", **options)
         self._send(data).ack("Controlled")

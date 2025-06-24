@@ -37,9 +37,11 @@ def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
             sensor_readings = sensor_readings[list(sensor_readings.keys())[-1]]
         print("Advanced IMU readings: ", sensor_readings)
 
-        assert len(sensor_readings.keys()) > 0 \
-            and "accSmooth" in sensor_readings \
-            and sensor_readings["accSmooth"][0] != 0, "Readings not present"
+        assert (
+            len(sensor_readings.keys()) > 0
+            and "accSmooth" in sensor_readings
+            and sensor_readings["accSmooth"][0] != 0
+        ), "Readings not present"
         print("PASS: Readings present")
         all_readings.append(sensor_readings["accSmooth"][0])
 

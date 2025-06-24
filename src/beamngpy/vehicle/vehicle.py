@@ -305,6 +305,7 @@ class Vehicle:
         parkingbrake: float | None = None,
         clutch: float | None = None,
         gear: int | None = None,
+        is_adas: bool = False,
     ) -> None:
         """
         Sends a control message to the vehicle, setting vehicle inputs
@@ -318,7 +319,7 @@ class Vehicle:
             clutch: Clutch level, from 0.0 to 1.0.
             gear: Gear to shift to, -1 eq backwards, 0 eq neutral, 1 to X eq nth gear
         """
-        return self._root.control(steering, throttle, brake, parkingbrake, clutch, gear)
+        return self._root.control(steering, throttle, brake, parkingbrake, clutch, gear, is_adas)
 
     def set_color(self, rgba: Color = (1.0, 1.0, 1.0, 1.0)) -> None:
         """
