@@ -95,6 +95,8 @@ class Mesh(CommBase):
         Returns:
             True if the node is in one of the selected mesh groups, otherwise false
         """
+        if len(v) <= Mesh.DATA_KEYS["partOrigin"]:
+            return False
         return v[Mesh.DATA_KEYS["partOrigin"]] in self.groups
 
     def _is_beam_relevant(self, b0, b1):
