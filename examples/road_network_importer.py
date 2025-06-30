@@ -24,10 +24,10 @@ def main():
     )  # import an OpenDrive file (.xodr).
 
     # Import OpenStreetMap (.osm).
-    # filename = SCRIPT_DIR / 'data' / 'map.osm'
+    # filename = SCRIPT_DIR / 'data' / 'London.osm'
     # OpenStreetMapImporter.import_osm(filename, scenario)                 # import an OpenStreetMap file (.osm).
 
-    # prefix = str(SCRIPT_DIR / 'data' / 'map_prefix')                           # Import Sumo files (.nod.xml, .edg.xml).
+    # prefix = str(SCRIPT_DIR / 'data' / 'wcusa')                           # Import Sumo files (.nod.xml, .edg.xml).
     # SumoImporter.import_sumo(prefix, scenario)
 
     # Start up BeamNG with the imported road network.
