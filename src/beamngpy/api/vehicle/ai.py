@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Dict, List
-
+import json
+from pathlib import Path
+from typing import Dict, List, Union
 from beamngpy.logging import BNGValueError
 from beamngpy.types import Float3, StrDict
 
@@ -157,6 +158,99 @@ class AIApi(VehicleApi):
         data["script"] = script
         data["cling"] = cling
         self._send(data).ack("AiScriptSet")
+
+
+    def import_script_ai_file(self, file_path: Union[str, Path]) -> List[Dict[str, float]]:
+        """
+        Import a script AI file from BeamNG.drive and return it in BeamNGpy script format.
+        
+        Automatically looks in the BeamNG user folder if only a filename is provided.
+        
+        Args:
+            file_path: Path to the JSON file to import. If just a filename is provided,
+                    it will automatically look in the BeamNG user folder first.
+                    
+            Returns:
+                Script data in format: [{"x": ..., "y": ..., "z": ..., "t": ...}, ...]
+
+            Example:
+                script = import_script_ai_file("script_name.json")
+                vehicle.ai.import_script_ai_file(script)
+            """
+        file_path = Path(file_path)
+
+        # If only a filename is provided, try to find it in the user folder first
+        if not file_path.is_absolute() and len(file_path.parts) == 1:
+            # Try to get the user folder from the connected BeamNG instance
+            if hasattr(self._vehicle, 'bng') and self._vehicle.bng and hasattr(self._vehicle.bng, 'user_with_version'):
+                user_folder_path = Path(self._vehicle.bng.user_with_version) / file_path
+                if user_folder_path.exists():
+                    file_path = user_folder_path
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"Script file not found: {file_path}")
+
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+
+        # All BeamNG.drive path files have the same structure with "path" array
+        if 'path' not in data:
+            raise ValueError(f"File {file_path} is not a valid BeamNG.drive path file (missing 'path' array)")
+
+        path_data = data['path']
+
+        if not path_data:
+            raise ValueError(f"No path data found in {file_path}")
+
+        # Check if we have time values or need to calculate them
+        has_time = any('t' in waypoint for waypoint in path_data[:3])  # Check first 3 points
+
+        script = []
+
+        if has_time:
+            # drawn_path_time.json and recorded_path.json - use existing time values
+            for waypoint in path_data:
+                script_point = {
+                    'x': float(waypoint['x']),
+                    'y': float(waypoint['y']),
+                    'z': float(waypoint['z']),
+                    't': float(waypoint['t'])
+                }
+                script.append(script_point)
+        else:
+            # drawn_path_velocity.json - ignore velocity, calculate time from distance
+            current_time = 0.0
+
+            for i, waypoint in enumerate(path_data):
+                script_point = {
+                    'x': float(waypoint['x']),
+                    'y': float(waypoint['y']),
+                    'z': float(waypoint['z']),
+                    't': current_time
+                }
+                script.append(script_point)
+
+                # Calculate time to next waypoint based on distance
+                if i < len(path_data) - 1:
+                    next_waypoint = path_data[i + 1]
+
+                    # Calculate distance to next point
+                    dx = float(next_waypoint['x']) - float(waypoint['x'])
+                    dy = float(next_waypoint['y']) - float(waypoint['y'])
+                    dz = float(next_waypoint['z']) - float(waypoint['z'])
+                    distance = (dx**2 + dy**2 + dz**2)**0.5
+
+                    # Use distance-based timing (assume ~15 m/s average speed)
+                    time_increment = distance / 15.0 if distance > 0 else 1.0
+                    current_time += time_increment
+
+        if len(script) < 3:
+            raise ValueError(f"Script must have at least 3 waypoints, got {len(script)}")
+
+        return script
+
+
+
 
     def set_aggression(self, aggr: float) -> None:
         data: StrDict = dict(type="SetAiAggression")
