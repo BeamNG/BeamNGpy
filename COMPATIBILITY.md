@@ -4,7 +4,7 @@ Below is the complete list of compatible BeamNG.tech and BeamNGpy versions. See 
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
-| 0.36                | [1.33](https://github.com/BeamNG/BeamNGpy/tree/v1.33)     |
+| 0.36                | [1.33](https://github.com/BeamNG/BeamNGpy/tree/v1.33.1)   |
 | 0.35                | [1.32](https://github.com/BeamNG/BeamNGpy/tree/v1.32)     |
 | 0.34                | [1.31](https://github.com/BeamNG/BeamNGpy/tree/v1.31)     |
 | 0.33                | [1.30](https://github.com/BeamNG/BeamNGpy/tree/v1.30)     |

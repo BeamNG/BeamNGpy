@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.33.1
+==============
+- Fixed an issue where the :pydocs:`Camera <camera>` sensor with ``is_streaming=True`` could fail to decode data because of a data race.
+- Fixed a possible error while getting the data from the :pydocs:`Mesh sensor <mesh-sensor>`.
+- Fixed the :repo133:`examples/radar_analysis.ipynb` example.
+
 Version 1.33
 ============
 - Various fixes for BeamNG.tech included, read the :blog:`BeamNG.tech 0.36 changelog <beamng-tech-036>` for details.
