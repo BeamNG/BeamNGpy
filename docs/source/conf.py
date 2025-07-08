@@ -88,6 +88,7 @@ extlinks = {
         "%s",
     ),
     "repo132": ("https://github.com/BeamNG/BeamNGpy/blob/v1.32/%s", "%s"),
+    "repo133": ("https://github.com/BeamNG/BeamNGpy/blob/v1.33/%s", "%s"),
     "blog": ("https://beamng.tech/blog/%s", None),
     "techdocs": ("https://docs.beamng.com/beamng_tech/%s", None),
     "drivedocs": ("https://docs.beamng.com/%s", None),
