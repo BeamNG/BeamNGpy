@@ -291,29 +291,34 @@ class Camera(CommBase):
             return None
 
         data = raw_data.encode() if isinstance(raw_data, str) else raw_data
+        data_copy = np.frombuffer(data, dtype=np.uint8).copy()  # prevent data races
 
         header_size = palette and 1 or 0
         palette_bytes = (
-            (palette and len(data) > 0) and data[0] * 4 or 0
+            (palette and len(data_copy) > 0) and int(data_copy[0]) * 4 or 0
         )  # palette is 4 bytes per color
         if palette_bytes > 0:  # palette decoding
             palette = np.frombuffer(
-                data[header_size : header_size + palette_bytes], dtype=np.uint8
+                data_copy[header_size : header_size + palette_bytes], dtype=np.uint8
             ).reshape(-1, 4)[:, :3]
-            decoded = np.frombuffer(
-                data[
-                    header_size
-                    + palette_bytes : header_size
-                    + palette_bytes
-                    + width * height
-                ],
-                dtype=np.uint8,
-            )
-            decoded = palette[decoded].reshape(height, width, 3)
+            try:
+                decoded = np.frombuffer(
+                    data_copy[
+                        header_size
+                        + palette_bytes : header_size
+                        + palette_bytes
+                        + width * height
+                    ],
+                    dtype=np.uint8,
+                )
+                decoded = palette[decoded].reshape(height, width, 3)
+            except:
+                print("Error while receiving data")
+                decoded = np.zeros(dtype=np.uint8, shape=(height, width, 3))
         else:  # simple RGB decoding
             # Re-shape the array, based on the number of channels present in the data.
-            decoded = np.frombuffer(data[header_size:], dtype=np.uint8)
-            decoded = decoded.reshape(height, width, 3).copy()
+            decoded = np.frombuffer(data_copy[header_size:], dtype=np.uint8)
+            decoded = decoded.reshape(height, width, 3)
         if force_ndarray:
             return decoded
 
