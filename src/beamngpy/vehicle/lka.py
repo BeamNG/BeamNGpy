@@ -24,7 +24,8 @@ class LaneKeepingAssist:
     """
     A camera sensor-based ADAS feature, preventing overspeeding into corners.
     The system uses the road markings to detect the radius of the corner ahead
-    of the vehicle and slow down to a safe speed.
+    of the vehicle and slow down to a safe speed. The feature is only active at speeds
+    above 39.6 km/h and when the vehicle's hazard lights and blinkers are not on.
 
     Args:
         bng: The BeamNGpy instance, with which to communicate to the simulation.
@@ -453,7 +454,7 @@ class LaneKeepingAssist:
 
     def __calculate_braking(self, target):
         if self.electrics.data['wheelspeed'] > target:
-            brake = min(1.0, (self.electrics.data['wheelspeed']**2 - target**2) / (491 * (1 + self.risk_level)))
+            brake = min(1.0, (self.electrics.data['wheelspeed']**2 - target**2) / (491 * (1 + np.clip(self.risk_level, 1, 3))))
             # [...] / (dist->100 * (1g->9.81 * (1 + safety_level) / 2))
             # safety_level = 1 -> 1g
             # safety_level = 2 -> 1.5g
