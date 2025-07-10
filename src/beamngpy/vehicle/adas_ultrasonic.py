@@ -11,9 +11,12 @@ if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
 
-class AdasUssApi(CommBase):
+class AdasUltrasonicApi(CommBase):
     """
     An API for ultrasonic sensor-based parking assistance and blind spot detection of BeamNG.tech vehicle.
+    A configuration with 10 ultrasonic sensors is used for parking assistance, 4 of which can also be used for blind spot detection.
+    The parking assistance activates only at speeds below 12.6 km/h. It makes sure to slow down and stop the vehicle to avoid a collision.
+    The blind spot detection is visualised through HUD notifications.
 
     Args:
         bng: The BeamNGpy instance, with which to communicate to the simulation.
@@ -23,7 +26,7 @@ class AdasUssApi(CommBase):
     def __init__(self, bng: BeamNGpy, vehicle: Vehicle):
         super().__init__(bng, vehicle)
 
-        self.logger = getLogger(f"{LOGGER_ID}.AdasUssApi")
+        self.logger = getLogger(f"{LOGGER_ID}.AdasUltrasonicApi")
         self.logger.setLevel(DEBUG)
 
         self.running = False
@@ -33,48 +36,48 @@ class AdasUssApi(CommBase):
         parkAssist: bool = True,
         blindSpot: bool = True,
         crawl: bool = True,
-        visualised: bool = True
+        is_visualised: bool = True
     ) -> None:
         """
-        Starts USS ADAS features. Preferrably do this when the vehicle is still.
+        Starts Ultrasonic ADAS features. Preferrably do this when the vehicle is still.
 
         Args:
             parkAssist: whether to enable parking assistance.
             blindSpot: whether to enable blind spot detection.
             crawl: whether the vehicle's transmission has inherent crawl.
-            visualised: whether the ultrasonic sensors should be visualised.
+            is_visualised: whether the ultrasonic sensors should be is_visualised.
         """
         if self.running:
-            self.logger.warning("USS ADAS is already running.")
+            self.logger.warning("Ultrasonic ADAS is already running.")
             return
 
         self.send_ack_ge(
-            "LoadUSSADAS",
-            ack="USSADASloaded",
+            "LoadUltrasonicADAS",
+            ack="UltrasonicADASloaded",
             vid=self.vehicle.vid,
             parkAssist=parkAssist,
             blindSpot=blindSpot,
             crawl=crawl,
-            visualised=visualised,
+            is_visualised=is_visualised,
         )
 
         self.running = True
 
-        self.logger.info("Started USS ADAS.")
+        self.logger.info("Started Ultrasonic ADAS.")
 
     def stop(self) -> None:
         """
-        This stops USS ADAS features from the associated vehicle.
+        This stops Ultrasonic ADAS features from the associated vehicle.
         """
         if not self.running:
-            self.logger.warning("USS ADAS is not running.")
+            self.logger.warning("Ultrasonic ADAS is not running.")
             return
 
         self.send_ack_ge(
-            "UnloadUSSADAS",
-            ack="USSADASunloaded",
+            "UnloadUltrasonicADAS",
+            ack="UltrasonicADASunloaded",
         )
 
         self.running = False
 
-        self.logger.info("Stopped USS ADAS.")
+        self.logger.info("Stopped Ultrasonic ADAS.")

@@ -3,7 +3,7 @@ from __future__ import annotations
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
-from beamngpy.vehicle.adas_uss import AdasUssApi
+from beamngpy.vehicle.adas_ultrasonic import AdasUltrasonicApi
 
 
 def main():
@@ -21,21 +21,19 @@ def main():
         "adas_test",
     )
     # Add the vehicle to the scenario.
-    scenario.add_vehicle(vehicle, pos=(0, 0, 102))
+    scenario.add_vehicle(vehicle, pos=(0, 0, 100.1))
     scenario.make(bng)
-    # Set simulator to 60hz temporal resolution
-    bng.settings.set_deterministic(60)
     bng.scenario.load(scenario)
     bng.scenario.start()
 
-    adas_uss = AdasUssApi(bng, vehicle)
-    adas_uss.start(True, True, True)
+    adas_ultrasonic = AdasUltrasonicApi(bng, vehicle)
+    adas_ultrasonic.start()
 
     print("You have 60 seconds to drive around and test out the ADAS.")
     for _ in range(60):
         sleep(1)
 
-    adas_uss.stop()
+    adas_ultrasonic.stop()
 
     print("Example finished.")
     bng.disconnect()
