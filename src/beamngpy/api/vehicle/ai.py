@@ -174,8 +174,10 @@ class AIApi(VehicleApi):
                 Script data in format: [{"x": ..., "y": ..., "z": ..., "t": ...}, ...]
 
             Example:
-                script = import_script_ai_file("script_name.json")
-                vehicle.ai.import_script_ai_file(script)
+                    # //script location is userfolder  %USERPROFILE%\AppData\Local\BeamNG.drive\0.xx
+                        script = vehicle.ai.import_script_ai_file("<script_AI_editor_path_name>.json")
+                        vehicle.ai.set_script(script)
+
             """
         file_path = Path(file_path)
 
