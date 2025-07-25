@@ -162,7 +162,7 @@ class AIApi(VehicleApi):
 
     def import_script_ai_file(self, file_path: Union[str, Path]) -> List[Dict[str, float]]:
         """
-        Import a script AI file from BeamNG.drive and return it in BeamNGpy script format.
+        Import a script AI file from BeamNG and return it in BeamNGpy script format.
         
         Automatically looks in the BeamNG user folder if only a filename is provided.
         
@@ -174,8 +174,8 @@ class AIApi(VehicleApi):
                 Script data in format: [{"x": ..., "y": ..., "z": ..., "t": ...}, ...]
 
             Example:
-                    # //script location is userfolder  %USERPROFILE%\AppData\Local\BeamNG.drive\0.xx
-                        script = vehicle.ai.import_script_ai_file("<script_AI_editor_path_name>.json")
+                    # //script location is userfolder 
+                        script = vehicle.ai.import_script_ai_file("<script_AI_editor_name>.json")
                         vehicle.ai.set_script(script)
 
             """
