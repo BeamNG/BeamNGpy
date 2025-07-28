@@ -150,11 +150,11 @@ def test_lidar(beamng: BeamNGpy):
         lidar5.remove()
         print("LiDAR sensor removed.")
 
-        # Create a LiDAR sensor that works in fixed mode
+        # Create a LiDAR sensor that works in static mode
         lidar6 = Lidar("lidar6", bng, vehicle, is_using_shared_memory=True, is_360_mode=False, horizontal_angle=90)
         print("Testing a LiDAR sensor in static mode...")
 
-        # Test the polling functionality of the LiDAR sensor in LFO mode.
+        # Test the polling functionality of the LiDAR sensor in static mode.
         polling_check(lidar6, True, False, False)
         polling_check(lidar6, False, False, False)
         lidar6.remove()

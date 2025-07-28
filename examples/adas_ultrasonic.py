@@ -17,20 +17,23 @@ def main():
     vehicle = Vehicle("ego_vehicle", model="etk800", licence="PYTHON", color="Red")
     # Create a scenario.
     scenario = Scenario(
-        "garage_v2",
-        "adas_test",
+        "gridmap_v2",
+        "adas_ultrasonic_example",
     )
     # Add the vehicle to the scenario.
-    scenario.add_vehicle(vehicle, pos=(0, 0, 100.1))
+    scenario.add_vehicle(vehicle, pos=(531.91, 263.99, 100.3), rot_quat=(0.0053479, 0.0082936, 0.7021236, 0.7119867))
     scenario.make(bng)
     bng.scenario.load(scenario)
     bng.scenario.start()
 
+    # Ensure the vehicle doesn't use arcade controls
+    vehicle.set_shift_mode("realistic_automatic")
+
     adas_ultrasonic = AdasUltrasonicApi(bng, vehicle)
     adas_ultrasonic.start()
 
-    print("You have 60 seconds to drive around and test out the ADAS.")
-    for _ in range(60):
+    print("You have 3 minutes to drive around and test out the ADAS.")
+    for _ in range(180):
         sleep(1)
 
     adas_ultrasonic.stop()

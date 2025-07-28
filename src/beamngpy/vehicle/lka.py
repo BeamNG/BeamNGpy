@@ -3,6 +3,7 @@ from __future__ import annotations
 import threading
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
@@ -15,10 +16,6 @@ if TYPE_CHECKING:
 
 from beamngpy.sensors import Electrics, Camera
 
-#########
-## WIP ##
-#########
-
 
 class LaneKeepingAssist:
     """
@@ -26,12 +23,15 @@ class LaneKeepingAssist:
     The system uses the road markings to detect the radius of the corner ahead
     of the vehicle and slow down to a safe speed. The feature is only active at speeds
     above 39.6 km/h and when the vehicle's hazard lights and blinkers are not on.
+    Optionally, this assistant can also nudge the vehicle's steering wheel to notify
+    the driver that the vehicle is exiting or about to exit the lane. (experimental)
 
     Args:
         bng: The BeamNGpy instance, with which to communicate to the simulation.
         vehicle: The vehicle to which this feature should be attached.
         electrics: The electrics sensor to use for the vehicle. If not provided, a new one will be created.
         risk_level: Controls the cornering speed limit. 1 is the lowest, 3 is the highest.
+        steering_strength: Controls the strength of steering nudge (0-100).
     """
 
     def __init__(
@@ -39,7 +39,9 @@ class LaneKeepingAssist:
         bng: BeamNGpy,
         vehicle: Vehicle,
         electrics: Electrics | None = None,
-        safety_level: int = 1
+        risk_level: int = 2,
+        steering_strength: float = 15,
+        detect_yellow: bool = False
     ):
         self.logger = getLogger(f"{LOGGER_ID}.LaneKeepingAssist")
         self.logger.setLevel(DEBUG)
@@ -47,8 +49,11 @@ class LaneKeepingAssist:
         self.bng = bng
         self.vehicle = vehicle
         self.electrics = electrics
-        self.risk_level = safety_level
+        self.risk_level = np.clip(risk_level, 1, 3) - 1
         self.running = False
+        self.steering_strength = np.clip(steering_strength, 0, 100)
+        self.detect_yellow = detect_yellow
+        self.last_color_img = None # Added for yellow line detection
 
     def start(self):
         """
@@ -73,23 +78,24 @@ class LaneKeepingAssist:
             pos=(0, -0.35, 1.3),
             resolution=(1280, 720),
             field_of_view_y=30,
-            near_far_planes=(0.1, 120),
+            near_far_planes=(0.1, 150),
             is_render_colours=True,
             is_render_depth=False,
             is_render_annotations=False,
             is_render_instance=False,
             is_streaming=True,
             is_using_shared_memory=True,
-            is_visualised=True
+            is_visualised=False
         )
 
-        self.prev_left_fit = np.array([])
-        self.prev_right_fit = np.array([])
-        self.left_fit_hist = np.array([])
-        self.right_fit_hist = np.array([])
         self.timestamp = 0.0
         self.last_brake = 0.0
+        self.steering = 0.0
         self.running = True
+
+        self.vehicle.control(throttle=0.0, brake=0.0)
+
+        self.last_radii = [None, None]
 
         self.lka_thread = threading.Thread(target=self.__lka_control_loop)
         self.lka_thread.daemon = True  # Thread will be terminated when main program exits
@@ -102,143 +108,129 @@ class LaneKeepingAssist:
         while self.running:
             self.vehicle.sensors.poll('state', 'electrics')
 
-            if (self.vehicle.state['time'] - self.timestamp > 0.067
-                and self.electrics.data['wheelspeed'] > 11
+            if (self.electrics.data['wheelspeed'] > 11  # 11
                 and not self.electrics.data['hazard_signal']
                 and not self.electrics.data['left_signal']
                 and not self.electrics.data['right_signal']):
 
-                # 3. Poll sensors
-                img = self.camera.stream()['colour']
+                if self.vehicle.state['time'] - self.timestamp > 0.067:
+                    # 3. Poll sensors
+                    img = self.camera.stream()['colour']
 
-                # 4. Process sensors
-                # Get camera image for lane detection
-                img = np.array(img, dtype=np.uint8).reshape(720, 1280, 3)
-                img = (0.299 * img[:, :, 0] +
-                       0.587 * img[:, :, 1] +
-                       0.114 * img[:, :, 2])
+                    # 4. Process sensors
+                    img = np.array(img, dtype=np.uint8).reshape(720, 1280, 3)
 
-                # 5. Process lane detection
-                radius = self.__analyze_img(img)
+                    # 5. Process lane detection
+                    radius, bases = self.__analyze_img(img)
 
-                if radius is None: continue
+                    if radius is None:
+                        self.__reset_adas_controls()
+                        self.last_radii = [None, None]
+                        continue
 
-                # 6. Calculate braking/steering correction
-                throttle, brake = self.__calculate_braking(np.sqrt(4.6 * radius))
-                self.last_brake = brake
+                    # 6. Calculate braking/steering correction
+                    throttle, brake = self.__calculate_braking(np.sqrt(2.8 * radius))
+                    self.last_brake = brake
 
-                # 7. Output
-                self.vehicle.control(throttle=throttle, brake=brake, is_adas=True)
+                    if self.steering_strength > 0:
+                        self.steering = self.__calculate_steering(bases)
 
-                self.timestamp = self.vehicle.state['time']
-            elif self.last_brake > 0.0:
-                self.vehicle.control(throttle=1.0, brake=0.0, is_adas=True)
-                self.last_brake = 0.0
+                    # 7. Output
+                    self.vehicle.control(throttle=throttle, brake=brake, steering=self.steering, is_adas=True)
 
+                    self.timestamp = self.vehicle.state['time']
+            else:
+                self.last_radii = [None, None]
+                self.__reset_adas_controls()
+
+    def __reset_adas_controls(self):
+        self.vehicle.control(throttle=1.0, brake=0.0, is_adas=True)
+        self.last_brake = 0.0
+        if self.steering != 0.0:
+            self.vehicle.control(steering=0.0, is_adas=True)
+            self.steering = 0.0
 
     def __analyze_img(self, img):
-        # DONE: instead of making a histogram of bottom 10%, take more sparse samples e.g. once every 5-10 rows.
-        # Note: think about detecting yellow lines
-        # DONE: detection of only one line
-        # Note: give steering force in one direction
-
-        if self.vehicle.state['time'] - self.timestamp > 5:
-            self.__delete_hist(True)
+        # TUNING: think about detecting yellow lines
+        # TUNING: give steering force in one direction
+        # Note: test higher graphics settings
 
         processed = self.__binary_threshold(img)
         processed = self.__birdeye_view(processed)
 
-        # Determine which lanes need detection vs previous poly tracking
-        need_detect_left = len(self.left_fit_hist) == 0
-        need_detect_right = len(self.right_fit_hist) == 0
+        MIDPOINT = 640
+        halves = [
+            np.sum(processed[650::5, :MIDPOINT], axis=0),
+            np.sum(processed[650::5, MIDPOINT:], axis=0)
+        ]
+        bases = [None, None]
 
-        # Initialize results
-        leftx, lefty, rightx, righty = None, None, None, None
+        for i, half in enumerate(halves):
+            peak = np.argmax(half)
+            if half[peak] > 1:
+                bases[i] = peak + (MIDPOINT * i)
 
-        # Get detection results for lanes that need it
-        if need_detect_left or need_detect_right:
-            det_leftx, det_lefty, det_rightx, det_righty = self.__detect_lane_lines(
-                processed, process_left=need_detect_left, process_right=need_detect_right
-            )
-            if need_detect_left:
-                leftx = det_leftx
-                lefty = det_lefty
-            if need_detect_right:
-                rightx = det_rightx
-                righty = det_righty
-
-
-        # Get poly tracking results for lanes that have history
-        if not need_detect_left or not need_detect_right:
-            # Calculate previous fits for tracking
-            if not need_detect_left:
-                self.prev_left_fit = [
-                    np.mean(self.left_fit_hist[:, 0]),
-                    np.mean(self.left_fit_hist[:, 1]),
-                    np.mean(self.left_fit_hist[:, 2])
-                ]
-            if not need_detect_right:
-                self.prev_right_fit = [
-                    np.mean(self.right_fit_hist[:, 0]),
-                    np.mean(self.right_fit_hist[:, 1]),
-                    np.mean(self.right_fit_hist[:, 2])
-                ]
-
-            poly_leftx, poly_lefty, poly_rightx, poly_righty = self.__find_lane_pixels_using_prev_poly(
-                processed, process_left=not need_detect_left, process_right=not need_detect_right
-            )
-
-            if not need_detect_left:
-                leftx = poly_leftx
-                lefty = poly_lefty
-            if not need_detect_right:
-                rightx = poly_rightx
-                righty = poly_righty
+        # Detect lane pixels using windowing algorithm
+        lane_x, lane_y = self.__detect_lane_lines(processed, bases)
 
         # Check if we have any valid lanes
-        if (leftx is None or len(leftx) == 0) and (rightx is None or len(rightx) == 0):
-            # Delete histories for failed lanes
-            self.__delete_hist(True,
-                             delete_left=len(self.left_fit_hist) <= 2,
-                             delete_right=len(self.right_fit_hist) <= 2)
-            return None
+        if (lane_x[0] is None or len(lane_x[0]) == 0) and (lane_x[1] is None or len(lane_x[1]) == 0):
+            return None, None
 
         # Fit polynomials
-        left_fit, right_fit, left_fitx, right_fitx, ploty = self.__fit_poly(
-            processed, leftx, lefty, rightx, righty
+        fitx, ploty = self.__fit_poly(
+            processed, lane_x, lane_y, bases
         )
 
+        # if fitx[0] is not None or fitx[1] is not None or any(x is not None for x in lane_x):
+        #     self.bng.pause()
+        #     plt.figure(figsize=(12, 8))
+        #     plt.imshow(processed, cmap='gray')
 
-        # Only return None if both fits failed
-        if left_fit is None and right_fit is None:
-            # Delete histories only if we were using previous poly (not fresh detection)
-            if not need_detect_left or not need_detect_right:
-                self.__delete_hist(True,
-                                 delete_left=len(self.left_fit_hist) <= 2,
-                                 delete_right=len(self.right_fit_hist) <= 2)
-            return None
-        else:
-            # Update histories for successful fits
-            self.__update_history(left_fit, right_fit)
+        #     for x_coords, y_coords in zip(lane_x, lane_y):
+        #         if x_coords is not None and y_coords is not None:
+        #             plt.scatter(x_coords, y_coords, s=1, alpha=0.6)
 
+        #     for fit in fitx:
+        #         if fit is not None:
+        #             valid = (fit >= 0) & (fit < processed.shape[1])
+        #             if np.any(valid):
+        #                 plt.plot(fit[valid], ploty[valid], linewidth=3)
 
-        # Clean up long histories after updating
-        if len(self.left_fit_hist) > 9 or len(self.right_fit_hist) > 9:
-            self.__delete_hist(False,
-                             delete_left=len(self.left_fit_hist) > 9,
-                             delete_right=len(self.right_fit_hist) > 9)
+        #     plt.show()
+        #     self.bng.resume()
 
-        return self.__measure_curvature(left_fitx, right_fitx, ploty)
+        radii = self.__limit_radius_change(self.__measure_curvature(fitx, ploty))
+        radii = [r for r in radii if r is not None]
+
+        return np.mean(radii) if radii else None, bases
 
     def __binary_threshold(self, img):
-        blur = cv2.GaussianBlur(img, (5, 5), 0)
-        avg = cv2.mean(img[650:, :])[0]
-        thresh = avg + (240 - avg) * 0.7
+        gray = (0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2])
 
-        white_binary = np.zeros_like(blur)
-        white_binary[(blur > thresh) & (blur <= 240)] = 1
+        avg = cv2.mean(gray[580::10, :])[0]
+        thresh = avg * 1.5 * np.exp(-0.0027 * (avg - 90))
 
-        return white_binary
+        white_binary = np.zeros_like(gray)
+        white_binary[(gray > thresh) & (gray <= 240)] = 1
+
+        if not self.detect_yellow:
+            return white_binary
+
+        hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
+        fac = thresh / 100.0
+
+        yellow_mask = ((hsv[:, :, 0] >= 17) & (hsv[:, :, 0] <= (40 + 25 * np.log(1 + fac))) &  # hue
+                       (hsv[:, :, 1] >= (40 + 25 * np.log(1 + fac))) &  # saturation
+                       (hsv[:, :, 2] >= (50 + 35 * (fac ** 0.5))))  # value
+
+        yellow_binary = np.zeros_like(white_binary)
+        yellow_binary[yellow_mask] = 1
+
+        combined_binary = np.clip(yellow_binary + white_binary, 0, 1)
+
+        return combined_binary
 
     def __birdeye_view(self, img):
         # Cache transformation matrix if not already computed
@@ -248,9 +240,9 @@ class LaneKeepingAssist:
 
             src = np.array([
                 (117, 719),  # bottom-left corner
-                (617, 363),  # top-left corner
-                (662, 363),  # top-right corner
-                (1215, 719)   # bottom-right corner
+                (601, 383),  # top-left corner
+                (703, 383),  # top-right corner
+                (1215, 719)  # bottom-right corner
             ], dtype='f')
             dst = np.array([
                 [offset, img_size[1]],
@@ -264,34 +256,16 @@ class LaneKeepingAssist:
 
         return cv2.warpPerspective(img, self._birdeye_transform, self._birdeye_img_size)
 
-    def __detect_lane_lines(self, binary_birdeye, process_left=True, process_right=True):
+    def __detect_lane_lines(self, binary_birdeye, bases):
         # Constants
-        MIDPOINT = 640
-        NWINDOWS = 15
-        MARGIN = 100
-        MINPIX = 20
+        NWINDOWS = 18
+        MARGIN = 80
+        MINPIX = 30
 
-        histogram = np.sum(binary_birdeye[580::10, :], axis=0)
-
-        left_half = histogram[:MIDPOINT]
-        right_half = histogram[MIDPOINT:]
-
-        left_base = None
-        right_base = None
-
-        if process_left:
-            left_peak = np.argmax(left_half)
-            if left_half[left_peak] > 0:
-                left_base = left_peak
-
-        if process_right:
-            right_peak = np.argmax(right_half)
-            if right_half[right_peak] > 0:
-                right_base = right_peak + MIDPOINT
-
-        if ((left_base is None and right_base is None) or
-           (left_base is not None and right_base is not None and right_base - left_base < 200)):
-            return None, None, None, None
+        if ((bases[0] is None and bases[1] is None) or
+           ((bases[0] is not None and bases[1] is not None) and
+            (bases[1] - bases[0] < 200 or bases[0] > 590 or bases[1] < 690))):  # MIDPOINT -/+ 50
+            return [None, None], [None, None]
 
         window_h = binary_birdeye.shape[0] // NWINDOWS
 
@@ -299,177 +273,125 @@ class LaneKeepingAssist:
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])
 
-        left_curr = left_base
-        right_curr = right_base
+        lane_pixels = [[], []]
 
-        left_lane = []
-        right_lane = []
+        for i, base in enumerate(bases):
+            if base is None:
+                continue
 
-        complete_left = left_base is None or not process_left
-        complete_right = right_base is None or not process_right
+            curr_x = base
+            empty_count = 0
+            delta = 0
 
-        for window in range(NWINDOWS):
-            if complete_left and complete_right:
-                break
+            for window in range(NWINDOWS):
+                win_y_low = binary_birdeye.shape[0] - (window + 1) * window_h
+                win_y_high = binary_birdeye.shape[0] - window * window_h
+                curr_x += delta
 
-            win_y_low = binary_birdeye.shape[0] - (window + 1) * window_h
-            win_y_high = binary_birdeye.shape[0] - window * window_h
+                good_lane_pixels = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high)
+                                  & (nonzerox >= curr_x - MARGIN)
+                                  & (nonzerox < curr_x + MARGIN)).nonzero()[0]
 
-            if not complete_left:
-                good_left_lane = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high)
-                                & (nonzerox >= left_curr - MARGIN) & (nonzerox < left_curr + MARGIN)).nonzero()[0]
-                if good_left_lane.size != 0:
-                    left_lane.append(good_left_lane)
-                    if len(good_left_lane) > MINPIX:
-                        left_curr = np.int32(np.mean(nonzerox[good_left_lane]))
-                        if left_curr - MARGIN <= 0 or left_curr + MARGIN >= 1280:
-                            complete_left = True
+                if good_lane_pixels.size != 0:
+                    lane_pixels[i].append(good_lane_pixels)
+                    empty_count = 0
+                    if len(good_lane_pixels) > MINPIX:
+                        delta = curr_x - delta
+                        curr_x = np.int32(np.mean(nonzerox[good_lane_pixels]))
+                        delta = curr_x - delta
+                        if curr_x - MARGIN <= 0 or curr_x + MARGIN >= 1280:
+                            break
+                else:
+                    empty_count += 1
 
-            if not complete_right:
-                good_right_lane = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high)
-                                & (nonzerox >= right_curr - MARGIN) & (nonzerox < right_curr + MARGIN)).nonzero()[0]
-                if good_right_lane.size != 0:
-                    right_lane.append(good_right_lane)
-                    if len(good_right_lane) > MINPIX:
-                        right_curr = np.int32(np.mean(nonzerox[good_right_lane]))
-                        if right_curr - MARGIN <= 0 or right_curr + MARGIN >= 1280:
-                            complete_right = True
+                if empty_count > 1:
+                    break
 
-        return (nonzerox[np.concatenate(left_lane)] if left_lane and process_left else None,
-                nonzeroy[np.concatenate(left_lane)] if left_lane and process_left else None,
-                nonzerox[np.concatenate(right_lane)] if right_lane and process_right else None,
-                nonzeroy[np.concatenate(right_lane)] if right_lane and process_right else None)
+        return ([nonzerox[np.concatenate(pixels)] if pixels else None for pixels in lane_pixels],
+                [nonzeroy[np.concatenate(pixels)] if pixels else None for pixels in lane_pixels])
 
-    def __fit_poly(self, binary_birdeye, leftx, lefty, rightx, righty):
-        left_fit = None
-        right_fit = None
+    def __fit_poly(self, binary_birdeye, lane_x, lane_y, bases):
+        fits = [None, None]
 
-        if leftx is not None and len(leftx) > 2:
-            try:
-                left_fit = np.polyfit(lefty, leftx, 2)
-            except np.linalg.LinAlgError:
-                left_fit = None
+        for i, x_coords in enumerate(lane_x):
+            if x_coords is not None and len(x_coords) > 2 and bases[i] is not None:
+                try:
+                    # Extend arrays with base constraint points
+                    extended_y = np.concatenate([lane_y[i], [719] * 10])
+                    extended_x = np.concatenate([x_coords, [bases[i]] * 10])
+                    fits[i] = np.polyfit(extended_y, extended_x, 2)
+                except np.linalg.LinAlgError:
+                    fits[i] = None
 
-        if rightx is not None and len(rightx) > 2:
-            try:
-                right_fit = np.polyfit(righty, rightx, 2)
-            except np.linalg.LinAlgError:
-                right_fit = None
-
-        if left_fit is None and right_fit is None:
-            return None, None, None, None, None
+        if fits[0] is None and fits[1] is None:
+            return [None, None], None
 
         ploty = np.linspace(0, binary_birdeye.shape[0] - 1, binary_birdeye.shape[0])
 
-        left_fitx = None
-        right_fitx = None
+        fitx = [None, None]
+        for i, fit in enumerate(fits):
+            if fit is not None:
+                fitx[i] = fit[0] * ploty**2 + fit[1] * ploty + fit[2]
 
-        if left_fit is not None:
-            left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
-        if right_fit is not None:
-            right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
+        if fitx[0] is not None and fitx[1] is not None:
+            if np.isclose(fitx[0], fitx[1], atol=50).any():
+                return [None, None], None
 
-        if left_fitx is not None and right_fitx is not None:
-            if np.isclose(left_fitx, right_fitx, atol=250).any():
-                return None, None, None, None, None
+        return fitx, ploty
 
-        return left_fit, right_fit, left_fitx, right_fitx, ploty
-
-    def __find_lane_pixels_using_prev_poly(self, binary_birdeye, process_left=True, process_right=True):
-        MARGIN = 150
-
-        nonzero = binary_birdeye.nonzero()
-        nonzeroy = np.array(nonzero[0])
-        nonzerox = np.array(nonzero[1])
-
-        left_lane = None
-        right_lane = None
-
-        if process_left and len(self.prev_left_fit) == 3:
-            left_poly = (self.prev_left_fit[0] * (nonzeroy**2) +
-                        self.prev_left_fit[1] * nonzeroy +
-                        self.prev_left_fit[2])
-            left_lane = ((nonzerox > left_poly - MARGIN) &
-                        (nonzerox < left_poly + MARGIN)).nonzero()[0]
-
-        if process_right and len(self.prev_right_fit) == 3:
-            right_poly = (self.prev_right_fit[0] * (nonzeroy**2) +
-                        self.prev_right_fit[1] * nonzeroy +
-                        self.prev_right_fit[2])
-            right_lane = ((nonzerox > right_poly - MARGIN) &
-                        (nonzerox < right_poly + MARGIN)).nonzero()[0]
-
-        return (nonzerox[left_lane] if left_lane is not None else None,
-                nonzeroy[left_lane] if left_lane is not None else None,
-                nonzerox[right_lane] if right_lane is not None else None,
-                nonzeroy[right_lane] if right_lane is not None else None)
-
-    def __measure_curvature(self, left_fitx, right_fitx, ploty):
+    def __measure_curvature(self, fitx, ploty):
         # Conversion factors from pixels to real world
         YM_PER_PIXEL = 60 / 720  # meters per pixel in y dimension
         XM_PER_PIXEL = 3.7 / 700  # meters per pixel in x dimension
 
-        left_rad = None
-        right_rad = None
+        radii = [None, None]
+        y_eval = 719
 
-        y_eval = np.max(ploty)
+        for i, fit in enumerate(fitx):
+            if fit is not None:
+                fit_cr = np.polyfit(ploty * YM_PER_PIXEL, fit * XM_PER_PIXEL, 2)
+                radii[i] = (1 + (2 * fit_cr[0] * y_eval * YM_PER_PIXEL + fit_cr[1])**2)**1.5 / np.absolute(2 * fit_cr[0])
 
-        if left_fitx is not None:
-            left_fit_cr = np.polyfit(ploty * YM_PER_PIXEL, left_fitx * XM_PER_PIXEL, 2)
-            left_rad = ((1 + (2 * left_fit_cr[0] * y_eval * YM_PER_PIXEL + left_fit_cr[1])**2)**1.5) / np.absolute(2 * left_fit_cr[0])
+        return radii
 
-        if right_fitx is not None:
-            right_fit_cr = np.polyfit(ploty * YM_PER_PIXEL, right_fitx * XM_PER_PIXEL, 2)
-            right_rad = ((1 + (2 * right_fit_cr[0] * y_eval * YM_PER_PIXEL + right_fit_cr[1])**2)**1.5) / np.absolute(2 * right_fit_cr[0])
+    def __limit_radius_change(self, radii):
+        for i in range(2):
+            if radii[i] is not None and self.last_radii[i] is not None:
+                radius_change_pct = abs(radii[i] - self.last_radii[i]) / self.last_radii[i]
 
-        if left_rad is not None and right_rad is not None:
-            return np.mean([left_rad, right_rad])
-        else:
-            return next((rad for rad in [left_rad, right_rad] if rad is not None), None)
+                if radius_change_pct > 0.35:
+                    max_change = self.last_radii[i] * 0.35
+                    radii[i] = self.last_radii[i] + max_change if radii[i] > self.last_radii[i] else self.last_radii[i] - max_change
 
-    def __update_history(self, left_fit, right_fit):
-        if left_fit is not None:
-            if len(self.left_fit_hist) == 0:
-                self.left_fit_hist = np.array([left_fit])
-            else:
-                self.left_fit_hist = np.vstack([self.left_fit_hist, [left_fit]])
+            self.last_radii[i] = radii[i]
 
-        if right_fit is not None:
-            if len(self.right_fit_hist) == 0:
-                self.right_fit_hist = np.array([right_fit])
-            else:
-                self.right_fit_hist = np.vstack([self.right_fit_hist, [right_fit]])
-
-    def __delete_hist(self, complete, delete_left=True, delete_right=True):
-        if complete:
-            if delete_left:
-                self.left_fit_hist = np.array([])
-            if delete_right:
-                self.right_fit_hist = np.array([])
-        else:
-            if delete_left and len(self.left_fit_hist) > 0:
-                self.left_fit_hist = np.delete(self.left_fit_hist, 0, 0)
-            if delete_right and len(self.right_fit_hist) > 0:
-                self.right_fit_hist = np.delete(self.right_fit_hist, 0, 0)
+        return radii
 
     def __calculate_braking(self, target):
-        if self.electrics.data['wheelspeed'] > target:
-            brake = min(1.0, (self.electrics.data['wheelspeed']**2 - target**2) / (491 * (1 + np.clip(self.risk_level, 1, 3))))
-            # [...] / (dist->100 * (1g->9.81 * (1 + safety_level) / 2))
-            # safety_level = 1 -> 1g
-            # safety_level = 2 -> 1.5g
-            # safety_level = 3 -> 2g
-        else:
-            brake = 0.0
-        brake = (brake + self.last_brake) / 2
-        if brake > 0.02:
-            return 0.0, brake
+        speed_error = self.electrics.data['wheelspeed'] - target
+
+        if speed_error > 1:
+            return 0.0, min(1.0, (self.electrics.data['wheelspeed']**2 - target**2) / (981 + 245 * self.risk_level))
+        elif speed_error > -11:
+            return 0.0, 0.0
         else:
             return 1.0, 0.0
 
+    def __calculate_steering(self, bases):
+        if abs(self.electrics.data['steering']) > 45:
+            return 0
+
+        if bases[0] is not None and bases[0] > 460:  # 640 - 180
+            #  -0.001 * self.steering_strength * (min(bases[0] - 460, 100) / 100)
+            return -0.00001 * self.steering_strength * min(bases[0] - 460, 100)
+        elif bases[1] is not None and bases[1] < 820:  # 640 + 180
+            return 0.00001 * self.steering_strength * min(820 - bases[1], 100)
+
+        return 0
+
     def stop(self):
         """
-        This method stops the Lane-keeping assist for the given vehicle.
+        This method stops the Lane-keeping assist for the vehicle it was originally started on.
         """
         if not self.running:
             self.logger.warning("LKA is not running.")
