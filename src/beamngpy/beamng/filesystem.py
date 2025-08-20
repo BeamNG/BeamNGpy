@@ -8,6 +8,8 @@ from pathlib import Path
 from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
 
 BINARIES = [
+    "BeamNG.tech.exe",
+    "BeamNG.drive.exe",
     "Bin64/BeamNG.tech.x64.exe",
     "Bin64/BeamNG.x64.exe",
     "Bin64/BeamNG.drive.x64.exe",
