@@ -539,7 +539,7 @@ class Lidar(CommBase):
         data["pointCloudShmemSize"] = point_cloud_shmem_size
         data["colourShmemHandle"] = colour_shmem_name
         data["colourShmemSize"] = colour_shmem_size
-        data["updateTime"] = requested_update_time
+        data["requestedUpdateTime"] = requested_update_time
         data["priority"] = update_priority
         data["pos"] = pos
         data["dir"] = dir

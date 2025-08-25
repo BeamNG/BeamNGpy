@@ -52,7 +52,8 @@ class Camera(CommBase):
                            as the postprocessing is computationally intensive.
         is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
         integer_depth: If True, depth values will be quantized to the integer range 0-255. If False, depth values will be sent as 32-bit floats in the range
-                       of 0.0-1.0. Will be set to False is ``postprocess_depth=True`` as full precision is needed for postprocessing. Defaults to True.
+                       of 0.0-1.0. Will be set to False if ``postprocess_depth=True`` as full precision is needed for postprocessing. Also will be set to
+                       False if shared memory is being used. Defaults to True.
     """
 
     @staticmethod
@@ -174,13 +175,13 @@ class Camera(CommBase):
         self.is_streaming = is_streaming
         self.postprocess_depth = postprocess_depth
         self.integer_depth = integer_depth
+        # Set up the shared memory for this sensor, if requested.
+        self.is_using_shared_memory = is_using_shared_memory
 
-        if self.postprocess_depth:
+        if self.postprocess_depth or self.is_using_shared_memory:
             integer_depth = False
             self.integer_depth = False  # depth postprocessing needs full precision
 
-        # Set up the shared memory for this sensor, if requested.
-        self.is_using_shared_memory = is_using_shared_memory
         self.colour_shmem = None
         self.annotation_shmem = None
         self.instance_shmem = None
@@ -191,8 +192,8 @@ class Camera(CommBase):
         self.depth_shmem_size = -1
         if is_using_shared_memory:
             self.logger.debug("Camera - Initializing shared memory.")
-            self.colour_shmem_size = resolution[0] * resolution[1] * 3
             if is_render_colours:
+                self.colour_shmem_size = resolution[0] * resolution[1] * 4
                 self.colour_shmem = BNGSharedMemory(self.colour_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for colour: "
@@ -200,7 +201,7 @@ class Camera(CommBase):
                 )
 
             if is_render_annotations:
-                self.annotation_shmem_size = resolution[0] * resolution[1] * 3 + 1
+                self.annotation_shmem_size = resolution[0] * resolution[1] * 4
                 self.annotation_shmem = BNGSharedMemory(self.annotation_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for semantic annotations: "
@@ -208,7 +209,7 @@ class Camera(CommBase):
                 )
 
             if is_render_instance:
-                self.instance_shmem_size = resolution[0] * resolution[1] * 3 + 1
+                self.instance_shmem_size = resolution[0] * resolution[1] * 4
                 self.instance_shmem = BNGSharedMemory(self.instance_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for instance annotations: "
@@ -216,10 +217,7 @@ class Camera(CommBase):
                 )
 
             if is_render_depth:
-                if self.integer_depth:
-                    self.depth_shmem_size = resolution[0] * resolution[1]
-                else:
-                    self.depth_shmem_size = resolution[0] * resolution[1] * 4
+                self.depth_shmem_size = resolution[0] * resolution[1] * 4
                 self.depth_shmem = BNGSharedMemory(self.depth_shmem_size)
                 self.logger.debug(
                     "Camera - Bound shared memory for depth: "
@@ -318,7 +316,10 @@ class Camera(CommBase):
         else:  # simple RGB decoding
             # Re-shape the array, based on the number of channels present in the data.
             decoded = np.frombuffer(data_copy[header_size:], dtype=np.uint8)
-            decoded = decoded.reshape(height, width, 3)
+            if len(decoded) == height * width * 4:
+                decoded = decoded.reshape(height, width, 4)[:, :, :3]
+            else:
+                decoded = decoded.reshape(height, width, 3)
         if force_ndarray:
             return decoded
 
@@ -386,7 +387,7 @@ class Camera(CommBase):
         width = int(self.resolution[0])
         height = int(self.resolution[1])
 
-        processed_readings: Dict[str, Image.Image | None] = dict()
+        processed_readings: Dict[str, Image.Image | None] = {}
         if self.is_render_colours:
             processed_readings["colour"] = self._convert_to_image(
                 binary.get("colour"), width, height
@@ -394,12 +395,12 @@ class Camera(CommBase):
 
         if self.is_render_annotations:
             processed_readings["annotation"] = self._convert_to_image(
-                binary.get("annotation"), width, height, palette=True
+                binary.get("annotation"), width, height, palette=not self.is_using_shared_memory
             )
 
         if self.is_render_instance:
             processed_readings["instance"] = self._convert_to_image(
-                binary.get("instance"), width, height, palette=True
+                binary.get("instance"), width, height, palette=not self.is_using_shared_memory
             )
 
         if self.is_render_depth:
@@ -414,15 +415,16 @@ class Camera(CommBase):
                     depth = np.frombuffer(binary["depth"], dtype=np.float32)
                     if self.postprocess_depth:
                         depth = self.depth_buffer_processing(depth)
+                        depth = depth.reshape(height, width)
+                        if self.is_depth_inverted:
+                            depth = 255 - depth
+                        image = Image.fromarray(depth)
+                        processed_readings["depth"] = image
                     else:  # return raw depth values in range [0.0, 1.0]
                         depth = depth.reshape(height, width)
-                        return depth
-                depth = depth.reshape(height, width)
-                if self.is_depth_inverted:
-                    depth = 255 - depth
-                image = Image.fromarray(depth)
-                processed_readings["depth"] = image
-
+                        if self.is_depth_inverted:
+                            depth = 1.0 - depth
+                        processed_readings["depth"] = depth
         return processed_readings
 
     def remove(self) -> None:
