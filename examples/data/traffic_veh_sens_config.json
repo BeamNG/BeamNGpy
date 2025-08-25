@@ -1,3 +1,36 @@
 {
-  "data":"a{3A6configB29vehicles/etk800/854_190d_A.pcA5jBeamA6etk800A7sensors[1{22B14updatePriority-0B20rangeDirectMaxCutoff-10B22rangeCutoffSensitivity-0A3pos^-2.0448608398438=0.32918813824654-0.60805118083954A4nameB12Ultrasonic 1A4typeB10ultrasonicA4size[2-200-200A2id-9B14rangeRoundness=2B14rangeMinCutoff-0.10000000149012B12isVisualised|B13nearFarPlanes[2-0.10000000149012-11B19requestedUpdateTime-0.050000000745058A3dir^-1-0-0B10rangeShape-0.090000003576279A4fovY-70A2up^-0-0-1B15fixedWindowSize-10A6isLive|B17isSnappingDesired~B10rangeFocus-0.68599998950958B11sensitivity-0.10000002384186~"
+  "config":"vehicles/etk800/854_190d_A.pc",
+  "jBeam":"etk800",
+  "sensors":[
+    {
+      "dir":{"x":1,"y":0,"z":0},
+      "fixedWindowSize":10,
+      "fovY":70,
+      "id":9,
+      "isLive":false,
+      "isSnappingDesired":false,
+      "isVisualised":true,
+      "name":"Ultrasonic 1",
+      "nearFarPlanes":[
+        0.1000000015,
+        11
+      ],
+      "pos":{"x":2.04486084,"y":-0.3291881382,"z":0.6080511808},
+      "rangeCutoffSensitivity":0,
+      "rangeDirectMaxCutoff":10,
+      "rangeFocus":0.6859999895,
+      "rangeMinCutoff":0.1000000015,
+      "rangeRoundness":-2,
+      "rangeShape":0.09000000358,
+      "requestedUpdateTime":0.05000000075,
+      "sensitivity":0.1000000238,
+      "size":[
+        200,
+        200
+      ],
+      "type":"ultrasonic",
+      "up":{"x":0,"y":0,"z":1},
+      "updatePriority":0
+    }
+  ]
 }

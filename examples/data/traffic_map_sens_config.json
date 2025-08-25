@@ -1,3 +1,23 @@
-{
-  "data":"a[1{19B14updatePriority-0A8isRotate~B13verticalAngle-26.9A3pos^=705.13189697266=1342.2593994141-142.52914428711A4nameA7LiDAR 1A4typeA5LiDARA5is360|A2id-3B12isVisualised|A9frequency-20B19requestedUpdateTime-0.05B18verticalResolution-64B15horizontalAngle-120B11isAnnotated~A3dir^-1-0-0A6isLive~B17isSnappingDesired~A2up^-0-0-1B11maxDistance-120~"
-}
+[
+  {
+    "dir":{"x":1,"y":0,"z":0},
+    "frequency":20,
+    "horizontalAngle":120,
+    "id":3,
+    "is360":true,
+    "isAnnotated":false,
+    "isLive":false,
+    "isRotate":false,
+    "isSnappingDesired":false,
+    "isVisualised":true,
+    "maxDistance":120,
+    "name":"LiDAR 1",
+    "pos":{"x":-705.131897,"y":-1342.259399,"z":142.5291443},
+    "requestedUpdateTime":0.05,
+    "type":"LiDAR",
+    "up":{"x":0,"y":0,"z":1},
+    "updatePriority":0,
+    "verticalAngle":26.9,
+    "verticalResolution":64
+  }
+]
