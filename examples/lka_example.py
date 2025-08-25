@@ -9,7 +9,8 @@ def main():
     set_up_simple_logging()
 
     # Start up the simulator.
-    bng = BeamNGpy("localhost", 25252)
+    beamng = BeamNGpy("localhost", 25252)
+    bng = beamng.open()
 
     # Create a vehicle.
     vehicle = Vehicle("ego_vehicle", model="etk800", licence="PYTHON", color="White")

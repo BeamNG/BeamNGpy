@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt  # DEBUG
 
 from logging import DEBUG, getLogger
 from typing import TYPE_CHECKING
@@ -23,8 +23,9 @@ class LaneKeepingAssist:
     The system uses the road markings to detect the radius of the corner ahead
     of the vehicle and slow down to a safe speed. The feature is only active at speeds
     above 39.6 km/h and when the vehicle's hazard lights and blinkers are not on.
-    Optionally, this assistant can also nudge the vehicle's steering wheel to notify
-    the driver that the vehicle is exiting or about to exit the lane. (experimental)
+    Usage with a steering wheel controller and pedals is recommended.
+    Optionally, this assistant can also nudge the user's steering wheel to notify
+    the driver that the vehicle is exiting or about to exit the lane.
 
     Args:
         bng: The BeamNGpy instance, with which to communicate to the simulation.
@@ -182,6 +183,7 @@ class LaneKeepingAssist:
             processed, lane_x, lane_y, bases
         )
 
+        # DEBUG
         # if fitx[0] is not None or fitx[1] is not None or any(x is not None for x in lane_x):
         #     self.bng.pause()
         #     plt.figure(figsize=(12, 8))

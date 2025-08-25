@@ -30,10 +30,7 @@ class AdvancedIMU(CommBase):
         pos: (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
         dir: (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
         up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
-        accel_window_width: The width of the window used in smoothing the acceleration data, if required.
-        accel_frequency_cutoff: The filtering cutoff frequency to be used for acceleration (instead of a window width), if required.
-        gyro_window_width: The width of the window used in smoothing the gyroscopic data, if required.
-        gyro_frequency_cutoff: The filtering cutoff frequency to be used for gyroscopic (instead of a window width), if required.
+        smoother_strength: The strength of the smoothing filter to be used for the acceleration and gyroscopic data, if required. (0.0 = no smoothing, 5.0 = maximum smoothing)
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
         is_using_gravity: A flag which indicates whether this sensor should consider acceleration due to gravity in its computations, or not.
         is_allow_wheel_nodes: When using 'snap' attachment, this will allow sensors to be attached to vehicle wheels, and will rotate as the wheel turn.
@@ -53,10 +50,7 @@ class AdvancedIMU(CommBase):
         pos: Float3 = (0, 0, 1.7),
         dir: Float3 = (0, -1, 0),
         up: Float3 = (-0, 0, 1),
-        accel_window_width: float | None = None,
-        gyro_window_width: float | None = None,
-        accel_frequency_cutoff: float | None = None,
-        gyro_frequency_cutoff: float | None = None,
+        smoother_strength: float = 1.0,
         is_send_immediately: bool = False,
         is_using_gravity: bool = False,
         is_allow_wheel_nodes: bool = True,
@@ -84,11 +78,8 @@ class AdvancedIMU(CommBase):
             pos,
             dir,
             up,
-            accel_window_width,
-            gyro_window_width,
+            smoother_strength,
             is_send_immediately,
-            accel_frequency_cutoff,
-            gyro_frequency_cutoff,
             is_using_gravity,
             is_allow_wheel_nodes,
             is_visualised,
@@ -252,11 +243,8 @@ class AdvancedIMU(CommBase):
         pos: Float3,
         dir: Float3,
         up: Float3,
-        accel_window_width: float | None,
-        gyro_window_width: float | None,
+        smoother_strength: float,
         is_send_immediately: bool,
-        accel_frequency_cutoff: float | None,
-        gyro_frequency_cutoff: float | None,
         is_using_gravity: bool,
         is_allow_wheel_nodes: bool,
         is_visualised: bool,
@@ -272,10 +260,7 @@ class AdvancedIMU(CommBase):
         data["pos"] = pos
         data["dir"] = dir
         data["up"] = up
-        data["accelWindowWidth"] = accel_window_width
-        data["accelFrequencyCutoff"] = accel_frequency_cutoff
-        data["gyroWindowWidth"] = gyro_window_width
-        data["gyroFrequencyCutoff"] = gyro_frequency_cutoff
+        data["smootherStrength"] = smoother_strength
         data["isSendImmediately"] = is_send_immediately
         data["isUsingGravity"] = is_using_gravity
         data["isAllowWheelNodes"] = is_allow_wheel_nodes

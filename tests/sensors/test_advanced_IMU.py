@@ -45,7 +45,8 @@ def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
         print("PASS: Readings present")
         all_readings.append(sensor_readings["accSmooth"][0])
 
-    assert np.abs(np.max(all_readings) - np.min(all_readings)) < 0.4, "Readings inconsistent"
+    print(np.abs(np.max(all_readings) - np.min(all_readings)))
+    assert np.abs(np.max(all_readings) - np.min(all_readings)) < 0.001, "Readings inconsistent"
     print("PASS: Readings consistent")
 
     assert np.any((all_readings[0] != all_readings[1])
@@ -55,10 +56,10 @@ def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
 def test_advanced_IMU(beamng: BeamNGpy):
     with beamng as bng:
         vehicle = Vehicle(
-            "ego_vehicle", model="etki", license="PYTHON", color="Red"
+            "ego_vehicle", model="etk800", license="PYTHON", color="Red"
         )  # Create a vehicle.
         scenario = Scenario(
-            "tech_ground",
+            "smallgrid",
             "advanced_IMU_test",
             description="Testing the advanced IMU sensor",
         )  # Create a scenario.
@@ -66,15 +67,23 @@ def test_advanced_IMU(beamng: BeamNGpy):
         scenario.make(bng)
         bng.settings.set_deterministic(60)  # Set simulator to 60hz temporal resolution
         bng.scenario.load(scenario)
-        bng.ui.hide_hud()
         bng.scenario.start()
 
         print("Advanced IMU test start.")
 
         # Create a default advanced IMU sensor.
-        IMU1 = AdvancedIMU("advancedIMU1", bng, vehicle,
-                           is_send_immediately=False,
-                           pos=vehicle.get_center_of_gravity())
+        IMU1 = AdvancedIMU(
+            "imu1", bng, vehicle,
+            pos=(0, 0, 5),
+            physics_update_time=0.0005,
+            gfx_update_time=0.0005,
+            smoother_strength=1.0,
+            is_using_gravity=True,
+            is_visualised=True,
+            is_snapping_desired=True,
+            is_force_inside_triangle=False,
+            is_allow_wheel_nodes=False
+        )
 
         # Test the automatic polling functionality of the advanced IMU sensor, to make sure we retrieve the readings data via shared memory.
         sleep(5)
@@ -87,15 +96,19 @@ def test_advanced_IMU(beamng: BeamNGpy):
         # Test vehicle acceleration is represented in the data
         print("Testing vehicle acceleration can be seen in the sensor readings")
 
-        vehicle.control(throttle=100)
+        vehicle.control(throttle=0.2)
         IMU1.poll()
         vehicle.sensors.poll('state')
         while vehicle.state['vel'][1] > -11:
             vehicle.sensors.poll('state')
             sleep(0.1)
+
         sensor_readings = IMU1.poll()
         accel_values = np.array([sensor_readings[key]['accSmooth'][0] for key in sensor_readings.keys()])
-        assert np.mean(accel_values) > 2.5
+        print("HERE: ", np.mean(accel_values), np.std(accel_values))
+        assert np.mean(accel_values) > 1.2 and np.mean(accel_values) < 1.5
+        assert np.std(accel_values) < 0.7
+        print("PASS: Vehicle acceleration can be seen in the sensor readings")
 
         IMU1.remove()
         print("advanced IMU sensor removed.")
@@ -132,8 +145,6 @@ def test_advanced_IMU(beamng: BeamNGpy):
 
         sleep(3)
         print("advanced IMU test complete.")
-        bng.ui.show_hud()
-
 
 # Executing this file will perform various tests on all available functionality relating to the advanced IMU sensor.
 # It is provided to give examples on how to use all advanced IMU sensor functions currently available in beamngpy.

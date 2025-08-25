@@ -1,12 +1,11 @@
-import random
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import AdvancedIMU
 
+from smallgrid_IMU import create_analysis_plots
 
 def main():
-    random.seed(1703)
     set_up_simple_logging()
 
     beamng = BeamNGpy("localhost", 25252)
@@ -27,26 +26,53 @@ def main():
     bng.settings.set_deterministic(60)  # Set simulator to 60hz temporal resolution
 
     bng.scenario.load(scenario)
-    bng.ui.hide_hud()
     bng.scenario.start()
 
     # NOTE: Create sensor after scenario has started.
-    imu = AdvancedIMU("accel1", bng, vehicle, gfx_update_time=0.01)
-    # IMU = AdvancedIMU('accel1', bng, vehicle, gfx_update_time=0.01, pos=(0, 0, 1.7), dir=(0, -1, 0), up=(0, 0, 1)) # if we want to specify a local frame
+    imu = AdvancedIMU(
+        "accel1", bng, vehicle,
+        # From Lua: args.pos / dir / up
+        pos=(0, 0, 5),  # placing the IMU on vehicle roof (with snapping)
+        dir=(0, -1, 0),
+        up=(-0, 0, 1),
+
+        # Update intervals - set to 2000Hz
+        gfx_update_time=0.0005,
+        physics_update_time=0.0005,
+
+        # Smoothing strength
+        smoother_strength=3.0,
+
+        # Sensor behavior flags
+        is_using_gravity=False,
+        is_visualised=True,
+        is_snapping_desired=True,
+        is_force_inside_triangle=False,
+        is_allow_wheel_nodes=False
+    )
 
     vehicle.ai.set_mode("traffic")
-    print("Driving around, polling the advanced IMU sensor at regular intervals...")
-    for i in range(300):
-        sleep(0.1)  # Include a small delay between each reading.
-        data = imu.poll()  # Fetch the latest readings from the sensor.
-        print("Acceleration in each axis of the sensor: ", data)
+
+    print("Driving around, polling the advanced IMU sensor in bulk after a while...")
+    imu.poll()
+    sleep(40)
+
+    data = imu.poll()
+
+    time_data = [data[key]['time'] for key in data.keys()]
+    acc_x_data = [data[key]['accSmooth'][0] for key in data.keys()]  # X-axis (forward/back)
+    acc_y_data = [data[key]['accSmooth'][1] for key in data.keys()]  # Y-axis (up/down)
+    acc_z_data = [data[key]['accSmooth'][2] for key in data.keys()]  # Z-axis (left/right)
+
+    create_analysis_plots(time_data, acc_x_data, acc_y_data, acc_z_data)
 
     imu.remove()
-    bng.ui.show_hud()
     vehicle.ai.set_mode("disabled")
     input("Press Enter to exit...")
     bng.disconnect()
 
-
+# This script demonstrates bulk IMU data collection from a vehicle driving on the west coast map,
+# collecting accelerometer data over an extended period and creating analysis plots. See also smallgrid_IMU.py
+# for an example of periodic data collection.
 if __name__ == "__main__":
     main()
