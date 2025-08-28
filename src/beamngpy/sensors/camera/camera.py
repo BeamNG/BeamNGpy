@@ -52,8 +52,7 @@ class Camera(CommBase):
                            as the postprocessing is computationally intensive.
         is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
         integer_depth: If True, depth values will be quantized to the integer range 0-255. If False, depth values will be sent as 32-bit floats in the range
-                       of 0.0-1.0. Will be set to False if ``postprocess_depth=True`` as full precision is needed for postprocessing. Also will be set to
-                       False if shared memory is being used. Defaults to True.
+                       of 0.0-1.0. Will be set to False if ``postprocess_depth=True`` as full precision is needed for postprocessing. Defaults to True.
     """
 
     @staticmethod
@@ -174,14 +173,12 @@ class Camera(CommBase):
         self.is_render_depth = is_render_depth
         self.is_streaming = is_streaming
         self.postprocess_depth = postprocess_depth
-        self.integer_depth = integer_depth
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
+        if self.postprocess_depth:
+            integer_depth = False  # depth postprocessing needs full precision
 
-        if self.postprocess_depth or self.is_using_shared_memory:
-            integer_depth = False
-            self.integer_depth = False  # depth postprocessing needs full precision
-
+        self.integer_depth = integer_depth
         self.colour_shmem = None
         self.annotation_shmem = None
         self.instance_shmem = None
@@ -395,12 +392,18 @@ class Camera(CommBase):
 
         if self.is_render_annotations:
             processed_readings["annotation"] = self._convert_to_image(
-                binary.get("annotation"), width, height, palette=not self.is_using_shared_memory
+                binary.get("annotation"),
+                width,
+                height,
+                palette=not self.is_using_shared_memory,
             )
 
         if self.is_render_instance:
             processed_readings["instance"] = self._convert_to_image(
-                binary.get("instance"), width, height, palette=not self.is_using_shared_memory
+                binary.get("instance"),
+                width,
+                height,
+                palette=not self.is_using_shared_memory,
             )
 
         if self.is_render_depth:
@@ -409,7 +412,7 @@ class Camera(CommBase):
             else:
                 if type(binary["depth"]) == str:
                     binary["depth"] = binary["depth"].encode()
-                if self.integer_depth:
+                if self.integer_depth and not self.is_using_shared_memory:
                     depth = np.frombuffer(binary["depth"], dtype=np.uint8)
                 else:
                     depth = np.frombuffer(binary["depth"], dtype=np.float32)
@@ -419,6 +422,17 @@ class Camera(CommBase):
                         if self.is_depth_inverted:
                             depth = 255 - depth
                         image = Image.fromarray(depth)
+                        processed_readings["depth"] = image
+                    elif self.is_using_shared_memory:
+                        # we got f32 array from shared memory but user wants an image made from u8
+                        depth = (
+                            np.clip(255.0 * depth, 0.0, 255.0)
+                            .reshape(height, width)
+                            .astype(np.uint8)
+                        )
+                        if self.is_depth_inverted:
+                            depth = 255 - depth
+                        image = Image.fromarray(depth, mode="L")
                         processed_readings["depth"] = image
                     else:  # return raw depth values in range [0.0, 1.0]
                         depth = depth.reshape(height, width)
