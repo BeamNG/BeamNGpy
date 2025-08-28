@@ -12,20 +12,35 @@ ATTEMPTS = 3
 TOTAL_FIELDS = 4
 VISUALISE = False
 
+
 def check_field(sensor_readings, field: str, cam: Camera):
     # Check field is present, correct size, non-zero and with valid rgb values
     assert field in sensor_readings.keys()
-    assert sensor_readings[field].shape[0] * sensor_readings[field].shape[1] == cam.resolution[0] * cam.resolution[1]
+    assert (
+        sensor_readings[field].shape[0] * sensor_readings[field].shape[1]
+        == cam.resolution[0] * cam.resolution[1]
+    )
     assert (sensor_readings[field] != 0).any()
     assert (sensor_readings[field] >= 0).all() and (sensor_readings[field] <= 255).all()
 
-def check_poll(cam: Camera, is_auto: bool, visualize_img: bool, exp_semantic: int | None = None, exp_instance: int | None = None):
+
+def check_poll(
+    cam: Camera,
+    is_auto: bool,
+    visualize_img: bool,
+    exp_semantic: int | None = None,
+    exp_instance: int | None = None,
+):
     # Generate fields
     fields = []
-    if cam.is_render_colours: fields.append("colour")
-    if cam.is_render_annotations: fields.append("annotation")
-    if cam.is_render_instance: fields.append("instance")
-    if cam.is_render_depth: fields.append("depth")
+    if cam.is_render_colours:
+        fields.append("colour")
+    if cam.is_render_annotations:
+        fields.append("annotation")
+    if cam.is_render_instance:
+        fields.append("instance")
+    if cam.is_render_depth:
+        fields.append("depth")
 
     # Save readings for comparison afterwards
     all_readings = {}
@@ -65,9 +80,16 @@ def check_poll(cam: Camera, is_auto: bool, visualize_img: bool, exp_semantic: in
 
         # Check semantic and instance annotations have correct number of solid colors
         if exp_semantic != None:
-            assert len(np.unique(sensor_readings["annotation"].reshape(-1, 3), axis=0)) == exp_semantic, "Incorrect number of solid colors"
+            assert (
+                len(np.unique(sensor_readings["annotation"].reshape(-1, 3), axis=0))
+                == exp_semantic
+            ), "Incorrect number of solid colors"
         if exp_instance != None:
-            assert len(np.unique(sensor_readings["instance"].reshape(-1, 3), axis=0)) == exp_instance, "Incorrect number of solid colors"
+            assert (
+                len(np.unique(sensor_readings["instance"].reshape(-1, 3), axis=0))
+                == exp_instance
+            ), "Incorrect number of solid colors"
+
 
 def test_camera(beamng: BeamNGpy):
     with beamng as bng:
@@ -211,7 +233,7 @@ def test_camera(beamng: BeamNGpy):
 
         # Test the world-space to camera pixel functionality.
         print(
-            "out of range pixel. should be [-1, -1: ",
+            "out of range pixel. should be [-1, -1]: ",
             cam1.world_point_to_pixel((1e7, 1e7, 1e7)),
         )
         print(
@@ -274,5 +296,5 @@ if __name__ == "__main__":
     set_up_simple_logging()
 
     # Start up the simulator.
-    bng = BeamNGpy("localhost", 25252)
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False)
     test_camera(bng)

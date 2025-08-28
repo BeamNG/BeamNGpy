@@ -372,12 +372,15 @@ class Camera(CommBase):
 
         return depth_intensity
 
-    def _binary_to_image(self, binary: StrDict) -> Dict[str, Image.Image | None]:
+    def _binary_to_image(
+        self, binary: StrDict, sim_data_processed: bool
+    ) -> Dict[str, Image.Image | None]:
         """
         Converts the binary string data from the simulator, which contains the data buffers for colour, annotations, and depth, into images.
 
         Args:
             binary: The raw readings data, as a binary string.
+            sim_data_processed: Gives a hint whether the data were preprocessed by the simulator.
         Returns:
             A dictionary containing the processed images.
         """
@@ -395,7 +398,7 @@ class Camera(CommBase):
                 binary.get("annotation"),
                 width,
                 height,
-                palette=not self.is_using_shared_memory,
+                palette=sim_data_processed,
             )
 
         if self.is_render_instance:
@@ -403,7 +406,7 @@ class Camera(CommBase):
                 binary.get("instance"),
                 width,
                 height,
-                palette=not self.is_using_shared_memory,
+                palette=sim_data_processed,
             )
 
         if not self.is_render_depth:
@@ -416,13 +419,13 @@ class Camera(CommBase):
         max_depth_value = 255
         if type(binary["depth"]) == str:
             binary["depth"] = binary["depth"].encode()
-        if self.integer_depth and not self.is_using_shared_memory:
+        if self.integer_depth and sim_data_processed:
             depth = np.frombuffer(binary["depth"], dtype=np.uint8)
         else:
             depth = np.frombuffer(binary["depth"], dtype=np.float32)
             if self.postprocess_depth:
                 depth = self.depth_buffer_processing(depth)
-            elif self.is_using_shared_memory:
+            elif not sim_data_processed:
                 # we got f32 array from shared memory but user wants an image made from u8
                 depth = np.clip(255.0 * depth, 0.0, 255.0).astype(np.uint8)
             else:  # return raw depth values in range [0.0, 1.0]
@@ -538,7 +541,7 @@ class Camera(CommBase):
             * ``depth``: The depth camera data.
         """
         raw_readings = self.poll_raw()
-        images = self._binary_to_image(raw_readings)
+        images = self._binary_to_image(raw_readings, not self.is_using_shared_memory)
         return images
 
     def stream_raw(self) -> Dict[str, bytes]:
@@ -590,7 +593,7 @@ class Camera(CommBase):
             )
 
         raw_readings = self.stream_raw()
-        images = self._binary_to_image(raw_readings)
+        images = self._binary_to_image(raw_readings, False)
         self.logger.debug(
             "Camera - raw sensor readings converted to image format: " f"{self.name}"
         )
@@ -641,7 +644,7 @@ class Camera(CommBase):
         )["data"]
 
         # Format the binary string data from the simulator.
-        return self._binary_to_image(raw_readings)
+        return self._binary_to_image(raw_readings, False)
 
     # TODO: Should be removed when GE-2170 is complete.
     def get_full_poll_request(self) -> StrDict:
@@ -657,7 +660,7 @@ class Camera(CommBase):
         if "data" not in raw_readings:
             raise BNGValueError(f"Camera sensor {self.name} not found.")
         raw_readings = raw_readings["data"]
-        raw_readings = self._binary_to_image(raw_readings)
+        raw_readings = self._binary_to_image(raw_readings, False)
 
         data = dict(type="data")
         data["colour"] = raw_readings["colour"]
