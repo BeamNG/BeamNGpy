@@ -406,39 +406,35 @@ class Camera(CommBase):
                 palette=not self.is_using_shared_memory,
             )
 
-        if self.is_render_depth:
-            if binary.get("depth") is None or len(binary["depth"]) == 0:
-                processed_readings["depth"] = None
-            else:
-                if type(binary["depth"]) == str:
-                    binary["depth"] = binary["depth"].encode()
-                if self.integer_depth and not self.is_using_shared_memory:
-                    depth = np.frombuffer(binary["depth"], dtype=np.uint8)
-                else:
-                    depth = np.frombuffer(binary["depth"], dtype=np.float32)
-                    if self.postprocess_depth:
-                        depth = self.depth_buffer_processing(depth)
-                        depth = depth.reshape(height, width)
-                        if self.is_depth_inverted:
-                            depth = 255 - depth
-                        image = Image.fromarray(depth)
-                        processed_readings["depth"] = image
-                    elif self.is_using_shared_memory:
-                        # we got f32 array from shared memory but user wants an image made from u8
-                        depth = (
-                            np.clip(255.0 * depth, 0.0, 255.0)
-                            .reshape(height, width)
-                            .astype(np.uint8)
-                        )
-                        if self.is_depth_inverted:
-                            depth = 255 - depth
-                        image = Image.fromarray(depth, mode="L")
-                        processed_readings["depth"] = image
-                    else:  # return raw depth values in range [0.0, 1.0]
-                        depth = depth.reshape(height, width)
-                        if self.is_depth_inverted:
-                            depth = 1.0 - depth
-                        processed_readings["depth"] = depth
+        if not self.is_render_depth:
+            return processed_readings
+        if binary.get("depth") is None or len(binary["depth"]) == 0:
+            processed_readings["depth"] = None
+            return processed_readings
+
+        create_image = True
+        max_depth_value = 255
+        if type(binary["depth"]) == str:
+            binary["depth"] = binary["depth"].encode()
+        if self.integer_depth and not self.is_using_shared_memory:
+            depth = np.frombuffer(binary["depth"], dtype=np.uint8)
+        else:
+            depth = np.frombuffer(binary["depth"], dtype=np.float32)
+            if self.postprocess_depth:
+                depth = self.depth_buffer_processing(depth)
+            elif self.is_using_shared_memory:
+                # we got f32 array from shared memory but user wants an image made from u8
+                depth = np.clip(255.0 * depth, 0.0, 255.0).astype(np.uint8)
+            else:  # return raw depth values in range [0.0, 1.0]
+                create_image = False
+                max_depth_value = 1.0
+
+        if self.is_depth_inverted:
+            depth = max_depth_value - depth
+        depth = depth.reshape(height, width)
+        processed_readings["depth"] = (
+            Image.fromarray(depth, mode="L") if create_image else depth
+        )
         return processed_readings
 
     def remove(self) -> None:
