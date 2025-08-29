@@ -8,6 +8,7 @@ from beamngpy.logging import LOGGER_ID, BNGError
 
 from .advanced_IMU import AdvancedIMU
 from .camera import Camera
+from .configuration_helpers import get_sensor_name
 from .GPS import GPS
 from .ideal_radar import IdealRadar
 from .lidar import Lidar
@@ -29,17 +30,18 @@ class VehicleSensorConfig(CommBase):
     A class used for managing ADAS vehicle sensor configurations.
     For map-based ADAS sensor configurations (static, fixed-position sensors), see MapSensorConfiguration.py.
     ADAS sensor configurations are produced with the GUI-Based ADAS Sensor Configuration Editor in the BeamNG.Tech World Editor (press F11).
+    
+    Args:
+        vehicle: The vehicle to which the ADAS sensor configuration should be attached.
+        name: A unique prefix for the ADAS sensor configuration names. If empty or None,
+                only the ``name`` field of the sensors will be used.
+        filepath: The path to the ADAS sensor configuration.
     """
 
     def __init__(self, name: str, bng: BeamNGpy, vehicle: Vehicle, filepath: str):
         super().__init__(bng, vehicle)
         """
         Imports the ADAS sensor configuration at the given filepath, for the given vehicle.
-
-        Args:
-            vehicle: The vehicle to which the ADAS sensor configuration should be attached.
-            name: A unique name for the ADAS sensor configuration.
-            filepath: The path to the ADAS sensor configuration.
         """
         self.logger = getLogger(f"{LOGGER_ID}.SensorConfig")
         self.logger.setLevel(DEBUG)
@@ -58,10 +60,11 @@ class VehicleSensorConfig(CommBase):
         for i in range(len(sData)):
             v = sData[i]
             t = v["type"].lower()
+            sensor_name = get_sensor_name(self.name, v.get("name"), "sensor_" + str(i))
             if t == "camera":
                 self.sensors.append(
                     Camera(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
@@ -89,7 +92,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "lidar":
                 self.sensors.append(
                     Lidar(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
@@ -117,7 +120,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "ultrasonic":
                 self.sensors.append(
                     Ultrasonic(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
@@ -147,7 +150,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "radar":
                 self.sensors.append(
                     Radar(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
@@ -183,7 +186,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "imu":
                 self.sensors.append(
                     AdvancedIMU(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         gfx_update_time=v["GFXUpdateTime"],
@@ -204,7 +207,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "gps":
                 self.sensors.append(
                     GPS(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         gfx_update_time=v["GFXUpdateTime"],
@@ -222,7 +225,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "idealradar":
                 self.sensors.append(
                     IdealRadar(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         is_send_immediately=False,
@@ -233,7 +236,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "roads":
                 self.sensors.append(
                     RoadsSensor(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         is_send_immediately=False,
@@ -244,7 +247,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "powertrain":
                 self.sensors.append(
                     PowertrainSensor(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         is_send_immediately=False,
@@ -255,7 +258,7 @@ class VehicleSensorConfig(CommBase):
             elif t == "mesh":
                 self.sensors.append(
                     Mesh(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         gfx_update_time=v["GFXUpdateTime"],

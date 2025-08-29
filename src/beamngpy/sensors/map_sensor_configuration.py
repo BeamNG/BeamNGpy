@@ -7,6 +7,7 @@ from beamngpy.connection import CommBase
 from beamngpy.logging import LOGGER_ID, BNGError
 
 from .camera import Camera
+from .configuration_helpers import get_sensor_name
 from .lidar import Lidar
 from .radar import Radar
 from .ultrasonic import Ultrasonic
@@ -22,17 +23,17 @@ class MapSensorConfig(CommBase):
     A class used for managing ADAS sensor configurations for maps (static, fixed-position sensors only).
     For vehicle-based ADAS sensor configurations, see VehicleSensorConfiguration.py.
     ADAS sensor configurations are produced with the GUI-Based ADAS Sensor Configuration Editor in the BeamNG.Tech World Editor (press F11).
+    
+    Args:
+        name: A unique prefix for the ADAS sensor configuration names. If empty or None,
+                only the ``name`` field of the sensors will be used.
+        filepath: The path to the ADAS sensor configuration.
     """
 
     def __init__(self, name: str, bng: BeamNGpy, filepath: str):
         super().__init__(bng, None)
         """
         Imports the ADAS sensor configuration at the given filepath, for the given vehicle.
-
-        Args:
-            vehicle: The vehicle to which the ADAS sensor configuration should be attached.
-            name: A unique name for the ADAS sensor configuration.
-            filepath: The path to the ADAS sensor configuration.
         """
         self.logger = getLogger(f"{LOGGER_ID}.SensorConfig")
         self.logger.setLevel(DEBUG)
@@ -46,10 +47,11 @@ class MapSensorConfig(CommBase):
         for i in range(len(sData)):
             v = sData[i]
             t = v["type"].lower()
+            sensor_name = get_sensor_name(self.name, v.get("name"), "mapsensor_" + str(i))
             if t == "camera":
                 self.sensors.append(
                     Camera(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
@@ -77,7 +79,7 @@ class MapSensorConfig(CommBase):
             elif t == "lidar":
                 self.sensors.append(
                     Lidar(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
@@ -105,7 +107,7 @@ class MapSensorConfig(CommBase):
             elif t == "ultrasonic":
                 self.sensors.append(
                     Ultrasonic(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
@@ -135,7 +137,7 @@ class MapSensorConfig(CommBase):
             elif t == "radar":
                 self.sensors.append(
                     Radar(
-                        self.name + str(i),
+                        sensor_name,
                         self.bng,
                         self.vehicle,
                         requested_update_time=v["requestedUpdateTime"],
