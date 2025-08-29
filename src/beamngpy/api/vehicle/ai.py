@@ -195,9 +195,9 @@ class AIApi(VehicleApi):
         with open(file_path, 'r') as f:
             data = json.load(f)
 
-        # All BeamNG.drive path files have the same structure with "path" array
+        # All BeamNG.tech path files have the same structure with "path" array
         if 'path' not in data:
-            raise ValueError(f"File {file_path} is not a valid BeamNG.drive path file (missing 'path' array)")
+            raise ValueError(f"File {file_path} is not a valid BeamNG.tech path file (missing 'path' array)")
 
         path_data = data['path']
 
