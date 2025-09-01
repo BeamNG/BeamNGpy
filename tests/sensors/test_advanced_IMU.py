@@ -6,36 +6,36 @@ import numpy as np
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import AdvancedIMU
 
+ATTEMPTS = 3
+
 def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
     all_readings = []
-    attempts = 3
 
     # Make sure we retrieve actively updated and consistent readings.
-    for i in range(1, attempts + 1):
+    for i in range(1, ATTEMPTS + 1):
         sleep(2)
         if is_auto:
-            print("\nAutomatic polling attempt ", i)
+            print(f"\nAutomatic polling attempt {i}")
             sensor_readings = imu.poll()
         else:
-            print("Ad-hoc poll request attempt ", i)
-            request_id = (
-                imu.send_ad_hoc_poll_request()
-            )  # send an ad-hoc polling request to the simulator.
-            print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
+            print(f"Ad-hoc poll request attempt {i}")
+            # Send an ad-hoc polling request to the simulator.
+            request_id = imu.send_ad_hoc_poll_request()
+            print(f"Ad-hoc poll requests sent. Unique request Id number: {request_id}")
             sleep(3)
+            # Ensure that the data has been processed before collecting.
             print(
                 "Is ad-hoc request complete? ",
-                imu.is_ad_hoc_poll_request_ready(request_id),
-            )  # Ensure that the data has been processed before collecting.
-            sensor_readings = imu.collect_ad_hoc_poll_request(
-                request_id
-            )  # Collect the data now that it has been computed.
+                imu.is_ad_hoc_poll_request_ready(request_id)
+            )
+            # Collect the data now that it has been computed.
+            sensor_readings = imu.collect_ad_hoc_poll_request(request_id)
 
         if isinstance(sensor_readings, list):
             sensor_readings = sensor_readings[-1]
         else:
             sensor_readings = sensor_readings[list(sensor_readings.keys())[-1]]
-        print("Advanced IMU readings: ", sensor_readings)
+        print(f"Advanced IMU readings: {sensor_readings}")
 
         assert (
             len(sensor_readings.keys()) > 0
@@ -45,12 +45,14 @@ def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
         print("PASS: Readings present")
         all_readings.append(sensor_readings["accSmooth"][0])
 
-    print(np.abs(np.max(all_readings) - np.min(all_readings)))
-    assert np.abs(np.max(all_readings) - np.min(all_readings)) < 0.001, "Readings inconsistent"
+    assert (
+        np.abs(np.max(all_readings) - np.min(all_readings)) < 0.001
+    ), "Readings inconsistent"
     print("PASS: Readings consistent")
 
-    assert np.any((all_readings[0] != all_readings[1])
-                  | (all_readings[0] != all_readings[2])), "Readings don't get updated"
+    assert np.any(
+        (all_readings[0] != all_readings[1]) | (all_readings[0] != all_readings[2])
+    ), "Readings don't get updated"
     print("PASS: Readings get updated")
 
 def test_advanced_IMU(beamng: BeamNGpy):
@@ -90,7 +92,6 @@ def test_advanced_IMU(beamng: BeamNGpy):
         check_consistency_and_update(IMU1, True)
 
         # Test the ad-hoc polling functionality of the advanced IMU sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
-        print("Ad-hoc poll request test.")
         check_consistency_and_update(IMU1, False)
 
         # Test vehicle acceleration is represented in the data
@@ -104,8 +105,9 @@ def test_advanced_IMU(beamng: BeamNGpy):
             sleep(0.1)
 
         sensor_readings = IMU1.poll()
-        accel_values = np.array([sensor_readings[key]['accSmooth'][0] for key in sensor_readings.keys()])
-        print("HERE: ", np.mean(accel_values), np.std(accel_values))
+        accel_values = np.array([
+            sensor_readings[key]['accSmooth'][0] for key in sensor_readings.keys()
+        ])
         assert np.mean(accel_values) > 1.2 and np.mean(accel_values) < 1.5
         assert np.std(accel_values) < 0.7
         print("PASS: Vehicle acceleration can be seen in the sensor readings")
@@ -121,25 +123,16 @@ def test_advanced_IMU(beamng: BeamNGpy):
         print(
             "Property getter test.  The displayed values should be the values which were set during the creation of the advanced IMU sensor."
         )
-        print("Sensor Name: ", IMU1.name)
+        print(f"Sensor Name: {IMU1.name}")
         assert IMU1.name == "advancedIMU1"
 
         # Test changing the visibility of the sensor.
         print(
             "Test visibility mode.  Advanced IMU visibility should cycle between on and off 3 times, staying at each for 1 second."
         )
-        sleep(1)
-        IMU1.set_is_visualised(False)
-        sleep(1)
-        IMU1.set_is_visualised(True)
-        sleep(1)
-        IMU1.set_is_visualised(False)
-        sleep(1)
-        IMU1.set_is_visualised(True)
-        sleep(1)
-        IMU1.set_is_visualised(False)
-        sleep(1)
-        IMU1.set_is_visualised(True)
+        for i in range(0, 6):
+            sleep(1)
+            IMU1.set_is_visualised(not (i % 2 == 0))
 
         IMU1.remove()
 
