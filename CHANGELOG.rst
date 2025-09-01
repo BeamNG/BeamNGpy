@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.34
+============
+TODO
+
 Version 1.33.1
 ==============
 - Fixed an issue where the :pydocs:`Camera <camera>` sensor with ``is_streaming=True`` could fail to decode data because of a data race.
