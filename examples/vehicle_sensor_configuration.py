@@ -33,7 +33,7 @@ def main():
 
     vehicle.ai.set_mode("traffic")
 
-    # Path to config file is relative to user folder ie: /AppData/Local/BeamNG.tech/0.XX/
+    # Path to config file is relative to user folder ie: /AppData/Local/BeamNG/BeamNG.tech/0.XX/
     config = VehicleSensorConfig("config1", bng, vehicle, "/tech/tconfig.json")
 
     print("Driving around, polling all sensors of the configuration periodically...")
