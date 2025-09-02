@@ -8,9 +8,9 @@ import numpy as np
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 from beamngpy.sensors import Camera
 
-ATTEMPTS = 3
 TOTAL_FIELDS = 4
 VISUALISE = False
+ATTEMPTS = VISUALISE and 1 or 3
 
 
 def check_field(sensor_readings, field: str, cam: Camera):
@@ -27,7 +27,6 @@ def check_field(sensor_readings, field: str, cam: Camera):
 def check_poll(
     cam: Camera,
     is_auto: bool,
-    visualize_img: bool,
     exp_semantic: int | None = None,
     exp_instance: int | None = None,
 ):
@@ -72,7 +71,7 @@ def check_poll(
             sensor_readings[field] = np.asarray(sensor_readings[field].convert("RGB"))
             print(field + " readings: \n")
             print(sensor_readings[field])
-            if visualize_img:
+            if VISUALISE:
                 plt.imshow(sensor_readings[field])
                 plt.show()
             check_field(sensor_readings, field, cam)
@@ -179,18 +178,18 @@ def test_camera(beamng: BeamNGpy):
         # We use each camera sensor to take: i) colour, ii) annotation, and iii) depth images, from their given positions.
         sleep(5)
         print("Testing camera 1...")
-        check_poll(cam1, True, VISUALISE, 3, 3)
+        check_poll(cam1, True, 3, 3)
 
         print("Testing camera 2...")
-        check_poll(cam2, True, VISUALISE, 3, 3)
+        check_poll(cam2, True, 3, 3)
 
         print("Testing camera 3...")
-        check_poll(cam3, True, VISUALISE, 3)
-        check_poll(cam3, False, VISUALISE, 3)
+        check_poll(cam3, True, 3)
+        check_poll(cam3, False, 3)
 
         print("Testing camera 4...")
-        check_poll(cam4, True, VISUALISE, 3)
-        check_poll(cam4, False, VISUALISE, 3)
+        check_poll(cam4, True, 3)
+        check_poll(cam4, False, 3)
 
         # Test that the property getter function return the correct data which was set.
         sleep(1)
@@ -224,12 +223,9 @@ def test_camera(beamng: BeamNGpy):
         sleep(1)
         images = cam4.poll()
         if VISUALISE:
-            plt.imshow(np.asarray(images["colour"].convert("RGB")))
-            plt.show()
-            plt.imshow(np.asarray(images["annotation"].convert("RGB")))
-            plt.show()
-            plt.imshow(np.asarray(images["depth"].convert("RGB")))
-            plt.show()
+            for field in ["colour", "annotation", "depth"]:
+                plt.imshow(np.asarray(images[field].convert("RGB")))
+                plt.show()
 
         # Test the world-space to camera pixel functionality.
         print(
