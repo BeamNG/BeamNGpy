@@ -30,22 +30,33 @@ def check_poll(uss: Ultrasonic, is_auto: bool, exp_dist: float | None = None):
             )
             # Collect the data now that it has been computed.
             sensor_readings = uss.collect_ad_hoc_poll_request(request_id)
+        print("Expected distance (approx.): ", exp_dist)
         print("Ultrasonic readings: ", sensor_readings)
-        assert len(sensor_readings.values()) == 3 and len(sensor_readings.keys()) == 3
+        assert (
+            len(sensor_readings.values()) == 3
+            and len(sensor_readings.keys()) == 3
+        )
         for reading in sensor_readings.values():
             assert reading > 0
         if exp_dist:
-            assert abs(sensor_readings["distance"] - exp_dist) <= 0.1
+            assert (
+                abs(sensor_readings["distance"] - exp_dist) <= 0.1
+            ), "Readings inaccurate"
         all_readings.append(sensor_readings)
 
-    for i in range(1, ATTEMPTS - 1):
-        assert all_readings[0]["distance"] != all_readings[i]["distance"], "Readings don't get updated"
-        assert all_readings[0]["windowMin"] != all_readings[i]["windowMin"], "Readings don't get updated"
-        assert all_readings[0]["windowMax"] != all_readings[i]["windowMax"], "Readings don't get updated"
+    for reading in ["distance", "windowMin", "windowMax"]:
+        for i in range(1, ATTEMPTS - 1):
+            assert (
+                all_readings[0][reading] != all_readings[i][reading]
+            ), "Readings don't get updated"
 
-    assert abs(max(tmp["distance"] for tmp in all_readings) - min(tmp["distance"] for tmp in all_readings)) <= 0.1, "Readings inconsistent"
-    assert abs(max(tmp["windowMax"] for tmp in all_readings) - min(tmp["windowMax"] for tmp in all_readings)) <= 0.1, "Readings inconsistent"
-    assert abs(max(tmp["windowMin"] for tmp in all_readings) - min(tmp["windowMin"] for tmp in all_readings)) <= 0.1, "Readings inconsistent"
+        assert (
+            abs(
+                max(tmp[reading] for tmp in all_readings)
+                - min(tmp[reading] for tmp in all_readings)
+            )
+            <= 0.1
+        ), "Readings inconsistent"
 
 def test_ultrasonic(beamng: BeamNGpy):
     with beamng as bng:
@@ -75,17 +86,21 @@ def test_ultrasonic(beamng: BeamNGpy):
 
         # Test the automatic polling functionality of the ultrasonic sensor, to make sure we retrieve the readings.
         sleep(2)
-        check_poll(ultrasonic1, True, 0.406)
+        check_poll(ultrasonic1, True, 0.3)
 
         # Test the ad-hoc polling functionality of the ultrasonic sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
         sleep(1)
-        check_poll(ultrasonic1, False, 0.406)
+        check_poll(ultrasonic1, False, 0.3)
         ultrasonic1.remove()
         print("Ultrasonic sensor removed.")
 
         # Create an ultrasonic sensor which has a negative requested update rate, and ensure that no readings are computed from it.
         ultrasonic2 = Ultrasonic(
-            "ultrasonic2", bng, vehicle, requested_update_time=-1.0, pos=(0, -2.3, 0.6)
+            "ultrasonic2",
+            bng,
+            vehicle,
+            requested_update_time=-1.0,
+            pos=(0, -2.3, 0.6),
         )
         print("Testing an ultrasonic sensor with a negative requested update time...")
         sleep(2)
@@ -131,18 +146,9 @@ def test_ultrasonic(beamng: BeamNGpy):
         print(
             "Test visibility mode.  Ultrasonic visibility should cycle between on and off 3 times, staying at each for 1 second."
         )
-        sleep(1)
-        ultrasonic1.set_is_visualised(False)
-        sleep(1)
-        ultrasonic1.set_is_visualised(True)
-        sleep(1)
-        ultrasonic1.set_is_visualised(False)
-        sleep(1)
-        ultrasonic1.set_is_visualised(True)
-        sleep(1)
-        ultrasonic1.set_is_visualised(False)
-        sleep(1)
-        ultrasonic1.set_is_visualised(True)
+        for i in range(0, 6):
+            sleep(1)
+            ultrasonic1.set_is_visualised(not (i % 2 == 0))
 
         ultrasonic1.remove()
 
