@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
 
 import math
-import struct
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -454,33 +453,16 @@ class Radar(CommBase):
         self.send_ack_ge(type="CloseRadar", ack="ClosedRadar", name=self.name)
         self.logger.info(f'Closed RADAR sensor: "{self.name}"')
 
-    def plot_data(
+    def _generate_plot(
         self,
         readings_data,
         resolution,
         field_of_view_y,
         range_min,
         range_max,
-        range_bins: int = 200,
-        azimuth_bins: int = 200,
+        range_bins,
+        azimuth_bins,
     ):
-        """
-        Plot the RADAR readings data. The data plots are: B-Scope, PPI (Plan Position Indicator), RCS (Radar Cross Section), and SNR (Signal-to-Noise Ratio).
-        The data is used to populate bins, where each bin represents one pixel on the images, and contains a weighted average of the data at
-        that location.
-        If data exists outside of the given distance/angle ranges, it will be snapped to the nearest bin, so this should be avoided by providing
-        accurate limits for these.
-
-        Args:
-            readings_data: The readings data structure obtained from polling the RADAR sensor.
-            resolution: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
-            field_of_view_y: The vertical field of view of the RADAR, in degrees.
-            range_min: The minimum range of the sensor, in metres.
-            range_max: The maximum range of the sensor, in metres.
-            range_bins: The number of bins to use for the range dimension, in the data plots.
-            azimuth_bins: The number of bins to use for the azimuth dimension, in the data plots.
-        """
-
         # Iterate over all RADAR readings, and populate the data into bins.
         rows = range_bins + 1
         cols = azimuth_bins + 1
@@ -584,7 +566,84 @@ class Radar(CommBase):
         ax[1, 1].set_ylabel("Down-range (m)")
         ax[1, 1].set_aspect("equal")
         fig.colorbar(mesh, ax=ax[1, 1])
+
+    def plot_data(
+        self,
+        readings_data,
+        resolution,
+        field_of_view_y,
+        range_min,
+        range_max,
+        range_bins: int = 200,
+        azimuth_bins: int = 200,
+    ):
+        """
+        Plot the RADAR readings data. The data plots are: B-Scope, PPI (Plan Position Indicator), RCS (Radar Cross Section), and SNR (Signal-to-Noise Ratio).
+        The data is used to populate bins, where each bin represents one pixel on the images, and contains a weighted average of the data at
+        that location.
+        If data exists outside of the given distance/angle ranges, it will be snapped to the nearest bin, so this should be avoided by providing
+        accurate limits for these.
+
+        Args:
+            readings_data: The readings data structure obtained from polling the RADAR sensor.
+            resolution: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
+            field_of_view_y: The vertical field of view of the RADAR, in degrees.
+            range_min: The minimum range of the sensor, in metres.
+            range_max: The maximum range of the sensor, in metres.
+            range_bins: The number of bins to use for the range dimension, in the data plots.
+            azimuth_bins: The number of bins to use for the azimuth dimension, in the data plots.
+        """
+
+        self._generate_plot(
+            readings_data,
+            resolution,
+            field_of_view_y,
+            range_min,
+            range_max,
+            range_bins,
+            azimuth_bins,
+        )
         plt.show()
+
+    def save_plot(
+        self,
+        filename: str,
+        readings_data,
+        resolution,
+        field_of_view_y,
+        range_min,
+        range_max,
+        range_bins: int = 200,
+        azimuth_bins: int = 200,
+    ):
+        """
+        Save the RADAR readings data plots to a file. The data plots are: B-Scope, PPI (Plan Position Indicator), RCS (Radar Cross Section), and SNR (Signal-to-Noise Ratio).
+        The data is used to populate bins, where each bin represents one pixel on the images, and contains a weighted average of the data at
+        that location.
+        If data exists outside of the given distance/angle ranges, it will be snapped to the nearest bin, so this should be avoided by providing
+        accurate limits for these.
+
+        Args:
+            filename: The path and filename where the plot will be saved (e.g., 'radar_data.png').
+            readings_data: The readings data structure obtained from polling the RADAR sensor.
+            resolution: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
+            field_of_view_y: The vertical field of view of the RADAR, in degrees.
+            range_min: The minimum range of the sensor, in metres.
+            range_max: The maximum range of the sensor, in metres.
+            range_bins: The number of bins to use for the range dimension, in the data plots.
+            azimuth_bins: The number of bins to use for the azimuth dimension, in the data plots.
+        """
+
+        self._generate_plot(
+            readings_data,
+            resolution,
+            field_of_view_y,
+            range_min,
+            range_max,
+            range_bins,
+            azimuth_bins,
+        )
+        plt.savefig(filename)
 
     def plot_velocity_data(
         self,

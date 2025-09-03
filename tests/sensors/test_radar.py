@@ -37,13 +37,14 @@ def check_consistency_and_update(radar: Radar, is_auto: bool):
             # Collect the data now that it has been computed.
             sensor_readings = radar.collect_ad_hoc_poll_request(request_id)
 
-        print("RADAR readings: ", sensor_readings[0:10])
         assert len(sensor_readings) > 0, "Readings not present"
         if VISUALISE:
             # Plot the data.
             radar.plot_data(
                 sensor_readings, RESOLUTION, FOV, RANGE_MIN, RANGE_MAX, RESOLUTION[0], RESOLUTION[1]
             )
+        else:
+            print("RADAR readings: ", sensor_readings[0:10])
         print("PASS: Readings present")
         all_readings.append(sensor_readings)
 
