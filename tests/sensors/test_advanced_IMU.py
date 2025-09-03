@@ -145,5 +145,5 @@ if __name__ == "__main__":
     set_up_simple_logging()
 
     # Start up the simulator.
-    bng = BeamNGpy("localhost", 25252)
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False)
     test_advanced_IMU(bng)

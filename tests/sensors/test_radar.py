@@ -11,13 +11,14 @@ RANGE_MIN = 0.1
 RANGE_MAX = 100.0
 RESOLUTION = (200, 200)
 FOV = 70
+VISUALISE = True
+ATTEMPTS = 3
 
 def check_consistency_and_update(radar: Radar, is_auto: bool):
     all_readings = []
-    attempts = 3
 
     # Make sure we retrieve actively updated and consistent readings.
-    for i in range(1, attempts + 1):
+    for i in range(1, ATTEMPTS + 1):
         sleep(2)
         if is_auto:
             print("\nAutomatic polling attempt ", i)
@@ -38,10 +39,11 @@ def check_consistency_and_update(radar: Radar, is_auto: bool):
 
         print("RADAR readings: ", sensor_readings[0:10])
         assert len(sensor_readings) > 0, "Readings not present"
-        # Plot the data.
-        # radar.plot_data(
-        #     sensor_readings, RESOLUTION, FOV, RANGE_MIN, RANGE_MAX, 200, 200
-        # )
+        if VISUALISE:
+            # Plot the data.
+            radar.plot_data(
+                sensor_readings, RESOLUTION, FOV, RANGE_MIN, RANGE_MAX, RESOLUTION[0], RESOLUTION[1]
+            )
         print("PASS: Readings present")
         all_readings.append(sensor_readings)
 
@@ -173,5 +175,5 @@ if __name__ == "__main__":
     set_up_simple_logging()
 
     # Start up the simulator.
-    bng = BeamNGpy("localhost", 25252)
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False)
     test_radar(bng)

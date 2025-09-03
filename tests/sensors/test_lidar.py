@@ -128,7 +128,7 @@ def test_lidar(beamng: BeamNGpy):
 
         # And the same again WITHOUT shared memory.
         lidar4 = Lidar(
-            "lidar3",
+            "lidar4",
             bng,
             vehicle,
             requested_update_time=-1.0,
@@ -217,5 +217,5 @@ if __name__ == "__main__":
     set_up_simple_logging()
 
     # Start up the simulator.
-    bng = BeamNGpy("localhost", 25252)
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False)
     test_lidar(bng)

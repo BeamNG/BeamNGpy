@@ -10,7 +10,7 @@ from beamngpy.sensors import Camera
 
 TOTAL_FIELDS = 4
 VISUALISE = False
-ATTEMPTS = VISUALISE and 1 or 3
+ATTEMPTS = 1 if VISUALISE else 3
 
 
 def check_field(sensor_readings, field: str, cam: Camera):
@@ -69,11 +69,12 @@ def check_poll(
 
         for field in fields:
             sensor_readings[field] = np.asarray(sensor_readings[field].convert("RGB"))
-            print(field + " readings: \n")
-            print(sensor_readings[field])
             if VISUALISE:
                 plt.imshow(sensor_readings[field])
                 plt.show()
+            else:
+                print(field + " readings: \n")
+                print(sensor_readings[field])
             check_field(sensor_readings, field, cam)
             all_readings[field].append(sensor_readings[field])
 
