@@ -30,7 +30,12 @@ def main():
     vehicle.set_shift_mode("realistic_automatic")
 
     adas_ultrasonic = AdasUltrasonicApi(bng, vehicle)
-    adas_ultrasonic.start()
+    adas_ultrasonic.start(
+        parkAssist=True, # Use the parking assistant.
+        blindSpot=True, # Use the blind spot detection.
+        crawl=True, # The current vehicle has an automatic transmission, which moves without throttle when put in gear.
+        is_visualised=True # See the ultrasonic sensors in the simulator.
+    )
 
     print("You have 3 minutes to drive around and test out the ADAS.")
     for _ in range(180):
@@ -43,7 +48,7 @@ def main():
 
 
 # Executing this file will start a scenario inside a garage where you can try out the parking assistant.
-# Put the car in gear and let it drive into one of the walls or columns.
+# Put the car in gear and let it drive into the garage door ahead for example.
 # It is provided to give example on how to use the parking assistant feature currently available in beamngpy.
 if __name__ == "__main__":
     main()

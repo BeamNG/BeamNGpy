@@ -27,7 +27,13 @@ def main():
 
     bng.scenario.start()
 
-    lka = LaneKeepingAssist(bng, vehicle, risk_level=2)
+    lka = LaneKeepingAssist(
+        bng,
+        vehicle,
+        risk_level=2, # Use the default medium risk level.
+        steering_strength=15, # Adjust this value according to preference and force feedback configuration.
+        detect_yellow=False # The Italy map does not have yellow road markings.
+    )
     lka.start()
 
     print("You have 300 seconds to drive around and test out the LKA.")

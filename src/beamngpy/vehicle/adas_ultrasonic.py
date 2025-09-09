@@ -18,6 +18,8 @@ class AdasUltrasonicApi(CommBase):
     The parking assistance activates only at speeds below 12.6 km/h. It makes sure to slow down and stop the vehicle to avoid a collision.
     The blind spot detection is visualised through HUD notifications.
 
+    Usage with a steering wheel controller and pedals is recommended.
+
     Args:
         bng: The BeamNGpy instance, with which to communicate to the simulation.
         vehicle: The vehicle to which this API should be attached.
@@ -44,7 +46,7 @@ class AdasUltrasonicApi(CommBase):
         Args:
             parkAssist: whether to enable parking assistance.
             blindSpot: whether to enable blind spot detection.
-            crawl: whether the vehicle's transmission has inherent crawl.
+            crawl: whether the vehicle's automatic transmission moves without throttle when put in gear.
             is_visualised: whether the ultrasonic sensors should be is_visualised.
         """
         if self.running:

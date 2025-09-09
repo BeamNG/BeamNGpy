@@ -23,16 +23,20 @@ class LaneKeepingAssist:
     The system uses the road markings to detect the radius of the corner ahead
     of the vehicle and slow down to a safe speed. The feature is only active at speeds
     above 39.6 km/h and when the vehicle's hazard lights and blinkers are not on.
+    Optionally, the assistant can also nudge the user's steering wheel to notify
+    the driver that the vehicle is exiting or about to exit the lane. This feature
+    activates only when the steering angle is less than 45 degrees.
+
     Usage with a steering wheel controller and pedals is recommended.
-    Optionally, this assistant can also nudge the user's steering wheel to notify
-    the driver that the vehicle is exiting or about to exit the lane.
+    The feature is designed for the ETK800 vehicle, but can be used with other vehicles.
 
     Args:
         bng: The BeamNGpy instance, with which to communicate to the simulation.
         vehicle: The vehicle to which this feature should be attached.
         electrics: The electrics sensor to use for the vehicle. If not provided, a new one will be created.
-        risk_level: Controls the cornering speed limit. 1 is the lowest, 3 is the highest.
-        steering_strength: Controls the strength of steering nudge (0-100).
+        risk_level: Controls the maximum allowed cornering speed. 1 is the lowest, safest, 3 is the highest, most dangerous.
+        steering_strength: Controls the strength of steering nudge (0-100). Adjust this value according to preference.
+        detect_yellow: Whether to detect yellow road markings, in addition to white.
     """
 
     def __init__(
