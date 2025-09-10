@@ -19,6 +19,7 @@ More quick usage examples can be found in our [test suite][1].
 |[Modding Interface][2]|<ul><li>write and deploy a mod that interacts with BeamNGpy</li><li>write python functions that interact with functions of the custom mod</li></ul>|
 |[Road Network][3]|<ul><li>fetch information about the current level's road network</li></ul>|
 |[AI Line][4]|<ul><li>use the simulator's AI with BeamNGpy</li></ul>|
+|[AI Waypoints][27]|<ul><li>use the simulator's AI with BeamNGpy</li></ul>|
 |[Annotation and Bounding Boxes][5]|<ul><li>get semantic annotations</li><li>get instance annotations</li><li>draw bounding boxes (note that this feature is not ready for use yet))</li></ul>|
 |[Settings][6]|<ul><li>change the simulation's graphics settings</li></ul>|
 |[Checkpoints][7]|<ul><li>add checkpoints to custom scenarios</li></ul>|
@@ -64,3 +65,4 @@ More quick usage examples can be found in our [test suite][1].
 [24]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/road_network_exporter.py
 [25]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/scenario_control.ipynb
 [26]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/platooning.py
+[27]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/ai_waypoints.py

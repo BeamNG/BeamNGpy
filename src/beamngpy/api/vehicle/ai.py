@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, Optional, List, Union
 from beamngpy.logging import BNGValueError
 from beamngpy.types import Float3, StrDict
 
@@ -89,6 +89,46 @@ class AIApi(VehicleApi):
         data["target"] = waypoint
         self._send(data).ack("AiWaypointSet")
 
+    def drive_using_waypoints(
+        self,
+        wp_target_list: List[str],
+        wp_speeds: Optional[Dict[str, float]] = None,
+        no_of_laps: int = 1,
+        route_speed: Optional[float] = None,
+        route_speed_mode: Optional[str] | None = None,
+        drive_in_lane: bool = False,
+        aggression: float = 0.3,
+        avoid_cars: bool = False,
+    ):
+        """
+        Sets a list of the waypoints the AI should drive to.
+
+        Args:
+            wp_target_list: A sequence of waypoint names to be used as succesive targets ex. wp_target_list = ['wp1', 'wp2']. Between any two consequitive waypoints a shortest path route will be followed.
+            wp_speeds: Type: (key/value pairs, key: "node_name", value: speed, number in m/s)
+                        Define target speeds for individual waypoints. The ai will try to meet this speed when at the given waypoint.
+            no_of_laps: The number of laps if the path is a loop. If not specified, the ai will just follow the succesion of waypoints once.
+            route_speed: A speed in m/s. To be used in tandem with ``route_speed_mode``.
+            route_speed_mode: One of the following options.
+                * ``limit``: the ai will not go above the ``route_speed``.
+                * ``set``: the ai will try to always go at the speed defined by ``routeSpeed``.
+            drive_in_lane: When True, the ai will keep on the correct side of the road on two way roads. This also affects path finding
+                           in that when this option is active ai paths will traverse roads in the legal direction if possible.
+            aggression: Value: 0.3-1. The aggression value with which the ai will drive the route.
+                        At 1 the ai will drive at the limit of traction. A value of 0.3 would be considered normal every day driving, going shopping etc.
+            avoid_cars: When True, the ai will be aware of (avoid crashing into) other vehicles on the map.
+        """
+        data = dict(type="DriveUsingPath")
+        data["wpTargetList"] = wp_target_list
+        data["wpSpeeds"] = wp_speeds
+        data["noOfLaps"] = no_of_laps
+        data["routeSpeed"] = route_speed
+        data["routeSpeedMode"] = route_speed_mode
+        data["driveInLane"] = drive_in_lane
+        data["aggression"] = aggression
+        data["avoidCars"] = avoid_cars
+        self._send(data).ack("DriveUsingPath")
+
     def drive_in_lane(self, lane: bool) -> None:
         """
         Sets the drive in lane flag of the AI. If True, the AI only drives
@@ -159,32 +199,37 @@ class AIApi(VehicleApi):
         data["cling"] = cling
         self._send(data).ack("AiScriptSet")
 
-
-    def import_script_ai_file(self, file_path: Union[str, Path]) -> List[Dict[str, float]]:
+    def import_script_ai_file(
+        self, file_path: Union[str, Path]
+    ) -> List[Dict[str, float]]:
         """
         Import a script AI file from BeamNG and return it in BeamNGpy script format.
-        
+
         Automatically looks in the BeamNG user folder if only a filename is provided.
-        
+
         Args:
             file_path: Path to the JSON file to import. If just a filename is provided,
                     it will automatically look in the BeamNG user folder first.
-                    
+
             Returns:
                 Script data in format: [{"x": ..., "y": ..., "z": ..., "t": ...}, ...]
 
             Example:
-                    # //script location is userfolder 
+                    # //script location is userfolder
                         script = vehicle.ai.import_script_ai_file("<script_AI_editor_name>.json")
                         vehicle.ai.set_script(script)
 
-            """
+        """
         file_path = Path(file_path)
 
         # If only a filename is provided, try to find it in the user folder first
         if not file_path.is_absolute() and len(file_path.parts) == 1:
             # Try to get the user folder from the connected BeamNG instance
-            if hasattr(self._vehicle, 'bng') and self._vehicle.bng and hasattr(self._vehicle.bng, 'user_with_version'):
+            if (
+                hasattr(self._vehicle, "bng")
+                and self._vehicle.bng
+                and hasattr(self._vehicle.bng, "user_with_version")
+            ):
                 user_folder_path = Path(self._vehicle.bng.user_with_version) / file_path
                 if user_folder_path.exists():
                     file_path = user_folder_path
@@ -192,20 +237,24 @@ class AIApi(VehicleApi):
         if not file_path.exists():
             raise FileNotFoundError(f"Script file not found: {file_path}")
 
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             data = json.load(f)
 
         # All BeamNG.tech path files have the same structure with "path" array
-        if 'path' not in data:
-            raise ValueError(f"File {file_path} is not a valid BeamNG.tech path file (missing 'path' array)")
+        if "path" not in data:
+            raise ValueError(
+                f"File {file_path} is not a valid BeamNG.tech path file (missing 'path' array)"
+            )
 
-        path_data = data['path']
+        path_data = data["path"]
 
         if not path_data:
             raise ValueError(f"No path data found in {file_path}")
 
         # Check if we have time values or need to calculate them
-        has_time = any('t' in waypoint for waypoint in path_data[:3])  # Check first 3 points
+        has_time = any(
+            "t" in waypoint for waypoint in path_data[:3]
+        )  # Check first 3 points
 
         script = []
 
@@ -213,10 +262,10 @@ class AIApi(VehicleApi):
             # drawn_path_time.json and recorded_path.json - use existing time values
             for waypoint in path_data:
                 script_point = {
-                    'x': float(waypoint['x']),
-                    'y': float(waypoint['y']),
-                    'z': float(waypoint['z']),
-                    't': float(waypoint['t'])
+                    "x": float(waypoint["x"]),
+                    "y": float(waypoint["y"]),
+                    "z": float(waypoint["z"]),
+                    "t": float(waypoint["t"]),
                 }
                 script.append(script_point)
         else:
@@ -225,10 +274,10 @@ class AIApi(VehicleApi):
 
             for i, waypoint in enumerate(path_data):
                 script_point = {
-                    'x': float(waypoint['x']),
-                    'y': float(waypoint['y']),
-                    'z': float(waypoint['z']),
-                    't': current_time
+                    "x": float(waypoint["x"]),
+                    "y": float(waypoint["y"]),
+                    "z": float(waypoint["z"]),
+                    "t": current_time,
                 }
                 script.append(script_point)
 
@@ -237,22 +286,21 @@ class AIApi(VehicleApi):
                     next_waypoint = path_data[i + 1]
 
                     # Calculate distance to next point
-                    dx = float(next_waypoint['x']) - float(waypoint['x'])
-                    dy = float(next_waypoint['y']) - float(waypoint['y'])
-                    dz = float(next_waypoint['z']) - float(waypoint['z'])
-                    distance = (dx**2 + dy**2 + dz**2)**0.5
+                    dx = float(next_waypoint["x"]) - float(waypoint["x"])
+                    dy = float(next_waypoint["y"]) - float(waypoint["y"])
+                    dz = float(next_waypoint["z"]) - float(waypoint["z"])
+                    distance = (dx**2 + dy**2 + dz**2) ** 0.5
 
                     # Use distance-based timing (assume ~15 m/s average speed)
                     time_increment = distance / 15.0 if distance > 0 else 1.0
                     current_time += time_increment
 
         if len(script) < 3:
-            raise ValueError(f"Script must have at least 3 waypoints, got {len(script)}")
+            raise ValueError(
+                f"Script must have at least 3 waypoints, got {len(script)}"
+            )
 
         return script
-
-
-
 
     def set_aggression(self, aggr: float) -> None:
         data: StrDict = dict(type="SetAiAggression")
