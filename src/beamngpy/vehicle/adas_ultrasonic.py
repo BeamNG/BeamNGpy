@@ -13,10 +13,10 @@ if TYPE_CHECKING:
 
 class AdasUltrasonicApi(CommBase):
     """
-    An API for ultrasonic sensor-based parking assistance and blind spot detection of BeamNG.tech vehicle.
+    An API for ultrasonic sensor-based parking assistance and blind spot detection for BeamNG.tech vehicles.
     A configuration with 10 ultrasonic sensors is used for parking assistance, 4 of which can also be used for blind spot detection.
-    The parking assistance activates only at speeds below 12.6 km/h. It makes sure to slow down and stop the vehicle to avoid a collision.
-    The blind spot detection is visualised through HUD notifications.
+    The parking assistance activates only at speeds below 12.6 km/h. It ensures the vehicle slows down and stops to avoid a collision.
+    The blind spot detection is visualized through HUD notifications.
 
     Usage with a steering wheel controller and pedals is recommended.
 
@@ -41,13 +41,13 @@ class AdasUltrasonicApi(CommBase):
         is_visualised: bool = True
     ) -> None:
         """
-        Starts Ultrasonic ADAS features. Preferrably do this when the vehicle is still.
+        Starts Ultrasonic ADAS features. The first time the system is started, the sensors can appear placed irregularly.
 
         Args:
             parkAssist: whether to enable parking assistance.
             blindSpot: whether to enable blind spot detection.
-            crawl: whether the vehicle's automatic transmission moves without throttle when put in gear.
-            is_visualised: whether the ultrasonic sensors should be is_visualised.
+            crawl: whether the vehicle's automatic transmission moves it without throttle when put in gear.
+            is_visualised: whether the ultrasonic sensors should be visualised.
         """
         if self.running:
             self.logger.warning("Ultrasonic ADAS is already running.")
@@ -69,7 +69,7 @@ class AdasUltrasonicApi(CommBase):
 
     def stop(self) -> None:
         """
-        This stops Ultrasonic ADAS features from the associated vehicle.
+        This stops the Ultrasonic ADAS features on the associated vehicle.
         """
         if not self.running:
             self.logger.warning("Ultrasonic ADAS is not running.")

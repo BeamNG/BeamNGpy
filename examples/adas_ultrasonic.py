@@ -48,7 +48,7 @@ def main():
 
 
 # Executing this file will start a scenario inside a garage where you can try out the parking assistant.
-# Put the car in gear and let it drive into the garage door ahead for example.
+# Put the car in gear and let it drive into one of the walls or columns.
 # It is provided to give example on how to use the parking assistant feature currently available in beamngpy.
 if __name__ == "__main__":
     main()

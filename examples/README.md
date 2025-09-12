@@ -20,7 +20,7 @@ More quick usage examples can be found in our [test suite][1].
 |[Road Network][3]|<ul><li>fetch information about the current level's road network</li></ul>|
 |[AI Line][4]|<ul><li>use the simulator's AI with BeamNGpy</li></ul>|
 |[AI Waypoints][27]|<ul><li>use the simulator's AI with BeamNGpy</li></ul>|
-|[Annotation and Bounding Boxes][5]|<ul><li>get semantic annotations</li><li>get instance annotations</li><li>draw bounding boxes (note that this feature is not ready for use yet))</li></ul>|
+|[Annotation and Bounding Boxes][5]|<ul><li>get semantic annotations</li><li>get instance annotations</li><li>draw bounding boxes (note that this feature is not ready for use yet)</li></ul>|
 |[Settings][6]|<ul><li>change the simulation's graphics settings</li></ul>|
 |[Checkpoints][7]|<ul><li>add checkpoints to custom scenarios</li></ul>|
 |[West Coast LiDAR][8]|<ul><li>use the LiDAR sensor</li></ul>|
@@ -29,7 +29,6 @@ More quick usage examples can be found in our [test suite][1].
 |[Object Placement][11]|<ul><li>define a custom scenario for a given map</li><li>generate procedural content, i.e. simple meshes</li></ul>|
 |[Procedural Meshes][12]|<ul><li>generate procedural content</li></ul>|
 |[Road Definition][13]|<ul><li>add custom roads to given maps</li></ul>|
-|[Simple Driver Comfort Analysis][14]|<ul><li>use the IMU sensor</li></ul>|
 |[Advanced Driver Comfort Analysis][22]|<ul><li> use the Advanced IMU sensor</li></ul>|
 |[Spawning][15]|<ul><li>spawn a new vehicle after starting the scenario</li></ul>|
 |[Ultrasonic Sensor][16]|<ul><li>use the ultrasonic sensor</li></ul>|
@@ -39,6 +38,8 @@ More quick usage examples can be found in our [test suite][1].
 |[Powertrain Analysis][23]|<ul><li>use the Powertrain sensor</li></ul>|
 |[Road Network Exporter][24]|<ul><li>Export BeamNG maps as .xodr files (OpenDRIVE).</li><li>The exported road networks contain elevation and road wideness data, along with junction connectivity.</li><li>BeamNGpy also includes a new class with which to analyse the road network data oneself, and process it as required.</li></ul>|
 |[Platooning][26]|<ul><li>form a vehicle platooning formation with BeamNGpy</li></ul>|
+|[Parking Assist and Blind Spot Detection][28]|<ul><li>get parking assistantance</li><li>blind spot HUD notifications</li></ul>|
+|[Lane-Keeping Assist][29]|<ul><li>automatically limit vehicle speed based on road curvature</li><li>force feedback on accidental lane exit</li></ul>|
 
 [1]: https://github.com/BeamNG/BeamNGpy/tree/master/tests
 [2]: https://github.com/BeamNG/BeamNGpy/tree/master/examples/modInterface
@@ -53,7 +54,6 @@ More quick usage examples can be found in our [test suite][1].
 [11]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/object_placement.ipynb
 [12]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/procedural_meshes.py
 [13]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/road_definition.py
-[14]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/simple_driver_comfort_analysis.ipynb
 [15]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/spawning.ipynb
 [16]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/ultrasonic_demo.py
 [17]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_road_bounding_box.ipynb
@@ -66,3 +66,5 @@ More quick usage examples can be found in our [test suite][1].
 [25]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/scenario_control.ipynb
 [26]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/platooning.py
 [27]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/ai_waypoints.py
+[28]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/adas_ultrasonic.py
+[29]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/lka_example.py
