@@ -4,16 +4,14 @@ Changelog
 
 Version 1.34
 ============
-- The **default userpath CHANGED** to ``%localappdata%/BeamNG/BeamNG.tech`` on Linux and ``~/.local/share/BeamNG/BeamNG.tech`` on Windows. As a reminder,
-the simulator paths can be read at runtime using :pydocs:`BeamNGpy.system.get_environment_paths <beamngpy.api.beamng.SystemApi.get_environment_paths>` and
-the default userpath can be overriden with ``BeamNGpy(user='C:/requested/userpath')``.
+- The **default userpath CHANGED** to ``%localappdata%/BeamNG/BeamNG.tech`` on Linux and ``~/.local/share/BeamNG/BeamNG.tech`` on Windows. As a reminder, the simulator paths can be read at runtime using :pydocs:`BeamNGpy.system.get_environment_paths <beamngpy.api.beamng.SystemApi.get_environment_paths>` and the default userpath can be overriden with ``BeamNGpy(user='C:/requested/userpath')``.
 - Updated and added World Editor tools for BeamNG.tech, read the :blog:`BeamNG.tech 0.37 changelog <beamng-tech-037>` for details.
 - :pydocs:`Advanced IMU <advanced-imu>` arguments changed, ``smoother_strength`` is used instead of the old smoothing parameters.
-- Added method :pydocs:`save_plot <beamngpy.sensors.Radar.save_plot>` to the Radar sensor.
 - New API for parking assist and blind spot detection (:repo:`v1.34/examples/adas_ultrasonic.py`).
 - Lane-keeping assist implementation (:repo:`v1.34/examples/lka_example.py`).
-- Added :pydocs:`import_script_ai_file <beamngpy.api.vehicle.AIApi.import_script_ai_file>` API to import script AI paths into BeamNGpy.
+- Added method :pydocs:`save_plot <beamngpy.sensors.Radar.save_plot>` to the Radar sensor.
 - Deprecated the :pydocs:`get_full_poll_request <beamngpy.sensors.Camera.get_full_poll_request>` method of the Camera sensor.
+- Added :pydocs:`import_script_ai_file <beamngpy.api.vehicle.AIApi.import_script_ai_file>` API to import script AI paths into BeamNGpy.
 - Added the :pydocs:`vehicle.ai.drive_using_waypoints <beamngpy.api.vehicle.AIApi.drive_using_waypoints>` API to set a list of the waypoints the AI should drive to.
 
 Version 1.33.1
