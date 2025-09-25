@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 
 from beamngpy.connection import CommBase
-from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
+from beamngpy.logging import create_warning, LOGGER_ID, BNGError, BNGValueError
 from beamngpy.sensors.shmem import BNGSharedMemory
 from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
 
@@ -16,6 +16,8 @@ from . import utils
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
     from beamngpy.vehicle import Vehicle
+
+_BEAMNG_BLOCKING_POLL_WARNING_SHOWN = False
 
 
 class Camera(CommBase):
@@ -649,12 +651,22 @@ class Camera(CommBase):
     # TODO: Should be removed when GE-2170 is complete.
     def get_full_poll_request(self) -> StrDict:
         """
+        **DEPRECATED**: This call might introduce crashes, instabilities or BeamNG hanging on some platforms.
+
         Gets a full camera request (semantic annotation and instance annotation data included).
         NOTE: this function blocks the simulation until the data request is completed.
 
         Returns:
             The camera data, as images
         """
+        global _BEAMNG_BLOCKING_POLL_WARNING_SHOWN
+        if not _BEAMNG_BLOCKING_POLL_WARNING_SHOWN:
+            create_warning(
+                "The `get_full_poll_request` method is deprecated and might introduce crashes,"
+                " instabilities or BeamNG hanging."
+            )
+            _BEAMNG_BLOCKING_POLL_WARNING_SHOWN = True
+
         # Obtain the raw readings (as binary strings) from the simulator, for this ad-hoc polling request.
         raw_readings = self.send_recv_ge("GetFullCameraRequest", name=self.name)
         if "data" not in raw_readings:
