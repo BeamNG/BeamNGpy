@@ -4,7 +4,18 @@ Changelog
 
 Version 1.34
 ============
-TODO
+- The **default userpath CHANGED** to `%localappdata%/BeamNG/BeamNG.tech` on Linux and `~/.local/share/BeamNG/BeamNG.tech` on Windows.
+As a reminder, you can get the simulator paths at runtime using :pydocs:`BeamNGpy.system.get_environment_paths <beamngpy.api.beamng.SystemApi.get_environment_paths>` and
+you can override the default userpath with ``BeamNGpy(user='C:/requested/userpath')``.
+
+- Updated and added World Editor tools for BeamNG.tech, read the :blog:`BeamNG.tech 0.37 changelog <beamng-tech-037>` for details.
+- Advanced IMU arguments changed, ``smoother_strength`` is used instead of the old smoothing parameters.
+- Added method ``save_plot`` to the Radar sensor.
+- New API for parking assist and blind spot detection (:repo:`v1.34/examples/adas_ultrasonic.py`).
+- Lane-keeping assist implementation (:repo:`v1.34/examples/lka_example.py`).
+- Added ``import_script_ai_file`` API to import script AI paths into BeamNGpy.
+- Deprecated the ``get_full_poll_request`` method of the Camera sensor.
+- Added the ``vehicle.ai.drive_using_waypoints`` API to set a list of the waypoints the AI should drive to.
 
 Version 1.33.1
 ==============

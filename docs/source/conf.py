@@ -87,6 +87,7 @@ extlinks = {
         "beamngpy.html#%s",
         "%s",
     ),
+    "repo": ("https://github.com/BeamNG/BeamNGpy/blob/%s", "%s"),
     "repo132": ("https://github.com/BeamNG/BeamNGpy/blob/v1.32/%s", "%s"),
     "repo133": ("https://github.com/BeamNG/BeamNGpy/blob/v1.33/%s", "%s"),
     "blog": ("https://beamng.tech/blog/%s", None),
