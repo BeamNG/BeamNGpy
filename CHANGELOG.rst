@@ -4,10 +4,9 @@ Changelog
 
 Version 1.34
 ============
-- The **default userpath CHANGED** to ``%localappdata%/BeamNG/BeamNG.tech`` on Linux and ``~/.local/share/BeamNG/BeamNG.tech`` on Windows.
-As a reminder, you can get the simulator paths at runtime using :pydocs:`BeamNGpy.system.get_environment_paths <beamngpy.api.beamng.SystemApi.get_environment_paths>` and
-you can override the default userpath with ``BeamNGpy(user='C:/requested/userpath')``.
-
+- The **default userpath CHANGED** to ``%localappdata%/BeamNG/BeamNG.tech`` on Linux and ``~/.local/share/BeamNG/BeamNG.tech`` on Windows. As a reminder,
+the simulator paths can be read at runtime using :pydocs:`BeamNGpy.system.get_environment_paths <beamngpy.api.beamng.SystemApi.get_environment_paths>` and
+the default userpath can be overriden with ``BeamNGpy(user='C:/requested/userpath')``.
 - Updated and added World Editor tools for BeamNG.tech, read the :blog:`BeamNG.tech 0.37 changelog <beamng-tech-037>` for details.
 - :pydocs:`Advanced IMU <advanced-imu>` arguments changed, ``smoother_strength`` is used instead of the old smoothing parameters.
 - Added method :pydocs:`save_plot <beamngpy.sensors.Radar.save_plot>` to the Radar sensor.
