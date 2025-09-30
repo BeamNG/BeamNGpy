@@ -208,7 +208,7 @@ class Scenario:
             vehicles_dict[self._focus_vehicle]["startFocus"] = True
 
         info["vehicles"] = vehicles_dict
-        info["prefabs"] = [f"levels/{self.level}/scenarios/{self.name}.prefab.json"]
+        info["prefabs"] = [f"levels/{self.level}/scenarios/{self.name}/{self.name}.prefab.json"]
 
         return info
 
