@@ -18,7 +18,7 @@
  "partConfig": "{{vehicle.partConfig}}",
 {% endif %}
  "rotationMatrix": {{vehicle.rotationMatrix}},
- "autoEnterVehicle": false
+ "autoEnterVehicle": "false"
 }
 |---|{% endfor %}
 {% for road in roads %}{
