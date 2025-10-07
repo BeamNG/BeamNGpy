@@ -13,6 +13,7 @@ Version 1.34
 - Deprecated the :pydocs:`get_full_poll_request <beamngpy.sensors.Camera.get_full_poll_request>` method of the Camera sensor.
 - Added :pydocs:`import_script_ai_file <beamngpy.api.vehicle.AIApi.import_script_ai_file>` API to import script AI paths into BeamNGpy.
 - Added the :pydocs:`vehicle.ai.drive_using_waypoints <beamngpy.api.vehicle.AIApi.drive_using_waypoints>` API to set a list of the waypoints the AI should drive to.
+- Fix the ``autoEnterVehicle`` field in the scenario prefab template file.
 
 Version 1.33.1
 ==============
