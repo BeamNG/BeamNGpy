@@ -2,7 +2,7 @@
 Changelog
 =========
 
-Version 1.34
+Version 1.34, 1.34.1
 ============
 - The **default userpath CHANGED** to ``%localappdata%/BeamNG/BeamNG.tech`` on Linux and ``~/.local/share/BeamNG/BeamNG.tech`` on Windows. As a reminder, the simulator paths can be read at runtime using :pydocs:`BeamNGpy.system.get_environment_paths <beamngpy.api.beamng.SystemApi.get_environment_paths>` and the default userpath can be overriden with ``BeamNGpy(user='C:/requested/userpath')``.
 - Updated and added World Editor tools for BeamNG.tech, read the :blog:`BeamNG.tech 0.37 changelog <beamng-tech-037>` for details.
