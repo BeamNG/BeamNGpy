@@ -157,3 +157,9 @@ class RootApi(VehicleApi):
         data: StrDict = dict(type="DeflateTire")
         data["wheelId"] = wheel_id
         self._send(data).ack("CompletedDeflateTire")
+
+    def get_stats(self) -> StrDict:
+        data = dict(type="GetVehicleStats")
+        response = self._send(data).recv("GetVehicleStats")
+        stats = response["data"]
+        return stats

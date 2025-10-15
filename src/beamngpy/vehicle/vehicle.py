@@ -582,3 +582,29 @@ class Vehicle:
             wheel_id: The given wheel ID.
         """
         return self._root.deflate_tire(wheel_id)
+
+    def get_stats(self) -> StrDict:
+        """
+        Get the vehicle's static properties including:
+
+        * ``characteristicSpeed``: characteristic speed in m/s (float)
+        * ``cogWithWheels``: center of gravity with wheels (x: float, y: float, z: float) in m
+        * ``cogWithoutWheels``: center of gravity without wheels (x: float, y: float, z: float) in m
+        * ``distanceCOGFrontAxle``: distance from center of gravity to front axle in m (float)
+        * ``distanceCOGRearAxle``: distance from center of gravity to rear axle in m (float)
+        * ``inertiaZ``: inertia about the z-axis in kg*m^2 (float)
+        * ``invSquaredCharacteristicSpeed``: inverted squared characteristic speed (float)
+        * ``invWheelBase``: inverted wheel base in 1/m (float)
+        * ``mass``: total vehicle mass in kg (float)
+        * ``refNodePos``: reference node position (x: float, y: float, z: float) in m
+        * ``skewStiffnessFront``: skew stiffness front in Nm/rad (float)
+        * ``skewStiffnessRear``: skew stiffness rear in Nm/rad (float)
+        * ``trackWidth``: track width in m (float)
+        * ``trackWidthRefLeft``: track width reference left in m (float)
+        * ``trackWidthRefRight``: track width reference right in m (float)
+        * ``wheelBase``: wheel base in m (float)
+
+        Returns:
+            The vehicle's static properties as a dictionary.
+        """
+        return self._root.get_stats()
