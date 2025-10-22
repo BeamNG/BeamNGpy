@@ -37,6 +37,16 @@ API
    :show-inheritance:
    :exclude-members: RootApi
 
+ADAS
+----
+.. autoclass:: beamngpy.vehicle.lka.LaneKeepingAssist
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.vehicle.adas_ultrasonic.AdasUltrasonicApi
+   :members:
+   :undoc-members:
+
 Scenario
 ========
 

@@ -318,6 +318,7 @@ class Vehicle:
             parkingbrake: Intensity of the parkingbrake, from 0.0 to 1.0.
             clutch: Clutch level, from 0.0 to 1.0.
             gear: Gear to shift to, -1 eq backwards, 0 eq neutral, 1 to X eq nth gear
+            is_adas: Whether the input source is an ADAS system.
         """
         return self._root.control(steering, throttle, brake, parkingbrake, clutch, gear, is_adas)
 
