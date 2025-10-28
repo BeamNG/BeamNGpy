@@ -60,6 +60,19 @@ class RootApi(VehicleApi):
         data = dict(type="Control", **options)
         self._send(data).ack("Controlled")
 
+    def cycle_esc_mode(self) -> None:
+        data = dict(type="CycleESCMode")
+        self._send(data).ack("ESCModeCycled")
+
+    def set_esc_mode(self, mode: str) -> None:
+        data = dict(type="SetESCMode")
+        data["mode"] = mode
+        self._send(data).ack("ESCModeSet")
+
+    def get_esc_mode(self) -> str:
+        data = dict(type="GetESCMode")
+        return self._send(data).recv("ESCMode")["data"]
+
     def set_color(self, rgba: Color = (1.0, 1.0, 1.0, 1.0)) -> None:
         data: StrDict = dict(type="SetColor")
         color = coerce_color(rgba)

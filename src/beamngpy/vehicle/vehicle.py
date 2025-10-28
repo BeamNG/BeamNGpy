@@ -322,6 +322,30 @@ class Vehicle:
         """
         return self._root.control(steering, throttle, brake, parkingbrake, clutch, gear, is_adas)
 
+    def cycle_esc_mode(self) -> None:
+        """
+        Cycles the ESC mode if the vehicle has ESC.
+        """
+        return self._root.cycle_esc_mode()
+
+    def set_esc_mode(self, mode: str) -> None:
+        """
+        Sets the ESC mode if the vehicle has ESC. This function won't do
+        anything if the vehicle uses a "Regular ESC" mode.
+
+        Args:
+            mode: The key of the ESC mode to set. The key may vary from the mode's name in the UI.
+        """
+        return self._root.set_esc_mode(mode)
+
+    def get_esc_mode(self) -> str:
+        """
+        Gets the current ESC mode's key if the vehicle has ESC. The key may
+        vary from the mode's name in the UI. This function will return "none"
+        if the vehicle uses a "Regular ESC" mode.
+        """
+        return self._root.get_esc_mode()
+
     def set_color(self, rgba: Color = (1.0, 1.0, 1.0, 1.0)) -> None:
         """
         Sets the color of this vehicle. Colour can be adjusted on the RGB
