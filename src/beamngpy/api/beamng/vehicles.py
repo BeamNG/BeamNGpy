@@ -258,17 +258,12 @@ class VehiclesApi(Api):
 
     def get_player_vehicle_id(self) -> StrDict:
         """
-        Queries the currently player vehicles in the simulator.
+        Queries the current player's active vehicle in the simulator.
 
         Returns:
-            A dictionary of the active vehicle in simulator from lua.
-            {'type': 'getPlayerVehicleID', 'id': 10455.0, 'vid': 'vehicleA'}
-            then in python, the return will be only an int value of the 'id' and vehicle's name
-            {'id': 10455, 'vid': 'vehicleA'}
-            data = bng.vehicles.get_player_vehicle_id()
-            for testing you can use the following:
-            id_value = data['id']
-            vid_value = data['vid']
+            A dictionary of the active vehicle with keys:
+            * ``id``: the numeric id of the vehicle (int)
+            * ``vid``: the vehicle vid (str)
         """
         data = dict(type="GetPlayerVehicleID")
         resp = self._send(data).recv("getPlayerVehicleID")
