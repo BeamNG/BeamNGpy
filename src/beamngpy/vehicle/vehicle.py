@@ -615,7 +615,7 @@ class Vehicle:
         * ``mass``: total vehicle mass in kg (float)
         * ``center_of_gravity``: center of gravity (x: float, y: float, z: float) in m
         * ``inertia``: inertia with respect to the x-, y- and z-axis about the center of gravity
-                       (x: float, y: float, z: float) in kg*m^2
+          (x: float, y: float, z: float) in kg*m^2
 
         These properties are static (based on the vehicle's initial state in the Jbeam file) and not updated dynamically
         during the simulation. The values are using the Jbeam coordinate system, i.e. the origin is (0, 0, 0), the
