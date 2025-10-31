@@ -171,8 +171,8 @@ class RootApi(VehicleApi):
         data["wheelId"] = wheel_id
         self._send(data).ack("CompletedDeflateTire")
 
-    def get_stats(self) -> StrDict:
-        data = dict(type="GetVehicleStats")
+    def get_stats(self, without_wheels: bool = False) -> StrDict:
+        data = dict(type="GetVehicleStats", withoutWheels=without_wheels)
         response = self._send(data).recv("GetVehicleStats")
         stats = response["data"]
         return stats
