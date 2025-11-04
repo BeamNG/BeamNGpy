@@ -655,8 +655,8 @@ class Vehicle:
 
         Args:
             nodes: A list of node names to query information for. If None (default), all nodes are provided, otherwise
-            the returned list is in the same order as the given nodes. The list can contain strings (node names) or
-            integers (node CIDs).
+                   the returned list is in the same order as the given nodes. The list can contain strings (node names)
+                   or integers (node CIDs).
 
         Returns:
             A list with node information for each requested node.
