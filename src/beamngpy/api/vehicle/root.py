@@ -188,4 +188,9 @@ class RootApi(VehicleApi):
     def get_node_info(self, nodes: List[str | int] | None = None) -> List[StrDict]:
         data = dict(type="GetNodeInfo", nodes=nodes)
         response = self._send(data).recv("GetNodeInfo")
-        return response["data"]
+        data = response["data"]
+        for item in data:
+            item["pos"] = tuple(item["pos"])
+            item["cid"] = int(item["cid"])
+            item["name"] = item.get("name", None)
+        return data
