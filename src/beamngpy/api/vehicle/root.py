@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import List
+
 from beamngpy.logging import BNGValueError
 from beamngpy.misc.colors import coerce_color
 from beamngpy.types import Color, Float3, StrDict
@@ -171,8 +173,17 @@ class RootApi(VehicleApi):
         data["wheelId"] = wheel_id
         self._send(data).ack("CompletedDeflateTire")
 
-    def get_stats(self, without_wheels: bool = False) -> StrDict:
-        data = dict(type="GetVehicleStats", withoutWheels=without_wheels)
-        response = self._send(data).recv("GetVehicleStats")
-        stats = response["data"]
-        return stats
+    def get_mass_properties(self, without_wheels: bool = False) -> StrDict:
+        data = dict(type="GetMassProperties", withoutWheels=without_wheels)
+        response = self._send(data).recv("GetMassProperties")
+        return response["data"]
+
+    def get_ref_nodes(self) -> StrDict:
+        data = dict(type="GetRefNodes")
+        response = self._send(data).recv("GetRefNodes")
+        return response["data"]
+
+    def get_node_info(self, nodes: List[str] | None = None) -> StrDict:
+        data = dict(type="GetNodeInfo", nodes=nodes)
+        response = self._send(data).recv("GetNodeInfo")
+        return response["data"]

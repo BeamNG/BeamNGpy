@@ -486,7 +486,7 @@ class Vehicle:
 
     def get_center_of_gravity(self, without_wheels=False) -> Float3:
         """
-        Returns the vehicle's center of gravity.
+        Returns the vehicle's current center of gravity in world coordinates.
 
         Args:
             without_wheels: If True, the center of gravity is calculated without the wheels.
@@ -608,27 +608,51 @@ class Vehicle:
         """
         return self._root.deflate_tire(wheel_id)
 
-    def get_stats(self, without_wheels: bool = False) -> StrDict:
+    def get_mass_properties(self, without_wheels: bool = False) -> StrDict:
         """
-        Get a vehicle's static properties including:
+        Returns a vehicle's current mass properties including:
 
         * ``mass``: total vehicle mass in kg (float)
-        * ``center_of_gravity``: center of gravity (x: float, y: float, z: float) in m
-        * ``inertia``: inertia with respect to the x-, y- and z-axis about the center of gravity
-          (x: float, y: float, z: float) in kg*m^2
-
-        These properties are static (based on the vehicle's initial state in the Jbeam file) and not updated dynamically
-        during the simulation. The values are using the Jbeam coordinate system, i.e. the origin is (0, 0, 0), the
-        x-axis direction is (1, 0, 0), the y-axis direction is (0, 1, 0), and the z-axis direction is (0, 0, 1).
-        Therefore these values are independent of the ref node system (it does not matter where the ref nodes are
-        located for computing these values). If the vehicle has a fuel tank, the mass includes the fuel of the full
-        tank.
+        * ``center_of_gravity``: center of gravity (i.e. center of mass) in world coordinates as an (x, y, z) tuple in m
+        * ``inertia``: inertia tensor with respect to the world's coordinate axes about the center of gravity as dict
+          (x: float, y: float, z: float, xy: float, xz: float, yz: float) in kg*m^2
 
         Args:
             without_wheels: If True, the all properties are calculated without the wheels.
                             Defaults to False.
 
         Returns:
-            The vehicle's static properties as a dictionary.
+            The vehicle's mass properties as a dictionary.
         """
-        return self._root.get_stats(without_wheels=without_wheels)
+        return self._root.get_mass_properties(without_wheels=without_wheels)
+
+    def get_ref_nodes(self) -> StrDict:
+        """
+        Returns the vehicle's reference nodes as a dictionary. The dictionary contains:
+        * ``ref``: the node name of the reference node (str)
+        * ``back``: the node name of the back reference node (str)
+        * ``left``: the node name of the left reference node (str)
+        * ``up``: the node name of the up reference node (str)
+        * ``leftCorner``: the node name of the front left corner node (str)
+        * ``rightCorner``: the node name of the front right corner node (str)
+
+        Returns:
+            The vehicle's reference nodes as a dictionary.
+        """
+        return self._root.get_ref_nodes()
+
+    def get_node_info(self, nodes: List[str] | None = None) -> StrDict:
+        """
+        Returns current mass and position of the given nodes as a dictionary.
+        
+        The dictionary maps node name to node information. The node information is a dictionary containing:
+        * ``mass``: the mass of the node in kg (float)
+        * ``position``: the current position of the node in world coordinates as an (x, y, z) tuple in m
+
+        Args:
+            nodes: A list of node names to query information for. If None (default), all nodes are provided.
+
+        Returns:
+            A dictionary mapping node name to node information.
+        """
+        return self._root.get_node_info(nodes=nodes)
