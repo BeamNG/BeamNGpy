@@ -629,6 +629,7 @@ class Vehicle:
     def get_ref_nodes(self) -> StrDict:
         """
         Returns the vehicle's reference nodes as a dictionary. The dictionary contains:
+
         * ``ref``: the node name of the reference node (str)
         * ``back``: the node name of the back reference node (str)
         * ``left``: the node name of the left reference node (str)
@@ -644,8 +645,9 @@ class Vehicle:
     def get_node_info(self, nodes: List[str] | None = None) -> StrDict:
         """
         Returns current mass and position of the given nodes as a dictionary.
-        
+
         The dictionary maps node name to node information. The node information is a dictionary containing:
+
         * ``mass``: the mass of the node in kg (float)
         * ``position``: the current position of the node in world coordinates as an (x, y, z) tuple in m
 
