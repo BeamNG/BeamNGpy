@@ -176,14 +176,16 @@ class RootApi(VehicleApi):
     def get_mass_properties(self, without_wheels: bool = False) -> StrDict:
         data = dict(type="GetMassProperties", withoutWheels=without_wheels)
         response = self._send(data).recv("GetMassProperties")
-        return response["data"]
+        data = response["data"]
+        data["center_of_gravity"] = tuple(data["center_of_gravity"])
+        return data
 
     def get_ref_nodes(self) -> StrDict:
         data = dict(type="GetRefNodes")
         response = self._send(data).recv("GetRefNodes")
         return response["data"]
 
-    def get_node_info(self, nodes: List[str] | None = None) -> StrDict:
+    def get_node_info(self, nodes: List[str | int] | None = None) -> List[StrDict]:
         data = dict(type="GetNodeInfo", nodes=nodes)
         response = self._send(data).recv("GetNodeInfo")
         return response["data"]

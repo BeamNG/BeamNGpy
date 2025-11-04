@@ -642,19 +642,23 @@ class Vehicle:
         """
         return self._root.get_ref_nodes()
 
-    def get_node_info(self, nodes: List[str] | None = None) -> StrDict:
+    def get_node_info(self, nodes: List[str | int] | None = None) -> List[StrDict]:
         """
-        Returns current mass and position of the given nodes as a dictionary.
+        Returns current mass and position of the given nodes.
 
-        The dictionary maps node name to node information. The node information is a dictionary containing:
+        The returned list contains information for each requested node. The node information is a dictionary containing:
 
-        * ``mass``: the mass of the node in kg (float)
-        * ``position``: the current position of the node in world coordinates as an (x, y, z) tuple in m
+        * ``name``: the name of the node (str) or None if the node has no name
+        * ``cid``: the numeric ID of the node (int)
+        * ``mass``: the current mass of the node in kg (float)
+        * ``pos``: the current position of the node in world coordinates as an (x, y, z) tuple in m
 
         Args:
-            nodes: A list of node names to query information for. If None (default), all nodes are provided.
+            nodes: A list of node names to query information for. If None (default), all nodes are provided, otherwise
+            the returned list is in the same order as the given nodes. The list can contain strings (node names) or
+            integers (node CIDs).
 
         Returns:
-            A dictionary mapping node name to node information.
+            A list with node information for each requested node.
         """
         return self._root.get_node_info(nodes=nodes)
