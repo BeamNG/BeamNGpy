@@ -1,8 +1,7 @@
 """
 Example: Run simulation at 2x speed for 30 seconds (simulates 60 seconds).
 
-This demonstrates deterministic mode to speed up simulations for long-term tests
-like fuel consumption analysis. See:
+This demonstrates deterministic mode to speed up simulations for long-term tests. See:
 https://documentation.beamng.com/beamng_tech/deterministic_mode/
 """
 
