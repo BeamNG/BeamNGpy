@@ -70,6 +70,10 @@ class BeamNGpy:
 
                This option is applicable only when the process is launched by this instance
                of BeamNGpy, as it sets a launch argument of the process. Defaults to False.
+        headless: Instrument BeamNG to launch in
+                  `headless mode <https://documentation.beamng.com/beamng_tech/headless_mode/>`__.
+        nogpu: Instrument BeamNG to launch in 'no-GPU mode'. Implies ``headless=True``.
+               Sensors which require rendering pipeline will not be available.
 
     Attributes
     ----------
@@ -117,6 +121,8 @@ class BeamNGpy:
         user: str | None = None,
         quit_on_close: bool = True,
         debug: bool | None = None,
+        headless: bool = False,
+        nogpu: bool = False,
     ):
         self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
         self.logger.setLevel(logging.DEBUG)
@@ -128,6 +134,10 @@ class BeamNGpy:
         self.user_with_version: str | None = None
         self.process = None
         self.quit_on_close = quit_on_close
+        self.headless = headless
+        self.nogpu = nogpu
+        if self.nogpu:
+            self.headless = True
         self._debug = debug
         self.connection: Connection | None = None
         self._scenario: Scenario | None = None
@@ -200,7 +210,10 @@ class BeamNGpy:
             if debug == True:
                 arg_list.append("-tcom-debug")
             arg_list.extend(("-tcom-listen-ip", listen_ip))
-
+            if self.headless:
+                arg_list.append("-headless")
+            if self.nogpu:
+                arg_list.extend(("-gfx", "null"))
             self._start_beamng(extensions, *arg_list, **opts)
             sleep(10)
             self.connection.connect_to_beamng()
