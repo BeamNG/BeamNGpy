@@ -40,14 +40,22 @@ class SettingsApi(Api):
         data = dict(type="ApplyGraphicsSetting")
         self._send(data).ack("GraphicsSettingApplied")
 
-    def set_deterministic(self, steps_per_second=None) -> None:
+    def set_deterministic(self, steps_per_second: int | None = None, speed_factor: int | None = None) -> None:
         """
         Sets the simulator to run in deterministic mode. For this to function
         properly, an amount of steps per second needs to have been specified
         in the simulator's settings, through this function or through
         :meth:`BeamNGpy.settings.set_steps_per_second`.
+
+        For more information, see the `Deterministic Mode <https://documentation.beamng.com/beamng_tech/deterministic_mode/>__`
+        documentation.
+
+        Args:
+            steps_per_second: The number of graphical frames per second to run per second.
+            speed_factor: Optional argument which allows for simulation speedup, read the documentation
+                          linked above for more information. Defaults to -1.
         """
-        data = dict(type="SetPhysicsDeterministic")
+        data = dict(type="SetPhysicsDeterministic", speedFactor=speed_factor)
         self._send(data).ack("SetPhysicsDeterministic")
 
         if steps_per_second:
