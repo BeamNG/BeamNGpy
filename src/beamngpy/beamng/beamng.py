@@ -9,22 +9,13 @@ from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, Any, List
 
-from beamngpy.api.beamng import (
-    CameraApi,
-    ControlApi,
-    DebugApi,
-    EnvironmentApi,
-    PlatoonApi,
-    ScenarioApi,
-    SettingsApi,
-    SystemApi,
-    TrafficApi,
-    UiApi,
-    VehiclesApi,
-)
+from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
+                                 EnvironmentApi, PlatoonApi, ScenarioApi,
+                                 SettingsApi, SystemApi, TrafficApi, UiApi,
+                                 VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
-from beamngpy.logging import LOGGER_ID, BNGError
+from beamngpy.logging import LOGGER_ID, BNGError, create_warning
 from beamngpy.types import StrDict
 
 if TYPE_CHECKING:
@@ -74,6 +65,8 @@ class BeamNGpy:
                   `headless mode <https://documentation.beamng.com/beamng_tech/headless_mode/>`__.
         nogpu: Instrument BeamNG to launch in 'no-GPU mode'. Implies ``headless=True``.
                Sensors which require rendering pipeline will not be available.
+        gfx: Instrument BeamNG to force to use a rendering API on launch. Possible choices are
+             ``dx11`` for DirectX 11 and ``vk`` for Vulkan. Incompatible with the ``nogpu`` option.
 
     Attributes
     ----------
@@ -123,6 +116,7 @@ class BeamNGpy:
         debug: bool | None = None,
         headless: bool = False,
         nogpu: bool = False,
+        gfx: str | None = None,
     ):
         self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
         self.logger.setLevel(logging.DEBUG)
@@ -136,8 +130,15 @@ class BeamNGpy:
         self.quit_on_close = quit_on_close
         self.headless = headless
         self.nogpu = nogpu
+        self.gfx = None
+        if gfx == 'dx11' or gfx == 'vk':
+            self.gfx = gfx
+        elif gfx is not None:
+            create_warning('The `gfx` arguments supports only values of `dx11` and `vk`, discarding.')
         if self.nogpu:
             self.headless = True
+            self.gfx = None
+        self.last_command_line = None
         self._debug = debug
         self.connection: Connection | None = None
         self._scenario: Scenario | None = None
@@ -204,21 +205,26 @@ class BeamNGpy:
         elif launch:
             self.logger.info("Opening BeamNGpy instance.")
             arg_list = list(args)
-
             if debug is None:
                 debug = self._debug
             if debug == True:
                 arg_list.append("-tcom-debug")
             arg_list.extend(("-tcom-listen-ip", listen_ip))
-            if self.headless:
-                arg_list.append("-headless")
-            if self.nogpu:
-                arg_list.extend(("-gfx", "null"))
             self._start_beamng(extensions, *arg_list, **opts)
             sleep(10)
             self.connection.connect_to_beamng()
         self._load_system_info()
         return self
+    
+    def get_launch_arguments(self) -> str:
+        """
+        Returns the full command-line that were or would be used to launch a BeamNG instance
+        using this BeamNGpy object, including all command-line switches.
+        """
+        if self.last_command_line: # instance was already launched
+            return self.last_command_line
+        binaries = filesystem.BINARIES_LINUX if platform.system() == "Linux" else filesystem.BINARIES
+        return " ".join(self._prepare_call(binaries[0], None))
 
     def disconnect(self) -> None:
         """
@@ -399,7 +405,6 @@ class BeamNGpy:
     def _prepare_call(
         self,
         binary: str,
-        user: Path | None,
         extensions: List[str] | None,
         *args: str,
         **usr_opts: str,
@@ -412,6 +417,8 @@ class BeamNGpy:
             List of shell components ready to be called in the
             :mod:`subprocess` module.
         """
+        user = Path(self.user) if self.user else None
+
         if extensions is None:
             extensions = []
 
@@ -423,6 +430,12 @@ class BeamNGpy:
 
         for arg in args:
             call.append(arg)
+        if self.headless:
+            call.append("-headless")
+        if self.nogpu:
+            call.extend(("-gfx", "null"))
+        elif self.gfx:
+            call.extend(("-gfx", self.gfx))
 
         call_opts = {}
         if lua:
@@ -464,6 +477,7 @@ class BeamNGpy:
         termination.
         """
         home = filesystem.determine_home(self.home)
+        binary = None
         if self.binary:
             binary = home / self.binary
             if not binary.is_file():
@@ -472,8 +486,8 @@ class BeamNGpy:
                 )
         else:
             binary = filesystem.determine_binary(home)
-        userpath = Path(self.user) if self.user else None
-        call = self._prepare_call(str(binary), userpath, extensions, *args, **opts)
+        call = self._prepare_call(str(binary), extensions, *args, **opts)
+        self.last_command_line = " ".join(call)
 
         if platform.system() == "Linux":
             # keep the same behaviour as on Windows - do not print game logs to the Python stdout
