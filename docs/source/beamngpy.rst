@@ -239,15 +239,14 @@ Template Car Generator
    :members:
    :undoc-members:
 
+.. autopydantic_model:: beamngpy.tools.template_car.Settings
+   :members:
+   :undoc-members:
+
 .. autoclass:: beamngpy.tools.template_car.TemplateVehicle
    :members:
    :undoc-members:
    :exclude-members: to_inputs, model_config
-
-.. autoclass:: beamngpy.tools.template_car.Settings
-   :members:
-   :undoc-members:
-   :exclude-members: model_config
 
 .. autoclass:: beamngpy.tools.template_car.VehicleParameters
    :members:
@@ -262,7 +261,7 @@ Template Car Generator
 .. autoclass:: beamngpy.tools.template_car.Optimization
    :members:
    :undoc-members:
-   :exclude-members: model_config
+   :exclude-members: model_config, required
 
 .. autoclass:: beamngpy.tools.template_car.OptimizationVariables
    :members:
