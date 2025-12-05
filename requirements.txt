@@ -6,3 +6,6 @@ opencv-python>=4.5.0
 Pillow>=11.1.0
 scipy>=1.15.2
 seaborn>=0.13.2
+fastapi[standard]>=0.116.1
+send2trash>=1.8.3
+pywebview>=5.4

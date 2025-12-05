@@ -11,3 +11,4 @@ from .sumo_export import SumoExporter
 from .sumo_import import SumoImporter
 from .terrain_import import Terrain_Importer
 from .traffic_configuration import TrafficConfig
+from .template_car import TemplateCarGenerator
