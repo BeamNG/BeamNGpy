@@ -232,7 +232,18 @@ Tools
    :members:
    :undoc-members:
 
+Template Car Generator
+----------------------
+
 .. autoclass:: beamngpy.tools.TemplateCarGenerator
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.template_car.TemplateVehicle
+   :members:
+   :undoc-members:
+
+.. autoclass:: beamngpy.tools.template_car.Settings
    :members:
    :undoc-members:
 
