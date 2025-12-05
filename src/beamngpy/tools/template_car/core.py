@@ -23,8 +23,8 @@ class TemplateCarGenerator:
 
         python -m beamngpy.tools.template_car --create-shortcut
 
-    For more information about the graphical user interface, see the
-    `documentation <https://documentation.beamng.com/beamng_tech/tools/>`__.
+    For more information about the Template Car Generator and its user interface, visit the
+    `BeamNG.tech documentation <https://documentation.beamng.com/beamng_tech/tools/>`__.
 
     Use this class to programmatically generate template cars.
 
