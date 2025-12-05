@@ -45,6 +45,7 @@ class VehicleParameters(BaseModel):
 
 
 class BodyShape(str, Enum):
+    """Body shape (Enum)."""
     SEDAN = "sedan"
     WAGON = "wagon"
     COUPE = "coupe"
@@ -52,12 +53,14 @@ class BodyShape(str, Enum):
 
 
 class SuspensionFront(str, Enum):
+    """Suspension front (Enum)."""
     DOUBLEWISHBONE = "doublewishbone"
     LIVEAXLE_4LINK = "liveaxle_4link"
     STRUT = "strut"
 
 
 class SuspensionRear(str, Enum):
+    """Suspension rear (Enum)."""
     DOUBLEWISHBONE = "doublewishbone"
     LIVEAXLE_4LINK = "liveaxle_4link"
     LIVEAXLE_4LINK_DUALLY = "liveaxle_4link_dually"

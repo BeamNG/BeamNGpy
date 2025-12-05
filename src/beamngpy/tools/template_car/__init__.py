@@ -8,6 +8,9 @@ from .models import (
     OptimizationVariables,
     TargetValues,
     OptimizationEnabled,
+    BodyShape,
+    SuspensionFront,
+    SuspensionRear,
 )
 
 __all__ = [
@@ -20,4 +23,7 @@ __all__ = [
     "OptimizationVariables",
     "TargetValues",
     "OptimizationEnabled",
+    "BodyShape",
+    "SuspensionFront",
+    "SuspensionRear",
 ]

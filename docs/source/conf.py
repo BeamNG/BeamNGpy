@@ -34,7 +34,6 @@ extensions = [
     "sphinx_rtd_theme",
     "m2r2",
     "sphinx_multiversion",
-    "sphinxcontrib.autodoc_pydantic",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -99,3 +98,33 @@ extlinks = {
 # -- Multi-version config ----------------------------------------------------
 smv_tag_whitelist = r"^v.*$"
 smv_branch_whitelist = r"^(master|dev)$"
+
+# -- Version-specific configuration ------------------------------------------
+def setup(app):
+    def after_config_inited(app, config):
+        # Dump everything Sphinx believes it has from -D options
+        smv_keys = [k for k in dir(config) if k.startswith("smv_")]
+        print("[conf.py] smv_* keys visible in config:", smv_keys)
+        smv_current_version = getattr(config, "smv_current_version", None)
+        if smv_current_version:
+            print(f"Building documentation for version: {smv_current_version}")
+
+            if smv_current_version.startswith("v"):
+                v = smv_current_version[1:]
+                parts = v.split(".")
+                major = int(parts[0])
+                minor = int(parts[1])
+                patch = int(parts[2]) if len(parts) > 2 else 0
+                v = (major, minor, patch)
+                use_autodoc_pydantic = v >= (1, 35, 0)
+            else:
+                use_autodoc_pydantic = True
+        else:
+            # Not running under sphinx-multiversion
+            use_autodoc_pydantic = True
+
+        # Example: conditionally enable extensions
+        if use_autodoc_pydantic:
+            app.setup_extension("sphinxcontrib.autodoc_pydantic")
+
+    app.connect("config-inited", after_config_inited)
