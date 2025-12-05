@@ -232,6 +232,10 @@ Tools
    :members:
    :undoc-members:
 
+.. autoclass:: beamngpy.tools.TemplateCarGenerator
+   :members:
+   :undoc-members:
+
 Miscellaneous
 =============
 
