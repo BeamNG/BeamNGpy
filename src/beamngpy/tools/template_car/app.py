@@ -8,7 +8,7 @@ from .shortcut import create_desktop_shortcut
 
 def app_main():
     # CLI arguments
-    module_name = 'template_car'
+    module_name = 'beamngpy.tools.template_car'
     parser = argparse.ArgumentParser(description='Template Car Generator', prog=f'python -m {module_name}')
     parser.add_argument('--port', type=int, default=18052, help='Port to run the web server on')
     parser.add_argument('--settings-file', type=str, default='', help='Use custom path to a settings JSON file')
@@ -20,7 +20,7 @@ def app_main():
         return
 
     # Start server
-    app_class = "template_car.api:app"
+    app_class = f"{module_name}.api:app"
     env = os.environ.copy()
     if args.settings_file != '':
         env['TEMPLATE_CAR_SETTINGS_FILE'] = args.settings_file

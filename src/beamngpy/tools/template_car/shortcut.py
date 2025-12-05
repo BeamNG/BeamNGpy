@@ -1,8 +1,8 @@
 import os
-from template_car import TemplateCarGenerator
 import tempfile
 import subprocess
 import platform
+from .core import TemplateCarGenerator
 from .utils import assets_dir
 
 
@@ -45,7 +45,7 @@ def create_shortcut_windows(target, shortcut_file, working_dir, icon_file, descr
 def create_shortcut_linux(shortcut_file, working_dir, icon_file, description):
     s = f"""[Desktop Entry]
 Name=BeamNG Template Car Generator
-Exec=python3 -m template_car
+Exec=python3 -m beamngpy.tools.template_car
 Type=Application
 Terminal=false
 Comment={description}
