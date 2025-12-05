@@ -1,0 +1,136 @@
+{
+ "template_car_hub_F_4":{
+         "information":{
+             "authors":"BeamNG",
+             "name":"4-Lug Front Hubs",
+             "value":150,
+         },
+         "slotType": "template_car_hub_F",
+         "slots2": [
+             ["name", "allowTypes", "denyTypes", "default", "description"],
+             ["wheel_F_4", ["wheel_F_4"], [], "steelwheel_01a_13x5_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.45) | round(3)  }}, "y":0, "z":0.105}}],
+             ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
+         ],
+
+         "pressureWheels": [
+         ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+         //cancel out brake properties before future wheel parts are loaded
+         {"brakeTorque":0},
+         {"parkingTorque":0},
+         {"enableBrakeThermals":false},
+         {"brakeDiameter":false},
+         {"brakeMass":false},
+         {"brakeType":false},
+         {"rotorMaterial":false},
+         {"brakeVentingCoef":false},
+     ],
+     },
+
+ "template_car_hub_F_5":{
+         "information":{
+             "authors":"BeamNG",
+             "name":"5-Lug Front Hubs",
+             "value":150,
+         },
+         "slotType": "template_car_hub_F",
+         "slots2": [
+             ["name", "allowTypes", "denyTypes", "default", "description"],
+             ["wheel_F_5", ["wheel_F_5"], [], "steelwheel_01a_14x5.5_F_alt", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.50) | round(3)  }}, "y":0, "z":0.105}}],
+             ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
+         ],
+
+         "pressureWheels": [
+         ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+         //cancel out brake properties before future wheel parts are loaded
+         {"brakeTorque":0},
+         {"parkingTorque":0},
+         {"enableBrakeThermals":false},
+         {"brakeDiameter":false},
+         {"brakeMass":false},
+         {"brakeType":false},
+         {"rotorMaterial":false},
+         {"brakeVentingCoef":false},
+     ],
+     },
+
+      "template_car_hub_F_6":{
+         "information":{
+             "authors":"BeamNG",
+             "name":"6-Lug Front Hubs",
+             "value":150,
+         },
+         "slotType": "template_car_hub_F",
+         "slots2": [
+             ["name", "allowTypes", "denyTypes", "default", "description"],
+             ["wheel_F_6", ["wheel_F_6"], [], "steelwheel_02a_16x7_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":0.105}}],
+             ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
+         ],
+
+         "pressureWheels": [
+         ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+         //cancel out brake properties before future wheel parts are loaded
+         {"brakeTorque":0},
+         {"parkingTorque":0},
+         {"enableBrakeThermals":false},
+         {"brakeDiameter":false},
+         {"brakeMass":false},
+         {"brakeType":false},
+         {"rotorMaterial":false},
+         {"brakeVentingCoef":false},
+     ],
+     },
+
+     "template_car_hub_F_8":{
+         "information":{
+             "authors":"BeamNG",
+             "name":"8-Lug Front Hubs",
+             "value":150,
+         },
+         "slotType": "template_car_hub_F",
+         "slots2": [
+             ["name", "allowTypes", "denyTypes", "default", "description"],
+             ["wheel_F_8", ["wheel_F_8"], [], "steelwheel_03a_17x9_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":0.105}}],
+             ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
+         ],
+
+         "pressureWheels": [
+         ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+         //cancel out brake properties before future wheel parts are loaded
+         {"brakeTorque":0},
+         {"parkingTorque":0},
+         {"enableBrakeThermals":false},
+         {"brakeDiameter":false},
+         {"brakeMass":false},
+         {"brakeType":false},
+         {"rotorMaterial":false},
+         {"brakeVentingCoef":false},
+     ],
+     },
+
+     "template_car_hub_F_8_heavy":{
+         "information":{
+             "authors":"BeamNG",
+             "name":"Heavy Duty 8-Lug Front Hubs",
+             "value":150,
+         },
+         "slotType": "template_car_hub_F",
+         "slots2": [
+             ["name", "allowTypes", "denyTypes", "default", "description"],
+             ["wheel_F_8_alt", ["wheel_F_8_alt"], [], "steelwheel_04a_16x7_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":0.105}}],
+             ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
+         ],
+
+         "pressureWheels": [
+         ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+         //cancel out brake properties before future wheel parts are loaded
+         {"brakeTorque":0},
+         {"parkingTorque":0},
+         {"enableBrakeThermals":false},
+         {"brakeDiameter":false},
+         {"brakeMass":false},
+         {"brakeType":false},
+         {"rotorMaterial":false},
+         {"brakeVentingCoef":false},
+     ],
+     },
+    }

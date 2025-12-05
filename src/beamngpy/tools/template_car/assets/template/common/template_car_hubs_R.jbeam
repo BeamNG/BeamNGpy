@@ -1,0 +1,200 @@
+{
+    "template_car_hub_R_4":{
+            "information":{
+                "authors":"BeamNG",
+                "name":"4-Lug Rear Hubs",
+                "value":150,
+            },
+            "slotType": "template_car_hub_R",
+            "slots2": [
+                ["name", "allowTypes", "denyTypes", "default", "description"],
+                ["wheel_R_4", ["wheel_R_4"], [], "steelwheel_01a_13x5_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3) }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
+            ],
+
+            "pressureWheels": [
+            ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+            //cancel out brake properties before future wheel parts are loaded
+            {"brakeTorque":0},
+            {"parkingTorque":0},
+            {"enableBrakeThermals":false},
+            {"brakeDiameter":false},
+            {"brakeMass":false},
+            {"brakeType":false},
+            {"rotorMaterial":false},
+            {"brakeVentingCoef":false},
+        ],
+        },
+
+    "template_car_hub_R_5":{
+            "information":{
+                "authors":"BeamNG",
+                "name":"5-Lug Rear Hubs",
+                "value":150,
+            },
+            "slotType": "template_car_hub_R",
+            "slots2": [
+                ["name", "allowTypes", "denyTypes", "default", "description"],
+                ["wheel_R_5", ["wheel_R_5"], [], "steelwheel_01a_14x5.5_R_alt", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
+            ],
+
+            "pressureWheels": [
+            ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+            //cancel out brake properties before future wheel parts are loaded
+            {"brakeTorque":0},
+            {"parkingTorque":0},
+            {"enableBrakeThermals":false},
+            {"brakeDiameter":false},
+            {"brakeMass":false},
+            {"brakeType":false},
+            {"rotorMaterial":false},
+            {"brakeVentingCoef":false},
+        ],
+        },
+    "template_car_hub_R_6":{
+            "information":{
+                "authors":"BeamNG",
+                "name":"6-Lug Rear Hubs",
+                "value":150,
+            },
+            "slotType": "template_car_hub_R",
+            "slots2": [
+                ["name", "allowTypes", "denyTypes", "default", "description"],
+                ["wheel_R_6", ["wheel_R_6"], [], "steelwheel_02a_16x7_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
+            ],
+
+            "pressureWheels": [
+            ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+            //cancel out brake properties before future wheel parts are loaded
+            {"brakeTorque":0},
+            {"parkingTorque":0},
+            {"enableBrakeThermals":false},
+            {"brakeDiameter":false},
+            {"brakeMass":false},
+            {"brakeType":false},
+            {"rotorMaterial":false},
+            {"brakeVentingCoef":false},
+        ],
+        },
+
+        "template_car_hub_R_8":{
+            "information":{
+                "authors":"BeamNG",
+                "name":"8-Lug Rear Hubs",
+                "value":150,
+            },
+            "slotType": "template_car_hub_R",
+            "slots2": [
+                ["name", "allowTypes", "denyTypes", "default", "description"],
+                ["wheel_R_8", ["wheel_R_8"], [], "steelwheel_03a_17x9_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
+            ],
+
+            "pressureWheels": [
+            ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+            //cancel out brake properties before future wheel parts are loaded
+            {"brakeTorque":0},
+            {"parkingTorque":0},
+            {"enableBrakeThermals":false},
+            {"brakeDiameter":false},
+            {"brakeMass":false},
+            {"brakeType":false},
+            {"rotorMaterial":false},
+            {"brakeVentingCoef":false},
+        ],
+        },
+        
+        "template_car_hub_R_8_heavy":{
+            "information":{
+                "authors":"BeamNG",
+                "name":"Heavy Duty 8-Lug Rear Hubs",
+                "value":150,
+            },
+            "slotType": "template_car_hub_dually_R",
+            "slots2": [
+                ["name", "allowTypes", "denyTypes", "default", "description"],
+                ["wheel_R_8_dually", ["wheel_R_8_dually"], [], "steelwheel_04a_16x7_R_dually_true", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
+                ["wheeldata_R_dually", ["wheeldata_R_dually"], [], "wheeldata_R_dually", "Dually Rear Spindles", {"coreSlot":true}],
+            ],
+
+            "pressureWheels": [
+            ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+            //cancel out brake properties before future wheel parts are loaded
+            {"brakeTorque":0},
+            {"parkingTorque":0},
+            {"enableBrakeThermals":false},
+            {"brakeDiameter":false},
+            {"brakeMass":false},
+            {"brakeType":false},
+            {"rotorMaterial":false},
+            {"brakeVentingCoef":false},
+        ],
+        },
+
+        "wheeldata_R_dually": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Dually Rear Spindles",
+        "value":0,
+    },
+    "slotType" : "wheeldata_R_dually",
+    "pressureWheels": [
+        ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+        //rear
+        {"selfCollision":false},
+        {"collision":true},
+        {"hubcapBreakGroup":"hubcap_RL"},
+        {"hubcapGroup":"hubcap_RL"},
+        {"wheelOffset":0.065},
+        {"axleBeams":["axle_RR1"]},
+        ["RR", "wheel_RR1", "tire_RR1", "rw1rr", "rw1r", 9999, "ax3r", 1, {"torqueCoupling:":"ax1", "torqueArm:":"ax3"}],
+        {"axleBeams":["axle_RL1"]},
+        ["RL", "wheel_RL1", "tire_RL1", "rw1ll", "rw1l", 9999, "ax3l", -1, {"torqueCoupling:":"ax1", "torqueArm:":"ax3"}],
+        //disable outer wheel brake
+        {"brakeTorque":0},
+        {"parkingTorque":0},
+        {"enableBrakeThermals":false},
+        //
+        {"wheelOffset":-0.185},
+        {"axleBeams":["axle_RR1"]},
+        ["RR2", "wheel_RR2", "tire_RR2", "rw1rr", "rw1r", 9999, "ax3r", 1, {"torqueCoupling:":"ax1", "torqueArm:":"ax3","wheelAngle":7.5}],
+        {"axleBeams":["axle_RL1"]},
+        ["RL2", "wheel_RL2", "tire_RL2", "rw1ll", "rw1l", 9999, "ax3l", -1, {"torqueCoupling:":"ax1", "torqueArm:":"ax3","wheelAngle":7.5}],
+        {"selfCollision":true},
+        {"axleBeams":[]},{"disableMeshBreaking":false,"disableTriangleBreaking":false},
+        {"hubcapBreakGroup":""},
+        {"hubcapGroup":""},
+        {"enableHubcaps":false},
+        {"enableTireLbeams":false},
+        {"enableTreadReinfBeams":false},
+        {"enableTireReinfBeams":false},
+        {"enableTreadReinfBeams":false},
+        {"enableTirePeripheryReinfBeams":false},
+        {"loadSensitivitySlope":""},
+        {"noLoadCoef":""},
+        {"fullLoadCoef":""},
+        {"frictionCoef":""},
+        {"slidingFrictionCoef":""},
+        {"softnessCoef":0.5},
+        {"treadCoef":1.0},
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+        ["differential", "differential_RL", "wheelaxleRL", 1, {"diffType":"dually", "gearRatio":1, "lockTorque":500000, "friction":4.69, "dynamicFriction":0.00785, "uiName":"Rear Left Dually Hub","defaultVirtualInertia":2}],
+        ["differential", "differential_RR", "wheelaxleRR", 1, {"diffType":"dually", "gearRatio":1, "lockTorque":500000, "friction":4.69, "dynamicFriction":0.00785, "uiName":"Rear Right Dually Hub","defaultVirtualInertia":2}],
+        //rear left axle outer
+        ["shaft", "wheelaxle_RL1", "differential_RL", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL1", "uiName":"Rear Left Axle", "friction":0.25}],
+        //rear left axle inner
+        ["shaft", "wheelaxle_RL2", "differential_RL", 2, {"connectedWheel":"RL2", "breakTriggerBeam":"axle_RL1", "uiName":"Rear Left Axle", "friction":0.25}],
+        //rear right axle outer
+        ["shaft", "wheelaxle_RR1", "differential_RR", 1, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR1", "uiName":"Rear Right Axle", "friction":0.25}],
+        //rear right axle inner
+        ["shaft", "wheelaxle_RR2", "differential_RR", 2, {"connectedWheel":"RR2", "breakTriggerBeam":"axle_RR1", "uiName":"Rear Right Axle", "friction":0.25}],
+    ],
+},
+    }

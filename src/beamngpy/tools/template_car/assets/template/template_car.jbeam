@@ -1,0 +1,16 @@
+{
+    "templatecar": {
+        "information":{
+            "authors":"BeamNG",
+            "name":"{{ name }}",
+        },
+        "slotType" : "main",
+        "slots2": [
+            ["name", "allowTypes", "denyTypes", "default", "description"],
+            ["template_car_engine", ["template_car_engine"], [], "template_car_electricMotor", "Engine"],
+            ["template_car_suspension_F", ["template_car_suspension_F"], [], "template_car_{{ suspension_front }}_F", "Front Suspension", {"nodeOffset":{"x":{{((track_width_front | float * 0.5 ) - 0.65) | round(3) }}, "y":0, "z":0.105}}],
+            ["template_car_suspension_R", ["template_car_suspension_R"], [], "template_car_{{ suspension_rear }}_R", "Rear Suspension", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.60) | round(3) }}, "y":{{ wheelbase | float | round(3) }}, "z":0.105}}],
+            ["template_car_body", ["template_car_body"], [], "template_car_body_{{ body_shape }}", "Body", {"coreSlot":true}],
+        ],
+    }
+}

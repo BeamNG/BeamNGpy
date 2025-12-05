@@ -1,0 +1,34 @@
+{
+  "generic_car_parametrized": {
+    "name": "generic_car_parametrized",
+    "mapTo": "generic_car_parametrized",
+    "class": "Material",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.588294029,
+          0.001998425,
+          0.0104050599,
+          1
+        ],
+        "metallicFactor": 0.42899999,
+        "roughnessFactor": 0.850000024
+      },
+      {
+        "clearCoatFactor": 1,
+        "colorPaletteMap": "/vehicles/common/nullColorMaskR.color.dds",
+        "metallicFactor": 1,
+      },
+      {
+      },
+      {
+      }
+    ],
+    "activeLayers": 2,
+    "dynamicCubemap": true,
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "translucentBlendOp": "None",
+    "version": 1.5
+  }
+}

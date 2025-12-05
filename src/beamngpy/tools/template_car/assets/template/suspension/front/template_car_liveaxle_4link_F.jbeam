@@ -1,0 +1,567 @@
+{
+"template_car_liveaxle_4link_F": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Live Axle 4-link Front Suspension",
+        "value":500,
+    },
+    "slotType" : "template_car_suspension_F",
+    "slots2": [
+        ["name", "allowTypes", "denyTypes", "default", "description"],
+        ["template_car_hub_F", ["template_car_hub_F"], [], "template_car_hub_F_4", "Front Hubs"],  // parts can be loaded from other jbeam files
+        //the coordinates of the nodeOffset determine where the common wheel is placed when it is loaded based on slot order
+        ["template_car_wheeldata_F_liveaxle", ["template_car_wheeldata_F_liveaxle"], [], "template_car_wheeldata_F_liveaxle", "Front Spindles", {"coreSlot":true}],
+        ["template_car_coilover_F_liveaxle", ["template_car_coilover_F_liveaxle"], [], "template_car_coilover_F_liveaxle", "Front Coilovers", {"nodeOffset":{"x":0, "y":0, "z":0.105}}],
+        ["template_car_swaybar_F_liveaxle", ["template_car_swaybar_F_liveaxle"], [], "template_car_swaybar_F_liveaxle", "Front Sway Bar", {"nodeOffset":{"x":0, "y":0, "z":0.105}}],
+        ["template_car_steering_liveaxle", ["template_car_steering_liveaxle"], [], "template_car_steering_liveaxle", "Steering"],
+    ],
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        //add mesh here if you want to visibly show certain components
+    ],
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+        {"frictionCoef":0.5},
+        {"nodeMaterial":"|NM_METAL"},
+        {"collision":true},
+        {"selfCollision":false},
+        //live axle structure
+        {"nodeWeight":9},
+        {"group":["axle_F"]},
+        ["fax1r",-0.59,  0.15, 0],
+        ["fax1l", 0.59,  0.15, 0],
+
+        ["fax3r",-0.59, -0.15, 0],
+        ["fax3l", 0.59, -0.15, 0],
+
+        {"nodeWeight":7},
+        ["fax1",  0,  0.15, 0],
+        ["fax2",  0,  0.01, 0.11],
+        ["fax3",  0, -0.15, 0],
+        ["fax4", -0, -0.01, -0.11],
+
+        {"nodeWeight":6},
+        //upper links mounting on axle                                              [upper front link]
+        {"group":["axle_F","upperarms_F"]},
+        ["fax2r",-0.4, 0.008, 0.11],
+        ["fax2l", 0.4, 0.008, 0.11],
+
+        //lower links mounting on axle                                              [lower rear link]
+        {"group":["axle_F","lowerarms_F"]},
+        ["fax4r",-0.4, -0.008, -0.11],
+        ["fax4l", 0.4, -0.008, -0.11],
+
+        //trackbar mounting on axle                                                 [trackbar axle bushing]
+        {"nodeWeight":3},
+        {"group":["axle_F","trackbar_F"]},
+        ["fax5l",  0.45, -0.06, -0.02],
+
+        {"nodeWeight":5.5},
+        //steering axis
+        {"group":["axle_F","hub_F"]},
+        ["fax2rr",-0.58,  0.008, 0.11],
+        ["fax2ll", 0.58,  0.008, 0.11],
+        ["fax4rr",-0.60, -0.008, -0.11],                                          //[spring lower]
+        ["fax4ll", 0.60, -0.008, -0.11],                                          //[spring lower]
+
+        //tie rod end                                                               [outer tie rod]
+        {"nodeWeight":4.5},
+        {"group":"tierod_F"},
+        ["fh3r",-0.65, -0.15, 0],
+        ["fh3l", 0.65, -0.15, 0],
+
+        //brake caliper
+        {"nodeWeight":4.5},
+        {"group":"brakearm_F"},
+        ["fh5r",-0.63, 0.15, -0],
+        ["fh5l", 0.63, 0.15, -0],
+
+        //body mounting points for lower links                                      [lower rear link]
+        {"nodeWeight":8},
+        {"group":["subframe_F","lowerarms_F"]},
+        ["fx1r",-0.4, 0.4, -0.1],
+        ["fx1l", 0.4, 0.4, -0.1],
+
+        //body mounting points for upper links                                      [upper rear link]
+        {"group":["subframe_F","upperarms_F"]},
+        ["fx2r",-0.4, 0.4, 0.1],
+        ["fx2l", 0.4, 0.4, 0.1],
+
+        //body mounting point for trackbar                                          [trackbar body bushing]
+        {"nodeWeight":3},
+        {"group":["subframe_F","trackbar_F"]},
+        ["fx3r", -0.45, -0.06, 0],
+
+        //body mounting points for spring and shock                                 [spring upper]
+        {"nodeWeight":6},
+        {"group":["subframe_F","shocktop_F"]},
+        ["fs1r",-0.56, 0, 0.305],
+        ["fs1l", 0.56, 0, 0.305],
+        {"group":""},
+    ],
+    "rails": {
+        "upperlinks_FR":{"links:":["fax2", "fax2rr"], "broken:":[], "looped":false, "capped":true},
+        "upperlinks_FL":{"links:":["fax2", "fax2ll"], "broken:":[], "looped":false, "capped":true},
+        "lowerlinks_FR":{"links:":["fax4", "fax4rr"], "broken:":[], "looped":false, "capped":true},
+        "lowerlinks_FL":{"links:":["fax4", "fax4ll"], "broken:":[], "looped":false, "capped":true},
+    },
+    "slidenodes": [
+        ["id:", "railName", "attached", "fixToRail", "tolerance", "spring", "strength", "capStrength"],
+        ["fax2r", "upperlinks_FR", true, true, 0.0, 20001000, "FLT_MAX", "FLT_MAX"],
+        ["fax2l", "upperlinks_FL", true, true, 0.0, 20001000, "FLT_MAX", "FLT_MAX"],
+        ["fax4r", "lowerlinks_FR", true, true, 0.0, 20001000, "FLT_MAX", "FLT_MAX"],
+        ["fax4l", "lowerlinks_FL", true, true, 0.0, 20001000, "FLT_MAX", "FLT_MAX"],
+    ],
+    "beams": [
+        ["id1:", "id2:"],
+        {"beamPrecompression":1, "beamType":"|NORMAL"},
+        {"beamSpring":8001000,"beamDamp":250},
+        {"beamDeform":51000,"beamStrength":251000},
+        //main axle shape
+        {"highlight":{"radius":0.01, "col":"#3232327F"}},
+        ["fax1l", "fax2ll"],
+        ["fax2ll", "fax3l"],
+        ["fax3l", "fax4ll"],
+        ["fax4ll", "fax1l"],
+        ["fax1l", "fax3l"],
+        ["fax2ll", "fax4ll"],
+        ["fax1", "fax1l"],
+        ["fax2", "fax2ll"],
+        ["fax3", "fax3l"],
+        ["fax4", "fax4ll"],
+        ["fax1", "fax2ll"],
+        ["fax1l", "fax2"],
+        ["fax2", "fax3l"],
+        ["fax2ll", "fax3"],
+        ["fax3", "fax4ll"],
+        ["fax3l", "fax4"],
+        ["fax4", "fax1l"],
+        ["fax3l", "fax1"],
+
+        ["fax1r", "fax2rr"],
+        ["fax2rr", "fax3r"],
+        ["fax3r", "fax4rr"],
+        ["fax4rr", "fax1r"],
+        ["fax1r", "fax3r"],
+        ["fax2rr", "fax4rr"],
+        ["fax1", "fax1r"],
+        ["fax2", "fax2rr"],
+        ["fax3", "fax3r"],
+        ["fax4", "fax4rr"],
+        ["fax1", "fax2rr"],
+        ["fax1r", "fax2"],
+        ["fax2", "fax3r"],
+        ["fax2rr", "fax3"],
+        ["fax3", "fax4rr"],
+        ["fax3r", "fax4"],
+        ["fax4", "fax1r"],
+        ["fax3r", "fax1"],
+        {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+        ["fax1", "fax2"],
+        ["fax2", "fax3"],
+        ["fax3", "fax4"],
+        ["fax4", "fax1"],
+        ["fax1", "fax3"],
+        ["fax2", "fax4"],
+
+        //hub shape
+        ["fax2ll", "fh5l"],
+        ["fax4ll", "fh5l"],
+        ["fax2ll", "fh3l"],
+        ["fax4ll", "fh3l"],
+        ["fh5l", "fh3l"],
+
+        ["fax2rr", "fh5r"],
+        ["fax4rr", "fh5r"],
+        ["fax2rr", "fh3r"],
+        ["fax4rr", "fh3r"],
+        ["fh5r", "fh3r"],
+
+        //hub to wheel axle nodes
+        {"optional":true},
+        {"beamSpring":7501000,"beamDamp":250},
+        {"breakGroup":"wheel_FR"},
+        ["fw1r","fax2rr", {"name":"axle_FR"}],
+        ["fw1r","fax4rr"],
+        ["fw1r","fh5r"],
+        ["fw1r","fh3r"],
+        ["fw1rr","fax2rr"],
+        ["fw1rr","fax4rr"],
+        ["fw1rr","fh5r"],
+        ["fw1rr","fh3r"],
+
+        {"breakGroup":"wheel_FL"},
+        ["fw1l","fax2ll", {"name":"axle_FL"}],
+        ["fw1l","fax4ll"],
+        ["fw1l","fh5l"],
+        ["fw1l","fh3l"],
+        ["fw1ll","fax2ll"],
+        ["fw1ll","fax4ll"],
+        ["fw1ll","fh5l"],
+        ["fw1ll","fh3l"],
+        {"breakGroup":""},
+        {"optional":false},
+
+        //lower link mounts on axle
+        {"beamSpring":2501000,"beamDamp":250},
+        ["fax2r", "fax2rr"],
+        ["fax4r", "fax4rr"],
+        ["fax2l", "fax2ll"],
+        ["fax4l", "fax4ll"],
+
+        ["fax2l", "fax1l"],
+        ["fax2l", "fax3l"],
+        ["fax2l", "fax4ll"],
+        ["fax4l", "fax1l"],
+        ["fax4l", "fax2ll"],
+        ["fax4l", "fax3l"],
+
+        ["fax2r", "fax1r"],
+        ["fax2r", "fax3r"],
+        ["fax2r", "fax4rr"],
+        ["fax4r", "fax1r"],
+        ["fax4r", "fax2rr"],
+        ["fax4r", "fax3r"],
+
+        //trackbar mounts on axle
+        {"beamSpring":2501000,"beamDamp":250},
+        ["fax5l", "fax1l"],
+        ["fax5l", "fax2ll"],
+        ["fax5l", "fax3l"],
+        ["fax5l", "fax4ll"],
+        ["fax5l", "fax4l"],
+        ["fax5l", "fax2l"],
+        ["fax5l", "fax4"],
+        ["fax5l", "fax2"],
+
+        //lower links
+        {"beamSpring":5001000,"beamDamp":5000},
+        {"highlight":{"radius":0.01, "col":"#FF00007F"}},
+        ["fax4r","fx1r", {"dampCutoffHz":500}],
+        ["fax4l","fx1l", {"dampCutoffHz":500}],
+
+        //upper links
+        ["fax2r","fx2r", {"dampCutoffHz":500}],
+        ["fax2l","fx2l", {"dampCutoffHz":500}],
+
+        //trackbar
+        {"beamSpring":5001000,"beamDamp":2500},
+        {"highlight":{"radius":0.01, "col":"#0000FF7F"}},
+        ["fax5l","fx3r", {"dampCutoffHz":500}],
+        {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+        //trackbar mounts on body
+        {"beamSpring":4001000,"beamDamp":250},
+        ["fx3r", "fs1r"],
+        ["fx3r", "fs1l"],
+        ["fx3r", "fx1r"],
+        ["fx3r", "fx1l"],
+        ["fx3r", "fx2r"],
+        ["fx3r", "fx2l"],
+        ["fx3r", "b1r"],
+        ["fx3r", "f1rr"],
+        ["fx3r", "b1l"],
+        ["fx3r", "f1ll"],
+
+        //link mounts on body
+        {"beamSpring":10001000,"beamDamp":250},
+        ["b1l", "fx1l"],
+        ["f1ll", "fx1l"],
+        ["b1r", "fx1r"],
+        ["f1rr", "fx1r"],
+        ["f4l", "fx1l"],
+        ["f4r", "fx1r"],
+        ["b1r", "fx1l"],
+        ["f1rr", "fx1l"],
+        ["b1l", "fx1r"],
+        ["f1ll", "fx1r"],
+
+        ["b1l", "fx2l"],
+        ["f1ll", "fx2l"],
+        ["b1r", "fx2r"],
+        ["f1rr", "fx2r"],
+        ["f4l", "fx2l"],
+        ["f4r", "fx2r"],
+        ["b1r", "fx2l"],
+        ["f1rr", "fx2l"],
+        ["b1l", "fx2r"],
+        ["f1ll", "fx2r"],
+
+        ["fx1l", "fx1r"],
+        ["fx2l", "fx2r"],
+
+        ["fx1l", "b5l"],
+        ["fx1r", "b5r"],
+        ["fx2r", "b5r"],
+        ["fx2l", "b5l"],
+
+        ["fx1l", "b5r"],
+        ["fx1r", "b5l"],
+        ["fx2r", "b5l"],
+        ["fx2l", "b5r"],
+
+        //shock mounts on body
+        {"beamSpring":5001000,"beamDamp":250},
+        ["fs1l", "fs1r"],
+        ["fs1l", "fx1l"],
+        ["fs1l", "fx2l"],
+        ["fs1r", "fx1r"],
+        ["fs1r", "fx2r"],
+        ["fs1l", "f2l"],
+        ["fs1r", "f2r"],
+        ["fs1l", "f4l"],
+        ["fs1r", "f4r"],
+        ["fs1l", "f4r"],
+        ["fs1r", "f4l"],
+        ["fs1l", "fx2r"],
+        ["fs1r", "fx2l"],
+
+        //wheel intrusion limiter
+        {"beamPrecompression":1, "beamType":"|SUPPORT", "beamLongBound":0.8},
+        {"beamSpring":1001000,"beamDamp":250,"beamDeform":165000,"beamStrength":900000},
+        {"beamPrecompression":0.7},
+        ["fw1ll","fax1"],
+        ["fw1ll","fax2"],
+        ["fw1ll","fax3"],
+        ["fw1ll","fax4"],
+        ["fw1rr","fax1"],
+        ["fw1rr","fax2"],
+        ["fw1rr","fax3"],
+        ["fw1rr","fax4"],
+        {"beamPrecompression":1},
+
+        //axle link inversion limiter
+        {"beamPrecompression":1, "beamType":"|SUPPORT", "beamLongBound":3},
+        {"beamSpring":1001000,"beamDamp":250,"beamDeform":165000,"beamStrength":900000},
+        {"beamPrecompression":0.72},
+        ["fx2l","fax4l"],
+        ["fx1l","fax2l"],
+        ["fx2r","fax4r"],
+        ["fx1r","fax2r"],
+        {"beamPrecompression":0.6},
+        ["fx2l","fax4r"],
+        ["fx1l","fax2r"],
+        ["fx2r","fax4l"],
+        ["fx1r","fax2l"],
+        {"beamPrecompression":0.35, "beamLongBound":6},
+        ["fs1l","fax3l"],
+        ["fs1r","fax3r"],
+        ["fs1l","fax4ll"],
+        ["fs1r","fax4rr"],
+        {"beamPrecompression":1},
+        {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+    ],
+
+    "pressureWheels": [
+        ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+        //cancel out brake properties
+        {"brakeTorque":0},
+        {"parkingTorque":0},
+        {"enableBrakeThermals":false},
+        {"brakeDiameter":false},
+        {"brakeMass":false},
+        {"brakeType":false},
+        {"rotorMaterial":false},
+        {"brakeVentingCoef":false},
+    ],
+},
+
+"template_car_wheeldata_F_liveaxle": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Front Spindles",
+        "value":0,
+    },
+    "slotType" : "template_car_wheeldata_F_liveaxle",
+    "pressureWheels": [
+        ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+        //some wheel properties
+        {"selfCollision":false},
+        {"collision":true},
+        {"hubcapBreakGroup":"hubcap_FR"},
+        {"hubcapGroup":"hubcap_FR"},
+        {"axleBeams":["axle_FR"]},
+        //wheel is created from here, but using properties from previously loaded common jbeam parts
+        ["FR", "wheel_FR", "tire_FR", "fw1rr", "fw1r", 9999, "fh3r", 1, {"torqueCoupling:":"fh3r", "torqueArm:":"fh5r", "torqueArm2:":"fw1rr","steerAxisUp:":"fax2rr","steerAxisDown:":"fax4rr"}],
+        {"hubcapBreakGroup":"hubcap_FL"},
+        {"hubcapGroup":"hubcap_FL"},
+        {"axleBeams":["axle_FL"]},
+        ["FL", "wheel_FL", "tire_FL", "fw1ll", "fw1l", 9999, "fh3l", -1, {"torqueCoupling:":"fh3l", "torqueArm:":"fh5l", "torqueArm2:":"fw1ll","steerAxisUp:":"fax2ll","steerAxisDown:":"fax4ll"}],
+        //cancel out a bunch of properties before future wheel parts are loaded
+        {"selfCollision":true},
+        {"axleBeams":[]},{"disableMeshBreaking":false,"disableTriangleBreaking":false},
+        {"hubcapBreakGroup":""},
+        {"hubcapGroup":""},
+        {"enableHubcaps":false},
+    ],
+},
+"template_car_swaybar_F_liveaxle": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Front Sway Bar",
+        "value":150,
+    },
+    "slotType" : "template_car_swaybar_F_liveaxle",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        //["swaybar_F", ["lowerarms_F", "swaybar_F"]],
+    ],
+    "torsionbars": [
+        ["id1:", "id2:", "id3:", "id4:"],
+        //torsional spring rate (Nm/rad) NOT end spring rate
+        {"spring":1200, "damp":1, "deform":10000, "strength":50000},
+        ["arbfr", "fx1r", "fx1l", "arbfl"],
+    ],
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+        {"selfCollision":false},
+        {"collision":true},
+        {"nodeMaterial":"|NM_METAL"},
+        {"frictionCoef":0.5},
+        {"group":"swaybar_F"},
+        {"nodeWeight":2.5},
+        ["arbfr", -0.61, 0, -0.1],
+        ["arbfl",  0.61, 0, -0.1],
+        {"group":""},
+    ],
+    "beams": [
+        ["id1:", "id2:"],
+        {"beamPrecompression":1, "beamType":"|NORMAL"},
+        {"beamSpring":1501000,"beamDamp":100},
+        {"beamDeform":52000,"beamStrength":712000},
+        //end links
+        ["arbfr","fax2rr"],
+        ["arbfl","fax2ll"],
+        //arm
+        ["fx1r","arbfr"],
+        ["fx1l","arbfl"],
+        ["fx1l","arbfr"],
+        ["fx1r","arbfl"],
+        {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+    ],
+},
+"template_car_coilover_F_liveaxle": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Front Coilovers",
+        "value":120,
+    },
+    "slotType" : "template_car_coilover_F_liveaxle",
+    "flexbodies": [
+         ["mesh", "[group]:", "nonFlexMaterials"],
+    ],
+    "beams": [
+        ["id1:", "id2:"],
+        //springs
+        {"beamSpring":27465,"beamDamp":0},
+        {"beamDeform":51000,"beamStrength":251000},
+        //precompressionRange specifies how much longer/shorter than spawn length the beam tries to achieve, in meters.
+        //precompressionRange supersedes over beamPrecompression, make sure to only use this value inline with beams
+        {"highlight":{"radius":0.01, "col":"#FFFF007F"}},
+        ["fax4rr","fs1r", {"name":"spring_FR","precompressionRange":0.116}],
+        ["fax4ll","fs1l", {"name":"spring_FL","precompressionRange":0.116}],
+        {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+        //dampers
+        {"beamPrecompression":1, "beamType":"|BOUNDED", "beamLongBound":1, "beamShortBound":1},
+        {"beamSpring":0,"beamDamp":5708},
+        {"beamLimitSpring":0,"beamLimitDamp":0},
+        ["fax4rr","fs1r", {"name":"damper_FR","beamDampRebound":7135,"beamDampVelocitySplit":0.1,"beamDampFast":3211,"beamDampReboundFast":4281,"dampCutoffHz":500}],
+        ["fax4ll","fs1l", {"name":"damper_FL","beamDampRebound":7135,"beamDampVelocitySplit":0.1,"beamDampFast":3211,"beamDampReboundFast":4281,"dampCutoffHz":500}],
+
+        //hard bump stop
+        {"beamPrecompression":1, "beamType":"|BOUNDED", "beamLongBound":0.1, "beamShortBound":0.15},
+        {"beamSpring":0,"beamDamp":0},
+        {"beamLimitSpring":501000,"beamLimitDamp":2000},
+        //the Range values determine the start of the limit in meters from spawn length (not the precompressed length)
+        //basically this is where the bumpstops are first contacted
+        //the boundZone value determines the transition distance where spring and damp values approach limit values after reaching the Range
+        //the spring and damp move towards limit values after passing the Range distance. At Range + boundZone, the spring and damp arrive at limit values.
+        //basically this is how long/progressive the bumpstop is
+        //these special values supersede over shortBound and longBound, make sure to only use this value inline with beams
+        ["fax4rr","fs1r", {"longBoundRange":0.1,"shortBoundRange":0.1,"boundZone":0.05,"dampCutoffHz":500}],
+        ["fax4ll","fs1l", {"longBoundRange":0.1,"shortBoundRange":0.1,"boundZone":0.05,"dampCutoffHz":500}],
+        {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+    ],
+},
+"template_car_steering_liveaxle": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Steering",
+        "value":200,
+    },
+    "slotType" : "template_car_steering_liveaxle",
+    "slots2": [
+        ["name", "allowTypes", "denyTypes", "default", "description"],
+    ],
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+    ],
+    //steering rack rail
+    //rails form a line between 2 nodes that slidenodes will slide on. Used for any kind of telescoping motion such as steering racks, hydraulic rams, strut shafts.
+    "rails": {
+        "steeringrack":{"links:":["fax3l", "fax3r"], "broken:":[], "looped":false, "capped":true},
+    },
+    "slidenodes": [
+        ["id:", "railName", "attached", "fixToRail", "tolerance", "spring", "strength", "capStrength"],
+        ["st2r", "steeringrack", true, true, 0.0, 8001000, "FLT_MAX", "FLT_MAX"],
+        ["st2l", "steeringrack", true, true, 0.0, 8001000, "FLT_MAX", "FLT_MAX"],
+    ],
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+        {"selfCollision":false},
+        {"collision":true},
+        {"nodeMaterial":"|NM_METAL"},
+        {"frictionCoef":0.5},
+        {"nodeWeight":4.5},
+        //steering rack ends
+        ["st2r",-0.3, -0.15, 0],
+        ["st2l", 0.3, -0.15, 0],
+        {"group":""},
+    ],
+    "beams": [
+        ["id1:", "id2:"],
+        {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+        //tie rod
+        {"beamSpring":15001000,"beamDamp":250},
+        {"beamDeform":93000,"beamStrength":361000},
+        {"highlight":{"radius":0.01, "col":"#0080007F"}},
+        ["fh3r","st2r"],
+        ["fh3l","st2l"],
+        {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+        {"beamSpring":10001000,"beamDamp":250},
+        ["st2r","st2l"],
+
+        //steering limit
+        {"beamPrecompression":1, "beamType":"|SUPPORT", "beamLongBound":3},
+        {"beamSpring":5001000,"beamDamp":250,"beamDeform":120,"beamStrength":160000},
+        {"beamPrecompression":0.7},
+        ["fh3r","fax2r"],
+        ["fh3l","fax2l"],
+        ["fh3r","fax4"],
+        ["fh3l","fax4"],
+        ["fh5r","fax2r"],
+        ["fh5l","fax2l"],
+        ["fh5r","fax4"],
+        ["fh5l","fax4"],
+        {"beamPrecompression":1},
+        {"beamPrecompression":1.0, "beamType":"|NORMAL", "beamLongBound":1, "beamShortBound":1},
+    ],
+    "hydros": [
+        ["id1:","id2:"],
+        {"beamPrecompression":1.0, "beamType":"|NORMAL", "beamLongBound":1, "beamShortBound":1},
+        {"beamSpring":5001000,"beamDamp":50,"beamDeform":"FLT_MAX","beamStrength":255000},
+        //hydros are beams which can change their target length over time, in this case connected to the steering input
+        //for simplicity of the example, there is no complex steering linkage to the body, it is something more like having a steering rack or rams on the axle.
+        ["fax3","st2l", {"factor":-0.205,"steeringWheelLock":600,"inRate":1.25,"outRate":1.25}],        //default factor of 285 leads to very extreme steering angle
+        ["fax3","st2r", {"factor":0.205,"steeringWheelLock":600,"inRate":1.25,"outRate":1.25}],
+        {"beamPrecompression":1.0, "beamType":"|NORMAL", "beamLongBound":1, "beamShortBound":1},
+    ],
+    "input": {
+        //modifier for force feedback to account for differences in vehicles
+        "FFBcoef":5,
+    },
+},
+}

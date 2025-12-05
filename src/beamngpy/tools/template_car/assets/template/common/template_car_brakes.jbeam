@@ -1,0 +1,46 @@
+{
+"template_car_brake_F": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Front Brakes",
+        "value":200,
+    },
+    "slotType" : "template_car_brake_F",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        //insert desired meshes here
+    ],
+    "pressureWheels":[
+        ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+        {"enableABS":true},
+        {"brakeTorque":1500},
+        {"brakeInputSplit":1},
+        {"brakeSplitCoef":1},
+        {"parkingTorque":0},
+        {"brakeSpring":125},
+    ],
+},
+
+"template_car_brake_R": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Rear Brakes",
+        "value":200,
+    },
+    "slotType" : "template_car_brake_R",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        //insert desired meshes here
+    ],
+    "pressureWheels":[
+        ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+        {"enableABS":true},
+        {"brakeTorque":750},
+        {"brakeInputSplit":1},
+        {"brakeSplitCoef":1},
+        {"parkingTorque":1500},
+        {"brakeSpring":125},
+    ],
+},
+
+},

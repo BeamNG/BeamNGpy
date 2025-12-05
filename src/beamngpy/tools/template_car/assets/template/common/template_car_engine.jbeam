@@ -1,0 +1,694 @@
+{
+"template_car_engine": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"1.5L DOHC I4 Engine",
+        "value":850,
+    },
+
+    "slotType" : "template_car_engine",
+
+    "slots2": [
+        ["name", "allowTypes", "denyTypes", "default", "description"],
+        ["template_car_transmission", ["template_car_transmission"], [], "template_car_transmission_5M", "Transmission"],
+        ["template_car_differential", ["template_car_differential"], [], "template_car_differential_R", "Differential"],
+    ],
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+    ],
+    "powertrain": [
+        ["type", "name", "inputName", "inputIndex"],
+        ["combustionEngine", "mainEngine", "dummy", 0],
+    ],
+    "mainEngine": {
+        "torque":[
+            ["rpm", "torque"],
+            [0, 0],
+            [500, 50],
+            [1000, 84],
+            [1500, 108],
+            [2000, 122],
+            [3000, 156],
+            [4000, 169],
+            [5000, 167],
+            [6000, 163],
+            [7000, 143],
+            [7500, 129],
+            [8000, 102],
+            [9000, 79],
+        ],
+
+        "idleRPM":1000,
+        "maxRPM":6900,
+        "inertia":0.10,
+        "friction":11,
+        "dynamicFriction":0.022,
+        "burnEfficiency":0.31,
+        "torqueReactionNodes:":["f2r","f2l","f2"]
+        "particulates":0.03,
+
+        //cooling and oil system
+        "thermalsEnabled":false,
+        "engineBlockMaterial":"aluminum",
+        "oilVolume":3,
+
+        //engine durability
+        "cylinderWallTemperatureDamageThreshold":130,
+        "headGasketDamageThreshold":1500000,
+        "pistonRingDamageThreshold":1500000,
+        "connectingRodDamageThreshold":2000000,
+
+        //node beam interface
+        //this simply chooses an engineGroup name to use. The engineGroup name must be present in the nodes themselves
+        //choose a group near the engine's intake for appropriate engine drowning
+        "waterDamage": {"[engineGroup]:":["engine_intake"]},
+        //choose a group for radiator steam to be emitted from
+        "radiator": {"[engineGroup]:":["radiator"]},
+        //choose a group that represents the engine block mass
+        "engineBlock": {"[engineGroup]:":["engine_block"]},
+        //choose beam name. When any beam containing that name breaks it will disable the device. The beam name must be present in the beams themselves
+        "breakTriggerBeam":"engine",
+        //this is just a nicer string to pass to the UI
+        "uiName":"Engine",
+    },
+    "vehicleController": {
+        "clutchLaunchStartRPM":2300,
+        "clutchLaunchTargetRPM":3000,
+
+        "highShiftDownRPM":[0,0,0,2700,3350,3600,3800,3800],
+        "highShiftUpRPM":6600,
+        "lowShiftDownRPM":[0,0,0,2700,3350,3600,3800,3800],
+        "lowShiftUpRPM":5000,
+    },
+
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+        {"engineGroup":"engine_block"},
+        ["f2", 0, 0, 0, {"isExhaust":"mainEngine"}],
+        ],
+},
+
+"template_car_electricMotor": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Rear Electric Motor",
+        "value":850,
+    },
+
+    "slotType" : "template_car_engine",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+    ],
+
+    "slots2": [
+        ["name", "allowTypes", "denyTypes", "default", "description"],
+        ["template_car_differential_electric_R", ["template_car_differential_electric_R"], [], "template_car_differential_R_electric", "Electric Differential"],
+    ],
+
+    "powertrain": [
+        ["type", "name", "inputName", "inputIndex"],
+        ["electricMotor", "mainEngine", "dummy", 0],
+    ],
+    "mainEngine": {
+        "torque":[
+            ["rpm", "torque"],
+            [0, 333.33],
+            [500, 333.33],
+            [1000, 333.33],
+            [1500, 333.33],
+            [2000, 333.33],
+            [3000, 333.33],
+            [4000, 333.33],
+            [5000, 300.00],
+            [6000, 256.67],
+            [7000, 220.00],
+            [8000, 190.00],
+            [9000, 166.67],
+            [10000, 150.00],
+            [11000, 133.33],
+            [12000, 106.67],
+            [13000, 90.00],
+            [14000, 73.33],
+            [15000, 60.00],
+            [16000, 53.33],
+        ],
+        "maxRPM":16000,
+        "maxRegenPower":150,
+        "maxRegenTorque":100,
+        "inertia":0.05,
+        "friction":2,
+        "dynamicFriction":0.0003,
+        "electricalEfficiency":0.9,
+        "torqueReactionNodes:":["b4r","b4l","b4"]
+
+        //node beam interface
+        //this simply chooses an engineGroup name to use. The engineGroup name must be present in the nodes themselves
+        //choose a group near the engine's intake for appropriate engine drowning
+        "engineBlock": {"[engineGroup]:":["rear_motor_block"]},
+        //choose beam name. When any beam containing that name breaks it will disable the device. The beam name must be present in the beams themselves
+        "breakTriggerBeam":"engine",
+        //this is just a nicer string to pass to the UI
+        "uiName":"Engine",
+    "soundConfig": "soundConfig",
+    },
+    "soundConfig": {
+        "sampleName": "ElectricMotor_02",
+    },
+    "vehicleController": {
+        "shiftLogicName":"electricMotor",
+        "motorNames": ["mainEngine"],
+    },
+        "nodes": [
+                ["id", "posX", "posY", "posZ"],
+         {"engineGroup":"rear_motor_block"},
+         ["f2", 0, 0, 0, {"isExhaust":"mainEngine"}],
+            ],
+},
+
+"template_car_electricMotor_F": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Front Electric Motor",
+        "value":850,
+    },
+
+    "slotType" : "template_car_engine",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+    ],
+
+    "slots2": [
+        ["name", "allowTypes", "denyTypes", "default", "description"],
+        ["template_car_differential_electric_F", ["template_car_differential_electric_F"], [], "template_car_differential_F_electric_lsd", "Electric Differential"],
+    ],
+
+    "powertrain": [
+        ["type", "name", "inputName", "inputIndex"],
+        ["electricMotor", "mainEngine", "dummy", 0],
+    ],
+    "mainEngine": {
+        "torque":[
+            ["rpm", "torque"],
+            [0, 180.00],
+            [500, 180.00],
+            [1000, 180.00],
+            [1500, 180.00],
+            [2000, 180.00],
+            [3000, 180.00],
+            [4000, 180.00],
+            [5000, 180.00],
+            [6000, 180.00],
+            [7000, 150.00],
+            [8000, 123.33],
+            [9000, 110.00],
+            [10000, 86.67],
+            [11000, 70.00],
+            [12000, 56.67],
+            [13000, 50.00],
+            [14000, 43.33],
+            [15000, 40.00],
+            [16000, 36.67],
+        ],
+        "maxRPM":16000,
+        "maxRegenPower":150,
+        "maxRegenTorque":100,
+        "inertia":0.05,
+        "friction":2,
+        "dynamicFriction":0.0003,
+        "electricalEfficiency":0.9,
+        "torqueReactionNodes:":["f2r","f2l","f2"]
+
+        //node beam interface
+        //this simply chooses an engineGroup name to use. The engineGroup name must be present in the nodes themselves
+        //choose a group near the engine's intake for appropriate engine drowning
+        "engineBlock": {"[engineGroup]:":["front_motor_block"]},
+        //choose beam name. When any beam containing that name breaks it will disable the device. The beam name must be present in the beams themselves
+        "breakTriggerBeam":"engine",
+        //this is just a nicer string to pass to the UI
+        "uiName":"Engine",
+    "soundConfig": "soundConfig",
+    },
+    "soundConfig": {
+        "sampleName": "ElectricMotor_02",
+    },
+    "vehicleController": {
+        "shiftLogicName":"electricMotor",
+        "motorNames": ["mainEngine"],
+    },
+        "nodes": [
+        ["id", "posX", "posY", "posZ"],
+         {"engineGroup":"front_motor_block"},
+         ["f2", 0, 0, 0, {"isExhaust":"mainEngine"}],
+        ],
+    
+},
+
+"template_car_electricMotor_dual": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Electric Dual Motor",
+        "value":850,
+    },
+
+    "slotType" : "template_car_engine",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+    ],
+
+    "slots2": [
+        ["name", "allowTypes", "denyTypes", "default", "description"],
+        ["template_car_differential_electric_dual", ["template_car_differential_electric_dual"], [], "template_car_differential_4wd_electric_dual", "Dual Electric Differential"],
+
+    ],
+
+    "powertrain": [
+        ["type", "name", "inputName", "inputIndex"],
+        ["electricMotor", "mainEngine1", "dummy", 0],
+        ["electricMotor", "mainEngine2", "dummy", 0],
+    ],
+    "mainEngine1": {
+        "torque":[
+            ["rpm", "torque"],
+            [0, 333.33],
+            [500, 333.33],
+            [1000, 333.33],
+            [1500, 333.33],
+            [2000, 333.33],
+            [3000, 333.33],
+            [4000, 333.33],
+            [5000, 300.00],
+            [6000, 256.67],
+            [7000, 220.00],
+            [8000, 190.00],
+            [9000, 166.67],
+            [10000, 150.00],
+            [11000, 133.33],
+            [12000, 106.67],
+            [13000, 90.00],
+            [14000, 73.33],
+            [15000, 60.00],
+            [16000, 53.33],
+        ],
+
+        "maxRPM":16000,
+        "maxRegenPower":150,
+        "maxRegenTorque":100,
+        "inertia":0.05,
+        "friction":2,
+        "dynamicFriction":0.0003,
+        "electricalEfficiency":0.95,
+        "torqueReactionNodes:":["b4r","b4l","b4"]
+
+        //node beam interface
+        //this simply chooses an engineGroup name to use. The engineGroup name must be present in the nodes themselves
+        //choose a group near the engine's intake for appropriate engine drowning
+        "engineBlock": {"[engineGroup]:":["rear_motor_block"]},
+        //choose beam name. When any beam containing that name breaks it will disable the device. The beam name must be present in the beams themselves
+        "breakTriggerBeam":"engine",
+        //this is just a nicer string to pass to the UI
+        "uiName":"Engine",
+    "soundConfig": "soundConfig",
+    },
+    "mainEngine2": {
+        "torque":[
+            ["rpm", "torque"],
+            [0, 160.00],
+            [500, 160.00],
+            [1000, 160.00],
+            [1500, 160.00],
+            [2000, 160.00],
+            [3000, 160.00],
+            [4000, 160.00],
+            [5000, 160.00],
+            [6000, 160.00],
+            [7000, 140.00],
+            [8000, 123.33],
+            [9000, 110.00],
+            [10000, 86.67],
+            [11000, 70.00],
+            [12000, 56.67],
+            [13000, 50.00],
+            [14000, 43.33],
+            [15000, 40.00],
+            [16000, 36.67],
+        ],
+
+        "maxRPM":16000,
+        "maxRegenPower":100,
+        "maxRegenTorque":50,
+        "inertia":0.10,
+        "friction":1,
+        "dynamicFriction":0.0003,
+        "electricalEfficiency":0.95,
+        "torqueReactionNodes:":["f2r","f2l","f2"]
+
+        //node beam interface
+        //this simply chooses an engineGroup name to use. The engineGroup name must be present in the nodes themselves
+        //choose a group near the engine's intake for appropriate engine drowning
+        "engineBlock": {"[engineGroup]:":["front_motor_block"]},
+        //choose beam name. When any beam containing that name breaks it will disable the device. The beam name must be present in the beams themselves
+        "breakTriggerBeam":"engine",
+        //this is just a nicer string to pass to the UI
+        "uiName":"Engine",
+    "soundConfig": "soundConfig",
+    },
+    "soundConfig": {
+        "sampleName": "ElectricMotor_02",
+    },
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+         {"engineGroup":["front_motor_block","rear_motor_block"]},
+         ["f2", 0, 0, 0, {"isExhaust":"mainEngine"}],
+            ],
+    
+    "vehicleController": {
+        "shiftLogicName":"electricMotor",
+         "motorNames": ["mainEngine1", "mainEngine2"],
+    },
+},
+"template_car_transmission_5M": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"5-Speed Manual Transmission",
+        "value":250,
+    },
+
+    "slotType" : "template_car_transmission",
+
+    "slots2": [
+        ["name", "allowTypes", "denyTypes", "default", "description"],
+    ],
+    "powertrain": [
+        ["type", "name", "inputName", "inputIndex"],
+        ["frictionClutch", "clutch", "mainEngine", 1],
+        ["manualGearbox", "gearbox", "clutch", 1],
+    ],
+    "gearbox": {
+        "uiName":"Gearbox",
+        "gearRatios":[-3.15, 0, 3.25, 1.895, 1.26, 0.94, 0.77],
+        "friction": 5,
+    },
+    ,
+    "vehicleController": {},
+},
+
+"template_car_differential_4wd_electric": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"4WD Differential     Electric",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential_electric_R",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Final Drive Ratio", "Torque multiplication ratio"],   hardcoded ratio
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_C", "mainEngine", 1, {"diffType":"locked", "gearRatio":1.0,"friction":4, "lockTorque":5000, "uiName":"Center Differential"}],
+
+        ["differential", "differential_R", "differential_C", 1, {"diffType":"open", "gearRatio":7.5,"friction":4, "lockTorque":50000, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+
+        ["differential", "differential_F", "differential_C", 2, {"diffType":"open","gearRatio":7.5,"friction":4, "lockTorque":50000, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleFL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleFR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1.2}],
+    ],
+},
+
+"template_car_differential_R_electric": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"RWD Differential Electric",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential_electric_R",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Final Drive Ratio", "Torque multiplication ratio"], hardcoded ratio
+    ],
+
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_R", "mainEngine", 1, {"diffType":"open", "gearRatio":7.5,"friction":4, "lockTorque":50000, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+    ],
+},
+
+"template_car_differential_R_electric_lsd": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"RWD LSD Differential Electric",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential_electric_R",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Final Drive Ratio", "Torque multiplication ratio"], hardcoded ratio
+    ],
+
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+
+        ["differential", "differential_R", "mainEngine", 1, {"diffType":"lsd", "gearRatio":7.5,"friction":4, "lockTorque":50000, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+    ],
+},
+
+"template_car_differential_F_electric": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"FWD Differential Electric",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential_electric_F",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Final Drive Ratio", "Torque multiplication ratio"],   hardcoded ratio
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_F", "mainEngine", 1, {"diffType":"open","gearRatio":7.5,"friction":4, "lockTorque":50000, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleFL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleFR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1.2}],
+
+    ],
+},
+
+"template_car_differential_F_electric_lsd": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"FWD LSD Differential Electric",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential_electric_F",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Final Drive Ratio", "Torque multiplication ratio"],   hardcoded ratio
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_F", "mainEngine", 1, {"diffType":"lsd","gearRatio":7.5,"friction":4, "lockTorque":50000, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleFL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleFR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1.2}],
+
+    ],
+},
+
+"template_car_differential_4wd_electric_dual": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"4WD Differentials Electric Dual",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential_electric_dual",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Final Drive Ratio", "Torque multiplication ratio"], hardcoded ratio
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+
+        ["differential", "differential_R", "mainEngine1", 1, {"diffType":"open", "gearRatio":7.5,"friction":4, "lsdPreload":50, "lsdLockCoef":0.2, "lsdRevLockCoef":0.1, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+
+        ["differential", "differential_F", "mainEngine2", 1, {"diffType":"open","gearRatio":7.5,"friction":4, "lsdPreload":50, "lsdLockCoef":0.2, "lsdRevLockCoef":0.1, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleFL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleFR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1.2}],
+    ],
+},
+
+"template_car_differential_4wd": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"4WD Differentials",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Final Drive Ratio", "Torque multiplication ratio", {"stepDis":0.01}],
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_C", "gearbox", 1, {"diffType":"locked", "gearRatio":1,"friction":4, "lockTorque":5000, "uiName":"Center Differential"}],
+
+        ["differential", "differential_R", "differential_C", 1, {"diffType":"locked", "gearRatio":4,"friction":4, "lockTorque":50000, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+
+        ["differential", "differential_F", "differential_C", 2, {"diffType":"locked","gearRatio":4,"friction":4, "lockTorque":50000, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleFL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleFR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1.2}],
+    ],
+},
+
+"template_car_differential_R": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Open Rear Differential",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Rear Final Drive Ratio", "Torque multiplication ratio"],
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_R", "gearbox", 1, {"diffType":"open", "gearRatio":4,"friction":4, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+    ],
+},
+"template_car_differential_R_lsd": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"LSD Rear Differential",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$lsdpreload_R", "range", "N/m", "Differentials", 50, 0, 500, "Pre-load Torque", "Initial locking torque between left and right wheels"],
+        //["$lsdlockcoef_R", "range", "", "Differentials", 0.20, 0, 0.5, "Rear LSD Forward Locking ", "Additional locking torque proportional to engine torque", {"minDis":0, "maxDis":100}],
+        //["$lsdlockcoefrev_R", "range", "", "Differentials", 0.10, 0, 0.5, "Coast Lock Rate", "Additional locking torque proportional to engine braking", {"minDis":0, "maxDis":100}],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Rear Final Drive Ratio", "Torque multiplication ratio"],
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_R", "gearbox", 1, {"diffType":"lsd", "gearRatio":4, "lsdPreload":50, "lsdLockCoef":0.20, "lsdRevLockCoef":0.10, "friction":4, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1}],
+    ],
+},
+"template_car_differential_R_locked": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Locked Rear Differential",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_R", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Rear Final Drive Ratio", "Torque multiplication ratio"],
+        //["$locktorque_R", "range", "Nm", "Differentials", 1000, 0, 20000, "Rear Locking Strength", "Max cross torque before axles twist permanently"],
+        //["$lockspring_R", "range", "Nm/rad", "Differentials", 1000, 0, 20000, "Rear Locking Stiffness", "Torsional spring rate between the 2 wheels"]
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_R", "gearbox", 1, {"diffType":"locked", "gearRatio":4, "lockSpring":1000, "lockTorque":1000, "friction":4, "uiName":"Rear Differential"}],
+        ["shaft", "wheelaxleRL", "differential_R", 1, {"connectedWheel":"RL", "breakTriggerBeam":"axle_RL", "uiName":"Rear Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleRR", "differential_R", 2, {"connectedWheel":"RR", "breakTriggerBeam":"axle_RR", "uiName":"Rear Right Axle", "friction":1.2}],
+    ],
+},
+"template_car_differential_F": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Open Front Differential",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_F", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Front Final Drive Ratio", "Torque multiplication ratio"],
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_F", "gearbox", 1, {"diffType":"open","gearRatio":4,"friction":4, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleRL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleRR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1.2}],
+    ],
+},
+"template_car_differential_F_lsd": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"LSD Front Differential",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$lsdpreload_F", "range", "N/m", "Differentials", 50, 0, 500, "Pre-load Torque", "Initial locking torque between left and right wheels"],
+        //["$lsdlockcoef_F", "range", "", "Differentials", 0.20, 0, 0.5, "Power Lock Rate", "Additional locking torque proportional to engine torque", {"minDis":0, "maxDis":100}],
+        //["$lsdlockcoefrev_F", "range", "", "Differentials", 0.10, 0, 0.5, "Coast Lock Rate", "Additional locking torque proportional to engine braking", {"minDis":0, "maxDis":100}],
+        //["$finaldrive", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Front Final Drive Ratio", "Torque multiplication ratio"],
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_F", "gearbox", 1, {"diffType":"lsd", "gearRatio":4, "lsdPreload":50, "lsdLockCoef":0.20, "lsdRevLockCoef":0.10, "friction":4, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleRL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1}],
+        ["shaft", "wheelaxleRR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1}],
+    ],
+},
+"template_car_differential_F_locked": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Locked Front Differential",
+        "value":200,
+    },
+
+    "slotType" : "template_car_differential",
+
+    "variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        //["$finaldrive_F", "range", ":1", "Differentials", 4.0, 1.0, 10.0, "Front Final Drive Ratio", "Torque multiplication ratio"],
+        //["$locktorque_F", "range", "Nm", "Differentials", 1000, 0, 20000, "Front Locking Strength", "Max cross torque before axles twist permanently"],
+        //["$lockspring_F", "range", "Nm/rad", "Differentials", 1000, 0, 20000, "Front Locking Stiffness", "Torsional spring rate between the 2 wheels"]
+    ],
+    "powertrain" : [
+        ["type", "name", "inputName", "inputIndex"],
+        ["differential", "differential_F", "gearbox", 1, {"diffType":"locked", "gearRatio":4, "lockSpring":1000, "lockTorque":1000, "friction":4, "uiName":"Front Differential"}],
+        ["shaft", "wheelaxleRL", "differential_F", 1, {"connectedWheel":"FL", "breakTriggerBeam":"axle_FL", "uiName":"Front Left Axle", "friction":1.2}],
+        ["shaft", "wheelaxleRR", "differential_F", 2, {"connectedWheel":"FR", "breakTriggerBeam":"axle_FR", "uiName":"Front Right Axle", "friction":1.2}],
+    ],
+},
+}

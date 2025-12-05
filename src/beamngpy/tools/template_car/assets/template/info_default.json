@@ -1,0 +1,6 @@
+{
+"Configuration":"Default",
+"Description":"Default",
+"Config Type":"Factory",
+"defaultPaintName1": "{{ color }}"
+}

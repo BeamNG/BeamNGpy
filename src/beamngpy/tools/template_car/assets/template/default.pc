@@ -1,0 +1,29 @@
+{
+  "format":2,
+  "mainPartName":"templatecar",
+  "mainPartPath":"/templatecar",
+  "model":"template_car",
+ 
+  "parts":{
+    "template_car_body":"template_car_body_{{ body_shape }}",
+    "template_car_brake_F":"template_car_brake_F",
+    "template_car_brake_R":"template_car_brake_R",
+    "template_car_coilover_F_{{ suspension_front }}":"template_car_coilover_F_{{ suspension_front }}",
+    "template_car_coilover_R_{{ suspension_rear }}":"template_car_coilover_R_{{ suspension_rear }}",
+    "template_car_differential_electric_R":"template_car_differential_R_electric",
+    "template_car_engine":"template_car_electricMotor",
+    "template_car_hub_F":"template_car_hub_F_5",
+    "template_car_hub_R":"template_car_hub_R_5",
+    "template_car_steering_{{ suspension_front }}":"template_car_steering_{{ suspension_front }}",
+    "template_car_suspension_F":"template_car_{{ suspension_front }}_F",
+    "template_car_suspension_R":"template_car_{{ suspension_rear }}_R",
+    "template_car_swaybar_F_{{ suspension_front }}":"template_car_swaybar_F_{{ suspension_front }}",
+    "template_car_swaybar_R_{{ suspension_rear }}":"template_car_swaybar_R_{{ suspension_rear }}",
+    "template_car_wheeldata_F_{{ suspension_front }}":"template_car_wheeldata_F_{{ suspension_front }}",
+    "template_car_wheeldata_R_{{ suspension_rear }}":"template_car_wheeldata_R_{{ suspension_rear }}",
+    "tire_F_15x7":"tire_F_205_50_15_sport",
+    "tire_R_15x7":"tire_R_205_50_15_sport",
+    "wheel_F_5":"wheel_03a_15x7_F_alt",
+    "wheel_R_5":"wheel_03a_15x7_R_alt"
+  }
+}

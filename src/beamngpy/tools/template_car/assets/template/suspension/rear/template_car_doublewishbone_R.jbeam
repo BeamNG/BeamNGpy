@@ -1,0 +1,427 @@
+{
+"template_car_doublewishbone_R": {
+        "information":{
+            "authors":"BeamNG",
+            "name":"Double Wishbone Rear Suspension",
+            "value":150,
+        },
+        "slotType" : "template_car_suspension_R",
+        "slots2": [
+            ["name", "allowTypes", "denyTypes", "default", "description"],
+            ["template_car_hub_R", ["template_car_hub_R"], [], "template_car_hub_R_4", "Rear Hubs"],  // parts can be loaded from other jbeam files
+            //the coordinates of the nodeOffset determine where the common wheel is placed when it is loaded based on slot order
+            ["template_car_wheeldata_R_doublewishbone", ["template_car_wheeldata_R_doublewishbone"], [], "template_car_wheeldata_R_doublewishbone", "Rear Spindles", {"coreSlot":true}],
+            ["template_car_coilover_R_doublewishbone", ["template_car_coilover_R_doublewishbone"], [], "template_car_coilover_R_doublewishbone", "Rear Coilovers", {"nodeOffset":{"x":0.0, "y":{{ wheelbase }}, "z":0.105}}],
+            ["template_car_swaybar_R_doublewishbone", ["template_car_swaybar_R_doublewishbone"], [], "template_car_swaybar_R_doublewishbone", "Rear Sway Bar", {"nodeOffset":{"x":0.0, "y":{{ wheelbase }}, "z":0.105}}],
+        ],
+        "flexbodies": [
+            ["mesh", "[group]:", "nonFlexMaterials"],
+            //add mesh here if you want to visibly show certain components
+        ],
+        "nodes": [
+            ["id", "posX", "posY", "posZ"],
+            {"collision":true},
+            {"selfCollision":false},
+            {"nodeMaterial":"|NM_METAL"},
+            {"frictionCoef":0.5},
+            {"nodeWeight":9},
+            //hub mounting points for upper wishbone                                        [Lower ball joint]
+            {"group":["hub_R","upperarm_R"]},
+            ["rh1r", -0.58,-0.09, 0.125],
+            ["rh1l",  0.58,-0.09, 0.125],
+            ["rh2r", -0.58, 0.09, 0.125],
+            ["rh2l",  0.58, 0.09, 0.125],
+
+            //hub mounting points for lower wishbone                                        [Upper ball joint]
+            {"group":["hub_R","lowerarm_R","shockbottom_R"]},
+            ["rh3r", -0.62, -0.07, -0.125],
+            ["rh3l",  0.62, -0.07, -0.125],
+            ["rh4r", -0.62,  0.07, -0.125],
+            ["rh4l",  0.62,  0.07, -0.125],
+
+            //brake caliper
+            {"group":"brakearm_R"},
+            ["rh5r", -0.63, 0.15, 0],
+            ["rh5l",  0.63, 0.15, 0],
+
+            {"nodeWeight":8.0},
+            //body mounting points for lower wishbone
+            {"group":["subframe_R","lowerarm_R"]},
+            ["rx1r", -0.30, -0.2, -0.1],                //original 0.36                   //[LCA front bush]
+            ["rx1l",  0.30, -0.2, -0.1],                                                  //[LCA front bush]
+            ["rx2r", -0.30,  0.2, -0.1, {"tag":"rideheight_RR"}],                         //[LCA rear bush]
+            ["rx2l",  0.30,  0.2, -0.1, {"tag":"rideheight_RL"}],                         //[LCA rear bush]
+
+            //body mounting points for upper wishbone
+            {"group":["subframe_R","upperarm_R"]},
+            ["rx3r", -0.30, -0.2, 0.1],                                                   //[UCA front bush]
+            ["rx3l",  0.30, -0.2, 0.1],                                                   //[UCA front bush]
+            ["rx4r", -0.30,  0.2, 0.1],                                                   //[UCA rear bush]
+            ["rx4l",  0.30,  0.2, 0.1],                                                   //[UCA rear bush]
+
+            //body mounting points for spring and shock                                     [spring upper]
+            {"group":["subframe_R","shocktop_R"]},
+            ["rs1r", -0.45, -0.07, 0.305],
+            ["rs1l",  0.45, -0.07, 0.305],
+            {"group":""},
+        ],
+        "beams": [
+            ["id1:", "id2:"],
+            //double wishbone suspension
+            {"beamPrecompression":1, "beamType":"|NORMAL"},
+            {"beamSpring":8001000,"beamDamp":100},
+            {"beamDeform":51000,"beamStrength":351000},
+            //hub
+            ["rh2r","rh3r"],
+            ["rh2l","rh3l"],
+            ["rh2r","rh5r"],
+            ["rh2l","rh5l"],
+            ["rh3r","rh5r"],
+            ["rh3l","rh5l"],
+            ["rh2l","rh4l"],
+            ["rh5l","rh4l"],
+            ["rh2r","rh4r"],
+            ["rh5r","rh4r"],
+            ["rh3l", "rh4l"],
+            ["rh3r", "rh4r"],
+            ["rh1r", "rh2r"],
+            ["rh1r", "rh3r"],
+            ["rh1r", "rh4r"],
+            ["rh1r", "rh5r"],
+            ["rh1l", "rh2l"],
+            ["rh1l", "rh3l"],
+            ["rh1l", "rh4l"],
+            ["rh1l", "rh5l"],
+
+            //hub to wheel axle nodes
+            //breakGroup: when one beam breaks, all beams in the group are forced to break
+            {"breakGroup":"wheel_RR"},
+            {"optional":true},
+            //optional: tells the physics engine not to worry if it can't find the nodes (ex, user chose to remove the wheels that these beams should connect to)
+            ["rh1r","rw1r"],
+            ["rh2r","rw1r", {"name":"axle_RR"}],
+            ["rh3r","rw1r"],
+            ["rh4r","rw1r"],
+            ["rh5r","rw1r"],
+            ["rh1r","rw1rr"],
+            ["rh2r","rw1rr"],
+            ["rh3r","rw1rr"],
+            ["rh4r","rw1rr"],
+            ["rh5r","rw1rr"],
+            {"breakGroup":"wheel_RL"},
+            ["rh1l","rw1l"],
+            ["rh2l","rw1l", {"name":"axle_RL"}],
+            ["rh3l","rw1l"],
+            ["rh4l","rw1l"],
+            ["rh5l","rw1l"],
+            ["rh1l","rw1ll"],
+            ["rh2l","rw1ll"],
+            ["rh3l","rw1ll"],
+            ["rh4l","rw1ll"],
+            ["rh5l","rw1ll"],
+            {"optional":false},
+            {"breakGroup":""},
+
+            //upper wishbone
+            {"beamSpring":14001000,"beamDamp":2000},
+            //precompression creates slight alignment tweak for 0 camber at base ride height  base 0.988  //change this one
+            {"beamPrecompression":0.9775},
+            //dampCutoffHz raises the damping stability by filtering out high frequencies
+
+            ["rh1r","rx4r", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            ["rh2r","rx3r", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            {"highlight":{"radius":0.01, "col":"#0000FF7F"}},
+            ["rh1r","rx3r", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            ["rh2r","rx4r", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+            ["rh1l","rx4l", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            ["rh2l","rx3l", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            {"highlight":{"radius":0.01, "col":"#0000FF7F"}},
+            ["rh1l","rx3l", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            ["rh2l","rx4l", {"dampCutoffHz":500,"beamPrecompressionTime":0.5}],
+            {"highlight":{"radius":0.0, "col":"#00000000"}},
+            {"beamPrecompression":1},
+
+            //lower wishbone
+            ["rh3r", "rx2r", {"dampCutoffHz":500}],
+            ["rh4r", "rx1r", {"dampCutoffHz":500}],
+            {"highlight":{"radius":0.01, "col":"#FF00007F"}},
+            ["rh3r", "rx1r", {"dampCutoffHz":500,"beamPrecompression":0.996}],             //toe adjustment
+            ["rh4r", "rx2r", {"dampCutoffHz":500}],
+            {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+            ["rh3l", "rx2l", {"dampCutoffHz":500}],
+            ["rh4l", "rx1l", {"dampCutoffHz":500}],
+            {"highlight":{"radius":0.01, "col":"#FF00007F"}},
+            ["rh3l", "rx1l", {"dampCutoffHz":500,"beamPrecompression":0.996}],             //toe adjustment
+            ["rh4l", "rx2l", {"dampCutoffHz":500}],
+            {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+            //subframe
+            {"beamSpring":8001000,"beamDamp":250},
+            ["rx3l", "rx1l"],
+            ["rx4l", "rx2l"],
+            ["rx3r", "rx1r"],
+            ["rx4r", "rx2r"],
+            ["rx1l", "rx2l"],
+            ["rx3l", "rx4l"],
+            ["rx1r", "rx2r"],
+            ["rx3r", "rx4r"],
+            ["rx1l", "rx1r"],
+            ["rx3l", "rx3r"],
+            ["rx2l", "rx2r"],
+            ["rx4l", "rx4r"],
+            ["rx1l", "rx4l"],
+            ["rx3l", "rx2l"],
+            ["rx1r", "rx4r"],
+            ["rx3r", "rx2r"],
+            ["rx1l", "rx3r"],
+            ["rx3l", "rx1r"],
+            ["rx4l", "rx2r"],
+            ["rx2l", "rx4r"],
+            ["rx1l", "rx2r"],
+            ["rx2l", "rx1r"],
+            ["rx3l", "rx4r"],
+            ["rx4l", "rx3r"],
+
+            //shock tower
+            {"beamSpring":5001000,"beamDamp":100},
+            ["rx3l", "rs1l"],
+            ["rx4l", "rs1l"],
+            ["rx3r", "rs1r"],
+            ["rx4r", "rs1r"],
+            ["rs1l", "rx1l"],
+            ["rs1l", "rx2l"],
+            ["rs1r", "rx1r"],
+            ["rs1r", "rx2r"],
+            ["rs1l", "rx3r"],
+            ["rs1l", "rx4r"],
+            ["rs1r", "rx3l"],
+            ["rx4l", "rs1r"],
+            ["rs1r", "rs1l"],
+
+            //subframe to chassis
+
+            {"beamSpring":8001000,"beamDamp":500},
+            ["b3l", "rx1l"],
+            ["r1ll", "rx1l"],
+            ["b3r", "rx1r"],
+            ["r1rr", "rx1r"],
+            ["b8l", "rx3l"],
+            ["b8r", "rx3r"],
+            ["b3l", "rx3l"],
+            ["r1ll", "rx3l"],
+            ["b3r", "rx3r"],
+            ["r1rr", "rx3r"],
+            ["b8l", "rx1l"],
+            ["b8r", "rx1r"],
+            ["b3r", "rx1l"],
+            ["r1rr", "rx1l"],
+            ["b3l", "rx1r"],
+            ["r1ll", "rx1r"],
+            ["b8r", "rx3l"],
+            ["b8l", "rx3r"],
+
+            ["b3l", "rx2l"],
+            ["r1ll", "rx2l"],
+            ["b3r", "rx2r"],
+            ["r1rr", "rx2r"],
+            ["b8l", "rx4l"],
+            ["b8r", "rx4r"],
+            ["b3l", "rx4l"],
+            ["r1ll", "rx4l"],
+            ["b3r", "rx4r"],
+            ["r1rr", "rx4r"],
+            ["b8l", "rx2l"],
+            ["b8r", "rx2r"],
+            ["b3r", "rx2l"],
+            ["r1rr", "rx2l"],
+            ["b3l", "rx2r"],
+            ["r1ll", "rx2r"],
+            ["b8r", "rx4l"],
+            ["b8l", "rx4r"],
+
+            //wheel intrusion limiter
+            {"beamPrecompression":1, "beamType":"|SUPPORT", "beamLongBound":1},
+            {"beamSpring":1001000,"beamDamp":250,"beamDeform":165000,"beamStrength":900000},
+            {"beamPrecompression":0.6},
+            ["rw1ll","rx1r"],
+            ["rw1ll","rx2r"],
+            ["rw1ll","rx3r"],
+            ["rw1ll","rx4r"],
+            ["rw1rr","rx1l"],
+            ["rw1rr","rx2l"],
+            ["rw1rr","rx3l"],
+            ["rw1rr","rx4l"],
+            {"beamPrecompression":1},
+
+            //wishbone inversion limiter
+            {"beamPrecompression":1, "beamType":"|SUPPORT", "beamLongBound":2},
+            {"beamSpring":1001000,"beamDamp":250,"beamDeform":165000,"beamStrength":900000},
+            {"beamPrecompression":0.75},
+            ["rx2l","rh2l"],
+            ["rx1l","rh2l"],
+            ["rx2r","rh2r"],
+            ["rx1r","rh2r"],
+            {"beamPrecompression":0.77},
+            ["rx4r","rh3r"],
+            ["rx3r","rh3r"],
+            ["rx4l","rh3l"],
+            ["rx3l","rh3l"],
+            ["rx4r","rh4r"],
+            ["rx3r","rh4r"],
+            ["rx4l","rh4l"],
+            ["rx3l","rh4l"],
+
+            {"beamPrecompression":0.95},
+            ["rx2l","rh3l"],
+            ["rx1l","rh4l"],
+            ["rx2r","rh3r"],
+            ["rx1r","rh4r"],
+            ["rx1l","rh3l"],
+            ["rx2l","rh4l"],
+            ["rx1r","rh3r"],
+            ["rx2r","rh4r"],
+            {"beamPrecompression":1},
+
+
+            {"beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+        ],
+    },
+
+    "template_car_wheeldata_R_doublewishbone": {
+        "information":{
+            "authors":"BeamNG",
+            "name":"Rear Spindles",
+            "value":0,
+        },
+        "slotType" : "template_car_wheeldata_R_doublewishbone",
+        "pressureWheels":[
+            ["name","hubGroup","group","node1:","node2:","nodeS","nodeArm:","wheelDir"],
+            //some wheel properties
+            {"selfCollision":false},
+            {"collision":true},
+            {"hubcapBreakGroup":"hubcap_RR"},
+            {"hubcapGroup":"hubcap_RR"},
+            {"axleBeams":["axle_RR"]},
+            //wheel is created from here, but using properties from previously loaded common jbeam parts
+            ["RR", "wheel_RR", "tire_RR", "rw1rr", "rw1r",  9999, "rh5r", 1, {"torqueCoupling:":"rx1r","torqueArm:":"rx2r", "torqueArm2:":"rx2l"}],
+            {"hubcapBreakGroup":"hubcap_RL"},
+            {"hubcapGroup":"hubcap_RL"},
+            {"axleBeams":["axle_RL"]},
+            ["RL", "wheel_RL", "tire_RL", "rw1ll", "rw1l", 9999, "rh5l",  -1, {"torqueCoupling:":"rx1l","torqueArm:":"rx2l", "torqueArm2:":"rx2r"}],
+            //cancel out a bunch of properties before future wheel parts are loaded
+            {"selfCollision":true},
+            {"axleBeams":[]},{"disableMeshBreaking":false,"disableTriangleBreaking":false},
+            {"hubcapBreakGroup":""},
+            {"hubcapGroup":""},
+            {"enableHubcaps":false},
+            {"enableTireLbeams":false},
+            {"enableTireSideReinfBeams":false},
+            {"enableTireReinfBeams":false},
+            {"enableTreadReinfBeams":false},
+            {"enableTirePeripheryReinfBeams":false},
+            {"loadSensitivitySlope":""},
+            {"noLoadCoef":""},
+            {"fullLoadCoef":""},
+            {"frictionCoef":""},
+            {"slidingFrictionCoef":""},
+            {"softnessCoef":0.5},
+            {"treadCoef":1.0},
+        ],
+    },
+    "template_car_swaybar_R_doublewishbone": {
+        "information":{
+            "authors":"BeamNG",
+            "name":"Rear Sway Bar",
+            "value":250,
+        },
+        "slotType" : "template_car_swaybar_R_doublewishbone",
+        "flexbodies": [
+            ["mesh", "[group]:", "nonFlexMaterials"],
+            //["swaybar_R", ["lowerarm_R", "swaybar_R"]],
+        ],
+
+        "torsionbars": [
+            ["id1:", "id2:", "id3:", "id4:"],
+            //torsional spring rate (Nm/rad) NOT end spring rate
+            {"spring":500, "damp":1, "deform":10000, "strength":50000},
+            ["arbrr", "rx1r", "rx1l", "arbrl"],
+        ],
+        "nodes": [
+            ["id", "posX", "posY", "posZ"],
+            {"selfCollision":false},
+            {"collision":true},
+            {"nodeMaterial":"|NM_METAL"},
+            {"frictionCoef":0.5},
+            {"group":"swaybar_R"},
+            {"nodeWeight":1.5},
+            ["arbrr", -0.80, 0, -0.1],
+            ["arbrl",  0.80, 0, -0.1],
+            {"group":""},
+        ],
+        "beams": [
+            ["id1:", "id2:"],
+            {"beamPrecompression":1, "beamType":"|NORMAL"},
+            {"beamSpring":1501000,"beamDamp":100},               //old spring 1501000
+            {"beamDeform":52000,"beamStrength":712000},
+            //end links
+
+            ["arbrr","rh1r"],
+            ["arbrl","rh1l"],
+            //arm
+
+            ["rx1r","arbrr"],
+            ["rx1l","arbrl"],
+            ["rx1l","arbrr"],
+            ["rx1r","arbrl"],
+
+            {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+        ],
+
+    },
+    "template_car_coilover_R_doublewishbone": {
+        "information":{
+            "authors":"BeamNG",
+            "name":"Rear Coilovers",
+            "value":200,
+        },
+        "slotType" : "template_car_coilover_R_doublewishbone",
+        "beams": [
+            ["id1:", "id2:"],
+            //rear springs
+            {"beamPrecompression":1, "beamType":"|NORMAL"},
+            {"beamSpring":33609,"beamDamp":0},
+            {"beamDeform":51000,"beamStrength":251000},
+            //precompressionRange specifies how much longer/shorter than spawn length the beam tries to achieve, in meters.
+            //precompressionRange supersedes over beamPrecompression, make sure to only use this value inline with beams
+            {"highlight":{"radius":0.01, "col":"#FFFF007F"}},
+            ["rh3r","rs1r", {"name":"spring_RR","precompressionRange":0.125}],
+            ["rh3l","rs1l", {"name":"spring_RL","precompressionRange":0.125}],
+            {"highlight":{"radius":0.0, "col":"#00000000"}},
+
+            //dampers
+            {"beamPrecompression":1, "beamType":"|BOUNDED", "beamLongBound":1, "beamShortBound":1},
+            {"beamSpring":0,"beamDamp":6362},           // C crit 7952
+            {"beamLimitSpring":0,"beamLimitDamp":0},
+            ["rh3r","rs1r", {"name":"damper_RR","beamDampRebound":7952,"beamDampVelocitySplit":0.1,"beamDampFast":4771,"beamDampReboundFast":3578,"dampCutoffHz":500}],
+            ["rh3l","rs1l", {"name":"damper_RL","beamDampRebound":7952,"beamDampVelocitySplit":0.1,"beamDampFast":4771,"beamDampReboundFast":3578,"dampCutoffHz":500}],
+
+
+            //hard bump stop
+            {"beamPrecompression":1, "beamType":"|BOUNDED", "beamLongBound":0.1, "beamShortBound":0.15},
+            {"beamSpring":0,"beamDamp":0},
+            {"beamLimitSpring":501000,"beamLimitDamp":2000},
+            //the Range values determine the start of the limit in meters from spawn length (not the precompressed length)
+            //basically this is where the bumpstops are first contacted
+            //the boundZone value determines the transition distance where spring and damp values approach limit values after reaching the Range
+            //the spring and damp move towards limit values after passing the Range distance. At Range + boundZone, the spring and damp arrive at limit values.
+            //basically this is how long/progressive the bumpstop is
+            //these special values supersede over shortBound and longBound, make sure to only use this value inline with beams
+            ["rh3l","rs1l", {"longBoundRange":0.09,"shortBoundRange":0.09,"boundZone":0.05,"dampCutoffHz":500}],
+            ["rh3r","rs1r", {"longBoundRange":0.09,"shortBoundRange":0.09,"boundZone":0.05,"dampCutoffHz":500}],
+            {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+        ],
+    },
+}

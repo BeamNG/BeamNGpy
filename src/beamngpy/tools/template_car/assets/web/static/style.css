@@ -1,0 +1,116 @@
+/* Main content area */
+.main-content {
+    padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+.page {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.light-bg {
+    background-color: #fafbfc;
+}
+
+/* Main content bottom buttons */
+.main-bottom {
+    padding-bottom: 0rem;
+}
+
+/* Sidebar styling */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    max-height: 100vh;
+    background-color: #E0E5E9;
+    border-right: 1px solid #dee2e6;
+    padding: 1rem;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(1, 1, 1, 0.2) transparent;
+}
+
+/* Sidebar sections */
+.sidebar-section {
+    margin-bottom: 1rem;
+}
+
+.sidebar-bottom {
+    padding-bottom: 1rem;
+}
+
+/* Remove default list group borders in sidebar */
+.sidebar .list-group-flush .list-group-item {
+    border-left: none;
+    border-right: none;
+    border-radius: 0.375rem;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar .list-group-flush .list-group-item {
+    border-top: none;
+    border-bottom: none;
+    background: none;
+}
+
+.sidebar .list-group-flush .list-group-item:hover {
+    background-color: var(--bs-gray-200);
+}
+
+.sidebar .list-group-flush .list-group-item.active {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+    margin-top: 0;
+}
+
+.sidebar .list-group-flush .list-group-item:hover.active {
+    background-color: #0b5ed7;
+    color: var(--bs-white);
+}
+
+.blankslate {
+    padding: 3rem;
+    text-align: center;
+}
+
+.progress-area .card-body {
+    padding: 0.5rem 0.75rem;
+}
+
+.progress-area #progress-text {
+    height: 5.35rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
+    font-size: 0.88rem;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 940px) {
+    /* Stack buttons vertically on small screens */
+    .main-bottom {
+        flex-direction: column !important;
+        gap: 1rem;
+    }
+    .main-bottom .btn {
+        margin-right: 0 !important;
+        margin-bottom: 0.25rem;
+    }
+    .main-bottom .btn:last-child {
+        margin-bottom: 0;
+    }
+    .main-bottom > div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .main-bottom .status-info {
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+}
