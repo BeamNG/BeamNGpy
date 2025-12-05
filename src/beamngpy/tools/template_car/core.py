@@ -13,24 +13,24 @@ from .models import Settings, TemplateVehicle
 
 class TemplateCarGenerator:
     """Template car generator.
-    
+
     The template car generator is a tool that allows you to parameterize and generate template cars for BeamNG.
-    This tool comes with a graphical user interface that can be started with:
-    ```
-    python -m beamngpy.tools.template_car
-    ```
-    or by creating a desktop shortcut with:
-    ```
-    python -m beamngpy.tools.template_car --create-shortcut
-    ```
+    This tool comes with a graphical user interface that can be started with::
+
+        python -m beamngpy.tools.template_car
+
+    or by creating a desktop shortcut with::
+
+        python -m beamngpy.tools.template_car --create-shortcut
+
     For more information about the graphical user interface, see the
-    [documentation](https://documentation.beamng.com/beamng_tech/tools/).
+    `documentation <https://documentation.beamng.com/beamng_tech/tools/>`__.
 
     Use this class to programmatically generate template cars.
 
     Args:
         settings_file: Path to a settings JSON file. If not provided, the default settings file will be used.
-    
+
     Returns:
         TemplateCarGenerator: Template car generator instance.
     """
@@ -59,11 +59,7 @@ class TemplateCarGenerator:
         return get_beamng_install_path(self.get_settings())
 
     def get_settings(self) -> Settings:
-        """Read settings from file.
-        
-        Returns:
-            settings: The settings object.
-        """
+        """Read settings from file."""
         if os.path.isfile(self.settings_file):
             settings = read_json(self.settings_file)
         else:
@@ -71,11 +67,7 @@ class TemplateCarGenerator:
         return Settings.model_validate(settings)
 
     def get_vehicle_list(self) -> list[str]:
-        """Return list of all vehicle IDs.
-        
-        Returns:
-            vehicle_list: List of all vehicle IDs (strings).
-        """
+        """Return list of all vehicle IDs."""
         vehicle_list = []
         for file in os.listdir(self.vehicles_folder):
             if file.endswith(".json"):
@@ -84,11 +76,7 @@ class TemplateCarGenerator:
         return vehicle_list
 
     def get_vehicle(self, vehicle_id: str) -> TemplateVehicle:
-        """Return TemplateVehicle object by ID.
-        
-        Returns:
-            vehicle: The TemplateVehicle object.
-        """
+        """Return TemplateVehicle object by ID."""
         v = read_json(get_vehicle_path(self.vehicles_folder, vehicle_id))
         return TemplateVehicle.model_validate(v)
 

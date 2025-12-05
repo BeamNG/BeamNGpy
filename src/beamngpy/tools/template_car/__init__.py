@@ -1,4 +1,23 @@
 from .core import TemplateCarGenerator
-from .models import TemplateVehicle, Settings
+from .models import (
+    Settings,
+    TemplateVehicle,
+    VehicleParameters,
+    VehicleStructure,
+    Optimization,
+    OptimizationVariables,
+    TargetValues,
+    OptimizationEnabled,
+)
 
-__all__ = ["TemplateCarGenerator", "TemplateVehicle", "Settings"]
+__all__ = [
+    "Settings",
+    "TemplateCarGenerator",
+    "TemplateVehicle",
+    "VehicleParameters",
+    "VehicleStructure",
+    "Optimization",
+    "OptimizationVariables",
+    "TargetValues",
+    "OptimizationEnabled",
+]

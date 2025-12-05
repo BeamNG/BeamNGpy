@@ -242,10 +242,42 @@ Template Car Generator
 .. autoclass:: beamngpy.tools.template_car.TemplateVehicle
    :members:
    :undoc-members:
+   :exclude-members: to_inputs, model_config
 
 .. autoclass:: beamngpy.tools.template_car.Settings
    :members:
    :undoc-members:
+   :exclude-members: model_config
+
+.. autoclass:: beamngpy.tools.template_car.VehicleParameters
+   :members:
+   :undoc-members:
+   :exclude-members: model_config
+
+.. autoclass:: beamngpy.tools.template_car.VehicleStructure
+   :members:
+   :undoc-members:
+   :exclude-members: model_config
+
+.. autoclass:: beamngpy.tools.template_car.Optimization
+   :members:
+   :undoc-members:
+   :exclude-members: model_config
+
+.. autoclass:: beamngpy.tools.template_car.OptimizationVariables
+   :members:
+   :undoc-members:
+   :exclude-members: model_config
+
+.. autoclass:: beamngpy.tools.template_car.TargetValues
+   :members:
+   :undoc-members:
+   :exclude-members: model_config
+
+.. autoclass:: beamngpy.tools.template_car.OptimizationEnabled
+   :members:
+   :undoc-members:
+   :exclude-members: model_config
 
 Miscellaneous
 =============
