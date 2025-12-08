@@ -12,12 +12,18 @@ if TYPE_CHECKING:
 
 class ProceduralMesh(ScenarioObject):
     def __init__(
-        self, pos: Float3, name: str, material: str | None, rot_quat: Quat | None = None
+        self,
+        pos: Float3,
+        name: str,
+        material: str | None,
+        rot_quat: Quat | None = None,
+        annotation: str | None = None,
     ):
         super(ProceduralMesh, self).__init__(
             name, name, "ProceduralMesh", pos, (1, 1, 1), rot_quat=rot_quat
         )
         self.material = material
+        self.annotation = annotation
 
     def place(self, bng: BeamNGpy) -> None:
         raise NotImplementedError()
@@ -39,6 +45,7 @@ class ProceduralCylinder(ProceduralMesh):
         name: Name for the mesh. Should be unique.
         rot_quat: Quaternion specifying the cylinder's rotation
         material: Optional material name to use as a texture for the mesh.
+        annotation: Optional annotation class name, possible values can be obtained with `:func:get_annotations() <beamngpy.api.beamng.CameraApi.get_annotations>`.
     """
 
     def __init__(
@@ -49,8 +56,11 @@ class ProceduralCylinder(ProceduralMesh):
         name: str,
         rot_quat: Quat | None = None,
         material: str | None = None,
+        annotation: str | None = None,
     ):
-        super(ProceduralCylinder, self).__init__(pos, name, material, rot_quat=rot_quat)
+        super(ProceduralCylinder, self).__init__(
+            pos, name, material, rot_quat=rot_quat, annotation=annotation
+        )
         self.radius = radius
         self.height = height
 
@@ -62,6 +72,7 @@ class ProceduralCylinder(ProceduralMesh):
         data["rot"] = self.rot
         data["name"] = self.name
         data["material"] = self.material
+        data["annotation"] = self.annotation
         bng._send(data).ack("CreatedCylinder")
 
 
@@ -84,6 +95,7 @@ class ProceduralBump(ProceduralMesh):
         name: Name for the mesh. Should be unique.
         rot_quat: Quaternion specifying the bump's rotation
         material: Optional material name to use as a texture for the mesh.
+        annotation: Optional annotation class name, possible values can be obtained with `:func:get_annotations() <beamngpy.api.beamng.CameraApi.get_annotations>`.
     """
 
     def __init__(
@@ -97,8 +109,11 @@ class ProceduralBump(ProceduralMesh):
         name: str,
         rot_quat: Quat | None = None,
         material: str | None = None,
+        annotation: str | None = None,
     ):
-        super(ProceduralBump, self).__init__(pos, name, material, rot_quat=rot_quat)
+        super(ProceduralBump, self).__init__(
+            pos, name, material, rot_quat=rot_quat, annotation=annotation
+        )
         self.width = width
         self.length = length
         self.height = height
@@ -116,6 +131,7 @@ class ProceduralBump(ProceduralMesh):
         data["rot"] = self.rot
         data["name"] = self.name
         data["material"] = self.material
+        data["annotation"] = self.annotation
         bng._send(data).ack("CreatedBump")
 
 
@@ -132,8 +148,8 @@ class ProceduralCone(ProceduralMesh):
         height: Distance of the tip to the base circle.
         name: Name for the mesh. Should be unique.
         rot_quat: Quaternion specifying the cone's rotation
-        material: Optional material name to use as a texture for the
-                        mesh.
+        material: Optional material name to use as a texture for the mesh.
+        annotation: Optional annotation class name, possible values can be obtained with `:func:get_annotations() <beamngpy.api.beamng.CameraApi.get_annotations>`.
     """
 
     def __init__(
@@ -144,8 +160,11 @@ class ProceduralCone(ProceduralMesh):
         name: str,
         rot_quat: Quat | None = None,
         material: str | None = None,
+        annotation: str | None = None,
     ):
-        super(ProceduralCone, self).__init__(pos, name, material, rot_quat=rot_quat)
+        super(ProceduralCone, self).__init__(
+            pos, name, material, rot_quat=rot_quat, annotation=annotation
+        )
         self.radius = radius
         self.height = height
 
@@ -157,6 +176,7 @@ class ProceduralCone(ProceduralMesh):
         data["name"] = self.name
         data["pos"] = self.pos
         data["rot"] = self.rot
+        data["annotation"] = self.annotation
         bng._send(data).ack("CreatedCone")
 
 
@@ -174,6 +194,7 @@ class ProceduralCube(ProceduralMesh):
         name: Name for the mesh. Should be unique.
         rot_quat: Quaternion specifying the cube's rotation
         material: Optional material name to use as a texture for the mesh.
+        annotation: Optional annotation class name, possible values can be obtained with `:func:get_annotations() <beamngpy.api.beamng.CameraApi.get_annotations>`.
     """
 
     def __init__(
@@ -183,8 +204,11 @@ class ProceduralCube(ProceduralMesh):
         name: str,
         rot_quat: Quat | None = None,
         material: str | None = None,
+        annotation: str | None = None,
     ):
-        super(ProceduralCube, self).__init__(pos, name, material, rot_quat=rot_quat)
+        super(ProceduralCube, self).__init__(
+            pos, name, material, rot_quat=rot_quat, annotation=annotation
+        )
         self.size = size
 
     def place(self, bng: BeamNGpy) -> None:
@@ -194,6 +218,7 @@ class ProceduralCube(ProceduralMesh):
         data["rot"] = self.rot
         data["material"] = self.material
         data["name"] = self.name
+        data["annotation"] = self.annotation
         bng._send(data).ack("CreatedCube")
 
 
@@ -210,8 +235,8 @@ class ProceduralRing(ProceduralMesh):
         thickness: Thickness of the rim.
         name: Name for the mesh. Should be unique.
         rot_quat: Quaternion specifying the ring's rotation
-        material: Optional material name to use as a texture for the
-                        mesh.
+        material: Optional material name to use as a texture for the mesh.
+        annotation: Optional annotation class name, possible values can be obtained with `:func:get_annotations() <beamngpy.api.beamng.CameraApi.get_annotations>`.
     """
 
     def __init__(
@@ -222,8 +247,11 @@ class ProceduralRing(ProceduralMesh):
         name: str,
         rot_quat: Quat | None = None,
         material: str | None = None,
+        annotation: str | None = None,
     ):
-        super(ProceduralRing, self).__init__(pos, name, material, rot_quat=rot_quat)
+        super(ProceduralRing, self).__init__(
+            pos, name, material, rot_quat=rot_quat, annotation=annotation
+        )
         self.radius = radius
         self.thickness = thickness
 
@@ -235,4 +263,5 @@ class ProceduralRing(ProceduralMesh):
         data["rot"] = self.rot
         data["material"] = self.material
         data["name"] = self.name
+        data["annotation"] = self.annotation
         return bng._send(data).ack("CreatedRing")

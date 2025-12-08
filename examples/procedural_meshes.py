@@ -24,7 +24,12 @@ def main():
     scenario = Scenario("tech_ground", "mesh_test")
 
     cylinder = ProceduralCylinder(
-        name="cylinder", radius=3.5, height=5, pos=(10, -10, 0), rot_quat=(0, 0, 0, 1)
+        name="cylinder",
+        radius=3.5,
+        height=5,
+        pos=(10, -10, 0),
+        rot_quat=(0, 0, 0, 1),
+        annotation="BUILDINGS",
     )
     scenario.add_procedural_mesh(cylinder)
 
@@ -37,11 +42,17 @@ def main():
         height=2,
         upper_length=2,
         upper_width=2,
+        annotation="ASPHALT",
     )
     scenario.add_procedural_mesh(bump)
 
     cone = ProceduralCone(
-        name="cone", pos=(-10, -20, 0), rot_quat=(0, 0, 0, 1), radius=3.5, height=5
+        name="cone",
+        pos=(-10, -20, 0),
+        rot_quat=(0, 0, 0, 1),
+        radius=3.5,
+        height=5,
+        annotation="POLE",
     )
     scenario.add_procedural_mesh(cone)
 
@@ -56,6 +67,7 @@ def main():
         rot_quat=(0, 0.7071068, 0, 0.7071068),
         radius=2,
         thickness=1,
+        annotation="NATURE",
     )
     scenario.add_procedural_mesh(ring)
 
