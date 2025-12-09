@@ -1,7 +1,6 @@
 """REST API for the template car application."""
 
 import os
-import json
 import logging
 import send2trash
 from fastapi import FastAPI, HTTPException, status
