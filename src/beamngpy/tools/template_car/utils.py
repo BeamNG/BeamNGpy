@@ -136,3 +136,16 @@ def web_dir() -> str:
 
 def assets_dir() -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+
+
+def ensure_directory(path: str) -> None:
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def write_settings(file: str, settings: Settings) -> None:
+    parent = os.path.dirname(file)
+    if not os.path.exists(parent):
+        os.makedirs(parent)
+    with open(file, 'w') as f:
+        json.dump(settings.model_dump(), f, indent=4)

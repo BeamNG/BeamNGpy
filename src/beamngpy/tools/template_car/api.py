@@ -15,6 +15,8 @@ from .utils import (
     get_vehicle_path,
     mod_exists,
     web_dir,
+    ensure_directory,
+    write_settings,
 )
 from .core import TemplateCarGenerator
 from .optimization import generate_optimal_car
@@ -133,12 +135,7 @@ def get_settings() -> Settings:
 @app.put("/settings", tags=["Settings"])
 def update_settings(settings: Settings) -> Settings:
     """Update application settings."""
-    file = generator.settings_file
-    parent = os.path.dirname(file)
-    if not os.path.exists(parent):
-        os.makedirs(parent)
-    with open(file, 'w') as f:
-        json.dump(settings.model_dump(), f, indent=4)
+    write_settings(generator.settings_file, settings)
     return settings
 
 
@@ -162,13 +159,18 @@ def open_vehicle_file(vehicle_id: str) -> Message:
 @app.post("/ui/open/vehicles", tags=["Actions"])
 def open_vehicles_folder() -> Message:
     """Open vehicles folder in file explorer."""
-    ui_open(generator.vehicles_folder)
+    folder = generator.vehicles_folder
+    ensure_directory(folder)
+    ui_open(folder)
     return Message(message="Opened vehicles folder")
 
 
 @app.post("/ui/open/settings", tags=["Actions"])
 def open_settings_file() -> Message:
     """Open settings file in default editor."""
+    file = generator.settings_file
+    if not os.path.exists(file):
+        write_settings(file, generator.get_settings())
     ui_open(generator.settings_file)
     return Message(message="Opened settings file")
 
@@ -176,9 +178,7 @@ def open_settings_file() -> Message:
 @app.post("/ui/open/mods", tags=["Actions"])
 def open_mods_folder() -> Message:
     """Open BeamNG mods folder in file explorer."""
-    user_folder = generator.user_folder
-    mods_path = os.path.join(user_folder, "current", "mods", "unpacked")
-    if not os.path.exists(mods_path):
-        os.makedirs(mods_path)
+    mods_path = os.path.join(generator.user_folder, "current", "mods", "unpacked")
+    ensure_directory(mods_path)
     ui_open(mods_path)
     return Message(message="Opened mods folder")
