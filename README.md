@@ -175,6 +175,8 @@ You can use BeamNGpy to spawn new BeamNG.tech processes or to connect to already
 
 BeamNG.tech is also customizable with various command-line arguments. Check the [documentation][12] for reference.
 
+<a name="compatibility"></a>
+
 ## Compatibility
 
 BeamNG.tech is not a finished product but is still under development.
@@ -182,7 +184,7 @@ Thus frequent changes on the simulation side are to be expected.
 
 While the BeamNGpy library maintains compatibility between minor versions for the user, this doesn't extend to the BeamNG.tech side. Not all BeamNGpy versions are compatible with all BeamNG.tech versions.
 
-Below is a list of recent compatible BeamNG.tech and BeamNGpy versions. For older versions check [COMPATIBILITY.md](COMPATIBILITY.md).
+Below is a list of recent compatible BeamNG.tech and BeamNGpy versions. For older versions check the [Compatibility](https://documentation.beamng.com/api/beamngpy/master/compatibility.html) page.
 However, we do not maintain minor versions: bug fixes and new features will only be available for the newest BeamNG.tech and BeamNGpy releases.
 
 | BeamNG.tech version | BeamNGpy version                                          |
@@ -191,8 +193,10 @@ However, we do not maintain minor versions: bug fixes and new features will only
 | 0.37                | [1.34.1](https://github.com/BeamNG/BeamNGpy/tree/v1.34.1) |
 | 0.36                | [1.33.1](https://github.com/BeamNG/BeamNGpy/tree/v1.33.1) |
 | 0.35                | [1.32](https://github.com/BeamNG/BeamNGpy/tree/v1.32)     |
-| older               | [see here](COMPATIBILITY.md)                              |
+| older               | [see here](https://documentation.beamng.com/api/beamngpy/master/compatibility.html) |
 
+
+<a name="troubleshooting"></a>
 ## Troubleshooting
 
 This section lists common issues with BeamNGpy in particular. Since this
