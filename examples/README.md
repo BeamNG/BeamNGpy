@@ -1,4 +1,4 @@
-# Example Guide
+# Examples
 
 To help you getting started wih our library, we have added a collection of examples illustrating our features.
 This guide helps exploring the collection and can help in finding examples for specific problems and features.
@@ -38,7 +38,7 @@ More quick usage examples can be found in our [test suite][1].
 |[Powertrain Analysis][23]|<ul><li>use the Powertrain sensor</li></ul>|
 |[Road Network Exporter][24]|<ul><li>Export BeamNG maps as .xodr files (OpenDRIVE).</li><li>The exported road networks contain elevation and road wideness data, along with junction connectivity.</li><li>BeamNGpy also includes a new class with which to analyse the road network data oneself, and process it as required.</li></ul>|
 |[Platooning][26]|<ul><li>form a vehicle platooning formation with BeamNGpy</li></ul>|
-|[Parking Assist and Blind Spot Detection][28]|<ul><li>get parking assistantance</li><li>blind spot HUD notifications</li></ul>|
+|[Parking Assist and Blind Spot Detection][28]|<ul><li>get parking assistance</li><li>blind spot HUD notifications</li></ul>|
 |[Lane-Keeping Assist][29]|<ul><li>automatically limit vehicle speed based on road curvature</li><li>force feedback on accidental lane exit</li></ul>|
 
 [1]: https://github.com/BeamNG/BeamNGpy/tree/master/tests

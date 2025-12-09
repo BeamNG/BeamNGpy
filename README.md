@@ -231,7 +231,7 @@ format the code you want to contribute.
 [3]: mailto:licensing@beamng.gmbh
 [4]: https://store.steampowered.com/app/284160/BeamNGdrive/
 [5]: https://pypi.org/project/beamngpy/
-[6]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/README.md
+[6]: https://documentation.beamng.com/api/beamngpy/master/examples.html
 [7]: https://documentation.beamng.com/api/beamngpy/
 [8]: https://documentation.beamng.com/
 [9]: https://github.com/BeamNG/BeamNGpy/blob/master/contributing.md
