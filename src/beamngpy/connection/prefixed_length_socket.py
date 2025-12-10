@@ -99,4 +99,4 @@ class PrefixedLengthSocket:
                 sleep_time = 0.5
                 tries -= 1
                 if tries == 0:
-                    raise
+                    raise BNGDisconnectedError("Connecting to the simulator failed.")
