@@ -90,13 +90,15 @@ class PrefixedLengthSocket:
         self.skt = self._initialize_socket()
         sleep_time = 0
         tries = self.reconnect_tries
+        connected = False
         while tries > 0:
             try:
                 self.skt.connect((self.host, self.port))
+                connected = True
                 break
             except (ConnectionRefusedError, ConnectionAbortedError):
                 time.sleep(sleep_time)
                 sleep_time = 0.5
                 tries -= 1
-                if tries == 0:
-                    raise BNGDisconnectedError("Connecting to the simulator failed.")
+        if not connected:
+            raise BNGDisconnectedError("Connecting to the simulator failed.")
