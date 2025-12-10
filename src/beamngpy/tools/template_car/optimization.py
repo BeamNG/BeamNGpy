@@ -183,7 +183,7 @@ def reload_vehicle(v: Vehicle, debug=False):
     if debug:
         print(f"await spawn took {time() - t:.3f} seconds")
     t = time()
-    v.connect(beamng)  # needs re-connect after reload
+    v.connect(beamng, tries=1)  # needs re-connect after reload
     if debug:
         print(f"connect took {time() - t:.3f} seconds")
     if needs_switch:
