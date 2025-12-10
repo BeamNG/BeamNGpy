@@ -223,6 +223,9 @@ class Vehicle:
 
         Args:
             bng: An instance of the simulator.
+
+        Raises:
+            BNGError: If the connection could not be established.
         """
         if not bng.connection:
             raise BNGError("The simulator is not connected to BeamNGpy!")
@@ -241,7 +244,8 @@ class Vehicle:
                 self.logger.info(f"Vehicle {vid} connected to simulation.")
 
         # Now attempt to connect to the given vehicle.
-        self.connection.connect_to_vehicle(self)
+        if not self.connection.connect_to_vehicle(self):
+            raise BNGError(f"Error connecting to vehicle {self.vid}.")
 
         # Connect the vehicle sensors.
         for _, sensor in self.sensors.items():
