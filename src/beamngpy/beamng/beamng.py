@@ -15,7 +15,7 @@ from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
-from beamngpy.logging import LOGGER_ID, BNGError, create_warning
+from beamngpy.logging import LOGGER_ID, BNGError, create_warning, BNGDisconnectedError
 from beamngpy.types import StrDict
 
 if TYPE_CHECKING:
@@ -212,10 +212,12 @@ class BeamNGpy:
             arg_list.extend(("-tcom-listen-ip", listen_ip))
             self._start_beamng(extensions, *arg_list, **opts)
             sleep(10)
-            self.connection.connect_to_beamng()
+            connected = self.connection.connect_to_beamng()
+        if not connected:
+            raise BNGDisconnectedError("Error connecting to BeamNG.tech.")
         self._load_system_info()
         return self
-    
+
     def get_launch_arguments(self) -> str:
         """
         Returns the full command-line that were or would be used to launch a BeamNG instance
