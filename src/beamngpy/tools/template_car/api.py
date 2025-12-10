@@ -107,7 +107,7 @@ async def generate_vehicle_mod(vehicle_id: str) -> Message:
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found")
     def error_string(e):
-        return f"\n--- ERROR ---\nGeneration failed: {str(e)}"
+        return f"\n--- ERROR ---\n{str(e)}"
 
     def run_job(file):
         generate_optimal_car(vehicle_id, vehicle, generator.user_folder, generator.install_path, file=file)

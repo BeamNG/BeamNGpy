@@ -43,7 +43,7 @@ async function loadSchemas() {
             }
         }
     } catch (error) {
-        showError(error.message)
+        showError("Loading data schemas failed: " + error.message)
     }
 }
 
@@ -74,7 +74,7 @@ async function updateVehicleList() {
         }
         await selectVehicle(selectedVehicleIndex)
     } catch (error) {
-        showError(error.message)
+        showError("Updating vehicle list failed: " + error.message)
     }
 }
 
@@ -150,7 +150,7 @@ async function loadVehicleData(vehicleId) {
         currentVehicle = data
         updateVehicleForm()
     } catch (error) {
-        showError(error.message)
+        showError("Loading vehicle data failed: " + error.message)
     }
 }
 
@@ -489,7 +489,7 @@ async function saveVehicleData() {
             updateVehicleNameInList()
         }
     } catch (error) {
-        showError(error.message)
+        showError("Saving vehicle data failed: " + error.message)
     }
 }
 
@@ -523,7 +523,7 @@ async function confirmDeleteVehicle() {
         await checkResponseOk(response, "Failed to delete vehicle")
         await updateVehicleList()
     } catch (error) {
-        showError(error.message)
+        showError("Deleting vehicle failed: " + error.message)
     }
 }
 
@@ -533,7 +533,7 @@ async function openVehicleFile() {
         const response = await fetch(`/ui/open/vehicles/${id}`, {method: "POST"})
         await checkResponseOk(response, "Failed to open vehicle file")
     } catch (error) {
-        showError(error.message)
+        showError("Opening vehicle file failed: " + error.message)
     }
 }
 
@@ -586,7 +586,7 @@ async function generateVehicle() {
         setTimeout(() => {
             failedStatus.classList.add("d-none")
         }, 5000)
-        showError(error.message)
+        showError("Generating vehicle failed: " + error.message)
         success = false
     } finally {
         generateButton.disabled = false
@@ -671,7 +671,7 @@ async function runBeamNG(vehicleId, levelId) {
         })
         await checkResponseOk(response, "Failed to launch BeamNG")
     } catch (error) {
-        showError(error.message)
+        showError("Launching BeamNG failed: " + error.message)
         success = false
     }
     return success
@@ -766,7 +766,7 @@ async function createVehicle(name) {
         let index = vehicleList.findIndex(v => v.id == uniqueId)
         await selectVehicle(index)
     } catch (error) {
-        showError(error.message)
+        showError("Creating vehicle failed: " + error.message)
     }
 }
 
@@ -783,7 +783,7 @@ async function updateSettingsPage() {
         settings = data
         updateSettingsForm()
     } catch (error) {
-        showError(error.message)
+        showError("Loading settings failed: " + error.message)
     }
 }
 
@@ -800,7 +800,7 @@ async function saveSettingsData() {
         const response = await writeJson("PUT", `/settings`, data)
         await checkResponseOk(response, "Failed to save settings")
     } catch (error) {
-        showError(error.message)
+        showError("Saving settings failed: " + error.message)
     }
 }
 
@@ -809,7 +809,7 @@ async function openSettingsFile() {
         const response = await fetch(`/ui/open/settings`, {method: "POST"})
         await checkResponseOk(response, "Failed to open settings file")
     } catch (error) {
-        showError(error.message)
+        showError("Opening settings file failed: " + error.message)
     }
 }
 
@@ -818,7 +818,7 @@ async function openVehiclesFolder() {
         const response = await fetch(`/ui/open/vehicles`, {method: "POST"})
         await checkResponseOk(response, "Failed to open vehicles folder")
     } catch (error) {
-        showError(error.message)
+        showError("Opening vehicles folder failed: " + error.message)
     }
 }
 
@@ -827,7 +827,7 @@ async function openModsFolder() {
         const response = await fetch(`/ui/open/mods`, {method: "POST"})
         await checkResponseOk(response, "Failed to open mods folder")
     } catch (error) {
-        showError(error.message)
+        showError("Opening mods folder failed: " + error.message)
     }
 }
 
