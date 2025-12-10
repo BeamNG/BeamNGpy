@@ -201,10 +201,21 @@ def measure_samples(v: Vehicle, beamng: BeamNGpy, steps=100, final_time=10.0):
     start_recording(v, quantities=quantities, steps=steps)
     beamng.resume()
     data = []
+    num_empty = 0
     while not data or data[-1]['time'] < final_time:
-        sleep(10e-3)
+        sleep(50e-3)
         d = fetch_recorded_data(v)
         data.extend(d)
+        if len(d) == 0:
+            num_empty += 1
+        if num_empty > 20:
+            msg = [
+                "The simulation was hanging for too long.",
+                "Possibly an instability has been detected.",
+                "Your chosen parameter values might be too extreme.",
+                "Try using different values.",
+            ]
+            raise RuntimeError(" ".join(msg))
     stop_recording(v)
     data = [d for d in data if d['time'] <= final_time]
     return data
