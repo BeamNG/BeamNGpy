@@ -217,12 +217,13 @@ class Vehicle:
             raise BNGError("Not connected to the vehicle!")
         return self.connection.send(data)
 
-    def connect(self, bng: BeamNGpy) -> None:
+    def connect(self, bng: BeamNGpy, tries: int = 25) -> None:
         """
         Opens socket communication with the corresponding vehicle.
 
         Args:
             bng: An instance of the simulator.
+            tries: The number of connection attempts.
 
         Raises:
             BNGError: If the connection could not be established.
@@ -244,7 +245,7 @@ class Vehicle:
                 self.logger.info(f"Vehicle {vid} connected to simulation.")
 
         # Now attempt to connect to the given vehicle.
-        if not self.connection.connect_to_vehicle(self):
+        if not self.connection.connect_to_vehicle(self, tries=tries):
             raise BNGError(f"Error connecting to vehicle {self.vid}.")
 
         # Connect the vehicle sensors.
