@@ -365,8 +365,11 @@ class BeamNGpy:
         self.logger.info("Terminating BeamNG.tech process.")
         if self.connection:
             try:
-                if self.process and self.process.poll() is None:
-                    # Try to quit gracefully if the process is still running
+                if self.process:
+                    if self.process.poll() is None:
+                        # Only try to quit gracefully if the process is still running
+                        self.control.quit_beamng()
+                else:
                     self.control.quit_beamng()
                 self.connection.disconnect()
                 self.connection = None
