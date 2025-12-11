@@ -239,8 +239,7 @@ class BeamNGpy:
         Disconnects from the BeamNG simulator.
         """
         if self._scenario:
-            for vehicle in self._scenario.vehicles.values():
-                vehicle.close()
+            self._scenario.close()
         if self.connection:
             self.connection.disconnect()
             self.connection = None
