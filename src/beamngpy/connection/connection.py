@@ -4,6 +4,7 @@ import logging
 import socket
 from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, Tuple, cast
+import subprocess
 
 import msgpack
 
@@ -88,6 +89,7 @@ class Connection:
         self.comm_logger = logging.getLogger(f"{LOGGER_ID}.communication")
         self.req_id = 0
         self.received_messages: Dict[int, StrDict | BNGError | BNGValueError] = {}
+        self._process: subprocess.Popen | None = None
 
     def connect_to_vehicle(self, vehicle: Vehicle, tries: int = 3) -> bool:
         """
@@ -105,6 +107,9 @@ class Connection:
             raise BNGError("The simulator port is not set!")
         connected = False
         while tries > 0:
+            if self._process and self._process.poll() is not None:
+                self.logger.error(f"BeamNG.tech is not running any more. Stopping connection to vehicle {vehicle.vid}.")
+                return False
             try:
                 self.logger.info(f"Attempting to connect to vehicle {vehicle.vid}")
                 self.skt = PrefixedLengthSocket(self.host, self.port)
@@ -146,6 +151,10 @@ class Connection:
             )
         connected = False
         while tries > 0:
+            if self._process and self._process.poll() is not None:
+                if log_tries:
+                    self.logger.error("BeamNG.tech is not running any more. Stopping connection attempts.")
+                return False
             try:
                 self.skt = PrefixedLengthSocket(self.host, self.port)
                 connected = True

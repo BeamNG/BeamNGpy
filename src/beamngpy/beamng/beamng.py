@@ -214,6 +214,7 @@ class BeamNGpy:
                 arg_list.append("-tcom-debug")
             arg_list.extend(("-tcom-listen-ip", listen_ip))
             self._start_beamng(extensions, *arg_list, **opts)
+            self.connection._process = self.process
             # Don't log connection errors while BeamNG is starting up.
             connected = self.connection.connect_to_beamng(tries=5, log_tries=False)
             if not connected:
