@@ -169,13 +169,15 @@ class BeamNGpy:
         **opts: str,
     ) -> BeamNGpy:
         """
-        Starts a BeamNG.* process, opens a server socket, and waits for the spawned BeamNG.* process to connect.
-        This method blocks until the process started and is ready.
+        Open a connection to a BeamNG.tech instance.
+
+        This method blocks until the connection is established. First, it tries to connect to an existing instance
+        on the given host/port. If no instance is found, it will start a new one if the ``launch`` argument is True.
 
         Args:
             extensions: A list of non-default BeamNG Lua extensions to be loaded on start.
-            launch: Whether to launch a new process or connect to a running one on the configured host/port.
-                    Defaults to True.
+            args: Additional arguments to pass when launching a new process.
+            launch: Whether to launch a new process. Defaults to True.
             debug: If True, then sets BeamNG.tech communication to debug mode. That means:
 
                     1. BeamNG will not respond to BeamNGpy requests when a Lua error
@@ -188,6 +190,7 @@ class BeamNGpy:
                 of BeamNGpy, as it sets a launch argument of the process. Defaults to False.
             listen_ip: The IP address that the BeamNG process will be listening on. Only relevant when ``launch`` is True.
                      Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
+            opts: Additional key-value options to pass when launching a new process.
         """
         self.connection = Connection(self.host, self.port)
 
