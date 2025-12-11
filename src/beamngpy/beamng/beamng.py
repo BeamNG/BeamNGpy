@@ -240,10 +240,7 @@ class BeamNGpy:
         """
         if self._scenario:
             for vehicle in self._scenario.vehicles.values():
-                try:
-                    vehicle.close()
-                except Exception as e:
-                    module_logger.debug(f"Cannot disconnect vehicle: {e}")
+                vehicle.close()
         if self.connection:
             self.connection.disconnect()
             self.connection = None
