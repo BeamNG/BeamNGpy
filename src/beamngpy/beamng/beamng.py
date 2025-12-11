@@ -264,9 +264,9 @@ class BeamNGpy:
                         self.control.quit_beamng()
                 else:
                     self.control.quit_beamng()
-                self.connection.disconnect()
             except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError):
                 pass
+            self.connection.disconnect()
             self.connection = None
         if self.process:
             self._kill_beamng()
