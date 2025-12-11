@@ -89,7 +89,7 @@ class Connection:
         self.req_id = 0
         self.received_messages: Dict[int, StrDict | BNGError | BNGValueError] = {}
 
-    def connect_to_vehicle(self, vehicle: Vehicle, tries: int = 25) -> bool:
+    def connect_to_vehicle(self, vehicle: Vehicle, tries: int = 3) -> bool:
         """
         Sets the socket of this Connection instance, and attempts to connect it to the given vehicle.
         Upon failure, connections are re-attempted a limited amount of times.
