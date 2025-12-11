@@ -259,13 +259,10 @@ class BeamNGpy:
         if not self.quit_on_close:
             self.disconnect()
             return
-        if self._scenario:
-            self._scenario.close()
-            self._scenario = None
+        self._close_scenario()
         if self.connection:
             self._try_quit_beamng()
-            self.connection.disconnect()
-            self.connection = None
+        self._disconnect()
         if self.process:
             self._kill_beamng()
 
