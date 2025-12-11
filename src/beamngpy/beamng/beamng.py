@@ -256,14 +256,11 @@ class BeamNGpy:
         Disconnects from the simulator and kills the BeamNG.* process.
         """
         self.logger.info("Closing BeamNGpy instance.")
-        if not self.quit_on_close:
-            self.disconnect()
-            return
         self._close_scenario()
-        if self.connection:
+        if self.quit_on_close and self.connection:
             self._try_quit_beamng()
         self._disconnect()
-        if self.process:
+        if self.quit_on_close and self.process:
             self._kill_beamng()
 
     def _load_system_info(self) -> None:
