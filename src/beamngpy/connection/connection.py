@@ -113,7 +113,7 @@ class Connection:
             except (ConnectionRefusedError, ConnectionAbortedError, OSError) as err:
                 msg = f"Error connecting to BeamNG.tech vehicle {vehicle.vid}. {tries} tries left."
                 self.logger.error(msg)
-                self.logger.exception(err)
+                self.logger.debug(f"{type(err).__name__}: {err}")
                 tries -= 1
                 if tries > 0:
                     sleep(5)
@@ -152,10 +152,9 @@ class Connection:
                 break
             except (ConnectionRefusedError, ConnectionAbortedError) as err:
                 if log_tries:
-                    self.logger.error(
-                        f"Error connecting to BeamNG.tech. {tries} tries left."
-                    )
-                    self.logger.exception(err)
+                    msg = f"Error connecting to BeamNG.tech. {tries} tries left."
+                    self.logger.error(msg)
+                    self.logger.debug(f"{type(err).__name__}: {err}")
                 tries -= 1
                 if tries > 0:
                     sleep(5)
