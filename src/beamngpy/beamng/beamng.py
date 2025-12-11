@@ -234,16 +234,22 @@ class BeamNGpy:
         binaries = filesystem.BINARIES_LINUX if platform.system() == "Linux" else filesystem.BINARIES
         return " ".join(self._prepare_call(binaries[0], None))
 
+    def _close_scenario(self) -> None:
+        if self._scenario:
+            self._scenario.close()
+            self._scenario = None
+
+    def _disconnect(self) -> None:
+        if self.connection:
+            self.connection.disconnect()
+            self.connection = None
+
     def disconnect(self) -> None:
         """
         Disconnects from the BeamNG simulator.
         """
-        if self._scenario:
-            self._scenario.close()
-            self._scenario = None
-        if self.connection:
-            self.connection.disconnect()
-            self.connection = None
+        self._close_scenario()
+        self._disconnect()
 
     def close(self) -> None:
         """
