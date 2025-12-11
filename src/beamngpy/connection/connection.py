@@ -91,7 +91,7 @@ class Connection:
         self.received_messages: Dict[int, StrDict | BNGError | BNGValueError] = {}
         self._process: subprocess.Popen | None = None
 
-    def connect_to_vehicle(self, vehicle: Vehicle, tries: int = 3) -> bool:
+    def connect_to_vehicle(self, vehicle: Vehicle, tries: int = 5) -> bool:
         """
         Sets the socket of this Connection instance, and attempts to connect it to the given vehicle.
         Upon failure, connections are re-attempted a limited amount of times.
@@ -121,7 +121,7 @@ class Connection:
                 self.logger.debug(f"{type(err).__name__}: {err}")
                 tries -= 1
                 if tries > 0:
-                    sleep(5)
+                    sleep(2)
 
         # Send a first message across the socket to ensure we have matching protocol values.
         if connected:
@@ -129,7 +129,7 @@ class Connection:
             self.logger.info(f"Successfully connected to vehicle {vehicle.vid}.")
         return connected
 
-    def connect_to_beamng(self, tries: int = 25, log_tries: bool = True) -> bool:
+    def connect_to_beamng(self, tries: int = 60, log_tries: bool = True) -> bool:
         """
         Sets the socket of this connection instance and attempts to connect to the simulator over the host and port configuration set in this class.
         Upon failure, connections are re-attempted a limited amount of times.
@@ -166,7 +166,7 @@ class Connection:
                     self.logger.debug(f"{type(err).__name__}: {err}")
                 tries -= 1
                 if tries > 0:
-                    sleep(5)
+                    sleep(2)
 
         if connected:
             self.hello()

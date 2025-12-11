@@ -217,7 +217,7 @@ class Vehicle:
             raise BNGError("Not connected to the vehicle!")
         return self.connection.send(data)
 
-    def connect(self, bng: BeamNGpy, tries: int = 3) -> None:
+    def connect(self, bng: BeamNGpy, tries: int = 5) -> None:
         """
         Opens socket communication with the corresponding vehicle.
 

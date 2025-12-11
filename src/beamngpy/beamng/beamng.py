@@ -216,10 +216,10 @@ class BeamNGpy:
             self._start_beamng(extensions, *arg_list, **opts)
             self.connection._process = self.process
             # Don't log connection errors while BeamNG is starting up.
-            connected = self.connection.connect_to_beamng(tries=5, log_tries=False)
+            connected = self.connection.connect_to_beamng(tries=15, log_tries=False)
             if not connected:
                 # Try to connect further but with logging failed attempts.
-                connected = self.connection.connect_to_beamng(tries=20, log_tries=True)
+                connected = self.connection.connect_to_beamng(tries=45, log_tries=True)
         if not connected:
             raise BNGDisconnectedError("Error connecting to BeamNG.tech.")
         self._load_system_info()
