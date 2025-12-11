@@ -113,6 +113,7 @@ class Connection:
             try:
                 self.logger.info(f"Attempting to connect to vehicle {vehicle.vid}")
                 self.skt = PrefixedLengthSocket(self.host, self.port)
+                self.skt._process = self._process
                 connected = True
                 break
             except (ConnectionRefusedError, ConnectionAbortedError, OSError) as err:
@@ -157,6 +158,7 @@ class Connection:
                 return False
             try:
                 self.skt = PrefixedLengthSocket(self.host, self.port)
+                self.skt._process = self._process
                 connected = True
                 break
             except (ConnectionRefusedError, ConnectionAbortedError, OSError) as err:
