@@ -260,6 +260,22 @@ class BeamNGpy:
         if self._scenario:
             self._scenario.close()
             self._scenario = None
+        if self.connection:
+            try:
+                if self.process:
+                    if self.process.poll() is None:
+                        # Only try to quit gracefully if the process is still running
+                        self.control.quit_beamng()
+                else:
+                    self.control.quit_beamng()
+                self.connection.disconnect()
+                self.connection = None
+            except (
+                ConnectionResetError,
+                ConnectionAbortedError,
+                ConnectionRefusedError,
+            ):
+                self.connection = None
         self._kill_beamng()
 
     def _load_system_info(self) -> None:
@@ -366,22 +382,6 @@ class BeamNGpy:
         Kills the running BeamNG.* process.
         """
         self.logger.info("Terminating BeamNG.tech process.")
-        if self.connection:
-            try:
-                if self.process:
-                    if self.process.poll() is None:
-                        # Only try to quit gracefully if the process is still running
-                        self.control.quit_beamng()
-                else:
-                    self.control.quit_beamng()
-                self.connection.disconnect()
-                self.connection = None
-            except (
-                ConnectionResetError,
-                ConnectionAbortedError,
-                ConnectionRefusedError,
-            ):
-                self.connection = None
         if not self.process:
             self.logger.info(
                 "cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine"
