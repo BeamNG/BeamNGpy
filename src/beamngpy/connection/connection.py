@@ -8,7 +8,7 @@ import subprocess
 
 import msgpack
 
-from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
+from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError, BNGDisconnectedError
 from beamngpy.types import StrDict
 
 from .prefixed_length_socket import PrefixedLengthSocket
@@ -159,7 +159,7 @@ class Connection:
                 self.skt = PrefixedLengthSocket(self.host, self.port)
                 connected = True
                 break
-            except (ConnectionRefusedError, ConnectionAbortedError) as err:
+            except (ConnectionRefusedError, ConnectionAbortedError, OSError) as err:
                 if log_tries:
                     msg = f"Error connecting to BeamNG.tech. {tries} tries left."
                     self.logger.error(msg)
@@ -212,7 +212,7 @@ class Connection:
             data: The data to encode and send
         """
         if not self.skt:
-            raise BNGError("Cannot send, not connected to the simulator.")
+            raise BNGDisconnectedError("Cannot send, not connected to the simulator.")
         req_id, packed_data = self._pack_data(data)
         try:
             # First, attempt to send over the current socket stored in this Connection instance.
@@ -222,11 +222,11 @@ class Connection:
             self.skt.send(packed_data)
         return Response(self, req_id)
 
-    def recv(self, req_id: int) -> StrDict | BNGError | BNGValueError:
+    def recv(self, req_id: int) -> StrDict:
         if req_id in self.received_messages:
             return self.received_messages.pop(req_id)
         if not self.skt:
-            raise BNGError("Cannot receive, not connected to the simulator.")
+            raise BNGDisconnectedError("Cannot receive, not connected to the simulator.")
         while True:
             message = self.skt.recv()
             message = self._unpack_data(message)
