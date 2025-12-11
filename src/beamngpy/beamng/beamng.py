@@ -276,7 +276,8 @@ class BeamNGpy:
                 ConnectionRefusedError,
             ):
                 self.connection = None
-        self._kill_beamng()
+        if self.process:
+            self._kill_beamng()
 
     def _load_system_info(self) -> None:
         info = self.system.get_info()
@@ -382,11 +383,6 @@ class BeamNGpy:
         Kills the running BeamNG.* process.
         """
         self.logger.info("Terminating BeamNG.tech process.")
-        if not self.process:
-            self.logger.info(
-                "cannot kill BeamNG.tech process not spawned by this instance of BeamNGpy, aborting subroutine"
-            )
-            return
         if self.process.stdin:
             self.process.stdin.close()
         if os.name == "nt":
