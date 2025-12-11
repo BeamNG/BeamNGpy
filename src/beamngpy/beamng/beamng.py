@@ -240,6 +240,7 @@ class BeamNGpy:
         """
         if self._scenario:
             self._scenario.close()
+            self._scenario = None
         if self.connection:
             self.connection.disconnect()
             self.connection = None
