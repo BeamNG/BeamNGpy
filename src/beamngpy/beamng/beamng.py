@@ -257,15 +257,7 @@ class BeamNGpy:
             self._scenario.close()
             self._scenario = None
         if self.connection:
-            try:
-                if self.process:
-                    if self.process.poll() is None:
-                        # Only try to quit gracefully if the process is still running
-                        self.control.quit_beamng()
-                else:
-                    self.control.quit_beamng()
-            except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError):
-                pass
+            self._try_quit_beamng()
             self.connection.disconnect()
             self.connection = None
         if self.process:
@@ -369,6 +361,18 @@ class BeamNGpy:
         self.get_current_vehicles = self.vehicles.get_current
 
         self.platoon = PlatoonApi(self)
+
+    def _try_quit_beamng(self) -> None:
+        """Attempts to send the quit request to the simulator, ignoring communication errors."""
+        try:
+            if self.process:
+                if self.process.poll() is None:
+                    # Only try to quit gracefully if the process is still running
+                    self.control.quit_beamng()
+            else:
+                self.control.quit_beamng()
+        except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError):
+            pass
 
     def _kill_beamng(self) -> None:
         """
