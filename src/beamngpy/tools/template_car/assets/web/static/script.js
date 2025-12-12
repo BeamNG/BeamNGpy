@@ -552,7 +552,7 @@ async function generateVehicle() {
     const failedStatus = document.getElementById("generate-vehicle-failed")
     
     // Hide all status elements and disable button
-    generatingStatus.classList.add("d-none")
+    generatingStatus.classList.remove("d-none")
     generatedStatus.classList.add("d-none")
     failedStatus.classList.add("d-none")
     generateButton.classList.add("d-none")
@@ -560,10 +560,6 @@ async function generateVehicle() {
     playButton.disabled = true
     playButton.style.cursor = "not-allowed"
 
-    const generatingTimeout = setTimeout(() => {
-        generatingStatus.classList.remove("d-none")
-    }, 500)
-    
     let success = true
     try {
         const id = vehicleList[selectedVehicleIndex].id
