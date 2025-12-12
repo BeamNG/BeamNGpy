@@ -16,6 +16,7 @@ async function init() {
     document.getElementById("open-vehicle-file").addEventListener("click", openVehicleFile)
     document.getElementById("reload-vehicle-file").addEventListener("click", reloadVehicleFile)
     document.getElementById("generate-vehicle").addEventListener("click", generateVehicle)
+    document.getElementById("stop-generation").addEventListener("click", cancelGeneration)
     document.getElementById("play-vehicle").addEventListener("click", playVehicle)
     document.getElementById("create-vehicle").addEventListener("click", openCreateVehicleModal)
     document.getElementById("create-vehicle-action").addEventListener("click", openCreateVehicleModal)
@@ -544,6 +545,7 @@ async function reloadVehicleFile() {
 async function generateVehicle() {
     hideError()
     const generateButton = document.getElementById("generate-vehicle")
+    const stopButton = document.getElementById("stop-generation")
     const playButton = document.getElementById("play-vehicle")
     const generatingStatus = document.getElementById("generating-vehicle")
     const generatedStatus = document.getElementById("generated-vehicle")
@@ -553,12 +555,11 @@ async function generateVehicle() {
     generatingStatus.classList.add("d-none")
     generatedStatus.classList.add("d-none")
     failedStatus.classList.add("d-none")
-    generateButton.disabled = true
-    generateButton.style.cursor = "not-allowed"
+    generateButton.classList.add("d-none")
+    stopButton.classList.remove("d-none")
     playButton.disabled = true
     playButton.style.cursor = "not-allowed"
 
-    // Set a timeout to show generating status after 500ms
     const generatingTimeout = setTimeout(() => {
         generatingStatus.classList.remove("d-none")
     }, 500)
@@ -591,16 +592,18 @@ async function generateVehicle() {
         }
         success = false
     } finally {
-        generateButton.disabled = false
-        generateButton.style.cursor = "pointer"
+        // Update button visibility
+        stopButton.classList.add("d-none")
+        generateButton.classList.remove("d-none")
         playButton.disabled = false
         playButton.style.cursor = "pointer"
     }
     return success
 }
 
-async function cancelGeneration(id) {
+async function cancelGeneration() {
     try {
+        const id = vehicleList[selectedVehicleIndex].id
         const response = await fetch(`/vehicles/${id}/cancel`, {
             method: "POST"
         })
