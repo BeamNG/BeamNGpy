@@ -569,7 +569,6 @@ async function generateVehicle() {
         await showProgress(response)
 
         // Show success status
-        clearTimeout(generatingTimeout)
         generatingStatus.classList.add("d-none")
         generatedStatus.classList.remove("d-none")
         setTimeout(() => {
@@ -577,7 +576,6 @@ async function generateVehicle() {
         }, 5000)
     } catch (error) {
         // Show failure status
-        clearTimeout(generatingTimeout)
         generatingStatus.classList.add("d-none")
         failedStatus.classList.remove("d-none")
         setTimeout(() => {
