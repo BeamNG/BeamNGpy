@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import logging
-import os
 import platform
-import signal
 import subprocess
 from pathlib import Path
-from time import sleep
 from typing import TYPE_CHECKING, Any, List
 
 from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
@@ -17,6 +14,7 @@ from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning, BNGDisconnectedError
 from beamngpy.types import StrDict
+from .process import kill_process_tree
 
 if TYPE_CHECKING:
     from beamngpy.connection import Response
@@ -380,22 +378,7 @@ class BeamNGpy:
         Kills the running BeamNG.* process.
         """
         self.logger.info("Terminating BeamNG.tech process.")
-        if self.process.stdin:
-            self.process.stdin.close()
-        if os.name == "nt":
-            with open(os.devnull, "w") as devnull:
-                subprocess.call(
-                    ["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
-                    stdout=devnull,
-                    stderr=devnull,
-                )
-                self.process.wait()
-        else:
-            try:
-                os.kill(self.process.pid, signal.SIGTERM)
-                self.process.wait()
-            except:
-                pass
+        kill_process_tree(self.process)
         self.process = None
 
     def _send(self, data: StrDict) -> Response:
