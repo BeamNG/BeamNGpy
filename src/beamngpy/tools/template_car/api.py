@@ -3,6 +3,10 @@
 import os
 import logging
 import send2trash
+import subprocess
+import sys
+import asyncio
+
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import FileResponse, StreamingResponse
 
@@ -18,14 +22,14 @@ from .utils import (
     write_settings,
 )
 from .core import TemplateCarGenerator
-from .optimization import generate_optimal_car
-from .streaming import stream_from_print
+from ...beamng.process import kill_process_tree
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Template Car API", version="1.0.0")
 web = web_dir()
 generator = TemplateCarGenerator(os.environ.get('TEMPLATE_CAR_SETTINGS_FILE'))
+workers = {}
 
 
 @app.get("/", tags=["Web"])
@@ -103,16 +107,38 @@ def delete_vehicle(vehicle_id: str) -> None:
 async def generate_vehicle_mod(vehicle_id: str) -> Message:
     """Optimize and generate the vehicle mod and move it to BeamNG mods folder."""
     try:
-        vehicle = generator.get_vehicle(vehicle_id)
+        generator.get_vehicle(vehicle_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found")
-    def error_string(e):
-        return f"\n--- ERROR ---\n{str(e)}"
+    # Run actual job in a worker subprocess that can be cancelled by the client
+    args = [sys.executable, "-u", "-m", "beamngpy.tools.template_car.worker", vehicle_id, generator.settings_file]
+    worker_process = subprocess.Popen(args, stdout=subprocess.PIPE, text=True, start_new_session=True)
+    workers[vehicle_id] = worker_process
 
-    def run_job(file):
-        generate_optimal_car(vehicle_id, vehicle, generator.user_folder, generator.install_path, file=file)
+    async def stream():
+        try:
+            while True:
+                line = await asyncio.to_thread(worker_process.stdout.readline)
+                if not line:  # EOF
+                    break
+                yield line
+        finally:
+            returncode = await asyncio.to_thread(worker_process.wait)
+            if returncode != 0:
+                yield f"\n--- ERROR ---\nCancelled by user."
+            workers.pop(vehicle_id, None)
 
-    return StreamingResponse(stream_from_print(run_job, error_string), media_type="text/plain")
+    return StreamingResponse(stream(), media_type="text/plain")
+
+
+@app.post("/vehicles/{vehicle_id}/cancel", tags=["Vehicles"])
+async def cancel_generation(vehicle_id: str) -> Message:
+    """Forcefully cancel the generation of the vehicle mod."""
+    worker = workers.get(vehicle_id)
+    if worker:
+        kill_process_tree(worker, group=True)
+        workers.pop(vehicle_id, None)
+    return Message(message=f"Generation of vehicle '{vehicle_id}' cancelled")
 
 
 @app.post("/vehicles/{vehicle_id}/play/{level_id}", tags=["Vehicles"])

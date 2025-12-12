@@ -586,7 +586,9 @@ async function generateVehicle() {
         setTimeout(() => {
             failedStatus.classList.add("d-none")
         }, 5000)
-        showError("Generating vehicle failed: " + error.message)
+        if (!error.message.includes("Cancelled by user.")) {
+            showError("Generating vehicle failed: " + error.message)
+        }
         success = false
     } finally {
         generateButton.disabled = false
@@ -595,6 +597,17 @@ async function generateVehicle() {
         playButton.style.cursor = "pointer"
     }
     return success
+}
+
+async function cancelGeneration(id) {
+    try {
+        const response = await fetch(`/vehicles/${id}/cancel`, {
+            method: "POST"
+        })
+        await checkResponseOk(response, "Failed to cancel generation")
+    } catch (error) {
+        showError("Cancelling generation failed: " + error.message)
+    }
 }
 
 async function showProgress(response) {
