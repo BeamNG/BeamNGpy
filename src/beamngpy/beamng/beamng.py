@@ -478,13 +478,7 @@ class BeamNGpy:
         call = self._prepare_call(str(binary), extensions, *args, **opts)
         self.last_command_line = " ".join(call)
 
-        if platform.system() == "Linux":
-            # keep the same behaviour as on Windows - do not print game logs to the Python stdout
-            self.process = subprocess.Popen(
-                call, stdout=subprocess.DEVNULL, stdin=subprocess.PIPE
-            )
-        else:
-            self.process = subprocess.Popen(call, stdin=subprocess.PIPE)
+        self.process = subprocess.Popen(call, stdout=subprocess.DEVNULL, stdin=subprocess.PIPE)
         self.logger.info("Started BeamNG.")
 
     def __enter__(self):
