@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 from enum import Enum
 import numpy as np
-from typing import Self, Literal
+from typing import Literal
 
 
 class Settings(BaseModel):
@@ -115,7 +115,7 @@ class BaseVariables(BaseModel):
         """Convert the variables to a numpy array for optimization."""
         return np.array(self._get_enabled(enabled, lambda s, name: getattr(s, name)), dtype=np.float64)
 
-    def from_numpy(self, arr: np.ndarray, enabled: BaseOptimizationEnabled) -> Self:
+    def from_numpy(self, arr: np.ndarray, enabled: BaseOptimizationEnabled):
         """Convert a numpy array from optimization to the variables object."""
         d = {}
         enabled_values = enabled.model_dump()
