@@ -19,7 +19,9 @@ def create_desktop_shortcut():
         shortcut_file = os.path.join(desktop_path, "BeamNG Template Car Generator.lnk")
         create_shortcut_windows(target, shortcut_file, working_dir, icon_file, description)
     else:
-        shortcut_file = os.path.join(desktop_path, "BeamNG Template Car Generator.desktop")
+        applications_path = os.path.expanduser("~/.local/share/applications")
+        shortcut_file = os.path.join(applications_path, "BeamNG Template Car Generator.desktop")
+        icon_file = "BeamNG.tech.png"  # requires that BeamNG_install_desktop_file.sh has been run
         create_shortcut_linux(shortcut_file, working_dir, icon_file, description)
 
 
