@@ -235,7 +235,11 @@ class BeamNGpy:
 
     def _close_scenario(self) -> None:
         if self._scenario:
-            self._scenario.close()
+            if self._scenario.bng:
+                self._scenario.close()
+            else:
+                for vehicle in self._scenario.vehicles.values():
+                    vehicle.disconnect()
             self._scenario = None
 
     def _disconnect(self) -> None:
