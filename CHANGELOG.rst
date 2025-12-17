@@ -4,6 +4,38 @@ Changelog
 
 Version 1.35
 ============
+- Added the ``speed_factor`` argument to :pydocs:`BeamNGpy.settings.set_deterministic <beamngpy.api.beamng.SettingsApi.set_deterministic>`
+
+  - Can be used for faster-than-realtime simulation, as explained in the documentation and in the :repo:`v1.35/examples/faster_than_realtime.py` BeamNGpy example.
+
+- Added an error log on BeamNG.tech side if BeamNGpy protocol versions mismatch.
+- Fixed crashes which happened when using the JBeam Editor Visual Studio Code extension and BeamNGpy at the same time.
+- Fixed the ``-tcom-capture`` argument not automatically loading the ``techCore`` extension.
+- Added ESC control functions.
+- Fixed :pydocs:`beamngpy.Vehicle.deflate_tire <beamngpy.Vehicle.deflate_tire>` deflating all tires instead of the chosen one.
+- Added annotation support for procedural objects.
+
+  - You can check the updated example :repo:`v1.35/examples/procedural_meshes.py` for the usage.
+
+- Added :pydocs:`TemplateCarGenerator <template-car-generator>` class for programmatic use of the new Template Car Generator.
+- Made examples overview page available in BeamNGpy documentation.
+- Added new functions :pydocs:`get_mass_properties <beamngpy.Vehicle.get_mass_properties>`, :pydocs:`get_ref_nodes <beamngpy.Vehicle.get_ref_nodes>` and :pydocs:`get_node_info <beamngpy.Vehicle.get_node_info>` to the Vehicle class.
+
+  - These functions allow the user to get a vehicle's current mass properties, including total mass, center of gravity and inertias, get information about the vehicle's reference nodes as well as the mass and current position of every desired node.
+
+- Improve connection and reconnection to BeamNG.tech.
+
+  - We now detect if BeamNG.tech was closed and stop doing further connection attempts in this case, for a more responsive user experience.
+  - Fixed some bugs in the connection/reconnection code.
+  - Lowered connection attempt time intervals for faster response time.
+
+- Added more launch arguments to the :pydocs:`BeamNGpy <beamngpy.BeamNGpy>` object.
+
+  - ``BeamNGpy(..., headless=True)`` - Will start BeamNG.tech in headless mode (server mode, no window is used, GPU is required).
+  - ``BeamNGpy(..., nogfx=True)`` - Will start BeamNG.tech with the null graphics mode (does not require a GPU, camera-based sensors are unavailable).
+  - ``BeamNGpy(..., gfx=GFX)`` - Will start with the specified rendering API. Possible values are ``dx11`` (only on Windows), ``vk``, and ``null``.
+
+- Added the :pydocs:`BeamNGpy.get_launch_arguments <beamngpy.BeamNGpy.get_launch_arguments>` function to return a command-line string which would be or was used to launch BeamNG.tech. 
 
 Version 1.34, 1.34.1
 ====================
