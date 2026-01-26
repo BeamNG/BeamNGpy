@@ -16,9 +16,9 @@ class PlatoonApi(Api):
         self,
         leader: Vehicle | str,
         follower1: Vehicle | str,
-        follower2: Vehicle | str | None,
-        follower3: Vehicle | str | None,
-        speed: float,
+        follower2: Vehicle | str | None = None,
+        follower3: Vehicle | str | None = None,
+        speed: float = 20.0,
         debug: bool = False,
     ) -> None:
         """
@@ -46,6 +46,28 @@ class PlatoonApi(Api):
             debugFlag=debug,
         )
         self._send(data).ack("platoonLoaded")
+
+    def launch_platoon(
+        self, leader: Vehicle | str, mode: int, speed: float, debug: bool = False
+    ) -> None:
+        """
+        A function for launching the platoon by setting the leader's driving mode(0: manual, 1: Span, 2: Traffic) and setting its target speed.
+
+        Args:
+            leader: An instance of a vehicle object of the platoon's leader.
+            mode: Driving mode selected.
+            speed: Target speed in m/s.
+            debug: Debugging flag.
+        """
+        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
+        data = dict(
+            type="LaunchPlatoon",
+            leaderID=leaderID,
+            mode=mode,
+            speed=speed,
+            debugFlag=debug,
+        )
+        self._send(data).ack("platoonLaunched")
 
     def join(
         self,
