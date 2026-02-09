@@ -20,6 +20,9 @@ def generate_car(inputs: VehicleInputs, user_folder: str, use_mods_folder=True):
     mass_factor = inputs.variables.mass_factor
     cg_y_factor = inputs.variables.cg_y_factor
     cg_z_factor = inputs.variables.cg_z_factor
+    inertia_yaw_factor = inputs.variables.inertia_yaw_factor
+    inertia_pitch_factor = inputs.variables.inertia_pitch_factor
+    inertia_roll_factor = inputs.variables.inertia_roll_factor
     weight_body_roof = 10*mass_factor
     weight_body_main = 20*mass_factor
     structure = inputs.structure
@@ -92,7 +95,7 @@ def generate_car(inputs: VehicleInputs, user_folder: str, use_mods_folder=True):
     elif body_shape == "pickup":
         node_positions = node_positions_pickup(inputs.parameters)
         files["template_car_body_pickup.jbeam"] = template_car_body_pickup_jbeam
-    node_positions = transform_node_dictionary(node_positions, inputs.parameters, weight_body_main, weight_body_roof, cg_y_factor, cg_z_factor)
+    node_positions = transform_node_dictionary(node_positions, inputs.parameters, weight_body_main, weight_body_roof, cg_y_factor, cg_z_factor, inertia_yaw_factor, inertia_pitch_factor, inertia_roll_factor)
 
     # Add DAE files based on body shape
     if body_shape == "sedan":
@@ -1388,7 +1391,7 @@ def node_positions_pickup(parameters):
     }
 
 
-def transform_node_dictionary(pos, parameters, weight_body_main, weight_body_roof, cg_y_factor, cg_z_factor):
+def transform_node_dictionary(pos, parameters, weight_body_main, weight_body_roof, cg_y_factor, cg_z_factor, inertia_yaw_factor, inertia_pitch_factor, inertia_roll_factor):
     d = {}
     body_height_half = parameters.body_height * 0.5
     for key, value in pos.items():
@@ -1402,12 +1405,12 @@ def transform_node_dictionary(pos, parameters, weight_body_main, weight_body_roo
         else:
             # main body node
             weight = weight_body_main
-        d[f'{key}_m'] = node_mass_calculation(weight, y, z, cg_y_factor, cg_z_factor, body_height_half)
+        d[f'{key}_m'] = node_mass_calculation(weight, x, y, z, cg_y_factor, cg_z_factor, inertia_yaw_factor, inertia_pitch_factor, inertia_roll_factor, body_height_half)
     return d
 
 
-def node_mass_calculation(weight, y, z, cg_y_factor, cg_z_factor, body_height_half):
-    return weight * (1 + cg_y_factor * y) * (1 + cg_z_factor * (z - body_height_half))
+def node_mass_calculation(weight, x, y, z, cg_y_factor, cg_z_factor, inertia_yaw_factor, inertia_pitch_factor, inertia_roll_factor, body_height_half):
+    return weight * (1 + cg_y_factor * y) * (1 + cg_z_factor * (z - body_height_half)) * (1 + inertia_yaw_factor * x * y) * (1 + inertia_pitch_factor * x * z) * (1 + inertia_roll_factor * y * z)
 
 
 def get_default_color(body_shape):

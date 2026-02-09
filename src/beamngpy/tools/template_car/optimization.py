@@ -122,7 +122,10 @@ def measure_output_values(v: Vehicle, inputs: VehicleInputs, beamng: BeamNGpy, u
     last_sample = data[-1]
     p = get_mass_properties(last_sample)
     _, cg_y, cg_z = p["center_of_gravity"]
-    return OutputValues(mass=p["mass"], cg_y=cg_y, cg_z=cg_z)
+    inertia_yaw = p["inertia"]["z"]
+    inertia_pitch = p["inertia"]["x"]
+    inertia_roll = p["inertia"]["y"]
+    return OutputValues(mass=p["mass"], cg_y=cg_y, cg_z=cg_z, inertia_yaw=inertia_yaw, inertia_pitch=inertia_pitch, inertia_roll=inertia_roll)
 
 
 def get_mass_properties(sample: dict):

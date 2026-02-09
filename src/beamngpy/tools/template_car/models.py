@@ -138,6 +138,9 @@ class OptimizationEnabled(BaseOptimizationEnabled):
     mass: bool = Field(default=False)
     cg_y: bool = Field(default=False)
     cg_z: bool = Field(default=False)
+    inertia_yaw: bool = Field(default=False)
+    inertia_pitch: bool = Field(default=False)
+    inertia_roll: bool = Field(default=False)
 
 
 class OptimizationVariables(BaseVariables):
@@ -149,6 +152,15 @@ class OptimizationVariables(BaseVariables):
     )
     cg_z_factor: float = Field(
         title="Center of gravity height (z) factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
+    )
+    inertia_yaw_factor: float = Field(
+        title="Inertia yaw factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
+    )
+    inertia_pitch_factor: float = Field(
+        title="Inertia pitch factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
+    )
+    inertia_roll_factor: float = Field(
+        title="Inertia roll factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
     )
 
 
@@ -162,12 +174,24 @@ class TargetValues(BaseTargets):
     cg_z: float = Field(
         title="Center of gravity height (z)", description="unit: m", default=0.25, ge=0.0, le=5.0, json_schema_extra={"tolerance": 1e-3}
     )
+    inertia_yaw: float = Field(
+        title="Yaw Inertia", description="unit: kg m^2", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
+    )
+    inertia_pitch: float = Field(
+        title="Pitch Inertia", description="unit: kg m^2", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
+    )
+    inertia_roll: float = Field(
+        title="Roll Inertia", description="unit: kg m^2", default=400, ge=150, le=1500, json_schema_extra={"tolerance": 1e-3}
+    )
 
 
 class OutputValues(BaseModel):
     mass: float = Field(title="Mass", description="unit: kg")
     cg_y: float = Field(title="Center of gravity longitudinal (y)", description="unit: m")
     cg_z: float = Field(title="Center of gravity height (z)", description="unit: m")
+    inertia_yaw: float = Field(title="Yaw Inertia", description="unit: kg m^2")
+    inertia_pitch: float = Field(title="Pitch Inertia", description="unit: kg m^2")
+    inertia_roll: float = Field(title="Roll Inertia", description="unit: kg m^2")
 
 
 class Optimization(BaseModel):
