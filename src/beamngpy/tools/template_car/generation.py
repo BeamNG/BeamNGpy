@@ -1410,7 +1410,7 @@ def transform_node_dictionary(pos, parameters, weight_body_main, weight_body_roo
 
 
 def node_mass_calculation(weight, x, y, z, cg_y_factor, cg_z_factor, inertia_yaw_factor, inertia_pitch_factor, inertia_roll_factor, body_height_half):
-    return weight * (1 + cg_y_factor * y) * (1 + cg_z_factor * (z - body_height_half)) * (1 + inertia_yaw_factor * x * y) * (1 + inertia_pitch_factor * x * z) * (1 + inertia_roll_factor * y * z)
+    return weight * (1 + cg_y_factor * y) * (1 + cg_z_factor * (z - body_height_half)) * (1 + inertia_yaw_factor * x * x * y * y) * (1 + inertia_pitch_factor * x * x * z * z) * (1 + inertia_roll_factor * y * y * z * z)
 
 
 def get_default_color(body_shape):

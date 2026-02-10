@@ -157,7 +157,7 @@ class OptimizationVariables(BaseVariables):
         title="Inertia yaw factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
     )
     inertia_pitch_factor: float = Field(
-        title="Inertia pitch factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
+        title="Inertia pitch factor", description="", default=0.0, ge=-10.0, le=15.0, json_schema_extra={"min_step": 1e-3}
     )
     inertia_roll_factor: float = Field(
         title="Inertia roll factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
