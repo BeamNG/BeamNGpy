@@ -132,8 +132,7 @@ class VehiclesApi(Api):
             BNGError: If the game is not running to accept a request.
         """
         data = dict(type="GetAvailableVehicles")
-        print("data:", data)
-        return self._send(data).recv("AvailableVehicles")
+        return self._send(data).recv("AvailableVehicles")['vehicles']
 
     def await_spawn(self, vid: str | Vehicle) -> None:
         """
