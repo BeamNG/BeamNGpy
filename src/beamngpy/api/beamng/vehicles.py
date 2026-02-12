@@ -146,6 +146,19 @@ class VehiclesApi(Api):
         data["name"] = vid
         resp = self._send(data).recv("VehicleSpawned")
         assert resp["name"] == vid
+    
+    def await_reconnect(self, vid: str | Vehicle) -> None:
+        """
+        Waits for the vehicle with the given name to re-open the server and returns once it
+        has.
+
+        Args:
+            vid: The name of the vehicle to wait for.
+        """
+        data: StrDict = dict(type="WaitForVehicleReconnect")
+        data["name"] = vid
+        resp = self._send(data).recv("StartVehicleConnection")
+        assert resp["vid"] == vid
 
     def switch(self, vehicle: str | Vehicle) -> None:
         """

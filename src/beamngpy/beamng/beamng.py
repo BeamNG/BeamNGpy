@@ -356,6 +356,7 @@ class BeamNGpy:
         self.despawn_vehicle = self.vehicles.despawn
         self.get_available_vehicles = self.vehicles.get_available
         self.await_vehicle_spawn = self.vehicles.await_spawn
+        self.await_vehicle_reconnect = self.vehicles.await_reconnect
         self.switch_vehicle = self.vehicles.switch
         self.teleport_vehicle = self.vehicles.teleport
         self.get_part_annotation = self.vehicles.get_part_annotation
