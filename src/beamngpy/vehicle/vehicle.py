@@ -575,7 +575,7 @@ class Vehicle:
                 Describes the reason why the part is used for the slot. Can be ``user-empty``, ``user``,
                 ``default-empty`` or ``default``.
 
-        See also: :meth:`~beamngpy.api.beamng.vehicles.VehiclesApi.get_part_config_for_config`
+        See also: :meth:`~beamngpy.api.beamng.VehiclesApi.get_part_config_for_config`
 
         Returns:
             The current vehicle configuration tree as a dictionary.

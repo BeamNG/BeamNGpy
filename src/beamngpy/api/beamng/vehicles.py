@@ -290,7 +290,7 @@ class VehiclesApi(Api):
         applied to a spawned vehicle. This can be used to browse the part tree for available options, using different
         hypothetically selected parts.
 
-        See also: :meth:`~beamngpy.vehicle.Vehicle.get_part_config`
+        See also: :meth:`~beamngpy.Vehicle.get_part_config`
 
         Args:
             model: The name of the vehicle model
