@@ -182,7 +182,7 @@ def reload_vehicle(v: Vehicle, debug=False):
     cmd = "return core_vehicle_manager.reloadVehicle(0)"
     beamng.queue_lua_command(cmd)
     t = time()
-    vehicles_api.await_spawn(v.vid)
+    vehicles_api.await_reconnect(v.vid)
     if debug:
         print(f"await spawn took {time() - t:.3f} seconds")
     t = time()
