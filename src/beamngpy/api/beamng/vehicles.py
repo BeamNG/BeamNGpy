@@ -281,3 +281,27 @@ class VehiclesApi(Api):
         data["vid"] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
         data["text"] = text
         self._send(data).ack("SetLicensePlate")
+
+    def get_part_config_for_config(self, model: str, config: dict | str | None = None):
+        """Get the part configuration for a given vehicle model, assuming the provided configuration was applied.
+
+        This function is useful to get the part configuration tree for a given vehicle model, assuming a hypothetical
+        configuration is applied. It can be used if no such vehicle is spawned or a different configuration is actually
+        applied to a spawned vehicle. This can be used to browse the part tree for available options, using different
+        hypothetically selected parts.
+
+        See also: :meth:`~beamngpy.vehicle.Vehicle.get_part_config`
+
+        Args:
+            model: The name of the vehicle model
+            config: The configuration to be used. This can be
+                    - a dict, e.g. the return value of this function or of Vehicle.get_part_config()
+                    - a string representing the path to a .pc file
+                    - None, in which case the default configuration for the given vehicle model is used
+
+        Returns:
+            A dict of the part configuration tree, which can be used to set the part configuration of a vehicle.
+        """
+        data = dict(type="GetPartConfigForConfig", model=model, config=config)
+        resp = self._send(data).recv("PartConfigForConfig")
+        return resp["config"]
