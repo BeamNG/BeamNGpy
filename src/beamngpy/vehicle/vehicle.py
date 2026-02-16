@@ -8,7 +8,7 @@ from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning
 from beamngpy.sensors import State
 from beamngpy.types import Color, Float3, Quat, StrDict
-from beamngpy.utils.prefab import get_uuid
+from beamngpy.utils.prefab import get_uuid, lua_serialize
 from beamngpy.utils.validation import validate_object_name
 from beamngpy.vehicle.sensors import Sensors
 
@@ -36,7 +36,9 @@ class Vehicle:
         color2: The secondary vehicle color.
         color3: The tertiary vehicle color.
         extensions: A list of vehicle Lua extensions to load for the vehicle.
-        part_config: The path to the vehicle part configuration (a ``.pc`` file).
+        part_config: The path to the vehicle part configuration (a ``.pc`` file) or a dictionary of the part
+                     configuration (contents of a ``.pc`` file or value returned by
+                     :meth:`~beamngpy.Vehicle.get_part_config`).
         options: Other possible vehicle options.
 
     Attributes
@@ -93,7 +95,7 @@ class Vehicle:
         color2: Color | None = None,
         color3: Color | None = None,
         extensions: List[str] | None = None,
-        part_config: str | None = None,
+        part_config: str | StrDict | None = None,
         **options: Any,
     ):
         self.logger = getLogger(f"{LOGGER_ID}.Vehicle")
@@ -115,7 +117,10 @@ class Vehicle:
         options["color"] = color or options.get("colour")
         options["color2"] = color2 or options.get("colour2")
         options["color3"] = color3 or options.get("colour3")
-        options["partConfig"] = part_config or options.get("partConfig")
+        part_config = part_config or options.get("partConfig")
+        if isinstance(part_config, dict):
+            part_config = lua_serialize(part_config)
+        options["partConfig"] = part_config
         for key in ("licenseText", "partConfig"):
             if options[key] is None:
                 del options[key]
