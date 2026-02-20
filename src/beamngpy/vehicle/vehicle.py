@@ -15,6 +15,7 @@ from beamngpy.vehicle.sensors import Sensors
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
+_beamng_dummy_instance = None
 
 class Vehicle:
     """
@@ -169,8 +170,10 @@ class Vehicle:
         # create dummy BeamNGpy object for API hints to work properly (it will be replaced during `connect`)
         if beamng is None:
             from beamngpy.beamng import BeamNGpy
-
-            beamng = BeamNGpy("", -1)
+            global _beamng_dummy_instance
+            if _beamng_dummy_instance is None:
+                _beamng_dummy_instance = BeamNGpy("", -1)
+            beamng = _beamng_dummy_instance
 
         self._ge_api = GEVehiclesApi(beamng, self)
         self.focus = self.switch  # alias
