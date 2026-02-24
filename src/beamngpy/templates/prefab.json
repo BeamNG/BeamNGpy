@@ -76,5 +76,6 @@
  "name": "{{scenario.name}}_group",
  "class": "SimGroup",
  "persistentId": "{{scenario._uuid}}",
- "groupPosition": "0.000000 0.000000 0.000000"
+ "groupPosition": "0.000000 0.000000 0.000000",
+ "noAutoReload": true
 }

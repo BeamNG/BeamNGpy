@@ -195,6 +195,7 @@ class Scenario:
             authors=self.authors,
             lapConfig=self.checkpoints,
             forceNoCountDown=True,
+            noAutoReload=True
         )
 
         vehicles_dict = dict()
