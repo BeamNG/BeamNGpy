@@ -194,8 +194,7 @@ class Scenario:
             difficulty=self.difficulty,
             authors=self.authors,
             lapConfig=self.checkpoints,
-            forceNoCountDown=True,
-            noAutoReload=True
+            forceNoCountDown=True
         )
 
         vehicles_dict = dict()
@@ -611,6 +610,7 @@ class Scenario:
             prefab=prefab,
             info=info,
             json=True,
+            noAutoReload=True
         )
 
     def find(self, bng: BeamNGpy) -> str | None:
