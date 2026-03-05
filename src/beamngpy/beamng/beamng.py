@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import platform
 import subprocess
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List
 
@@ -264,7 +265,8 @@ class BeamNGpy:
             self._try_quit_beamng()
         self._disconnect()
         if self.quit_on_close and self.process:
-            self._kill_beamng()
+            if not self._wait_for_graceful_quit(timeout=10.0):
+                self._kill_beamng()
 
     def _load_system_info(self) -> None:
         info = self.system.get_info()
@@ -377,6 +379,18 @@ class BeamNGpy:
                 self.control.quit_beamng()
         except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, BNGDisconnectedError):
             pass
+
+    def _wait_for_graceful_quit(self, timeout: float = 10.0) -> bool:
+        """Waits for the BeamNG.* process to quit gracefully.
+        Returns True if the process quit gracefully, False if it timed out.
+        """
+        start_time = time.time()
+        while self.process.poll() is None:
+            if time.time() - start_time > timeout:
+                return False
+            time.sleep(0.1)
+        self.process = None
+        return True
 
     def _kill_beamng(self) -> None:
         """
