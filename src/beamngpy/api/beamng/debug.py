@@ -127,7 +127,11 @@ class DebugApi(Api):
         self._send(data).ack("DebugObjectsRemoved")
 
     def add_cylinder(
-        self, circle_positions: List[Float3], radius: float, rgba_color: Color
+        self, circle_positions: List[Float3],
+        radius: float,
+        rgba_color: Color,
+        cling: bool = False,
+        offset: float = 0.0,
     ) -> int:
         """
         Adds graphical debug cylinder to the simulator with bases at positions specified by the
@@ -139,6 +143,9 @@ class DebugApi(Api):
             rgba_color: A single color of the points of the debug cylinder, in the format of ``(R, G, B, A)``.
                         An ``A`` of 1.0 means full visibility, 0.0 means full transparency. Can also be instance
                         of any type that the :func:`coerce_color() <beamngpy.misc.colors.coerce_color>` function accepts.
+            cling: Whether or not to align the ``z`` coordinate of the cylinder bases to the ground.
+            offset: The z-axis offset of the cylinder coordinates. Can only be used together with
+                    ``cling=True`` to spawn cylinder an exact amount above the ground.
 
         Returns:
             An integer ID of the debug cylinder added. This ID can be passed to the :func:`remove_cylinder` function.
@@ -146,10 +153,16 @@ class DebugApi(Api):
         if not len(circle_positions) == 2:
             raise BNGValueError("`circle_positions` needs to be a list of length 2!")
 
+        if offset != 0.0 and not cling:
+            create_warning(
+                "The `offset` argument is ignored when `cling` is set to False."
+            )
         data: StrDict = dict(type="AddDebugCylinder")
         data["circlePositions"] = circle_positions
         data["radius"] = radius
         data["color"] = coerce_color(rgba_color, alpha=1.0)
+        data["cling"] = cling
+        data["offset"] = offset
         resp = self._send(data).recv("DebugCylinderAdded")
         return int(resp["cylinderID"])
 
@@ -190,6 +203,11 @@ class DebugApi(Api):
         """
         if not len(vertices) == 3:
             raise BNGValueError("`vertices` needs to be a list of length 3!")
+        
+        if offset != 0.0 and not cling:
+            create_warning(
+                "The `offset` argument is ignored when `cling` is set to False."
+            )
 
         data: StrDict = dict(type="AddDebugTriangle")
         data["vertices"] = vertices
@@ -237,6 +255,10 @@ class DebugApi(Api):
         if not len(vertices) == 4:
             raise BNGValueError("`vertices` needs to be a list of length 4!")
 
+        if offset != 0.0 and not cling:
+            create_warning(
+                "The `offset` argument is ignored when `cling` is set to False."
+            )
         data: StrDict = dict(type="AddDebugRectangle")
         data["vertices"] = vertices
         data["color"] = coerce_color(rgba_color, alpha=1.0)
@@ -281,6 +303,10 @@ class DebugApi(Api):
         Returns:
             An integer ID of the text added. This ID can be passed to the :func:`remove_text` function.
         """
+        if offset != 0.0 and not cling:
+            create_warning(
+                "The `offset` argument is ignored when `cling` is set to False."
+            )
         data: StrDict = dict(type="AddDebugText")
         data["origin"] = origin
         data["content"] = content
@@ -303,7 +329,11 @@ class DebugApi(Api):
         return self._send(data).ack("DebugObjectsRemoved")
 
     def add_square_prism(
-        self, end_points: List[Float3], end_point_dims: List[Float2], rgba_color: Color
+        self, end_points: List[Float3],
+        end_point_dims: List[Float2],
+        rgba_color: Color,
+        cling: bool = False,
+        offset: float = 0.0,
     ) -> int:
         """
         Adds graphical debug square prism to the simulator with the base squares at positions specified by the
@@ -315,7 +345,9 @@ class DebugApi(Api):
             rgba_color: A single color of the points of the debug square prism, in the format of ``(R, G, B, A)``.
                         An ``A`` of 1.0 means full visibility, 0.0 means full transparency. Can also be instance
                         of any type that the :func:`coerce_color() <beamngpy.misc.colors.coerce_color>` function accepts.
-
+            cling: Whether or not to align the ``z`` coordinate of the square prism end points to the ground.
+            offset: The z-axis offset of the square prism coordinates. Can only be used together with
+                    ``cling=True`` to spawn square prism an exact amount above the ground.
         Returns:
             An integer ID of the debug square prism added. This ID can be passed to the :func:`remove_square_prism` function.
         """
@@ -324,10 +356,16 @@ class DebugApi(Api):
         if not len(end_point_dims) == 2:
             raise BNGValueError("`end_points` needs to be a list of length 2!")
 
+        if offset != 0.0 and not cling:
+            create_warning(
+                "The `offset` argument is ignored when `cling` is set to False."
+            )
         data: StrDict = dict(type="AddDebugSquarePrism")
         data["endPoints"] = end_points
         data["dims"] = end_point_dims
         data["color"] = coerce_color(rgba_color, alpha=1.0)
+        data["cling"] = cling
+        data["offset"] = offset
         resp = self._send(data).recv("DebugSquarePrismAdded")
         return int(resp["prismID"])
 

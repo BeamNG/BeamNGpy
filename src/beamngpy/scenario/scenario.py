@@ -352,6 +352,7 @@ class Scenario:
         vehicle: Vehicle,
         pos: Float3 = (0, 0, 0),
         rot_quat: Quat = (0, 0, 0, 1),
+        safe_spawn: bool = True,
         cling: bool = True,
     ) -> None:
         """
@@ -362,8 +363,8 @@ class Scenario:
             vehicle: The vehicle to spawn.
             pos: ``(x, y, z)`` tuple specifying the position of the vehicle.
             rot_quat: ``(x, y, z, w)`` tuple specifying the rotation as quaternion.
-            cling: If True, the z-coordinate of the vehicle's position will be set to the ground level at the given
-                   position to avoid spawning the vehicle below ground or in the air.
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to True.
+            cling: Alias for safe_spawn (for backward compatibility).
         """
         if self.name == vehicle.vid:
             error = (
@@ -384,7 +385,14 @@ class Scenario:
         self.logger.debug(f"Added vehicle with id '{vehicle.vid}'.")
 
         if self.bng:
-            self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, cling=cling)
+            # Backward compatibility : if cling is set to False by user, we set safe_spawn to False
+            if not cling:
+                safe_spawn = False
+            # Safe spawn overrides cling : user used safe_spawn=False but cling remains True by default
+            if not safe_spawn and cling:
+                cling = False
+            
+            self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, safe_spawn=safe_spawn)
             self.transient_vehicles[vehicle.vid] = vehicle
             vehicle.connect(self.bng)
         else:
