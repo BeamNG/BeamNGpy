@@ -1,4 +1,4 @@
-from beamngpy import BeamNGpy, Scenario, Vehicle
+from beamngpy import BeamNGpy, Scenario, Vehicle, ScenarioObject
 
 
 # DO NOT USE SMALLGRID
@@ -183,9 +183,114 @@ def test_spawn_autoplace_vehicle_spawn(beamng: BeamNGpy):
             
             assert test_case['expected_z_range'][0] <= vehicle.sensors["state"]["pos"][2] <= test_case['expected_z_range'][1], f"Test case {name} failed: expected z range {test_case['expected_z_range']}, got {vehicle.sensors['state']['pos'][2]}"
 
+def test_safe_teleport_vehicle(beamng: BeamNGpy):
+    """
+    Test that the safe_spawn parameter works correctly for a teleported vehicle.
+    Note : works also with cling instead of safe_spawn (alias for safe_spawn for backward compatibility)
+    """
+    with beamng as bng:
+        vehicle = Vehicle("test_car", model="etk800")
+        scenario = Scenario("tech_ground", "test_teleport_vehicle")
+        scenario.make(bng)
+        bng.control.pause()
+        bng.scenario.load(scenario)
+        bng.scenario.start()
+        
+        # Init vehicle at ground level
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), safe_spawn=True)
+        bng.control.step(10)
+        vehicle.sensors.poll()
+        assert 0.0 <= vehicle.sensors["state"]["pos"][2] <= 0.22
+        
+        # Teleport vehicle to ground level with safe_spawn=True
+        vehicle.teleport(pos=(5, 0, 0), safe_spawn=True)
+        bng.control.step(10)
+        vehicle.sensors.poll()
+        # 0.2 m tolerance for the x and y coordinates
+        assert 4.8 <= vehicle.sensors["state"]["pos"][0] <= 5.2
+        assert -0.2 <= vehicle.sensors["state"]["pos"][1] <= 0.2
+        assert 0.0 <= vehicle.sensors["state"]["pos"][2] <= 0.22
+        
+        # Teleport vehicle in the air with safe_spawn=True
+        vehicle.teleport(pos=(5, 5, 5), safe_spawn=True)
+        bng.control.step(10)
+        vehicle.sensors.poll()
+        # 0.2 m tolerance for the x and y coordinates for this test
+        assert 4.8 <= vehicle.sensors["state"]["pos"][0] <= 5.2
+        assert 4.8 <= vehicle.sensors["state"]["pos"][1] <= 5.2
+        assert 0.0 <= vehicle.sensors["state"]["pos"][2] <= 0.22
+        
+        # Teleport vehicle in the air with safe_spawn=False
+        vehicle.teleport(pos=(0, 5, 5), safe_spawn=False)
+        bng.control.step(10)
+        vehicle.sensors.poll()
+        assert -0.2 <= vehicle.sensors["state"]["pos"][0] <= 0.2
+        assert 4.8 <= vehicle.sensors["state"]["pos"][1] <= 5.2
+        assert 4 <= vehicle.sensors["state"]["pos"][2] <= 6
+        
+def test_safe_teleport_scenario_object(beamng: BeamNGpy):
+    """
+    Test that the cling and offset parameters work correctly for teleport_object.
+
+    Uses tech_ground (flat map, ground at z=0) so cling always snaps to z=0.
+    """
+
+    with beamng as bng:
+        scenario = Scenario("tech_ground", "test_teleport_scenario_object")
+
+        waypoint = ScenarioObject(
+            oid="test_wp",
+            name="test_wp",
+            otype="BeamNGWaypoint",
+            pos=(0, 0, 0),
+            scale=(1, 1, 1),
+            rot_quat=(0, 0, 0, 1),
+        )
+        scenario.add_object(waypoint)
+        scenario.make(bng)
+        bng.scenario.load(scenario)
+        bng.scenario.start()
+
+        def get_pos():
+            objects = bng.scenario.find_objects_class("BeamNGWaypoint")
+            for obj in objects:
+                if obj.name == "test_wp":
+                    return obj.pos
+            raise AssertionError("test_wp not found in scene")
+
+        # Verify initial position at (0, 0, 0)
+        pos = get_pos()
+        assert abs(pos[0]) <= 0.2
+        assert abs(pos[1]) <= 0.2
+        assert abs(pos[2]) <= 0.2
+
+        # Teleport without cling: object should land exactly at (0, 5, 5)
+        bng.scenario.teleport_object(waypoint, (0, 5, 5))
+        pos = get_pos()
+        assert abs(pos[0] - 0) <= 0.05
+        assert abs(pos[1] - 5) <= 0.05
+        assert abs(pos[2] - 5) <= 0.05
+
+        # Teleport with cling (no offset): z should snap to ground (0), x/y preserved
+        bng.scenario.teleport_object(waypoint, (5, 0, 5), cling=True)
+        pos = get_pos()
+        assert abs(pos[0] - 5) <= 0.2
+        assert abs(pos[1] - 0) <= 0.2
+        assert abs(pos[2] - 0) <= 0.2
+
+        # Teleport with cling and offset=1.0: z should snap to ground + 1.0 = 1.0
+        bng.scenario.teleport_object(waypoint, (5, 5, 5), cling=True, offset=1.0)
+        pos = get_pos()
+        assert abs(pos[0] - 5) <= 0.2
+        assert abs(pos[1] - 5) <= 0.2
+        assert abs(pos[2] - 1) <= 0.2
+
+
 if __name__ == "__main__":
     beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
     test_safe_spawn_vehicle_spawn(beamng)
     test_spawn_autoplace_vehicle_spawn(beamng)
+    test_safe_teleport_vehicle(beamng)
+    test_safe_teleport_scenario_object(beamng)
     beamng.close()

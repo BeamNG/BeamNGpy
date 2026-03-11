@@ -186,6 +186,8 @@ class VehiclesApi(Api):
         pos: Float3,
         rot_quat: Quat | None = None,
         reset: bool = True,
+        safe_spawn: bool = False,
+        cling: bool | None = None,
     ) -> bool:
         """
         Teleports the given vehicle to the given position with the given
@@ -197,7 +199,14 @@ class VehiclesApi(Api):
             rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion.
             reset: Specifies if the vehicle will be reset to its initial
                    state during teleport (including its velocity).
+            safe_spawn: If True, the z coordinate will be snapped to the ground surface height
+                        at the given (x, y) position. Defaults to False.
+            cling: Alias for safe_spawn (for backward compatibility).
         """
+        # cling is an alias for safe_spawn (backward compatibility)
+        if cling is not None:
+            safe_spawn = cling
+
         vehicle_id = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
 
         self._logger.info(f"Teleporting vehicle <{vehicle_id}>.")
@@ -205,6 +214,7 @@ class VehiclesApi(Api):
         data["vehicle"] = vehicle_id
         data["pos"] = pos
         data["reset"] = reset
+        data["safe_spawn"] = safe_spawn
         if rot_quat:
             data["rot"] = rot_quat
         resp = self._send(data).recv("Teleported")
