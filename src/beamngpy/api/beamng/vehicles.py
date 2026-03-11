@@ -31,6 +31,7 @@ class VehiclesApi(Api):
         vehicle: Vehicle,
         pos: Float3,
         rot_quat: Quat = (0, 0, 0, 1),
+        safe_spawn: bool = True,
         cling: bool = True,
         connect: bool = True,
     ) -> bool:
@@ -45,21 +46,27 @@ class VehiclesApi(Api):
             vehicle: The vehicle to be spawned.
             pos: Where to spawn the vehicle as a (x, y, z) triplet.
             rot_quat: Vehicle rotation in form of a quaternion
-            cling: If set, the z-coordinate of the vehicle's position
-                   will be set to the ground level at the given
-                   position to avoid spawning the vehicle below ground
-                   or in the air.
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to True.
+            cling: Alias for safe_spawn (for backward compatibility).
             connect: Whether to connect the newly spawned vehicle to BeamNGpy.
 
         Returns:
             bool indicating whether the spawn was successful or not
         """
-        data: StrDict = dict(type="SpawnVehicle", cling=cling)
+        # Backward compatibility : if cling is set to False by user, we set safe_spawn to False
+        if not cling:
+            safe_spawn = False
+        # Safe spawn overrides cling : user used safe_spawn=False but cling remains True by default
+        if not safe_spawn and cling:
+            safe_spawn = False
+        
+        data: StrDict = dict(type="SpawnVehicle", safe_spawn=safe_spawn)
         data.update(vehicle.options)
         data["name"] = vehicle.vid
         data["model"] = vehicle.options["model"]
         data["pos"] = pos
         data["rot"] = rot_quat
+        data["safeSpawn"] = safe_spawn
         for color in ("color", "color2", "color3"):
             if data[color] is not None:
                 data[color] = rgba_to_str(coerce_color(data[color]))
