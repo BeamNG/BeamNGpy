@@ -339,12 +339,24 @@ class Scenario:
 
         self.vehicles = current_vehicles
 
+    def _raise_if_made_but_not_loaded(self, operation: str) -> None:
+        if self.path is not None and self.bng is None:
+            raise BNGError(
+                f"Cannot {operation} after the scenario has been made but before it has been loaded. "
+                "Call bng.scenario.load(scenario) first, or perform this operation before scenario.make(bng)."
+            )
+
     def add_object(self, obj: ScenarioObject) -> None:
         """
         Adds an extra object to be placed in the prefab. Objects are expected
         to be :class:`.ScenarioObject` instances with additional, type-
         specific properties in that class's opts dictionary.
+        
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add an object after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add an object")
         self.objects.append(obj)
 
     def add_vehicle(
@@ -365,7 +377,14 @@ class Scenario:
             rot_quat: ``(x, y, z, w)`` tuple specifying the rotation as quaternion.
             safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to True.
             cling: Alias for safe_spawn (for backward compatibility).
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
+            BNGValueError: If the vehicle has the same name as the scenario.
+            BNGValueError: If the vehicle is already in the scenario.
         """
+        # Cannot add a vehicle after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a vehicle")
         if self.name == vehicle.vid:
             error = (
                 "Cannot have vehicle with the same name as the scenario:"
@@ -408,7 +427,12 @@ class Scenario:
 
         Args:
             vehicle: The vehicle to remove.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot remove a vehicle after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("remove a vehicle")
         if vehicle.vid in self.vehicles:
             if self.bng:
                 self.bng.vehicles.despawn(vehicle)
@@ -455,7 +479,12 @@ class Scenario:
 
         Args:
             road: Road to be added to the scenario.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add a road after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a road")
         self.roads.append(road)
 
     def add_mesh_road(self, road: MeshRoad) -> None:
@@ -464,7 +493,12 @@ class Scenario:
 
         Args:
             road: Mesh road to be added to the scenario.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add a mesh road after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a mesh road")
         self.mesh_roads.append(road)
 
     def add_procedural_mesh(self, mesh: ProceduralMesh) -> None:
@@ -473,7 +507,12 @@ class Scenario:
 
         Args:
             mesh: The mesh to place.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add a procedural mesh after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a procedural mesh")
         self.proc_meshes[mesh.name] = mesh
         if self.bng:
             mesh.place(self.bng)
@@ -488,6 +527,8 @@ class Scenario:
         Raises:
             BNGError: If the mesh to remove was not found.
         """
+        # Cannot remove a procedural mesh after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("remove a procedural mesh")
         deleted = False
         if mesh.name in self.proc_meshes:
             del self.proc_meshes[mesh.name]
@@ -511,7 +552,12 @@ class Scenario:
             positions: Positions (tuple of length 3) of the individual points.
             scales: Scales (tuple of length 3) of the individual points
             ids: Optional, names of the individual points.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add checkpoints after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add checkpoints")
         if ids is None:
             ids = [f"wp{i}" for i in range(len(positions))]
         assert len(positions) == len(scales) == len(ids)
@@ -551,6 +597,9 @@ class Scenario:
         converting them into the most appropriate known (sub)class of
         :class:`.SceneObject`. The result is not returned but rather stored
         in the ``scene`` field of this class.
+        
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
         assert self.bng
         scenetree = self.bng._message("SyncScene")
@@ -569,7 +618,12 @@ class Scenario:
                             to this (:class:``.Scenario``) instance. Defaults to True.
             connect_existing: Whether ALL vehicles spawned already in the scenario should be connected
                               to this (:class:``.Scenario``) instance. Defaults to True.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot connect the scenario after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("connect the scenario")
         self.bng = bng
 
         self.logger.debug(f"{len(self.proc_meshes)} procedural meshes.")
