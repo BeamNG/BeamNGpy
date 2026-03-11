@@ -40,6 +40,9 @@ class Vehicle:
         part_config: The path to the vehicle part configuration (a ``.pc`` file) or a dictionary of the part
                      configuration (contents of a ``.pc`` file or value returned by
                      :meth:`~beamngpy.Vehicle.get_part_config`).
+        spawn_autoplace: If True (default), the game engine will automatically adjust the vehicle's
+                         spawn position to avoid clipping into the terrain or other objects.
+                         Warning: This is only supported if the vehicle is added to the scenario BEFORE using scenario.make()
         options: Other possible vehicle options.
 
     Attributes
@@ -97,6 +100,7 @@ class Vehicle:
         color3: Color | None = None,
         extensions: List[str] | None = None,
         part_config: str | StrDict | None = None,
+        spawn_autoplace: bool = True,
         **options: Any,
     ):
         self.logger = getLogger(f"{LOGGER_ID}.Vehicle")
@@ -125,6 +129,7 @@ class Vehicle:
         for key in ("licenseText", "partConfig"):
             if options[key] is None:
                 del options[key]
+        options["spawnAutoplace"] = "true" if spawn_autoplace else "false"
         self.options = options
 
         self.extensions = extensions
