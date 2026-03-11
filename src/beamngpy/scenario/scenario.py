@@ -618,12 +618,7 @@ class Scenario:
                             to this (:class:``.Scenario``) instance. Defaults to True.
             connect_existing: Whether ALL vehicles spawned already in the scenario should be connected
                               to this (:class:``.Scenario``) instance. Defaults to True.
-            
-        Raises:
-            BNGError: If the scenario has been made but not loaded.
         """
-        # Cannot connect the scenario after the scenario has been made but before it has been loaded
-        self._raise_if_made_but_not_loaded("connect the scenario")
         self.bng = bng
 
         self.logger.debug(f"{len(self.proc_meshes)} procedural meshes.")
