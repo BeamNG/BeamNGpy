@@ -141,7 +141,6 @@ def test_safe_spawn_vehicle_spawn(beamng: BeamNGpy):
         - for pos.z value below ground -> vehicle is positioned at specified position
     """
     
-    
     with beamng as bng:
         for i, test_case in enumerate(test_cases):
                 
@@ -153,7 +152,7 @@ def test_safe_spawn_vehicle_spawn(beamng: BeamNGpy):
             bng.control.pause()
             bng.scenario.load(scenario)
             bng.scenario.start()
-            scenario.add_vehicle(vehicle, pos=test_case['pos'], cling=test_case['safe_spawn'])
+            scenario.add_vehicle(vehicle, pos=test_case['pos'], safe_spawn=test_case['safe_spawn'])
             
             bng.control.step(10)
             vehicle.sensors.poll()
@@ -161,18 +160,19 @@ def test_safe_spawn_vehicle_spawn(beamng: BeamNGpy):
             assert test_case['expected_z_range'][0] <= vehicle.sensors["state"]["pos"][2] <= test_case['expected_z_range'][1], f"Test case {name} failed: expected z range {test_case['expected_z_range']}, got {vehicle.sensors['state']['pos'][2]}"
             
 
-def test_spawn_autoplace_vehicle_spawn(beamng: BeamNGpy):
+def test_safe_spawn_vehicle_prefab(beamng: BeamNGpy):
     """
-    Same test, but with vehicle in prefab, using spawn_autoplace instead of safe_spawn parameter
+    Test that the safe_spawn parameter works correctly when the vehicle is added
+    to a scenario before it is loaded (prefab / spawnAutoplace path).
     """
     with beamng as bng:
         for i, test_case in enumerate(test_cases):
                 
-            name = f"test_spawn_autoplace_vehicle_{test_case['map']}_{test_case['vehicle']}_{test_case['safe_spawn']}_z{test_case['pos'][2]}"
+            name = f"test_prefab_spawn_{test_case['map']}_{test_case['vehicle']}_{test_case['safe_spawn']}_z{test_case['pos'][2]}"
             
-            vehicle = Vehicle(f"test_car_{i}", model=test_case['vehicle'], spawn_autoplace=test_case['safe_spawn'])
+            vehicle = Vehicle(f"test_car_{i}", model=test_case['vehicle'])
             scenario = Scenario(test_case['map'], name)
-            scenario.add_vehicle(vehicle, pos=test_case['pos'])
+            scenario.add_vehicle(vehicle, pos=test_case['pos'], safe_spawn=test_case['safe_spawn'])
             scenario.make(bng)
             bng.control.pause()
             bng.scenario.load(scenario)
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     beamng = BeamNGpy("localhost", 25252)
     beamng.open(launch=True)
     test_safe_spawn_vehicle_spawn(beamng)
-    test_spawn_autoplace_vehicle_spawn(beamng)
+    test_safe_spawn_vehicle_prefab(beamng)
     test_safe_teleport_vehicle(beamng)
     test_safe_teleport_scenario_object(beamng)
     beamng.close()

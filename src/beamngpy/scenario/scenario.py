@@ -226,6 +226,7 @@ class Scenario:
             pos, rot = self._vehicle_locations[vid]
             vehicle_dict = dict(vid=vid)
             vehicle_dict.update(vehicle.options)
+            vehicle_dict.setdefault("spawnAutoplace", "true")
             vehicle_dict["position"] = _list_to_str(pos)
             vehicle_dict["rotationMatrix"] = (
                 "[" + quat_as_rotation_mat_str(rot, ", ") + "]"
@@ -371,13 +372,24 @@ class Scenario:
         Adds a :class:`.Vehicle`: to this scenario at the given position with the given
         orientation.
 
+        If the scenario is not yet loaded, the vehicle is registered for inclusion in the
+        scenario prefab with the ``spawnAutoplace`` flag set according to ``safe_spawn``.
+
+        If the scenario is already loaded, the vehicle is dynamically spawned at the given
+        position using the ``safe_spawn`` logic.
+
         Args:
             vehicle: The vehicle to spawn.
             pos: ``(x, y, z)`` tuple specifying the position of the vehicle.
             rot_quat: ``(x, y, z, w)`` tuple specifying the rotation as quaternion.
-            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to True.
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on
+                        the ground, avoiding spawning the vehicle below ground or in the air,
+                        and collisions with other vehicles or objects. If there is no safe
+                        position nearby, the vehicle will be spawned at the given position.
+                        This option may modify the spawn position (including x and y
+                        coordinates) as well as the rotation of the vehicle. Defaults to True.
             cling: Alias for safe_spawn (for backward compatibility).
-            
+
         Raises:
             BNGError: If the scenario has been made but not loaded.
             BNGValueError: If the vehicle has the same name as the scenario.
@@ -402,19 +414,21 @@ class Scenario:
         self.vehicles[vehicle.vid] = vehicle
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
         self.logger.debug(f"Added vehicle with id '{vehicle.vid}'.")
+        
+        # Backward compatibility : if cling is set to False by user, we set safe_spawn to False
+        if not cling:
+            safe_spawn = False
+        # Safe spawn overrides cling : user used safe_spawn=False but cling remains True by default
+        if not safe_spawn and cling:
+            cling = False
 
         if self.bng:
-            # Backward compatibility : if cling is set to False by user, we set safe_spawn to False
-            if not cling:
-                safe_spawn = False
-            # Safe spawn overrides cling : user used safe_spawn=False but cling remains True by default
-            if not safe_spawn and cling:
-                cling = False
-            
             self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, safe_spawn=safe_spawn)
             self.transient_vehicles[vehicle.vid] = vehicle
             vehicle.connect(self.bng)
         else:
+            # Scenario not yet loaded: embed safe_spawn as spawnAutoplace in the prefab
+            vehicle.options["spawnAutoplace"] = "true" if safe_spawn else "false"
             self.logger.debug(
                 "No BeamNGpy instance available. "
                 f"Did not spawn vehicle with id '{vehicle.vid}'."
