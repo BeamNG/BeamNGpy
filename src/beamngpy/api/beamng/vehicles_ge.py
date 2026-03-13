@@ -53,9 +53,9 @@ class GEVehiclesApi(Api):
 
     def teleport(
         self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True,
-        safe_spawn: bool = False, cling: bool | None = None
+        safe_spawn: bool = False
     ) -> bool:
-        return self._beamng.teleport_vehicle(self.vehicle.vid, pos, rot_quat, reset, safe_spawn=safe_spawn, cling=cling)
+        return self._beamng.teleport_vehicle(self.vehicle.vid, pos, rot_quat, reset, safe_spawn=safe_spawn)
 
     def get_part_options(self) -> StrDict:
         data = dict(type="GetPartOptions")

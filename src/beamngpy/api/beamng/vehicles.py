@@ -189,7 +189,6 @@ class VehiclesApi(Api):
         rot_quat: Quat | None = None,
         reset: bool = True,
         safe_spawn: bool = False,
-        cling: bool | None = None,
     ) -> bool:
         """
         Teleports the given vehicle to the given position with the given
@@ -202,16 +201,7 @@ class VehiclesApi(Api):
             reset: Specifies if the vehicle will be reset to its initial
                    state during teleport (including its velocity).
             safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to False.
-            cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
         """
-        if cling is not None:
-            create_warning("cling is deprecated and will be removed in a future version. Use safe_spawn instead.")
-            if not cling:
-                safe_spawn = False
-            
-        if not safe_spawn and cling:
-            create_warning("cling=True conflicts with safe_spawn=False. cling will be ignored.")
-
         vehicle_id = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
 
         self._logger.info(f"Teleporting vehicle <{vehicle_id}>.")
