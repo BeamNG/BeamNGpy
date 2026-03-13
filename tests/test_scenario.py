@@ -133,7 +133,7 @@ def test_get_current_vehicles(beamng: BeamNGpy):
         bng.scenario.load(target)
 
         vehicles = bng.vehicles.get_current(include_config=False)
-        player = vehicles["clone0"]
+        player = vehicles["clone"]
         sensor = Electrics()
         player.sensors.attach("electrics", sensor)
         player.connect(bng)
