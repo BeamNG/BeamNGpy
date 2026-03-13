@@ -5,6 +5,7 @@ from typing import Dict, Iterable, List
 from beamngpy.misc.colors import coerce_color, rgba_to_str
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
+from beamngpy.logging import create_warning
 
 from .base import Api
 
@@ -32,7 +33,7 @@ class VehiclesApi(Api):
         pos: Float3,
         rot_quat: Quat = (0, 0, 0, 1),
         safe_spawn: bool = True,
-        cling: bool = True,
+        cling: bool | None = None,
         connect: bool = True,
     ) -> bool:
         """
@@ -47,18 +48,19 @@ class VehiclesApi(Api):
             pos: Where to spawn the vehicle as a (x, y, z) triplet.
             rot_quat: Vehicle rotation in form of a quaternion
             safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to True.
-            cling: Alias for safe_spawn (for backward compatibility).
+            cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
             connect: Whether to connect the newly spawned vehicle to BeamNGpy.
 
         Returns:
             bool indicating whether the spawn was successful or not
         """
-        # Backward compatibility : if cling is set to False by user, we set safe_spawn to False
-        if not cling:
-            safe_spawn = False
-        # Safe spawn overrides cling : user used safe_spawn=False but cling remains True by default
+        if cling is not None:
+            create_warning("cling is deprecated and will be removed in a future version. Use safe_spawn instead.")
+            if not cling:
+                safe_spawn = False
+            
         if not safe_spawn and cling:
-            safe_spawn = False
+            create_warning("cling=True conflicts with safe_spawn=False. cling will be ignored.")
         
         data: StrDict = dict(type="SpawnVehicle", safe_spawn=safe_spawn)
         data.update(vehicle.options)
@@ -199,13 +201,16 @@ class VehiclesApi(Api):
             rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion.
             reset: Specifies if the vehicle will be reset to its initial
                    state during teleport (including its velocity).
-            safe_spawn: If True, the z coordinate will be snapped to the ground surface height
-                        at the given (x, y) position. Defaults to False.
-            cling: Alias for safe_spawn (for backward compatibility).
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to False.
+            cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
         """
-        # cling is an alias for safe_spawn (backward compatibility)
         if cling is not None:
-            safe_spawn = cling
+            create_warning("cling is deprecated and will be removed in a future version. Use safe_spawn instead.")
+            if not cling:
+                safe_spawn = False
+            
+        if not safe_spawn and cling:
+            create_warning("cling=True conflicts with safe_spawn=False. cling will be ignored.")
 
         vehicle_id = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
 

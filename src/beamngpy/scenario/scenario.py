@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Tuple
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
-from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
+from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError, create_warning
 from beamngpy.misc.colors import coerce_color
 from beamngpy.misc.quat import quat_as_rotation_mat_str
 from beamngpy.scenario.road import DecalRoad
@@ -366,7 +366,7 @@ class Scenario:
         pos: Float3 = (0, 0, 0),
         rot_quat: Quat = (0, 0, 0, 1),
         safe_spawn: bool = True,
-        cling: bool = True,
+        cling: bool | None = None,
     ) -> None:
         """
         Adds a :class:`.Vehicle`: to this scenario at the given position with the given
@@ -382,7 +382,7 @@ class Scenario:
                         position nearby, the vehicle will be spawned at the given position.
                         This option may modify the spawn position (including x and y
                         coordinates) as well as the rotation of the vehicle. Defaults to True.
-            cling: Alias for safe_spawn (for backward compatibility).
+            cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
 
         Raises:
             BNGError: If the scenario has been made but not loaded.
@@ -409,12 +409,13 @@ class Scenario:
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
         self.logger.debug(f"Added vehicle with id '{vehicle.vid}'.")
         
-        # Backward compatibility : if cling is set to False by user, we set safe_spawn to False
-        if not cling:
-            safe_spawn = False
-        # Safe spawn overrides cling : user used safe_spawn=False but cling remains True by default
+        if cling is not None:
+            create_warning("cling is deprecated and will be removed in a future version. Use safe_spawn instead.")
+            if not cling:
+                safe_spawn = False
+            
         if not safe_spawn and cling:
-            cling = False
+            create_warning("cling=True conflicts with safe_spawn=False. cling will be ignored.")
 
         if self.bng:
             self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, safe_spawn=safe_spawn)
