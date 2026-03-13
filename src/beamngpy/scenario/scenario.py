@@ -372,12 +372,6 @@ class Scenario:
         Adds a :class:`.Vehicle`: to this scenario at the given position with the given
         orientation.
 
-        If the scenario is not yet loaded, the vehicle is registered for inclusion in the
-        scenario prefab with the ``spawnAutoplace`` flag set according to ``safe_spawn``.
-
-        If the scenario is already loaded, the vehicle is dynamically spawned at the given
-        position using the ``safe_spawn`` logic.
-
         Args:
             vehicle: The vehicle to spawn.
             pos: ``(x, y, z)`` tuple specifying the position of the vehicle.
