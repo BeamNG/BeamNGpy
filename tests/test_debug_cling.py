@@ -19,14 +19,13 @@ Layout - 7 columns, 5 m apart along X, two rows along Y:
    6  30   Square prism
 """
 
-import numpy as np
+from beamngpy import BeamNGpy, Scenario, Vehicle
+from beamngpy.logging import set_up_simple_logging
 
-from beamngpy import BeamNGpy, Scenario, set_up_simple_logging
-
-Z      = 5.0          # z value passed to every shape
-COL_W  = 5.0          # column width (metres)
-GREEN  = (0.0, 1.0, 0.0, 1.0)
-RED    = (1.0, 0.0, 0.0, 1.0)
+Z = 5.0  # z value passed to every shape
+COL_W = 5.0  # column width (metres)
+GREEN = (0.0, 1.0, 0.0, 1.0)
+RED = (1.0, 0.0, 0.0, 1.0)
 
 
 def _col(i: int, dx: float = 0.0, y: float = 0.0) -> tuple:
@@ -64,7 +63,7 @@ def spawn_all(bng: BeamNGpy, y: float, color: tuple, cling: bool) -> None:
     center = _col(3, dx=1.0, y=y)
     bng.debug.add_triangle(
         [
-            (center[0], center[1], center[2]),         # bottom
+            (center[0], center[1], center[2]),  # bottom
             (center[0] - 1.0, center[1], center[2] + 2.0),  # left, up
             (center[0] + 1.0, center[1], center[2] + 2.0),  # right, up
         ],
@@ -108,17 +107,23 @@ def main():
     beamng.open(launch=True)
 
     scenario = Scenario("tech_ground", "test_cling_visual")
+    veh = Vehicle("cone", model="cones")
+    scenario.add_vehicle(veh)
     scenario.make(beamng)
     beamng.scenario.load(scenario)
     beamng.scenario.start()
 
     # Green row at Y=0  - cling=True  → should sit ON the ground
-    spawn_all(beamng, y=0.0,  color=GREEN, cling=True)
+    spawn_all(beamng, y=0.0, color=GREEN, cling=True)
 
     # Red row at Y=10   - cling=False → should float at z=5
-    spawn_all(beamng, y=10.0, color=RED,   cling=False)
+    spawn_all(beamng, y=10.0, color=RED, cling=False)
 
-    print("Shapes spawned. Green (Y=0) should be ON the ground, Red (Y=10) should float at z=5.")
+    beamng.camera.set_free((15, 30, 5), (0, -1, 0))
+
+    print(
+        "Shapes spawned. Green (Y=0) should be ON the ground, Red (Y=10) should float at z=5."
+    )
     input("Press Enter to exit...")
     beamng.disconnect()
 
