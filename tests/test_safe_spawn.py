@@ -24,12 +24,12 @@ test_cases = [
         'safe_spawn': True,
         'expected_z_range': (0.0, 0.22),
     },
-    { # z+50 and safe_spawn = True -> Too high for safe_spawn anyway, vehicle falls from above ground
+    { # z+50 and safe_spawn = True -> vehicle is positioned at ground
         'map': "tech_ground",
         'vehicle': "etk800",
         'pos': (0, 0, 50),
         'safe_spawn': True,
-        'expected_z_range': (45, 55),
+        'expected_z_range': (0.0, 0.22),
     },
     { # z+0 and safe_spawn = False -> vehicle spawns through ground
         'map': "tech_ground",
@@ -81,12 +81,12 @@ test_cases = [
         'safe_spawn': True,
         'expected_z_range': (68.9, 69.0),
     },
-    { # z+50 and safe_spawn = True -> Too high for safe_spawn anyway, vehicle falls from above ground
+    { # z+50 and safe_spawn = True -> vehicle is positioned at ground
         'map': "small_island",
         'vehicle': "etk800",
         'pos': (-167, -207, 120.0),
         'safe_spawn': True,
-        'expected_z_range': (115, 125),
+        'expected_z_range': (68.9, 69.0),
     },
     { # z+0 and safe_spawn = False -> vehicle spawns through ground
         'map': "small_island",
@@ -180,6 +180,10 @@ def test_safe_spawn_vehicle_prefab(beamng: BeamNGpy):
             
             bng.control.step(10)
             vehicle.sensors.poll()
+            
+            # On prefab mode, extended safe spawn range is disabled : for z+50, we expect the vehicle to be 50 m above ground
+            if test_case['safe_spawn'] and test_case['pos'][2] in (50, 120):
+                test_case['expected_z_range'] = [test_case['pos'][2] - 10, test_case['pos'][2] + 10]
             
             assert test_case['expected_z_range'][0] <= vehicle.sensors["state"]["pos"][2] <= test_case['expected_z_range'][1], f"Test case {name} failed: expected z range {test_case['expected_z_range']}, got {vehicle.sensors['state']['pos'][2]}"
 
