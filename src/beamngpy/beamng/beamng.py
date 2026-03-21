@@ -66,6 +66,12 @@ class BeamNGpy:
                Sensors which require rendering pipeline will not be available.
         gfx: Instrument BeamNG to force to use a rendering API on launch. Possible choices are
              ``dx11`` for DirectX 11 and ``vk`` for Vulkan. Incompatible with the ``nogpu`` option.
+        socket_timeout: Optional timeout in seconds for socket operations when communicating
+                       with the simulator. If None (default), the socket blocks indefinitely.
+                       If set, recv/send will raise :class:`socket.timeout` when the simulator
+                       does not respond in time (e.g. under heavy load with UI). Useful for
+                       long experiments to avoid freezing forever; catch the timeout and retry
+                       or restart the simulator.
 
     Attributes
     ----------
@@ -116,6 +122,7 @@ class BeamNGpy:
         headless: bool = False,
         nogpu: bool = False,
         gfx: str | None = None,
+        socket_timeout: float | None = None,
     ):
         self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
         self.logger.setLevel(logging.DEBUG)
@@ -139,6 +146,7 @@ class BeamNGpy:
             self.gfx = None
         self.last_command_line = None
         self._debug = debug
+        self.socket_timeout = socket_timeout
         self.connection: Connection | None = None
         self._scenario: Scenario | None = None
         self._host_os: str | None = None
@@ -191,7 +199,9 @@ class BeamNGpy:
                      Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
             opts: Additional key-value options to pass when launching a new process.
         """
-        self.connection = Connection(self.host, self.port)
+        self.connection = Connection(
+            self.host, self.port, timeout=self.socket_timeout
+        )
 
         # try to connect to existing instance
         connected = self.connection.connect_to_beamng(tries=1, log_tries=False)
