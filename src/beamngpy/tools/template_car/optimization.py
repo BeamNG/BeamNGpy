@@ -1,5 +1,7 @@
 """Optimization module for tuning vehicle parameters to match targets."""
 
+from typing import Optional
+
 from beamngpy import BeamNGpy, Scenario, Vehicle
 from .generation import generate_car
 from .models import TemplateVehicle
@@ -73,7 +75,7 @@ class BeamNG:
         self.beamng = BeamNGpy("localhost", 25252, home=install_path, user=user_folder)
         self.vehicle_id = id
         self.vehicle = vehicle
-        self.v: Vehicle | None = None
+        self.v: Optional[Vehicle] = None
 
     def load_scenario(self, pos=(0, 0, 0), pause=False):
         scenario = Scenario("smallgrid", "template_car_parametrization")

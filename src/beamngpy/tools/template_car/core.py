@@ -3,6 +3,7 @@
 import os
 import subprocess
 from pathlib import Path
+from typing import Optional
 from beamngpy.beamng.filesystem import determine_binary
 from .utils import (
     default_settings_file, get_beamng_install_path, get_vehicles_folder, get_vehicle_path, get_user_folder, read_json
@@ -35,7 +36,7 @@ class TemplateCarGenerator:
         TemplateCarGenerator: Template car generator instance.
     """
 
-    def __init__(self, settings_file: str|None=None):
+    def __init__(self, settings_file: Optional[str] = None):
         """Initialize this class."""
         if settings_file:
             settings_file = os.path.abspath(settings_file)
