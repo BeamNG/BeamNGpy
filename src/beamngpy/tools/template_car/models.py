@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 from enum import Enum
 import numpy as np
-from typing import Literal
+from typing import Literal, Optional
 
 
 class Settings(BaseModel):
@@ -89,7 +89,7 @@ class BaseVariables(BaseModel):
                 values.append(extractor(self, n))
         return values
 
-    def _get_bound(self, field_name: str, bound_type: Literal["ge", "le"]) -> float | None:
+    def _get_bound(self, field_name: str, bound_type: Literal["ge", "le"]) -> Optional[float]:
         constraints = type(self).model_fields[field_name].metadata
         for c in constraints:
             if hasattr(c, bound_type):
