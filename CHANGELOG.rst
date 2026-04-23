@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 1.35.1
+==============
+- Fixed missing dependencies
+
 Version 1.35
 ============
 - Added the ``speed_factor`` argument to :pydocs:`BeamNGpy.settings.set_deterministic <beamngpy.api.beamng.SettingsApi.set_deterministic>`.
