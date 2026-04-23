@@ -1,12 +1,16 @@
 """Application with graphical user interface."""
 
 import subprocess
-import webview
 import argparse
 import os
 from .shortcut import create_desktop_shortcut
 
 def app_main():
+    try:
+        import webview
+    except ImportError:
+        print("pywebview is not installed, please install it with `pip install pywebview` to use the Template Car Generator GUI")
+        return
     # CLI arguments
     module_name = 'beamngpy.tools.template_car'
     parser = argparse.ArgumentParser(description='Template Car Generator', prog=f'python -m {module_name}')
