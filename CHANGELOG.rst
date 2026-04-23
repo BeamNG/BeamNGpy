@@ -2,12 +2,15 @@
 Changelog
 =========
 
-
 Version 1.36
 ============
 - Fixed function :pydocs:`VehiclesApi.get_available <beamngpy.api.beamng.VehiclesApi.get_available>`: it now behaves as
   described in the documentation. Note that existing code needs to be updated: You don't need to extract the `vehicles`
   key from the function return value anymore to get the dict of available vehicles.
+
+Version 1.35.1
+==============
+- Fixed missing dependencies
 
 Version 1.35
 ============
