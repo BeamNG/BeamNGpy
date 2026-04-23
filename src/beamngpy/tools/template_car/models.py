@@ -42,6 +42,7 @@ class VehicleParameters(BaseModel):
     rear_overhang: float = Field(title="Rear overhang", description="unit: m", default=0.70, ge=0.3, le=2.0)
     body_width: float = Field(title="Body width", description="unit: m", default=1.60, ge=1.20, le=3.2)
     body_height: float = Field(title="Body height", description="unit: m", default=1.32, ge=0.8, le=4.2)
+    ride_height: float = Field(title="Ride height", description="unit: m", default=0.105, ge=-0.5, le=0.5)
 
 
 class BodyShape(str, Enum):

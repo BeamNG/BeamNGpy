@@ -11,8 +11,8 @@
             ["template_car_hub_R", ["template_car_hub_R"], [], "template_car_hub_R_4", "Rear Hubs"],   // parts can be loaded from other jbeam files
             //the coordinates of the nodeOffset determine where the common wheel is placed when it is loaded based on slot order
             ["template_car_wheeldata_R_strut", ["template_car_wheeldata_R_strut"], [], "template_car_wheeldata_R_strut", "Rear Spindles", {"coreSlot":true}],
-            ["template_car_coilover_R_strut", ["template_car_coilover_R_strut"], [], "template_car_coilover_R_strut", "Rear Coilovers", {"nodeOffset":{"x":0.0, "y":{{ wheelbase|float }}, "z":0.105}}],
-            ["template_car_swaybar_R_strut", ["template_car_swaybar_R_strut"], [], "template_car_swaybar_R_strut", "Rear Sway Bar", {"nodeOffset":{"x":0.0, "y":{{ wheelbase|float }}, "z":0.105}}],
+            ["template_car_coilover_R_strut", ["template_car_coilover_R_strut"], [], "template_car_coilover_R_strut", "Rear Coilovers", {"nodeOffset":{"x":0.0, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
+            ["template_car_swaybar_R_strut", ["template_car_swaybar_R_strut"], [], "template_car_swaybar_R_strut", "Rear Sway Bar", {"nodeOffset":{"x":0.0, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
         ],
         "flexbodies": [
             ["mesh", "[group]:", "nonFlexMaterials"],

@@ -10,8 +10,8 @@
             ["name", "allowTypes", "denyTypes", "default", "description"],
             ["template_car_hub_dually_R", ["template_car_hub_dually_R"], [], "template_car_hub_R_8_heavy", "Rear Dually Hubs"],   // parts can be loaded from other jbeam files
             //the coordinates of the nodeOffset determine where the common wheel is placed when it is loaded
-            ["template_car_coilover_R_liveaxle_4link", ["template_car_coilover_R_liveaxle_4link"], [], "template_car_coilover_R_liveaxle_4link", "Rear Coilovers", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":0.105}}],
-            ["template_car_swaybar_R_liveaxle_4link", ["template_car_swaybar_R_liveaxle_4link"], [], "template_car_swaybar_R_liveaxle_4link", "Rear Sway Bar", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":0.105}}],
+            ["template_car_coilover_R_liveaxle_4link", ["template_car_coilover_R_liveaxle_4link"], [], "template_car_coilover_R_liveaxle_4link", "Rear Coilovers", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
+            ["template_car_swaybar_R_liveaxle_4link", ["template_car_swaybar_R_liveaxle_4link"], [], "template_car_swaybar_R_liveaxle_4link", "Rear Sway Bar", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
         ],
         "flexbodies": [
             ["mesh", "[group]:", "nonFlexMaterials"],

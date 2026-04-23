@@ -8,7 +8,7 @@
             "slotType": "template_car_hub_R",
             "slots2": [
                 ["name", "allowTypes", "denyTypes", "default", "description"],
-                ["wheel_R_4", ["wheel_R_4"], [], "steelwheel_01a_13x5_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3) }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["wheel_R_4", ["wheel_R_4"], [], "steelwheel_01a_13x5_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3) }}, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
                 ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
             ],
 
@@ -35,7 +35,7 @@
             "slotType": "template_car_hub_R",
             "slots2": [
                 ["name", "allowTypes", "denyTypes", "default", "description"],
-                ["wheel_R_5", ["wheel_R_5"], [], "steelwheel_01a_14x5.5_R_alt", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["wheel_R_5", ["wheel_R_5"], [], "steelwheel_01a_14x5.5_R_alt", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
                 ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
             ],
 
@@ -61,7 +61,7 @@
             "slotType": "template_car_hub_R",
             "slots2": [
                 ["name", "allowTypes", "denyTypes", "default", "description"],
-                ["wheel_R_6", ["wheel_R_6"], [], "steelwheel_02a_16x7_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["wheel_R_6", ["wheel_R_6"], [], "steelwheel_02a_16x7_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
                 ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
             ],
 
@@ -88,7 +88,7 @@
             "slotType": "template_car_hub_R",
             "slots2": [
                 ["name", "allowTypes", "denyTypes", "default", "description"],
-                ["wheel_R_8", ["wheel_R_8"], [], "steelwheel_03a_17x9_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["wheel_R_8", ["wheel_R_8"], [], "steelwheel_03a_17x9_R", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
                 ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
             ],
 
@@ -115,7 +115,7 @@
             "slotType": "template_car_hub_dually_R",
             "slots2": [
                 ["name", "allowTypes", "denyTypes", "default", "description"],
-                ["wheel_R_8_dually", ["wheel_R_8_dually"], [], "steelwheel_04a_16x7_R_dually_true", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":0.105}}],
+                ["wheel_R_8_dually", ["wheel_R_8_dually"], [], "steelwheel_04a_16x7_R_dually_true", "Rear Wheels", {"nodeOffset":{"x":{{ ((track_width_rear | float * 0.5 ) - 0.48) | round(3)  }}, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
                 ["template_car_brake_R", ["template_car_brake_R"], [], "template_car_brake_R", "Rear Brakes"],
                 ["wheeldata_R_dually", ["wheeldata_R_dually"], [], "wheeldata_R_dually", "Dually Rear Spindles", {"coreSlot":true}],
             ],
