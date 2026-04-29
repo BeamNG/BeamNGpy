@@ -43,6 +43,12 @@ class VehicleParameters(BaseModel):
     body_width: float = Field(title="Body width", description="unit: m", default=1.60, ge=1.20, le=3.2)
     body_height: float = Field(title="Body height", description="unit: m", default=1.32, ge=0.8, le=4.2)
     ride_height: float = Field(title="Ride height", description="unit: m", default=0.105, ge=-0.5, le=0.5)
+    front_spring_rate: float = Field(title="Front spring rate", description="unit: N/m", default=27465, ge=100, le=100000)
+    front_damping: float = Field(title="Front damping", description="unit: N/m/s", default=5708, ge=10, le=100000)
+    rear_spring_rate: float = Field(title="Rear spring rate", description="unit: N/m", default=33609, ge=100, le=100000)
+    rear_damping: float = Field(title="Rear damping", description="unit: N/m/s", default=6362, ge=10, le=100000)
+    front_swaybar_spring_rate: float = Field(title="Front sway bar spring rate", description="unit: Nm/rad", default=1200, ge=10, le=10000)
+    rear_swaybar_spring_rate: float = Field(title="Rear sway bar spring rate", description="unit: Nm/rad", default=500, ge=10, le=10000)
 
 
 class BodyShape(str, Enum):

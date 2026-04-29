@@ -278,7 +278,7 @@
     "torsionbars": [
         ["id1:", "id2:", "id3:", "id4:"],
         //torsional spring rate (Nm/rad) NOT end spring rate
-        {"spring":1200, "damp":1, "deform":10000, "strength":50000},
+        {"spring":{{ front_swaybar_spring_rate }}, "damp":1, "deform":10000, "strength":50000},
         ["arbfr", "fx1r", "fx1l", "arbfl"],
     ],
     "nodes": [
@@ -320,7 +320,7 @@
         ["id1:", "id2:"],
         //springs
         {"beamPrecompression":1, "beamType":"|NORMAL"},
-        {"beamSpring":27465,"beamDamp":0},
+        {"beamSpring":{{ front_spring_rate }},"beamDamp":0},
         {"beamDeform":51000,"beamStrength":251000},
         //precompressionRange specifies how much longer/shorter than spawn length the beam tries to achieve, in meters.
         //precompressionRange supersedes over beamPrecompression, make sure to only use this value inline with beams
@@ -331,7 +331,7 @@
 
         //shocks
         {"beamPrecompression":1, "beamType":"|BOUNDED", "beamLongBound":1, "beamShortBound":1},
-        {"beamSpring":0,"beamDamp":5708},
+        {"beamSpring":0,"beamDamp":{{ front_damping }}},
         {"beamLimitSpring":0,"beamLimitDamp":0},
         ["fh1r","fs1r", {"name":"damper_FR","beamDampRebound":7135,"beamDampVelocitySplit":0.1,"beamDampFast":3211,"beamDampReboundFast":4281,"dampCutoffHz":500}],
         ["fh1l","fs1l", {"name":"damper_FL","beamDampRebound":7135,"beamDampVelocitySplit":0.1,"beamDampFast":3211,"beamDampReboundFast":4281,"dampCutoffHz":500}],

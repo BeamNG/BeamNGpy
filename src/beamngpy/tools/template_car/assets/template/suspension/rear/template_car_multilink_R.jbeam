@@ -349,7 +349,7 @@
         "torsionbars": [
             ["id1:", "id2:", "id3:", "id4:"],
             //torsional spring rate (Nm/rad) NOT end spring rate
-            {"spring":500, "damp":1, "deform":10000, "strength":50000},
+            {"spring":{{ rear_swaybar_spring_rate }}, "damp":1, "deform":10000, "strength":50000},
             ["arbrr", "rx1r", "rx1l", "arbrl"],
         ],
         "nodes": [
@@ -391,7 +391,7 @@
             ["id1:", "id2:"],
             //rear springs
             {"beamPrecompression":1, "beamType":"|NORMAL"},
-            {"beamSpring":33609,"beamDamp":0},
+            {"beamSpring":{{ rear_spring_rate }},"beamDamp":0},
             {"beamDeform":51000,"beamStrength":251000},
             {"highlight":{"radius":0.01, "col":"#FFFF007F"}},
             ["rh3r","rs1r",{"name":"spring_RR","precompressionRange":0.125}],
@@ -399,7 +399,7 @@
             {"highlight":{"radius":0.0, "col":"#00000000"}},
             //shocks
             {"beamPrecompression":1, "beamType":"|BOUNDED", "beamLongBound":1.0, "beamShortBound":1.0},
-            {"beamSpring":0,"beamDamp":6362},
+            {"beamSpring":0,"beamDamp":{{ rear_damping }}},
             {"beamLimitSpring":0,"beamLimitDamp":0},
             ["rh3l","rs1l", {"name":"damper_RR","beamDampRebound":7952,"beamDampVelocitySplit":0.15,"beamDampFast":4771,"beamDampReboundFast":3578,}],
             ["rh3r","rs1r", {"name":"damper_RL","beamDampRebound":7952,"beamDampVelocitySplit":0.15,"beamDampFast":4771,"beamDampReboundFast":3578,}],
