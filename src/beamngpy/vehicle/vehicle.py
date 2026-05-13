@@ -139,6 +139,7 @@ class Vehicle:
         self.ai_set_speed = self.ai.set_speed
         self.ai_set_target = self.ai.set_target
         self.ai_set_waypoint = self.ai.set_waypoint
+        self.ai_set_avoid_cars = self.ai.set_avoid_cars
         self.ai_drive_in_lane = self.ai.drive_in_lane
         self.ai_set_line = self.ai.set_line
         self.ai_set_script = self.ai.set_script

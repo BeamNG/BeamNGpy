@@ -89,6 +89,17 @@ class AIApi(VehicleApi):
         data["target"] = waypoint
         self._send(data).ack("AiWaypointSet")
 
+    def set_avoid_cars(self, avoid_cars: bool) -> None:
+        """
+        Sets whether the AI should avoid crashing into other vehicles.
+
+        Args:
+            avoid_cars: Whether the AI should avoid other vehicles.
+        """
+        data = dict(type="SetAiAvoidCars")
+        data["avoidCars"] = avoid_cars
+        self._send(data).ack("AiAvoidCarsSet")
+
     def drive_using_waypoints(
         self,
         wp_target_list: List[str],
