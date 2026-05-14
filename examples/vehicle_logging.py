@@ -1,41 +1,6 @@
 """
 Smoke-test **Vehicle Signal Logger** (VSL) over BeamNGpy.
 
-Prerequisites
--------------
-1. **BeamNG.tech** or **BeamNG.drive** with a build that handles vehicle socket commands
-   ``StartVSLLogging`` / ``StopVSLLogging`` by loading ``tech/vslSignalLogger`` (see ``techCore.lua``).
-2. **BeamNGpy** from this repo (``pip install -e .`` in the beamngpy root).
-3. Simulator listening on the default port **25252** (or change ``BeamNGpy(...)`` below).
-
-Run
----
-1. Start the simulator, open the **World Editor**, load a level (this example uses ``west_coast_usa`` so **AI traffic** has road data; ``smallgrid`` has no usable traffic network).
-2. From the beamngpy repo root::
-
-     python examples/vehicle_logging.py
-
-   **Default (A):** name-only list — kinematics (``vehicleVelocityX`` / ``Y`` / ``Z``) plus driver inputs (``throttle``, ``brake``, ``steering``), unless you override with ``--signal-names``.
-
-   **Option B — VSL CSV:** set ``--signal-input file`` (optional path; bundled ``examples/data/mySignalsList.csv`` if omitted)::
-
-     python examples/vehicle_logging.py --signal-input file
-     python examples/vehicle_logging.py --signal-input file --input-signal-file C:/path/to/Signals.csv
-
-   **Option A — custom names** (still no CSV)::
-
-     python examples/vehicle_logging.py --signal-names vehicleVelocityX throttle brake
-
-3. After exit, check the simulator user folder for the CSV path you passed (e.g. ``log/vsl_beamngpy_west_coast_usa.csv``).
-
-Troubleshooting
----------------
-* ``Not connected to the vehicle!`` — you forgot ``vehicle.connect(beamng)`` after the scenario is running.
-* ``attempt to index local 'veh' (a nil value)`` in ``techCore.lua`` on ``StartVehicleConnection`` — ``connect`` ran before the vehicle existed; call it only **after** ``beamng.scenario.load`` and ``beamng.scenario.start`` (see this file’s order).
-* ``Wrong ACK`` / timeout — simulator build does not implement the new ``StartVSLLogging`` payload (signals / signalNames + filepath).
-* Empty or ``nil`` columns — signal name not known to ``signalResolver``; use full ``signals=[{name, groupName}, ...]`` or fix the simulator-side name list.
-* ``'method' object has no attribute 'throttle'`` — ``Vehicle.control`` is a **method**; call ``vehicle.control(throttle=1.0, steering=0.0)`` after ``connect``, not ``vehicle.control.throttle = ...``.
-* AI ``traffic`` does nothing useful on **smallgrid** — use a full map (this script uses ``west_coast_usa``) or drive manually with ``vehicle.control(...)`` in a loop.
 """
 
 import argparse
