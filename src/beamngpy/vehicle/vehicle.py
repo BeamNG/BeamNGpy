@@ -50,8 +50,10 @@ class Vehicle:
             The API module to control the AI behavior of the vehicle.
             See :class:`.AIApi` for details.
         logging: LoggingApi
-            The API module to control the logging behavior of the vehicle inside the simulator.
-            See :class:`.LoggingApi` for details.
+            Vehicle Signal Logger (``tech/vslSignalLogger``). See :class:`.LoggingApi`.
+        start_signal_logging / stop_signal_logging
+            Aliases of ``logging.start_logging`` / ``logging.stop_logging`` (same as
+            ``start`` / ``stop`` on :class:`.LoggingApi`).
     """
 
     @staticmethod
@@ -154,6 +156,8 @@ class Vehicle:
         self.write_in_game_logging_options_to_json = self.logging.write_options_to_json
         self.start_in_game_logging = self.logging.start
         self.stop_in_game_logging = self.logging.stop
+        self.start_signal_logging = self.logging.start_logging
+        self.stop_signal_logging = self.logging.stop_logging
 
         self.attach_sensor = self.sensors.attach
         self.detach_sensor = self.sensors.detach
