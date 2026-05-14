@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any, List
 
 from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  EnvironmentApi, PlatoonApi, ScenarioApi,
-                                 SettingsApi, SystemApi, TrafficApi, UiApi,
-                                 VehiclesApi)
+                                 SettingsApi, SystemApi, TrafficApi,
+                                 TrafficSignalsApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning, BNGDisconnectedError
@@ -105,6 +105,9 @@ class BeamNGpy:
         traffic: TrafficApi
             The API module to control the traffic.
             See :class:`.TrafficApi` for details.
+        traffic_signals: TrafficSignalsApi
+            The API module to read and override traffic signal instances.
+            See :class:`.TrafficSignalsApi` for details.
         vehicles: VehiclesApi
             The API module to control the vehicles in the scenario.
             See :class:`.VehiclesApi` for details.
@@ -362,6 +365,8 @@ class BeamNGpy:
         self.start_traffic = self.traffic.start
         self.reset_traffic = self.traffic.reset
         self.stop_traffic = self.traffic.stop
+
+        self.traffic_signals = TrafficSignalsApi(self)
 
         self.vehicles = VehiclesApi(self)
         self.spawn_vehicle = self.vehicles.spawn

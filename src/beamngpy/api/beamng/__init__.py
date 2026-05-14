@@ -8,6 +8,7 @@ from .scenario import ScenarioApi
 from .settings import SettingsApi
 from .system import SystemApi
 from .traffic import TrafficApi
+from .traffic_signals import TrafficSignalsApi
 from .ui import UiApi
 from .vehicles import VehiclesApi
 from .vehicles_ge import GEVehiclesApi
