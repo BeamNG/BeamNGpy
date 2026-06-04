@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+import math
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from beamngpy.logging import BNGError
+from beamngpy.types import Quat, StrDict
 
 from .base import Api
 
@@ -11,22 +11,27 @@ if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
 
-def _lua_long_json_string(payload: str) -> str:
-    """Wrap ``payload`` in a Lua long-bracket literal safe for ``jsonDecode``."""
-    for n in range(0, 32):
-        eq = "=" * n
-        open_b, close_b = "[" + eq + "[", "]" + eq + "]"
-        if open_b not in payload and close_b not in payload:
-            return open_b + payload + close_b
-    raise ValueError("cannot embed JSON in Lua long string")
+def _vec3_xyz(
+    v: Any, default: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+) -> Tuple[float, float, float]:
+    """``vec3`` from techCore: ``{x,y,z}`` (live) or ``[x,y,z]`` (editor / signals.json)."""
+    if v is None:
+        return default
+    if isinstance(v, (list, tuple)):
+        if len(v) < 3:
+            raise ValueError(f"vec3 sequence too short: {v!r}")
+        return float(v[0]), float(v[1]), float(v[2])
+    if isinstance(v, dict):
+        return float(v["x"]), float(v["y"]), float(v["z"])
+    raise TypeError(f"expected vec3 dict or sequence, got {type(v)!r}")
 
 
 class TrafficSignalsApi(Api):
     """
-    Read and override traffic signals via the game engine ``core_trafficSignals`` module.
+    Read and override traffic signals via BeamNG.tech ``techCore`` and ``core_trafficSignals``.
 
-    Requires a loaded level with traffic signal data. Uses :meth:`~beamngpy.BeamNGpy.queue_lua_command`
-    under the hood; responses are JSON from the simulator's ``jsonEncode``.
+    Data matches the Traffic Signals Editor / ``levels/<map>/signals.json``. Requires a loaded
+    level with traffic signal data.
 
     Manual overrides use ``SignalInstance:setStrictState`` (see in-game ``trafficSignals.lua``):
     the automatic sequence timer can overwrite manual states unless you adjust timing or
@@ -36,24 +41,6 @@ class TrafficSignalsApi(Api):
         beamng: An instance of the simulator.
     """
 
-    def _run_json_chunk(self, body: str) -> Any:
-        chunk = "return jsonEncode((function()\n" + body + "\nend)())"
-        raw = self._beamng.control.queue_lua_command(chunk, response=True)
-        if raw is None:
-            raise BNGError("traffic signals: empty response from simulator")
-        if not isinstance(raw, str):
-            raise BNGError(f"traffic signals: unexpected response type {type(raw)!r}")
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise BNGError(f"traffic signals: invalid JSON from simulator: {raw!r}") from exc
-
-    def _unwrap_ok(self, data: Any) -> Any:
-        if isinstance(data, dict) and data.get("ok") is False:
-            err = data.get("err", "traffic signals GE error")
-            raise BNGError(str(err))
-        return data
-
     def get_map_node_signals(self) -> Dict[str, Any]:
         """
         Return the navgraph-oriented signal snapshot (same structure as ``core_trafficSignals.getMapNodeSignals``).
@@ -61,199 +48,182 @@ class TrafficSignalsApi(Api):
         Keys are road node ids; values nest by outgoing node, then list per-signal entries with
         ``instance``, ``pos``, ``state``, ``action``, etc.
         """
-        body = """
-  local ts = core_trafficSignals
-  if not ts then
-    return {ok=false, err="core_trafficSignals not available"}
-  end
-  return {ok=true, map_node_signals=ts.getMapNodeSignals()}
-"""
-        data = self._unwrap_ok(self._run_json_chunk(body))
-        assert isinstance(data, dict)
-        return data["map_node_signals"]
+        resp = self._send(dict(type="GetTrafficSignalMapNodes")).recv(
+            "TrafficSignalMapNodes"
+        )
+        return resp["data"]
 
     def list_instances(self) -> List[Dict[str, Any]]:
         """
         List active signal instances with name, current ``state``, optional ``action``, controller/sequence ids, and ``pos``.
         """
-        body = """
-  local ts = core_trafficSignals
-  if not ts then
-    return {ok=false, err="core_trafficSignals not available"}
-  end
-  local out = {}
-  for _, inst in ipairs(ts.getSignals()) do
-    if not inst._invalid then
-      local stateName, stateData = inst:getState()
-      local row = {
-        name = inst.name,
-        state = stateName,
-        controller_id = inst.controllerId,
-        sequence_id = inst.sequenceId,
-        pos = inst.pos,
-      }
-      if stateData then
-        row.action = stateData.action
-      end
-      table.insert(out, row)
-    end
-  end
-  return {ok=true, instances=out}
-"""
-        data = self._unwrap_ok(self._run_json_chunk(body))
-        assert isinstance(data, dict)
-        return data["instances"]
+        resp = self._send(dict(type="ListTrafficSignalInstances")).recv(
+            "TrafficSignalInstances"
+        )
+        return resp["data"]
 
-    def set_instance_strict_state(self, instance_name: str, state_index: Optional[int] = None) -> None:
+    def get_instance_state(self, instance_name: str) -> Dict[str, Any]:
+        """
+        Read one signal instance's current logical state (and position / direction).
+
+        Returns:
+            Dict with ``name``, ``state``, optional ``action``, ``pos``, ``dir``.
+        """
+        data: StrDict = dict(
+            type="GetTrafficSignalInstanceState", instance_name=instance_name
+        )
+        resp = self._send(data).recv("TrafficSignalInstanceState")
+        return resp["data"]
+
+    @staticmethod
+    def _dir_xy_to_rot_quat(dx: float, dy: float) -> Quat:
+        """Yaw quaternion (z-up) so vehicle +Y faces ``(dx, dy)``."""
+        yaw = math.atan2(dx, dy)
+        half = yaw * 0.5
+        return (0.0, 0.0, math.sin(half), math.cos(half))
+
+    def get_traffic_light(
+        self, instance_name: str, distance_m: float = 12.0
+    ) -> Dict[str, Any]:
+        """
+        Pose for a traffic signal instance (for :meth:`~beamngpy.Vehicle.teleport`).
+
+        Args:
+            instance_name: Instance name (e.g. ``trafficLight 1``, ``trafficLight1``).
+            distance_m: Metres **before** the signal along its approach direction (0 = at anchor).
+
+        Returns:
+            ``name``, ``state``, optional ``action``, ``pos`` / ``rot`` (vehicle pose facing the light),
+            ``signal_pos`` / ``signal_dir`` (pole anchor).
+        """
+        if distance_m < 0:
+            raise ValueError("distance_m must be non-negative")
+        inst = self.get_instance_state(instance_name)
+        sx, sy, sz = _vec3_xyz(inst["pos"])
+        dx, dy, dz = _vec3_xyz(inst.get("dir"), (0.0, 1.0, 0.0))
+        length = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if length < 1e-6:
+            dx, dy, dz = 0.0, 1.0, 0.0
+        else:
+            dx, dy, dz = dx / length, dy / length, dz / length
+        pos: Tuple[float, float, float] = (
+            sx - dx * distance_m,
+            sy - dy * distance_m,
+            sz - dz * distance_m,
+        )
+        rot = self._dir_xy_to_rot_quat(dx, dy)
+        return {
+            "name": inst["name"],
+            "state": inst.get("state"),
+            "action": inst.get("action"),
+            "pos": pos,
+            "rot": rot,
+            "signal_pos": (sx, sy, sz),
+            "signal_dir": (dx, dy, dz),
+        }
+
+    def set_instance_strict_state(
+        self, instance_name: str, state_index: Optional[int] = None
+    ) -> Dict[str, Any]:
         """
         Force a signal instance to a controller state index, or reset automatic state.
 
         Args:
             instance_name: ``name`` field of the signal instance (as in the Traffic Signals editor / level data).
             state_index: 1-based controller state index, or ``None`` to clear manual override and refresh from the sequence.
+
+        Returns:
+            ``before`` and ``after`` snapshots from :meth:`get_instance_state` (logical state / action).
         """
         if state_index is not None:
             if not isinstance(state_index, int) or isinstance(state_index, bool):
                 raise ValueError("state_index must be int or None")
             if state_index <= 0:
                 raise ValueError("state_index must be positive, or None to reset")
-            lua_state = str(state_index)
-        else:
-            lua_state = "nil"
+        data: StrDict = dict(
+            type="SetTrafficSignalStrictState",
+            instance_name=instance_name,
+            state_index=state_index,
+        )
+        resp = self._send(data).recv("TrafficSignalStrictState")
+        return resp["data"]
 
-        blob = _lua_long_json_string(json.dumps({"name": instance_name}, separators=(",", ":")))
-        body = f"""
-  local ts = core_trafficSignals
-  if not ts then
-    return {{ok=false, err="core_trafficSignals not available"}}
-  end
-  local args = jsonDecode({blob})
-  local inst = ts.getSignalByName(args.name)
-  if not inst then
-    return {{ok=false, err="signal not found", name=args.name}}
-  end
-  inst:setStrictState({lua_state})
-  return {{ok=true}}
-"""
-        self._unwrap_ok(self._run_json_chunk(body))
+    def get_editor_signals(self, instance_name: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Traffic Signals Editor / ``levels/<map>/signals.json`` layout from GE ``onSerialize()``.
+
+        Level data is loaded by ``core_trafficSignals.loadSignals``; the World Editor writes the
+        same fields when saving ``signals.json``.
+
+        Args:
+            instance_name: If set, return ``instance``, ``controller``, and ``sequence`` for that
+                lamp (same rows as in the editor's instance / controller / sequence panels).
+                If omitted, return full ``instances``, ``controllers``, and ``sequences`` tables.
+
+        Returns:
+            Dict including ``timer`` (global signal clock, seconds). Per-instance results use
+            ``controller["states"]`` for the **Duration** column (seconds; ``-1`` = infinite in editor).
+            ``sequence["phases"]`` lists intersection phases and ``controllerIds`` like the editor.
+        """
+        if instance_name is not None and not isinstance(instance_name, str):
+            raise TypeError("instance_name must be str or None")
+        data: StrDict = dict(type="GetTrafficSignalEditorData")
+        if instance_name:
+            data["instance_name"] = instance_name
+        resp = self._send(data).recv("TrafficSignalEditorData")
+        return resp["data"]
 
     def get_timing_snapshot(self) -> Dict[str, Any]:
         """
-        Return controller **state durations**, sequence **phase** metadata, and global **timer**
-        from ``core_trafficSignals`` (read-only snapshot for debugging / notebooks).
+        Legacy debug snapshot with runtime sequence step fields.
 
-        Structure (keys may vary by level):
-
-        * ``timer``: global signal clock (seconds).
-        * ``active``, ``loaded``: engine flags from ``getData()``.
-        * ``controllers``: list of ``{name, id, type, totalDuration, states: [{index, state, duration}]}``.
-        * ``sequences``: list of ``{name, id, active, currStep, currPhase, totalDuration, ignoreTimer, phases}``.
-
-        Durations are the per-state values used when building the intersection **timeline** in Lua
-        (``trafficSignals.lua``). Changing them at runtime is possible via
-        :meth:`set_controller_state_duration` but behaviour can be timing-sensitive.
+        Prefer :meth:`get_editor_signals` for controller **Duration** and sequence **phases**
+        (same as Traffic Signals Editor / ``signals.json``).
         """
-        body = """
-  local ts = core_trafficSignals
-  if not ts then
-    return {ok=false, err="core_trafficSignals not available"}
-  end
-  local d = ts.getData()
-  local controllers = {}
-  for _, c in ipairs(ts.getControllers()) do
-    local states = {}
-    for i, st in ipairs(c.states or {}) do
-      table.insert(states, {index = i, state = st.state, duration = st.duration})
-    end
-    table.insert(controllers, {
-      id = c.id,
-      name = c.name,
-      type = c.type,
-      totalDuration = c.totalDuration,
-      states = states,
-    })
-  end
-  local sequences = {}
-  for _, s in ipairs(ts.getSequences()) do
-    local phases = {}
-    if s.phases then
-      for pi, ph in ipairs(s.phases) do
-        table.insert(phases, {
-          index = pi,
-          startTime = ph.startTime,
-          controllerIds = ph.controllerIds,
-          totalDuration = ph.totalDuration,
-        })
-      end
-    end
-    table.insert(sequences, {
-      id = s.id,
-      name = s.name,
-      active = s.active,
-      currStep = s.currStep,
-      currPhase = s.currPhase,
-      totalDuration = s.totalDuration,
-      ignoreTimer = s.ignoreTimer,
-      phases = phases,
-    })
-  end
-  return {
-    ok = true,
-    timer = ts.getTimer(),
-    active = d.active,
-    loaded = d.loaded,
-    controllers = controllers,
-    sequences = sequences,
-  }
-"""
-        data = self._unwrap_ok(self._run_json_chunk(body))
-        assert isinstance(data, dict)
-        return data
+        resp = self._send(dict(type="GetTrafficSignalTimingSnapshot")).recv(
+            "TrafficSignalTimingSnapshot"
+        )
+        return resp["data"]
 
     def set_controller_state_duration(
-        self, controller_name: str, state_index: int, duration_sec: float
-    ) -> None:
+        self,
+        controller_name: str,
+        state_index: int,
+        duration_sec: float,
+        *,
+        instance_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        **Experimental:** set ``duration`` on one entry of a signal **controller** state list (1-based index),
-        then refresh per-controller totals, sequence ``totalDuration``, and call ``resetTimer()`` in GE.
+        Set the **Duration** field on one controller state (Traffic Signals Editor table row).
 
-        This mutates live Lua objects used by ``core_trafficSignals``. Prefer editing signals in the
-        World Editor **Traffic Manager / Traffic Signals Editor** for stable timings.
+        Same live object as the editor's controller **States** list: 1-based ``state_index``,
+        ``duration_sec`` in seconds (``-1`` = infinite, matching editor save to ``signals.json``).
+        Calls ``calcDuration()`` and ``resetTimer()`` like editing timings in GE.
+
+        Does not write ``signals.json``; use the editor **Save** for persistent level data.
 
         Args:
-            controller_name: ``name`` of the controller (see :meth:`get_timing_snapshot`).
-            state_index: 1-based index into ``controller.states`` in Lua.
-            duration_sec: New duration in seconds (non-negative; very large values behave like hold).
+            controller_name: ``controller["name"]`` from :meth:`get_editor_signals`.
+            state_index: 1-based row in ``controller["states"]``.
+            duration_sec: New duration (``>= -1``).
+            instance_name: If set, included in the returned dict for convenience.
+
+        Returns:
+            ``controller`` before/after via ``onSerialize()`` (editor-shaped).
         """
         if not isinstance(state_index, int) or isinstance(state_index, bool) or state_index < 1:
             raise ValueError("state_index must be a positive int (1-based)")
-        if duration_sec < 0:
-            raise ValueError("duration_sec must be non-negative")
-        blob = _lua_long_json_string(
-            json.dumps(
-                {"name": controller_name, "idx": state_index, "dur": float(duration_sec)},
-                separators=(",", ":"),
-            )
+        if duration_sec < -1:
+            raise ValueError("duration_sec must be >= -1 (-1 = infinite in editor)")
+        data: StrDict = dict(
+            type="SetTrafficSignalControllerDuration",
+            controller_name=controller_name,
+            state_index=state_index,
+            duration_sec=float(duration_sec),
         )
-        body = f"""
-  local ts = core_trafficSignals
-  if not ts then
-    return {{ok=false, err="core_trafficSignals not available"}}
-  end
-  local args = jsonDecode({blob})
-  local c = ts.getControllerByName(args.name)
-  if not c then
-    return {{ok=false, err="controller not found", name=args.name}}
-  end
-  if not c.states or not c.states[args.idx] then
-    return {{ok=false, err="state index out of range", idx=args.idx}}
-  end
-  c.states[args.idx].duration = args.dur
-  c:calcDuration()
-  for _, seq in ipairs(ts.getSequences()) do
-    seq:calcDuration()
-  end
-  ts.resetTimer()
-  return {{ok=true}}
-"""
-        self._unwrap_ok(self._run_json_chunk(body))
+        resp = self._send(data).recv("TrafficSignalControllerDuration")
+        out = resp["data"]
+        if instance_name is not None:
+            out = dict(out)
+            out["instance_name"] = instance_name
+        return out
