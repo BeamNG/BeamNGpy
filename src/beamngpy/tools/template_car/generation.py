@@ -137,7 +137,7 @@ def generate_car(inputs: VehicleInputs, user_folder: str, use_mods_folder=True):
 
     # === UNPACKED FOLDER CREATION ===
     if not os.path.exists(user_folder):
-        raise FileNotFoundError(f"User folder not found: {user_folder}. Update the `user_folder` variable in the `settings.json` file.")
+        raise FileNotFoundError(f"User folder not found: {user_folder}. Update the `user_folder` variable in the `settings.json` file, or run the game once to use the default folder location")
 
     if use_mods_folder:
         # Create vehicle-specific folder inside unpacked folder
