@@ -36,7 +36,6 @@ def main():
     # Set simulator to 60hz temporal resolution
     bng.settings.set_deterministic(60)
     bng.scenario.load(scenario)
-    bng.ui.hide_hud()
     bng.scenario.start()
 
     # set the ideal sensor
@@ -53,7 +52,7 @@ def main():
     vehicle2.ai.set_mode("traffic")
     vehicle1.ai.set_mode("traffic")
     sleep(5)
-    vehicle1.acc.start(vehicle1.vid, 13.0, True)  # ego vehicle should have ACC
+    vehicle1.acc.start(20.0, debug=True)  # ego vehicle should have ACC
     print("Started ACC...")
 
     sleep(3.0)
@@ -115,7 +114,6 @@ def main():
             velx_veh2.append(vel_veh2["x"])
             vely_veh2.append(vel_veh2["y"])
         sleep(1.0)
-    bng.ui.show_hud()
     bng.disconnect()
 
     # Plot the data

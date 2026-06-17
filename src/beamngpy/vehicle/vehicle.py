@@ -166,6 +166,7 @@ class Vehicle:
         self.acc = AccApi(self)  # this API is for ACC handling
         self.acc_load = self.acc.start
         self.acc_unload = self.acc.stop
+        self.acc_change_speed = self.acc.change_speed
 
         self.couplers = CouplersApi(self)
 

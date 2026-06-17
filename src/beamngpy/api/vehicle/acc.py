@@ -9,33 +9,35 @@ class AccApi(VehicleApi):
 
     Args:
         vehicle: An instance of a vehicle object.
-        speed: the target speed of the vehicle, when it doeasn't follow an ACC-eligible preceding vehicle.
-        flag: default set to True
     """
 
-    def start(self, vehid: str, sp: float, inputFlag: bool) -> None:
+    def start(self, speed: float, debug: bool = False) -> None:
         """
-        Starts ACC
+        Load and start ACC on this vehicle.
 
         Args:
-            vehicle: An instance of a vehicle object.
-            speed: the target speed of the vehicle, when it doeasn't follow an ACC-eligible preceding vehicle.
-            input flag: used for debugging purpose
+            speed: Target cruise speed in m/s.
+            debug: When True, enable ACC debug logging and CSV output.
         """
-        data = dict(
-            type="LoadACC"
-        )
-        data["vid"] = vehid  # The vehicle’s ID
-        data["speed"] = sp
-        data["debugFlag"] = inputFlag
+        data = dict(type="LoadACC", speed=speed, debug=debug)
         self._send(data).ack("ACCloaded")
-        log_msg = "Started ACC."
-        self._logger.info(log_msg)
+        self._logger.info("Started ACC.")
 
     def stop(self) -> None:
         """
-        This stops ACC function from the associated vehicle.
+        Unload ACC from this vehicle.
         """
         data = dict(type="UnloadACC")
         self._send(data).ack("ACCunloaded")
         self._logger.info("Stopped ACC.")
+
+    def change_speed(self, speed: float) -> None:
+        """
+        Change the ACC target speed while ACC is loaded.
+
+        Args:
+            speed: New target speed in m/s.
+        """
+        data = dict(type="ChangeACCSpeed", speed=speed)
+        self._send(data).ack("ACCSpeedChanged")
+        self._logger.info(f"Changed ACC target speed to {speed} m/s.")

@@ -43,7 +43,7 @@ More quick usage examples can be found in our [test suite][1].
 |[Lane-Keeping Assist][29]|<ul><li>automatically limit vehicle speed based on road curvature</li><li>force feedback on accidental lane exit</li></ul>|
 |[West Coast Radar][14]|<ul><li>use the RADAR sensor</li></ul>|
 |[West Coast IMU][19]|<ul><li>use the IMU sensor</li></ul>|
-|[ACC Test][30]|<ul><li>use the radar for adaptive cruise control</li></ul>|
+|[ACC Test][30]|<ul><li>use the radar to monitor adaptive cruise control behaviour</li></ul>|
 |[Camera Streaming][31]|<ul><li>stream camera images</li></ul>|
 |[Faster Than Realtime][32]|<ul><li>run the simulation at a faster rate than realtime</li></ul>|
 |[GPS Trajectory][33]|<ul><li>get the GPS trajectory of a vehicle</li></ul>|
