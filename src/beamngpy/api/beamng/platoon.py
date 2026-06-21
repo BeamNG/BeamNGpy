@@ -33,45 +33,26 @@ class PlatoonApi(Api):
         resp = self._send(data).recv("CreatePlatoon")
         return resp["platoonId"]
 
-    def join(self, platoon_id: int, follower: Vehicle | str) -> None:
-        """
-        Add a vehicle to the end of a platoon.
-
-        Args:
-            platoon_id: Platoon id returned by :meth:`create`.
-            follower: Vehicle joining the platoon.
-        """
-        followerID = follower.vid if isinstance(follower, Vehicle) else follower
-        data = dict(
-            type="JoinPlatoon",
-            platoonId=platoon_id,
-            followerID=followerID,
-        )
-        self._send(data).ack("JoinPlatoon")
-
-    def join_in_middle(
+    def join(
         self,
         platoon_id: int,
-        relay: Vehicle | str,
         follower: Vehicle | str,
+        index: int | None = None,
     ) -> None:
         """
-        Insert a vehicle into the middle of a platoon.
+        Add a vehicle to a platoon.
 
         Args:
             platoon_id: Platoon id returned by :meth:`create`.
-            relay: Existing platoon vehicle the newcomer joins behind.
             follower: Vehicle joining the platoon.
+            index: 0-based insertion index (0=new leader, 1=first follower,
+                omit to append at the end).
         """
-        relayID = relay.vid if isinstance(relay, Vehicle) else relay
         followerID = follower.vid if isinstance(follower, Vehicle) else follower
-        data = dict(
-            type="JoinInMiddle",
-            platoonId=platoon_id,
-            relayID=relayID,
-            followerID=followerID,
-        )
-        self._send(data).ack("JoinInMiddle")
+        data = dict(type="JoinPlatoon", platoonId=platoon_id, followerID=followerID)
+        if index is not None:
+            data["index"] = index
+        self._send(data).ack("JoinPlatoon")
 
     def split(self, platoon_id: int, vehicle: Vehicle | str) -> int:
         """

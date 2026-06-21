@@ -17,9 +17,9 @@ def main():
         {
             "vehicles": [
                 ("leader3", "bastion", "vehicle7", "Orange", (190.56, 1202.09, 169.69)),
-                ("relay_vehicle31", "bastion", "vehicle8", "Purple", (200.56, 1202.09, 169.69)),
-                ("relay_vehicle32", "bastion", "vehicle9", "Yellow", (212.76, 1203.09, 169.69)),
-                ("relay_vehicle33", "bastion", "vehicle10", "Black", (222.76, 1203.09, 169.69)),
+                ("follower1", "bastion", "vehicle8", "Purple", (200.56, 1202.09, 169.69)),
+                ("follower2", "bastion", "vehicle9", "Yellow", (212.76, 1203.09, 169.69)),
+                ("follower3", "bastion", "vehicle10", "Black", (222.76, 1203.09, 169.69)),
             ],
             "speed": 20.0,
             "gap": 5,
@@ -34,8 +34,8 @@ def main():
         {
             "vehicles": [
                 ("ego_vehicle", "pickup", "ego vehicle", "Red", (252.56, 1205.09, 169.69)),
-                ("relay_vehicle1", "pickup", "vehicle2", "Blue", (262.56, 1205.79, 169.69)),
-                ("relay_vehicle2", "pickup", "vehicle3", "Green", (270.76, 1206.59, 169.69)),
+                ("follower1", "pickup", "vehicle2", "Blue", (262.56, 1205.79, 169.69)),
+                ("follower2", "pickup", "vehicle3", "Green", (270.76, 1206.59, 169.69)),
             ],
             "speed": 20.0,
             "gap": 4.9,
@@ -74,8 +74,8 @@ def main():
     # Create and launch the platoons.
     for platoon, vehicles in zip(platoons, vehicles_by_platoon):
         platoon_id = bng.platoon.create(vehicles[0], vehicles[1])
-        for vehicle in vehicles[2:]:
-            bng.platoon.join(platoon_id, vehicle)
+        for index, vehicle in enumerate(vehicles[2:], start=2):
+            bng.platoon.join(platoon_id, vehicle, index=index)
         bng.platoon.launch(platoon_id, 2, platoon["speed"])
         sleep(5) # wait for platoon in front to get going
 
