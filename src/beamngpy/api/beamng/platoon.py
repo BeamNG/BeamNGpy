@@ -54,22 +54,23 @@ class PlatoonApi(Api):
             data["index"] = index
         self._send(data).ack("JoinPlatoon")
 
-    def split(self, platoon_id: int, vehicle: Vehicle | str) -> int:
+    def split(self, platoon_id: int, index: int) -> int:
         """
-        Split a platoon at a vehicle, forming a second platoon behind it.
+        Split a platoon at an index, forming a second platoon behind it.
 
         Args:
             platoon_id: Platoon id returned by :meth:`create`.
-            vehicle: Vehicle at which to split the platoon.
+            index: 0-based platoon index at which to split (0=leader,
+                1=first follower). Must leave at least two vehicles in each
+                resulting platoon; requires at least four vehicles total.
 
         Returns:
             The platoon id of the new rear platoon.
         """
-        vehicleID = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
         data = dict(
             type="SplitPlatoon",
             platoonId=platoon_id,
-            vehicleID=vehicleID,
+            index=index,
         )
         resp = self._send(data).recv("SplitPlatoon")
         return resp["platoonId"]
