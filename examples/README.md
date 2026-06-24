@@ -59,6 +59,10 @@ More quick usage examples can be found in our [test suite][1].
 |[Vehicle Logging][44]|<ul><li>log vehicle data</li></ul>|
 |[Vehicle Mesh Data][45]|<ul><li>get vehicle mesh data</li></ul>|
 |[Vehicle Sensor Configuration][46]|<ul><li>configure the vehicle sensors</li></ul>|
+|[Headless Mode Camera Streaming][47]|<ul><li>stream camera images in headless mode (GPU required, no window)</li></ul>|
+|[No-GPU Mode Stats][48]|<ul><li>step the sim in no-GPU mode and plot live position and speed</li></ul>|
+|[Traffic Signals Read Write][49]|<ul><li>read and override traffic signal lamp states and controller durations</li></ul>|
+|[Weather Preset][50]|<ul><li>cycle through loaded weather presets on a level</li></ul>|
 
 [1]: https://github.com/BeamNG/BeamNGpy/tree/master/tests
 [2]: https://github.com/BeamNG/BeamNGpy/tree/master/examples/modInterface
@@ -106,3 +110,7 @@ More quick usage examples can be found in our [test suite][1].
 [44]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_logging.py
 [45]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_mesh_data.py
 [46]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/vehicle_sensor_configuration.py
+[47]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/headless_mode_camera_streaming.ipynb
+[48]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/nogpu_mode_stats.ipynb
+[49]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/traffic_signals_read_write.ipynb
+[50]: https://github.com/BeamNG/BeamNGpy/blob/master/examples/weather_preset.py
