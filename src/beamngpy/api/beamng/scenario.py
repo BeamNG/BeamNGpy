@@ -158,7 +158,7 @@ class ScenarioApi(Api):
     def load(
         self,
         scenario: Scenario,
-        precompile_shaders: bool = False,
+        precompile_shaders: bool = True,
         connect_player_vehicle: bool = True,
         connect_existing_vehicles: bool = True,
     ) -> None:
