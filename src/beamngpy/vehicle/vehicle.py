@@ -50,7 +50,7 @@ class Vehicle:
             The API module to control the AI behavior of the vehicle.
             See :class:`.AIApi` for details.
         logging: LoggingApi
-            Vehicle Signal Logger (``tech/vslSignalLogger``). See :class:`.LoggingApi`.
+            Vehicle Signal Logger. See :class:`.LoggingApi`.
     """
 
     @staticmethod
