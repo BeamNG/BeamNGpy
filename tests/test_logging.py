@@ -34,7 +34,7 @@ def test_vehicle_signal_logging(beamng: BeamNGpy):
         bng.scenario.start()
 
         vehicle.connect(bng)
-        vehicle.logging.start_logging(
+        vehicle.logging.start(
             "log/vsl_logging_test.csv",
             signal_names=_VSL_SIGNAL_NAMES,
             frequency_steps=50,
@@ -43,4 +43,4 @@ def test_vehicle_signal_logging(beamng: BeamNGpy):
         vehicle.control(throttle=1.0, steering=0.2)
         for _ in range(180):
             bng.step(1)
-        vehicle.logging.stop_logging()
+        vehicle.logging.stop()

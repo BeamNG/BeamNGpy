@@ -51,9 +51,6 @@ class Vehicle:
             See :class:`.AIApi` for details.
         logging: LoggingApi
             Vehicle Signal Logger (``tech/vslSignalLogger``). See :class:`.LoggingApi`.
-        start_signal_logging / stop_signal_logging
-            Aliases of ``logging.start_logging`` / ``logging.stop_logging`` (same as
-            ``start`` / ``stop`` on :class:`.LoggingApi`).
     """
 
     @staticmethod
@@ -110,6 +107,7 @@ class Vehicle:
 
         self.port = port
         self.connection = None
+        self.bng = None
 
         self.sensors = Sensors(self)
 
@@ -152,12 +150,6 @@ class Vehicle:
         )  # this API is meant to be at the global level, so it is not meant to be public
 
         self.logging = LoggingApi(self)
-        self.set_in_game_logging_options_from_json = self.logging.set_options_from_json
-        self.write_in_game_logging_options_to_json = self.logging.write_options_to_json
-        self.start_in_game_logging = self.logging.start
-        self.stop_in_game_logging = self.logging.stop
-        self.start_signal_logging = self.logging.start_logging
-        self.stop_signal_logging = self.logging.stop_logging
 
         self.attach_sensor = self.sensors.attach
         self.detach_sensor = self.sensors.detach
@@ -244,6 +236,8 @@ class Vehicle:
         """
         if not bng.connection:
             raise BNGError("The simulator is not connected to BeamNGpy!")
+        # Set early so disconnect() can clean up sensors if connect fails later.
+        self.bng = bng
         if self.connection is None:
             self.connection = Connection(bng.host, self.port)
 
@@ -265,20 +259,22 @@ class Vehicle:
         # Connect the vehicle sensors.
         for _, sensor in self.sensors.items():
             sensor.connect(bng, self)
-        self.bng = bng
         self._init_beamng_api(bng)
 
     def disconnect(self) -> None:
         """
         Closes socket communication with the corresponding vehicle.
         """
-        for name, sensor in self.sensors.items():
-            if name != "state":
-                sensor.disconnect(self.bng, self)
+        # Sensors need the BeamNGpy handle; skip if we never fully connected.
+        if self.bng is not None:
+            for name, sensor in self.sensors.items():
+                if name != "state":
+                    sensor.disconnect(self.bng, self)
 
         if self.connection is not None:
             self.connection.disconnect()
             self.connection = None
+        self.bng = None
 
     def close(self) -> None:
         """
