@@ -123,6 +123,7 @@ class Scenario:
         self.options = options
 
         self.vehicles: Dict[str, Vehicle] = {}
+        self._vehicle_ids_order: List[str] = []
         self.transient_vehicles: Dict[str, Vehicle] = (
             {}
         )  # Vehicles added during scenario
@@ -406,6 +407,7 @@ class Scenario:
             vehicle.disconnect()
 
         self.vehicles[vehicle.vid] = vehicle
+        self._vehicle_ids_order.append(vehicle.vid)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
         self.logger.debug(f"Added vehicle with id '{vehicle.vid}'.")
         
@@ -642,7 +644,19 @@ class Scenario:
             player_vid = None
 
         self.logger.debug(f"Connecting to {len(self.vehicles)} vehicles.")
-        for vehicle in self.vehicles.values():
+        # Connect player first, then remaining vehicles in add_vehicle order
+        # (dict iteration order alone is not enough across Python versions / reloads).
+        order_index = {vid: i for i, vid in enumerate(self._vehicle_ids_order)}
+
+        def connect_order_key(vehicle: Vehicle) -> tuple:
+            return (
+                0 if player_vid and vehicle.vid == player_vid else 1,
+                order_index.get(vehicle.vid, len(order_index)),
+                vehicle.vid,
+            )
+
+        vehicles = sorted(self.vehicles.values(), key=connect_order_key)
+        for vehicle in vehicles:
             if connect_existing or (connect_player and vehicle.vid == player_vid):
                 vehicle.connect(bng)
 

@@ -5,7 +5,8 @@ from typing import Dict, Iterable, List
 from beamngpy.misc.colors import coerce_color, rgba_to_str
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
-from beamngpy.logging import create_warning
+from beamngpy.logging import BNGValueError, create_warning
+from beamngpy.utils.validation import validate_object_name
 
 from .base import Api
 
@@ -277,8 +278,21 @@ class VehiclesApi(Api):
             by this function.
         """
         vehicles = self.get_current_info(include_config=include_config)
-        vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
-        return vehicles
+        # Skip empty or invalid ids (e.g. reserved "vehicle") instead of raising;
+        # the sim can report entries that are not usable Vehicle objects.
+        result: Dict[str, Vehicle] = {}
+        for key, data in vehicles.items():
+            vid = key or data.get("name")
+            if not vid:
+                continue
+            try:
+                validate_object_name(vid)
+            except BNGValueError:
+                continue
+            entry = dict(data)
+            entry["name"] = vid
+            result[vid] = Vehicle.from_dict(entry)
+        return result
 
     def get_player_vehicle_id(self) -> StrDict:
         """
