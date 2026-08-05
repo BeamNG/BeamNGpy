@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Sequence
 
-from beamngpy.logging import BNGError
 from beamngpy.types import StrDict
-from beamngpy.utils.vsl_config import parse_vsl_config_csv
+from beamngpy.utils.vsl_config import resolve_vsl_start
 
 from .base import VehicleApi
 
@@ -15,121 +14,91 @@ class LoggingApi(VehicleApi):
     Controls the **Vehicle Signal Logger** (``tech/vslSignalLogger``) in the simulator
     (**BeamNG.tech** / **BeamNG.drive**), same as the World Editor *Vehicle Signal Logger* window.
 
-    Use :meth:`start` / :meth:`start_logging` (aliases) with ``signals=``, ``signal_names=``,
-    or ``input_signal_file=``. Use :meth:`stop` / :meth:`stop_logging` to end a session.
-    Use :meth:`start_from_vsl_config_csv` when the CSV ``settings`` block should supply
-    the default output path and stride.
+    Use :meth:`start` with ``signal_names=`` and/or ``config_path=``.
+    Use :meth:`stop` to end a session.
 
     The **output** CSV (timestamp + columns) is not the same as an editor **config** CSV.
     """
 
-    def set_options_from_json(self, filename: str) -> None:
-        raise BNGError(
-            "Vehicle Signal Logger does not use the legacy JSON settings API. "
-            "Use start(..., signals=..., signal_names=..., or input_signal_file=...) or start_from_vsl_config_csv(...)."
-        )
-
-    def write_options_to_json(self, filename: str = "template.json") -> None:
-        raise BNGError("Vehicle Signal Logger does not export JSON settings over this API.")
-
     def start(
         self,
-        filepath: str,
-        signals: Sequence[Mapping[str, object]] | None = None,
+        output_file: str | None = None,
         *,
         signal_names: Sequence[str] | None = None,
-        input_signal_file: str | Path | None = None,
-        frequency_steps: int = 1,
+        config_path: str | Path | None = None,
+        sampling_period_s: float | None = None,
+        sampling_rate_hz: float | None = None,
         static_data: StrDict | None = None,
     ) -> None:
         """
-        Start logging to ``filepath`` (path as seen by the vehicle Lua VM in the
+        Start logging to ``output_file`` (path as seen by the vehicle Lua VM in the
         simulator, typically under the user folder, e.g. ``log/vsl_test.csv``).
 
-        Pass **exactly one** of ``signals``, ``signal_names``, or ``input_signal_file``.
+        ``config_path`` is a path on the **Python** host to a VSL **configuration** CSV
+        (same format as the World Editor export). When set, its signal rows and
+        ``settings`` are used as defaults. Current editor settings keys:
 
-        ``input_signal_file`` is a path on the **Python** host to a VSL **configuration**
-        CSV (same format as the World Editor export); signal rows are parsed and sent
-        as ``signals``. Optional ``frequencySteps`` in that CSV is **not** applied
-        automatically—pass ``frequency_steps=`` to match the editor, or read the file
-        yourself. Use :meth:`start_from_vsl_config_csv` to pick up default output path
-        and stride from the CSV ``settings`` rows.
+        * ``samplingPeriodS`` — seconds (preferred)
+        * ``samplingRateHz`` — Hz, converted to period when period is absent
+        * ``samplingUnit`` — ``s`` or ``Hz`` (UI preference)
+        * ``filename`` — output path
+
+        Explicit kwargs always win over the config when not ``None``: ``output_file``,
+        ``signal_names``, sampling rate, ``static_data``.
+        If ``signal_names`` is omitted, signal rows come from ``config_path``.
+
+        Sampling — same unit choices as the World Editor dropdown (s | Hz). Pass
+        **at most one** of:
+
+        * ``sampling_period_s`` — seconds between CSV rows (unit **s**; sent as
+          ``samplingPeriodS``). Default is ``0.025`` s (40 Hz) if omitted.
+          Clamped to ``[0.0005, 1e4]`` s (max **2000** Hz).
+        * ``sampling_rate_hz`` — samples per second (unit **Hz**); converted to period
+          via ``1 / rate`` then sent as ``samplingPeriodS`` (e.g. ``40`` → ``0.025`` s).
+          Clamped to at most **2000** Hz (``0.0005`` s).
+
+        Without a config CSV, ``output_file`` and ``signal_names`` are required.
         """
-        if frequency_steps < 1:
-            raise BNGError("frequency_steps must be >= 1")
-
-        modes = [signals is not None, signal_names is not None, input_signal_file is not None]
-        if sum(bool(m) for m in modes) != 1:
-            raise BNGError(
-                "Pass exactly one of: signals=<list of dicts>, signal_names=<list of strings>, "
-                "or input_signal_file=<path to VSL config CSV>."
-            )
+        resolved = resolve_vsl_start(
+            config_path=config_path,
+            output_file=output_file,
+            signal_names=signal_names,
+            sampling_period_s=sampling_period_s,
+            sampling_rate_hz=sampling_rate_hz,
+            static_data=static_data,
+        )
 
         data: StrDict = dict(
             type="StartVSLLogging",
-            filepath=filepath,
-            frequencySteps=frequency_steps,
+            filepath=resolved.filepath,
         )
-        if static_data is not None:
-            data["staticData"] = static_data
-
-        if input_signal_file is not None:
-            sig_list, _meta = parse_vsl_config_csv(input_signal_file)
-            data["signals"] = sig_list
-            n = len(sig_list)
-        elif signal_names is not None:
-            names = [str(s) for s in signal_names]
-            if not names:
-                raise BNGError("signal_names must be non-empty")
-            data["signalNames"] = names
-            n = len(names)
+        if resolved.sampling_period_s is not None:
+            data["samplingPeriodS"] = float(resolved.sampling_period_s)
+        if resolved.static_data is not None:
+            data["staticData"] = resolved.static_data
+        if resolved.signal_names is not None:
+            data["signalNames"] = list(resolved.signal_names)
+            n = len(resolved.signal_names)
         else:
-            sig_list = [dict(s) for s in (signals or ())]
-            if not sig_list:
-                raise BNGError("signals must be a non-empty sequence")
-            data["signals"] = sig_list
-            n = len(sig_list)
+            data["signals"] = [dict(s) for s in (resolved.signals or ())]
+            n = len(data["signals"])
 
         self._send(data).ack("StartedVSLLogging")
-        self._logger.info(
-            "Started Vehicle Signal Logger on %s (%d channels, every %d physics steps).",
-            filepath,
-            n,
-            frequency_steps,
-        )
-
-    start_logging = start
-
-    def start_from_vsl_config_csv(
-        self,
-        config_path: str | Path,
-        *,
-        output_filepath: str | None = None,
-        frequency_steps: int | None = None,
-        static_data: StrDict | None = None,
-    ) -> None:
-        """Load editor-exported config CSV on this machine, then :meth:`start` with ``signals=`` (single parse)."""
-        signals, meta = parse_vsl_config_csv(config_path)
-        out = output_filepath or meta.get("output_filepath")
-        if not out or not isinstance(out, str):
-            raise BNGError(
-                "No output CSV path: pass output_filepath= or add settings/filename in the config CSV."
+        if "samplingPeriodS" in data:
+            self._logger.info(
+                "Started Vehicle Signal Logger on %s (%d channels, samplingPeriodS=%.5f s).",
+                resolved.filepath,
+                n,
+                data["samplingPeriodS"],
             )
-        freq = (
-            frequency_steps
-            if frequency_steps is not None
-            else int(meta.get("frequency_steps") or 1)
-        )
-        self.start(
-            out,
-            signals,
-            frequency_steps=max(1, freq),
-            static_data=static_data,
-        )
+        else:
+            self._logger.info(
+                "Started Vehicle Signal Logger on %s (%d channels, default sampling period).",
+                resolved.filepath,
+                n,
+            )
 
     def stop(self) -> None:
         """Stop logging and unload ``vslSignalLogger`` if it was loaded."""
         self._send(dict(type="StopVSLLogging")).ack("StoppedVSLLogging")
         self._logger.info("Stopped Vehicle Signal Logger.")
-
-    stop_logging = stop
