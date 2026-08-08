@@ -26,8 +26,7 @@ class LoggingApi(VehicleApi):
         *,
         signal_names: Sequence[str] | None = None,
         config_path: str | Path | None = None,
-        sampling_period_s: float | None = None,
-        sampling_rate_hz: float | None = None,
+        frequency_steps: int | None = None,
         static_data: StrDict | None = None,
     ) -> None:
         """
@@ -36,26 +35,23 @@ class LoggingApi(VehicleApi):
 
         ``config_path`` is a path on the **Python** host to a VSL **configuration** CSV
         (same format as the World Editor export). When set, its signal rows and
-        ``settings`` are used as defaults. Current editor settings keys:
+        ``settings`` are used as defaults. Settings used here:
 
-        * ``samplingPeriodS`` — seconds (preferred)
-        * ``samplingRateHz`` — Hz, converted to period when period is absent
-        * ``samplingUnit`` — ``s`` or ``Hz`` (UI preference)
+        * ``frequencySteps`` — log every N physics steps (int ≥ 1)
         * ``filename`` — output path
 
         Explicit kwargs always win over the config when not ``None``: ``output_file``,
-        ``signal_names``, sampling rate, ``static_data``.
+        ``signal_names``, ``frequency_steps``, ``static_data``.
         If ``signal_names`` is omitted, signal rows come from ``config_path``.
 
-        Sampling — same unit choices as the World Editor dropdown (s | Hz). Pass
-        **at most one** of:
+        Sampling is steps only (canonical representation shared with the controller):
 
-        * ``sampling_period_s`` — seconds between CSV rows (unit **s**; sent as
-          ``samplingPeriodS``). Default is ``0.025`` s (40 Hz) if omitted.
-          Clamped to ``[0.0005, 1e4]`` s (max **2000** Hz).
-        * ``sampling_rate_hz`` — samples per second (unit **Hz**); converted to period
-          via ``1 / rate`` then sent as ``samplingPeriodS`` (e.g. ``40`` → ``0.025`` s).
-          Clamped to at most **2000** Hz (``0.0005`` s).
+        * ``frequency_steps`` — log every N physics steps (int ≥ 1). Omitted → use
+          ``settings/frequencySteps`` from the config if present, else the simulator
+          default (typically 1).
+
+        Convert period/Hz yourself if needed, e.g.
+        ``frequency_steps = max(1, round(period_s * 2000))``.
 
         Without a config CSV, ``output_file`` and ``signal_names`` are required.
         """
@@ -63,8 +59,7 @@ class LoggingApi(VehicleApi):
             config_path=config_path,
             output_file=output_file,
             signal_names=signal_names,
-            sampling_period_s=sampling_period_s,
-            sampling_rate_hz=sampling_rate_hz,
+            frequency_steps=frequency_steps,
             static_data=static_data,
         )
 
@@ -72,8 +67,8 @@ class LoggingApi(VehicleApi):
             type="StartVSLLogging",
             filepath=resolved.filepath,
         )
-        if resolved.sampling_period_s is not None:
-            data["samplingPeriodS"] = float(resolved.sampling_period_s)
+        if resolved.frequency_steps is not None:
+            data["frequencySteps"] = int(resolved.frequency_steps)
         if resolved.static_data is not None:
             data["staticData"] = resolved.static_data
         if resolved.signal_names is not None:
@@ -84,16 +79,16 @@ class LoggingApi(VehicleApi):
             n = len(data["signals"])
 
         self._send(data).ack("StartedVSLLogging")
-        if "samplingPeriodS" in data:
+        if "frequencySteps" in data:
             self._logger.info(
-                "Started Vehicle Signal Logger on %s (%d channels, samplingPeriodS=%.5f s).",
+                "Started Vehicle Signal Logger on %s (%d channels, every %d physics steps).",
                 resolved.filepath,
                 n,
-                data["samplingPeriodS"],
+                data["frequencySteps"],
             )
         else:
             self._logger.info(
-                "Started Vehicle Signal Logger on %s (%d channels, default sampling period).",
+                "Started Vehicle Signal Logger on %s (%d channels).",
                 resolved.filepath,
                 n,
             )

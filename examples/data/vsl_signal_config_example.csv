@@ -1,4 +1,4 @@
-type,groupName,name,description,dataType,filename,samplingPeriodS
+type,groupName,name,description,dataType,filename,frequencySteps
 signal,Kinematics,vehiclePositionX,Vehicle position - Lateral - meters,number,,
 signal,Kinematics,vehiclePositionY,Vehicle position - Longitudinal - meters,number,,
 signal,Kinematics,vehiclePositionZ,Vehicle position - Vertical - meters,number,,
@@ -52,5 +52,4 @@ signal,Roads Sensor,roadsRoadHalfWidth,Road half width,number,,
 signal,Roads Sensor,roadsDistanceToCenterline,Distance to road centerline,number,,
 signal,Roads Sensor,roadsSpeedLimit,Road speed limit,number,,
 settings,,filename,log/vehicle_logging_demo.csv,string,,
-settings,,samplingPeriodS,0.025,number,,
-settings,,samplingUnit,s,string,,
+settings,,frequencySteps,1000,number,,

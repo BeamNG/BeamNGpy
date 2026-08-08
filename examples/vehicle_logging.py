@@ -36,9 +36,9 @@ def main():
     vehicle.connect(bng)
 
     # Load signals from the editor-style config CSV.
-    # Sampling unit matches World Editor dropdown: s (period) or Hz (rate).
-    # Pass at most one of sampling_period_s / sampling_rate_hz.
-    # Omit both to use settings/samplingPeriodS from the CSV (0.025 s in the example).
+    # Sampling is frequency_steps only (log every N physics steps).
+    # Omit frequency_steps= to use settings/frequencySteps from the CSV.
+    # e.g. frequency_steps = max(1, round(period_s * 2000))
     vehicle.logging.start(
         config_path=SIGNAL_CONFIG,
         output_file="log/vehicle_logging_demo.csv",
@@ -55,7 +55,7 @@ def main():
     #         "brake",
     #         "steering",
     #     ),
-    #     sampling_period_s=0.025,
+    #     frequency_steps=50,  # ~40 Hz at 2000 Hz physics
     # )
 
     vehicle.ai.set_mode("span")
