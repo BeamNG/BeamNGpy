@@ -1,4 +1,4 @@
-type,groupName,name,description,dataType,filename,frequencySteps
+﻿type,groupName,name,description,dataType,filename,steps
 signal,Kinematics,vehiclePositionX,Vehicle position - Lateral - meters,number,,
 signal,Kinematics,vehiclePositionY,Vehicle position - Longitudinal - meters,number,,
 signal,Kinematics,vehiclePositionZ,Vehicle position - Vertical - meters,number,,
@@ -52,4 +52,4 @@ signal,Roads Sensor,roadsRoadHalfWidth,Road half width,number,,
 signal,Roads Sensor,roadsDistanceToCenterline,Distance to road centerline,number,,
 signal,Roads Sensor,roadsSpeedLimit,Road speed limit,number,,
 settings,,filename,log/vehicle_logging_demo.csv,string,,
-settings,,frequencySteps,1000,number,,
+settings,,steps,1000,number,,

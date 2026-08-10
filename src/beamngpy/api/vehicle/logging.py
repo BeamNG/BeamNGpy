@@ -14,6 +14,8 @@ class LoggingApi(VehicleApi):
     same as the World Editor *Vehicle Signal Logger* window.
 
     The **output** CSV (timestamp + columns) is not the same as an editor **config** CSV.
+    Signal values are resolved live in the vehicle (same kinematics/sources as cosim);
+    the config only chooses which channels and sampling steps to log.
     """
 
     def start(
@@ -23,7 +25,6 @@ class LoggingApi(VehicleApi):
         signals: list[str] | None = None,
         config_path: str | Path | None = None,
         steps: int | None = None,
-        static_data: StrDict | None = None,
     ) -> None:
         """
         Start logging to ``output_file`` (path as seen by the vehicle Lua VM in the
@@ -34,7 +35,11 @@ class LoggingApi(VehicleApi):
         and frequency steps are used as defaults.
 
         Explicit kwargs always have priority over the config when not ``None``: ``output_file``,
-        ``signals``, ``steps``, ``static_data``.
+        ``signals``, ``steps``.
+
+        Config CSV rows include ``groupName`` (required for sensor channels such as
+        ``IMU 1`` / ``GPS 1``). Name-only ``signals=`` lists work for catalog channels
+        whose group can be inferred (kinematics, driver, wheels, electrics, powertrain).
 
         Args:
             output_file: The path to the output CSV file. Defaults to "vsl_signals_log.csv".
@@ -42,14 +47,12 @@ class LoggingApi(VehicleApi):
             config_path: The path to the VSL configuration CSV file. If provided, uses signals, frequency steps,
                          and output path from the config file unless overridden by explicit kwargs.
             steps: The steps N to log at (logs every N-th physics step, int >= 1). Defaults to 1.
-            static_data: The static data to log.
         """
         data = _resolve_vsl_start(
             config_path=config_path,
             output_file=output_file,
             signals=signals,
             steps=steps,
-            static_data=static_data,
         )
         self._send(dict(type="StartVSLLogging", data=data)).ack("StartedVSLLogging")
         self._logger.info(
@@ -75,7 +78,7 @@ def _parse_vsl_config_csv(path: str | Path) -> StrDict:
     * ``settings`` rows: key in column ``name``, value in ``description``:
 
       - ``filename``: output log path
-      - ``frequencySteps``: log every N physics steps (int >= 1)
+      - ``steps``: log every N physics steps (int >= 1)
 
     * ``vehicle`` rows: ignored here (model/config hints for the editor only)
 
@@ -115,7 +118,7 @@ def _parse_vsl_config_csv(path: str | Path) -> StrDict:
                     val = row[3].strip() if len(row) > 3 else ""
                     if key == "filename" and isinstance(val, str) and val:
                         data["filepath"] = val
-                    if key == "frequencySteps":
+                    if key == "steps":
                         try:
                             data["steps"] = max(1, int(val))
                         except ValueError:
@@ -138,24 +141,19 @@ def _resolve_vsl_start(
     output_file: str | None = None,
     signals: list[str] | None = None,
     steps: int | None = None,
-    static_data: StrDict | None = None,
 ) -> StrDict:
     """Resolve VSL starting arguments using defaults, config or explicit kwargs (in this order)."""
-    # Default values
-    data = dict(
+    data: StrDict = dict(
         filepath="vsl_signals_log.csv",
         signals=["vehiclePositionX", "vehiclePositionY", "vehiclePositionZ"],
         steps=1,
-        static_data={},
     )
 
-    # Override with values from config file
     if config_path is not None:
-        config_data = _parse_vsl_config_csv(config_path)
-        config_data["signals"] = [signal["name"] for signal in config_data["signals"]]
-        data.update(config_data)
+        # Keep full descriptors (name + groupName). IMU/GPS instance groups like
+        # "IMU 1" cannot be inferred from the name alone.
+        data.update(_parse_vsl_config_csv(config_path))
 
-    # Override with explicit kwargs
     if steps is not None:
         if not isinstance(steps, int) or steps < 1:
             raise BNGError("steps must be an integer >= 1")
@@ -170,9 +168,5 @@ def _resolve_vsl_start(
         if any(not isinstance(name, str) or name == "" for name in signals):
             raise BNGError("signals must be a list of non-empty strings")
         data["signals"] = signals
-    if static_data is not None:
-        if not isinstance(static_data, dict):
-            raise BNGError("static_data must be a dictionary")
-        data["static_data"] = static_data
 
     return data
