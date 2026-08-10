@@ -1,13 +1,4 @@
-"""
-Parse Vehicle Signal Logger **configuration** CSV files produced by the World Editor
-``vslSignalEditor`` (Save configuration) in **BeamNG.tech** / **BeamNG.drive**.
-
-This is not the same as the **output** CSV written by ``vslSignalLogger`` at runtime
-(timestamp + signal columns).
-
-Sampling is always ``frequencySteps`` (int ≥ 1): log every N physics steps.
-s/Hz conversion is not performed here — pass steps, or convert yourself.
-"""
+"""Parse Vehicle Signal Logger Configuration CSV files produced by the World Editor."""
 
 from __future__ import annotations
 
@@ -23,23 +14,22 @@ class VslStartResolved(NamedTuple):
     """Resolved options for :meth:`~beamngpy.api.vehicle.logging.LoggingApi.start`."""
 
     filepath: str
-    signals: List[StrDict] | None
-    signal_names: List[str] | None
-    frequency_steps: int | None
-    static_data: StrDict | None
+    signal_names: List[str]
+    frequency_steps: int 
+    static_data: StrDict
 
 
 def parse_vsl_config_csv(path: str | Path) -> Tuple[List[StrDict], StrDict]:
     """
     Read a VSL config CSV and return signals plus optional metadata.
 
-    Config layout matches ``lua/ge/extensions/editor/vslSignalEditor.lua``:
+    Config layout matches ``lua/ge/extensions/editor/vehicleSignalEditor.lua``:
 
     * ``signal`` rows: ``groupName``, ``name``, ``description``, ``dataType``
     * ``settings`` rows: key in column ``name``, value in ``description``:
 
-      - ``filename`` → output log path
-      - ``frequencySteps`` → log every N physics steps (int ≥ 1)
+      - ``filename``: output log path
+      - ``frequencySteps``: log every N physics steps (int >= 1)
 
     * ``vehicle`` rows: ignored here (model/config hints for the editor only)
 
@@ -72,7 +62,7 @@ def parse_vsl_config_csv(path: str | Path) -> Tuple[List[StrDict], StrDict]:
                             "name": n,
                             "groupName": g,
                             "description": row[3].strip() if len(row) > 3 else "",
-                            "type": row[4].strip() if len(row) > 4 else "Float",
+                            "type": row[4].strip() if len(row) > 4 else "",
                         }
                     )
                 elif kind == "settings" and len(row) > 3:
@@ -80,11 +70,11 @@ def parse_vsl_config_csv(path: str | Path) -> Tuple[List[StrDict], StrDict]:
                     val = row[3].strip() if len(row) > 3 else ""
                     if not key or not val:
                         continue
-                    if key == "filename":
+                    if key == "filename" and isinstance(val, str) and val:
                         meta["output_filepath"] = val
                     elif key == "frequencySteps":
                         try:
-                            meta["frequency_steps"] = max(1, int(float(val)))
+                            meta["frequency_steps"] = max(1, int(val))
                         except ValueError:
                             pass
     except OSError as e:
@@ -112,49 +102,40 @@ def resolve_vsl_start(
     Explicit kwargs that are not ``None`` always win. Sampling is steps only:
     ``frequency_steps`` or ``settings/frequencySteps`` from the config CSV.
     """
-    if frequency_steps is not None:
-        steps = int(frequency_steps)
-        if steps < 1:
-            raise BNGError("frequency_steps must be >= 1")
-    else:
-        steps = None
+    # Default values
+    data = VslStartResolved(
+        filepath="vsl_signals_log.csv",
+        signal_names=["vehiclePositionX", "vehiclePositionY", "vehiclePositionZ"],
+        frequency_steps=1,
+        static_data={},
+    )
 
-    meta: StrDict = {}
-    cfg_signals: List[StrDict] | None = None
+    # Override with values from config file
     if config_path is not None:
         cfg_signals, meta = parse_vsl_config_csv(config_path)
+        data.filepath = meta.get("output_filepath", data.filepath)
+        data.frequency_steps = meta.get("frequency_steps", data.frequency_steps)
+        data.signal_names = [signal["name"] for signal in cfg_signals]
 
-    out: str | None = output_file if output_file is not None else None
-    if out is None:
-        raw = meta.get("output_filepath")
-        out = raw if isinstance(raw, str) and raw else None
-    if not out:
-        raise BNGError(
-            "No output CSV path: pass output_file= or add settings/filename in the config CSV "
-            "(config_path=)."
-        )
-
-    resolved_signals: List[StrDict] | None = None
-    resolved_names: List[str] | None = None
+    # Override with explicit kwargs
+    if frequency_steps is not None:
+        if not isinstance(frequency_steps, int) or frequency_steps < 1:
+            raise BNGError("frequency_steps must be an integer >= 1")
+        data.frequency_steps = frequency_steps
+    if output_file is not None:
+        if not isinstance(output_file, str) or output_file == "":
+            raise BNGError("output_file must be a non-empty string")
+        data.filepath = output_file
     if signal_names is not None:
-        names = [str(s) for s in signal_names]
-        if not names:
-            raise BNGError("signal_names must be non-empty")
-        resolved_names = names
-    elif cfg_signals is not None:
-        resolved_signals = cfg_signals
-    else:
-        raise BNGError(
-            "No signals: pass signal_names= or config_path= to a VSL config CSV."
-        )
+        if not isinstance(signal_names, Sequence) or len(signal_names) == 0:
+            raise BNGError("signal_names must be a non-empty list")
+        for name in signal_names:
+            if not isinstance(name, str) or name == "":
+                raise BNGError("signal_names must be a list of non-empty strings")
+        data.signal_names = list(signal_names)
+    if static_data is not None:
+        if not isinstance(static_data, dict):
+            raise BNGError("static_data must be a dictionary")
+        data.static_data = static_data
 
-    if steps is None and "frequency_steps" in meta:
-        steps = int(meta["frequency_steps"])  # type: ignore[arg-type]
-
-    return VslStartResolved(
-        filepath=out,
-        signals=resolved_signals,
-        signal_names=resolved_names,
-        frequency_steps=steps,
-        static_data=static_data,
-    )
+    return data
