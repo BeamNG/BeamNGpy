@@ -113,11 +113,9 @@ def _parse_vsl_config_csv(path: str | Path) -> StrDict:
                 elif kind == "settings" and len(row) > 3:
                     key = row[2].strip() if len(row) > 2 else ""
                     val = row[3].strip() if len(row) > 3 else ""
-                    if not key or not val:
-                        continue
                     if key == "filename" and isinstance(val, str) and val:
                         data["filepath"] = val
-                    elif key == "frequencySteps":
+                    if key == "frequencySteps":
                         try:
                             data["steps"] = max(1, int(val))
                         except ValueError:
