@@ -3,7 +3,7 @@ from __future__ import annotations
 from beamngpy import BeamNGpy, Scenario, Vehicle
 
 # Kinematics / wheels / powertrain (aligned with ``examples/data/mySignalsList.csv``) plus basic Driver inputs.
-_VSL_SIGNALS = (
+_VSL_SIGNALS = [
     "throttle",
     "brake",
     "steering",
@@ -18,7 +18,7 @@ _VSL_SIGNALS = (
     "wheelSpeedFL",
     "gearIndex",
     "mainEngine outputTorque1",
-)
+]
 
 
 def test_vehicle_signal_logging(beamng: BeamNGpy):
