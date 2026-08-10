@@ -14,9 +14,6 @@ class LoggingApi(VehicleApi):
     Controls the **Vehicle Signal Logger** (``tech/vehicleSignalLogger``) in the simulator,
     same as the World Editor *Vehicle Signal Logger* window.
 
-    Use :meth:`start` with ``signal_names=`` and/or ``config_path=``.
-    Use :meth:`stop` to end a session.
-
     The **output** CSV (timestamp + columns) is not the same as an editor **config** CSV.
     """
 
@@ -24,9 +21,9 @@ class LoggingApi(VehicleApi):
         self,
         output_file: str | None = None,
         *,
-        signal_names: Sequence[str] | None = None,
+        signals: Sequence[str] | None = None,
         config_path: str | Path | None = None,
-        frequency_steps: int | None = None,
+        steps: int | None = None,
         static_data: StrDict | None = None,
     ) -> None:
         """
@@ -38,35 +35,35 @@ class LoggingApi(VehicleApi):
         and frequency steps are used as defaults.
 
         Explicit kwargs always have priority over the config when not ``None``: ``output_file``,
-        ``signal_names``, ``frequency_steps``, ``static_data``.
+        ``signals``, ``steps``, ``static_data``.
 
         Args:
             output_file: The path to the output CSV file. Defaults to "vsl_signals_log.csv".
-            signal_names: The names of the signals to log (list of strings). Defaults to vehicle positions only.
+            signals: The names of the signals to log (list of strings). Defaults to vehicle positions only.
             config_path: The path to the VSL configuration CSV file. If provided, uses signals, frequency steps,
                          and output path from the config file unless overridden by explicit kwargs.
-            frequency_steps: The frequency steps to log at (decimation factor, int >= 1). Defaults to 1.
+            steps: The steps N to log at (logs every N-th physics step, int >= 1). Defaults to 1.
             static_data: The static data to log.
         """
         resolved = resolve_vsl_start(
             config_path=config_path,
             output_file=output_file,
-            signal_names=signal_names,
-            frequency_steps=frequency_steps,
+            signals=signals,
+            steps=steps,
             static_data=static_data,
         )
         data: StrDict = dict(
             type="StartVSLLogging",
             filepath=resolved.filepath,
-            signalNames=resolved.signal_names,
-            frequencySteps=resolved.frequency_steps,
+            signalNames=resolved.signals,
+            frequencySteps=resolved.steps,
             staticData=resolved.static_data,
         )
         self._send(data).ack("StartedVSLLogging")
         self._logger.info(
             "Started Vehicle Signal Logger on %s (%d channels, every %d physics steps).",
             resolved.filepath,
-            len(resolved.signal_names),
+            len(resolved.signals),
             data["frequencySteps"],
         )
 

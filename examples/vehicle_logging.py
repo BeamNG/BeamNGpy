@@ -35,10 +35,7 @@ def main():
 
     vehicle.connect(bng)
 
-    # Load signals from the editor-style config CSV.
-    # Sampling is frequency_steps only (log every N physics steps).
-    # Omit frequency_steps= to use settings/frequencySteps from the CSV.
-    # e.g. frequency_steps = max(1, round(period_s * 2000))
+    # Load signals and settings from the editor-style config CSV.
     vehicle.logging.start(
         config_path=SIGNAL_CONFIG,
         output_file="log/vehicle_logging_demo.csv",
@@ -46,16 +43,16 @@ def main():
 
     # Alternative without a config file (name-only list):
     # vehicle.logging.start(
-    #     output_file="log/vehicle_logging_demo_signal_names.csv",
-    #     signal_names=(
+    #     output_file="log/vehicle_logging_demo_signals.csv",
+    #     signals=[
     #         "vehicleVelocityX",
     #         "vehicleVelocityY",
     #         "vehicleVelocityZ",
     #         "throttle",
     #         "brake",
     #         "steering",
-    #     ),
-    #     frequency_steps=50,  # ~40 Hz at 2000 Hz physics
+    #     ],
+    #     steps=50,  # 40 Hz at 2000 Hz physics
     # )
 
     vehicle.ai.set_mode("span")

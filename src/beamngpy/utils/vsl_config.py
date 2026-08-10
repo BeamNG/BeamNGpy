@@ -14,8 +14,8 @@ class VslStartResolved(NamedTuple):
     """Resolved options for :meth:`~beamngpy.api.vehicle.logging.LoggingApi.start`."""
 
     filepath: str
-    signal_names: List[str]
-    frequency_steps: int 
+    signals: List[str]
+    steps: int 
     static_data: StrDict
 
 
@@ -35,7 +35,7 @@ def parse_vsl_config_csv(path: str | Path) -> Tuple[List[StrDict], StrDict]:
 
     Returns:
         ``(signals, meta)`` where ``meta`` may contain ``output_filepath`` and
-        ``frequency_steps``.
+        ``steps``.
     """
     p = Path(path)
     if not p.is_file():
@@ -74,7 +74,7 @@ def parse_vsl_config_csv(path: str | Path) -> Tuple[List[StrDict], StrDict]:
                         meta["output_filepath"] = val
                     elif key == "frequencySteps":
                         try:
-                            meta["frequency_steps"] = max(1, int(val))
+                            meta["steps"] = max(1, int(val))
                         except ValueError:
                             pass
     except OSError as e:
@@ -92,21 +92,16 @@ def resolve_vsl_start(
     *,
     config_path: str | Path | None = None,
     output_file: str | None = None,
-    signal_names: Sequence[str] | None = None,
-    frequency_steps: int | None = None,
+    signals: Sequence[str] | None = None,
+    steps: int | None = None,
     static_data: StrDict | None = None,
 ) -> VslStartResolved:
-    """
-    Merge a VSL config CSV with explicit start overrides.
-
-    Explicit kwargs that are not ``None`` always win. Sampling is steps only:
-    ``frequency_steps`` or ``settings/frequencySteps`` from the config CSV.
-    """
+    """Resolve VSL starting arguments using defaults, config or explicit kwargs (in this order)."""
     # Default values
     data = VslStartResolved(
         filepath="vsl_signals_log.csv",
-        signal_names=["vehiclePositionX", "vehiclePositionY", "vehiclePositionZ"],
-        frequency_steps=1,
+        signals=["vehiclePositionX", "vehiclePositionY", "vehiclePositionZ"],
+        steps=1,
         static_data={},
     )
 
@@ -114,25 +109,25 @@ def resolve_vsl_start(
     if config_path is not None:
         cfg_signals, meta = parse_vsl_config_csv(config_path)
         data.filepath = meta.get("output_filepath", data.filepath)
-        data.frequency_steps = meta.get("frequency_steps", data.frequency_steps)
-        data.signal_names = [signal["name"] for signal in cfg_signals]
+        data.steps = meta.get("steps", data.steps)
+        data.signals = [signal["name"] for signal in cfg_signals]
 
     # Override with explicit kwargs
-    if frequency_steps is not None:
-        if not isinstance(frequency_steps, int) or frequency_steps < 1:
-            raise BNGError("frequency_steps must be an integer >= 1")
-        data.frequency_steps = frequency_steps
+    if steps is not None:
+        if not isinstance(steps, int) or steps < 1:
+            raise BNGError("steps must be an integer >= 1")
+        data.steps = steps
     if output_file is not None:
         if not isinstance(output_file, str) or output_file == "":
             raise BNGError("output_file must be a non-empty string")
         data.filepath = output_file
-    if signal_names is not None:
-        if not isinstance(signal_names, Sequence) or len(signal_names) == 0:
-            raise BNGError("signal_names must be a non-empty list")
-        for name in signal_names:
+    if signals is not None:
+        if not isinstance(signals, Sequence) or len(signals) == 0:
+            raise BNGError("signals must be a non-empty list")
+        for name in signals:
             if not isinstance(name, str) or name == "":
-                raise BNGError("signal_names must be a list of non-empty strings")
-        data.signal_names = list(signal_names)
+                raise BNGError("signals must be a list of non-empty strings")
+        data.signals = list(signals)
     if static_data is not None:
         if not isinstance(static_data, dict):
             raise BNGError("static_data must be a dictionary")

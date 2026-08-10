@@ -3,7 +3,7 @@ from __future__ import annotations
 from beamngpy import BeamNGpy, Scenario, Vehicle
 
 # Kinematics / wheels / powertrain (aligned with ``examples/data/mySignalsList.csv``) plus basic Driver inputs.
-_VSL_SIGNAL_NAMES = (
+_VSL_SIGNALS = (
     "throttle",
     "brake",
     "steering",
@@ -36,8 +36,8 @@ def test_vehicle_signal_logging(beamng: BeamNGpy):
         vehicle.connect(bng)
         vehicle.logging.start(
             "log/vsl_logging_test.csv",
-            signal_names=_VSL_SIGNAL_NAMES,
-            frequency_steps=50,
+            signals=_VSL_SIGNALS,
+            steps=50,
         )
         # tech_ground has no traffic graph — drive inputs + sim steps so signals change while logging.
         vehicle.control(throttle=1.0, steering=0.2)
