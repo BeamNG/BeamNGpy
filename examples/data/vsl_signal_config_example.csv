@@ -35,21 +35,5 @@ signal,Powertrain,mainEngine outputAV1,Main engine output angular velocity,numbe
 signal,Powertrain,mainEngine outputTorque1,Main engine output torque,number
 signal,Powertrain,gearbox gearRatio,Gearbox gear ratio,number
 signal,Powertrain,gearbox outputAV1,Gearbox output angular velocity,number
-signal,IMU 1,imuPositionX,IMU position - Lateral - meters,number
-signal,IMU 1,imuPositionY,IMU position - Longitudinal - meters,number
-signal,IMU 1,imuPositionZ,IMU position - Vertical - meters,number
-signal,IMU 1,imuAccelerationSmoothedAxis1,IMU smoothed acceleration axis 1,number
-signal,IMU 1,imuAccelerationSmoothedAxis2,IMU smoothed acceleration axis 2,number
-signal,IMU 1,imuAccelerationSmoothedAxis3,IMU smoothed acceleration axis 3,number
-signal,GPS 1,gpsXCoordinate,GPS X coordinate,number
-signal,GPS 1,gpsYCoordinate,GPS Y coordinate,number
-signal,GPS 1,gpsLongitude,GPS longitude,number
-signal,GPS 1,gpsLatitude,GPS latitude,number
-signal,Ideal RADAR,idealRADARVehicle1Distance,Ideal RADAR vehicle 1 distance,number
-signal,Ideal RADAR,idealRADARVehicle1RelativeDistanceX,Ideal RADAR vehicle 1 relative distance X,number
-signal,Ideal RADAR,idealRADARVehicle1RelativeDistanceY,Ideal RADAR vehicle 1 relative distance Y,number
-signal,Roads Sensor,roadsRoadHalfWidth,Road half width,number
-signal,Roads Sensor,roadsDistanceToCenterline,Distance to road centerline,number
-signal,Roads Sensor,roadsSpeedLimit,Road speed limit,number
 settings,,filename,log/vehicle_logging_demo.csv,string
 settings,,steps,1000,number
