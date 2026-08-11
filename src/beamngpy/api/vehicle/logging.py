@@ -69,7 +69,8 @@ def _parse_vsl_config_csv(path: str | Path) -> StrDict:
     """
     Read a VSL config CSV and return signals and settings, if available.
 
-    Config layout matches ``lua/ge/extensions/editor/vehicleSignalEditor.lua``:
+    Config layout matches ``lua/ge/extensions/editor/vehicleSignalEditor.lua``
+    (header: ``type,groupName,name,description,dataType``):
 
     * ``signal`` rows: ``groupName``, ``name``, ``description``, ``dataType``
     * ``settings`` rows: key in column ``name``, value in ``description``:
