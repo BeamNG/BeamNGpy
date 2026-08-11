@@ -14,6 +14,9 @@ class LoggingApi(VehicleApi):
     same as the World Editor *Vehicle Signal Logger* window.
 
     The **output** CSV (timestamp + columns) is not the same as an editor **config** CSV.
+
+    **Logging data from sensors is currently not supported through BeamNGpy. Use logging from the
+    Vehicle Signal Logger window in the World Editor instead.**
     """
 
     def start(
