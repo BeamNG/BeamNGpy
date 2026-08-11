@@ -14,8 +14,6 @@ class LoggingApi(VehicleApi):
     same as the World Editor *Vehicle Signal Logger* window.
 
     The **output** CSV (timestamp + columns) is not the same as an editor **config** CSV.
-    Signal values are resolved live in the vehicle (same kinematics/sources as cosim);
-    the config only chooses which channels and sampling steps to log.
     """
 
     def start(
@@ -36,10 +34,6 @@ class LoggingApi(VehicleApi):
 
         Explicit kwargs always have priority over the config when not ``None``: ``output_file``,
         ``signals``, ``steps``.
-
-        Config CSV rows include ``groupName`` (required for sensor channels such as
-        ``IMU 1`` / ``GPS 1``). Name-only ``signals=`` lists work for catalog channels
-        whose group can be inferred (kinematics, driver, wheels, electrics, powertrain).
 
         Args:
             output_file: The path to the output CSV file. Defaults to "vsl_signals_log.csv".
@@ -143,17 +137,20 @@ def _resolve_vsl_start(
     steps: int | None = None,
 ) -> StrDict:
     """Resolve VSL starting arguments using defaults, config or explicit kwargs (in this order)."""
+    # Default values
     data: StrDict = dict(
         filepath="vsl_signals_log.csv",
         signals=["vehiclePositionX", "vehiclePositionY", "vehiclePositionZ"],
         steps=1,
     )
 
+    # Override with values from config file
     if config_path is not None:
-        # Keep full descriptors (name + groupName). IMU/GPS instance groups like
-        # "IMU 1" cannot be inferred from the name alone.
-        data.update(_parse_vsl_config_csv(config_path))
+        config_data = _parse_vsl_config_csv(config_path)
+        config_data["signals"] = [signal["name"] for signal in config_data["signals"]]
+        data.update(config_data)
 
+    # Override with explicit kwargs
     if steps is not None:
         if not isinstance(steps, int) or steps < 1:
             raise BNGError("steps must be an integer >= 1")
