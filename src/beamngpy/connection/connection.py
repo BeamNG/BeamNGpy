@@ -29,7 +29,7 @@ class Connection:
         port: The port to connect to.
     """
 
-    PROTOCOL_VERSION = "v1.26"
+    PROTOCOL_VERSION = "v1.27"
 
     @staticmethod
     def _textify_string(data: bytes) -> str | bytes:
