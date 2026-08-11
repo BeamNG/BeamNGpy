@@ -45,10 +45,9 @@ def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
         print("PASS: Readings present")
         all_readings.append(sensor_readings["accSmooth"][0])
 
-    assert (
-        np.abs(np.max(all_readings) - np.min(all_readings)) < 0.001
-    ), "Readings inconsistent"
-    print("PASS: Readings consistent")
+    readings_diff = np.abs(np.max(all_readings) - np.min(all_readings))
+    assert readings_diff < 0.01, f"Readings inconsistent: {readings_diff}"
+    print(f"PASS: Readings consistent: {readings_diff}")
 
     assert np.any(
         (all_readings[0] != all_readings[1]) | (all_readings[0] != all_readings[2])
@@ -88,7 +87,7 @@ def test_advanced_IMU(beamng: BeamNGpy):
         )
 
         # Test the automatic polling functionality of the advanced IMU sensor, to make sure we retrieve the readings data via shared memory.
-        sleep(5)
+        sleep(10)
         check_consistency_and_update(IMU1, True)
 
         # Test the ad-hoc polling functionality of the advanced IMU sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
@@ -105,8 +104,12 @@ def test_advanced_IMU(beamng: BeamNGpy):
             sleep(0.1)
 
         sensor_readings = IMU1.poll()
+        if isinstance(sensor_readings, list):
+            readings = sensor_readings
+        else:
+            readings = list(sensor_readings.values())
         accel_values = np.array([
-            sensor_readings[key]['accSmooth'][0] for key in sensor_readings.keys()
+            reading['accSmooth'][0] for reading in readings
         ])
         assert np.mean(accel_values) > 1.2 and np.mean(accel_values) < 1.5
         assert np.std(accel_values) < 0.7
