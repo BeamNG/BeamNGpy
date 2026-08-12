@@ -81,7 +81,7 @@ class PlatoonApi(Api):
 
         Args:
             platoon_id: Platoon id returned by :meth:`create`.
-            leader_mode: Driving mode (0: manual, 1: span, 2: traffic).
+            leader_mode: Driving mode (0: manual, 1: span, 2: traffic, 3: ACC).
             speed: Target speed in m/s.
         """
         data = dict(
