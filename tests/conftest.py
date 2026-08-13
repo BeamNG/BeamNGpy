@@ -21,7 +21,8 @@ def run_before_tests():
 def beamng() -> Iterator[BeamNGpy]:
     headless = os.environ.get("HEADLESS", "0") == "1"
     nogpu = os.environ.get("NOGPU", "0") == "1"
-    bng = BeamNGpy("localhost", 25252, quit_on_close=False, debug=False, headless=headless, nogpu=nogpu)
+    gfx = os.environ.get("GFX", None)
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False, debug=False, headless=headless, nogpu=nogpu, gfx=gfx)
     yield bng
 
     # Teardown after all tests have run
