@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import Iterator
+
 import matplotlib
 import pytest
 
 from beamngpy import BeamNGpy
+from beamngpy.logging import BNGDisconnectedError
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -14,5 +17,15 @@ def run_before_tests():
 
 
 @pytest.fixture(scope="session")
-def beamng() -> BeamNGpy:
-    return BeamNGpy("localhost", 25252, quit_on_close=False, debug=False)
+def beamng() -> Iterator[BeamNGpy]:
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False, debug=False)
+    yield bng
+
+    # Teardown after all tests have run
+    bng.quit_on_close = True
+    if bng.connection is None:
+        try:
+            bng.open(launch=False)
+        except BNGDisconnectedError:
+            pass
+    bng.close()
