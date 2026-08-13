@@ -103,9 +103,6 @@ def check_csv_file(file_path: Path, row_time_delta: float):
     allowed_tolerance = 1e-6
     expected_columns = ["timestamp", "throttle"]
     commanded_throttle = 1.0
-    # The logged throttle is the value the vehicle actually applies, so it does not match the
-    # commanded input on every row: the first row is sampled before `control` takes effect, and
-    # the automatic gearbox cuts throttle during upshifts. Require most rows to match instead.
     min_commanded_row_ratio = 0.5
     min_expected_rows = 10
 
