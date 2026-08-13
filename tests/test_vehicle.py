@@ -214,7 +214,7 @@ def test_lights(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario("tech_ground", "lights_test")
         config = "vehicles/etk800/854_police_A.pc"
-        vehicle = Vehicle("vehicle", model="etk800", part_config=config)
+        vehicle = Vehicle("vehicle1", model="etk800", part_config=config)
         other = Vehicle("other", model="pickup")
 
         vehicle.sensors.attach("electrics", sensors.Electrics())
