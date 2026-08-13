@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Iterator
+import os
 
 import matplotlib
 import pytest
@@ -18,7 +19,9 @@ def run_before_tests():
 
 @pytest.fixture(scope="session")
 def beamng() -> Iterator[BeamNGpy]:
-    bng = BeamNGpy("localhost", 25252, quit_on_close=False, debug=False)
+    headless = os.environ.get("HEADLESS", "0") == "1"
+    nogpu = os.environ.get("NOGPU", "0") == "1"
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False, debug=False, headless=headless, nogpu=nogpu)
     yield bng
 
     # Teardown after all tests have run
