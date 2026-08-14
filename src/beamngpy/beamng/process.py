@@ -1,29 +1,6 @@
 import os
 import signal
 import subprocess
-import time
-
-BEAMNG_PROCESS_NAMES = (
-    "BeamNG.drive.x64.exe",
-    "BeamNG.drive.exe",
-    "BeamNG.tech.x64.exe",
-    "BeamNG.tech.exe",
-    "BeamNG.x64.exe",
-)
-
-
-def kill_stale_beamng_processes() -> None:
-    """Force-kill leftover BeamNG processes (Windows). No-op on other platforms."""
-    if os.name != "nt":
-        return
-    with open(os.devnull, "w") as devnull:
-        for name in BEAMNG_PROCESS_NAMES:
-            subprocess.call(
-                ["taskkill", "/F", "/IM", name],
-                stdout=devnull,
-                stderr=devnull,
-            )
-    time.sleep(1.0)
 
 
 def kill_process_tree(process: subprocess.Popen, group: bool = False):

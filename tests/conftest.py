@@ -7,7 +7,6 @@ import matplotlib
 import pytest
 
 from beamngpy import BeamNGpy
-from beamngpy.beamng.process import kill_stale_beamng_processes
 from beamngpy.logging import BNGDisconnectedError
 
 
@@ -16,8 +15,6 @@ def run_before_tests():
     matplotlib.use(
         "Agg"
     )  # do not show matplotlib plots in tests so they can be run automatically
-    # Clear leftover BeamNG processes from a previous crashed/hung suite.
-    kill_stale_beamng_processes()
 
 
 @pytest.fixture(scope="session")
@@ -44,7 +41,4 @@ def beamng() -> Iterator[BeamNGpy]:
             bng.open(launch=False)
         except BNGDisconnectedError:
             pass
-    try:
-        bng.close()
-    finally:
-        kill_stale_beamng_processes()
+    bng.close()
