@@ -120,20 +120,16 @@ def test_get_level_and_scenarios(beamng: BeamNGpy):
 
 
 def test_get_current_vehicles(beamng: BeamNGpy):
+    # tech_ground + owned vehicle — missions hang on MapLoaded.
     with beamng as bng:
-        scenarios = bng.scenario.get_scenarios()
-        target = None
-        for scenario in scenarios["west_coast_usa"]:
-            if scenario.path == "/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json":
-                target = scenario
-                break
-
-        assert target is not None
-
-        bng.scenario.load(target)
+        scenario = Scenario("tech_ground", "current_vehicles")
+        vehicle = Vehicle("ego_vehicle", model="etk800")
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
+        scenario.make(bng)
+        bng.scenario.load(scenario)
 
         vehicles = bng.vehicles.get_current(include_config=False)
-        player = vehicles["clone"]
+        player = vehicles["ego_vehicle"]
         sensor = Electrics()
         player.sensors.attach("electrics", sensor)
         player.connect(bng)
