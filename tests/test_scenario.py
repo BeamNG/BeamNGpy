@@ -120,7 +120,6 @@ def test_get_level_and_scenarios(beamng: BeamNGpy):
 
 
 def test_get_current_vehicles(beamng: BeamNGpy):
-    # tech_ground + owned vehicle — missions hang on MapLoaded.
     with beamng as bng:
         scenario = Scenario("tech_ground", "current_vehicles")
         vehicle = Vehicle("ego_vehicle", model="etk800")
