@@ -34,11 +34,12 @@ def beamng() -> Iterator[BeamNGpy]:
     )
     yield bng
 
-    # Teardown after all tests have run
-    bng.quit_on_close = True
-    if bng.connection is None:
-        try:
-            bng.open(launch=False)
-        except BNGDisconnectedError:
-            pass
-    bng.close()
+    # Teardown: close BeamNG instance only if we launched it
+    if bng.process is not None:
+        bng.quit_on_close = True
+        if bng.connection is None:
+            try:
+                bng.open(launch=False)
+            except BNGDisconnectedError:
+                pass
+        bng.close()
