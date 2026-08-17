@@ -30,7 +30,7 @@ def beamng() -> Iterator[BeamNGpy]:
         headless=headless,
         nogpu=nogpu,
         gfx=gfx,
-        socket_timeout=180,
+        socket_timeout=240,
     )
     yield bng
 
