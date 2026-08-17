@@ -88,6 +88,35 @@ def check_poll(
             ), "Incorrect number of solid colors"
 
 
+def check_stream(cam: Camera):
+    """Validate stream/stream_raw shared-memory reads.
+
+    PollCamera with shared memory refreshes the SHM buffers that stream reads from.
+    """
+    assert cam.is_streaming and cam.is_using_shared_memory
+
+    colour = None
+    for i in range(1, ATTEMPTS + 1):
+        sleep(2)
+        cam.poll_raw()
+        raw = cam.stream_raw()
+        colour = raw.get("colour")
+        nonzero = bool(colour) and any(bytearray(colour))
+        print(
+            f"Stream attempt {i}: bytes={0 if not colour else len(colour)} nonzero={nonzero}"
+        )
+        if nonzero:
+            break
+
+    assert colour is not None
+    assert len(colour) == cam.resolution[0] * cam.resolution[1] * 4
+    assert any(bytearray(colour)), "shared-memory colour empty after PollCamera + stream_raw"
+
+    streamed = cam.stream()
+    colour_img = np.asarray(streamed["colour"].convert("RGB"))
+    check_field({"colour": colour_img}, "colour", cam)
+
+
 @contextmanager
 def camera_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
     """Same scenario as the original combined test, loaded once per split test."""
@@ -243,6 +272,32 @@ def test_camera_shmem_ad_hoc(camera_scene):
         cam3.remove()
 
 
+def test_camera_shmem_stream(camera_scene):
+    """Shared-memory streaming: poll fills SHM, then stream/stream_raw read it back."""
+    bng, vehicle = camera_scene
+    cam = Camera(
+        "camera_stream",
+        bng,
+        vehicle,
+        requested_update_time=0.05,
+        is_using_shared_memory=True,
+        is_streaming=True,
+        pos=(-5, 0, 1),
+        dir=(1, 0, 0),
+        field_of_view_y=70,
+        is_render_annotations=True,
+        is_render_depth=True,
+        near_far_planes=(0.1, 100),
+        resolution=(512, 512),
+    )
+    try:
+        sleep(5)
+        print("Testing camera stream...")
+        check_stream(cam)
+    finally:
+        cam.remove()
+
+
 def test_camera_no_shmem_oblique(camera_scene):
     """Camera 4: no shared memory, oblique angle to the world, then repositioned."""
     bng, vehicle = camera_scene
@@ -329,6 +384,7 @@ if __name__ == "__main__":
         test_camera_shmem,
         test_camera_no_shmem,
         test_camera_shmem_ad_hoc,
+        test_camera_shmem_stream,
         test_camera_no_shmem_oblique,
         test_camera_idle,
     ):
