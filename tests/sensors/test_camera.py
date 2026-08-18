@@ -125,7 +125,7 @@ def camera_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
             "ego_vehicle", model="etki", license="PYTHON", color="Green"
         )  # Create a vehicle.
         scenario = Scenario(
-            "tech_ground", "camera_test", description="Testing the camera sensor"
+            "smallgrid", "camera_test", description="Testing the camera sensor"
         )  # Create a scenario.
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle)
