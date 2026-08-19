@@ -29,7 +29,7 @@ class Connection:
         port: The port to connect to.
     """
 
-    PROTOCOL_VERSION = "v1.26"
+    PROTOCOL_VERSION = "v1.27"
 
     @staticmethod
     def _textify_string(data: bytes) -> str | bytes:
@@ -80,9 +80,15 @@ class Connection:
                 Connection._string_cleanup_rec(val)
         return data
 
-    def __init__(self, host: str, port: int | None = None):
+    def __init__(
+        self,
+        host: str,
+        port: int | None = None,
+        timeout: float | None = None,
+    ):
         self.host = host
         self.port = port
+        self.timeout = timeout
         # The socket related to this connection instance. This is set upon connecting.
         self.skt: PrefixedLengthSocket | None = None
         self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
@@ -112,7 +118,9 @@ class Connection:
                 return False
             try:
                 self.logger.info(f"Attempting to connect to vehicle {vehicle.vid}")
-                self.skt = PrefixedLengthSocket(self.host, self.port)
+                self.skt = PrefixedLengthSocket(
+                    self.host, self.port, timeout=self.timeout
+                )
                 self.skt._process = self._process
                 connected = True
                 break
@@ -157,7 +165,9 @@ class Connection:
                     self.logger.error("BeamNG.tech is not running any more. Stopping connection attempts.")
                 return False
             try:
-                self.skt = PrefixedLengthSocket(self.host, self.port)
+                self.skt = PrefixedLengthSocket(
+                    self.host, self.port, timeout=self.timeout
+                )
                 self.skt._process = self._process
                 connected = True
                 break

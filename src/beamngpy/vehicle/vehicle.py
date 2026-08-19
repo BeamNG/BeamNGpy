@@ -8,13 +8,14 @@ from beamngpy.connection import Connection, Response
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning
 from beamngpy.sensors import State
 from beamngpy.types import Color, Float3, Quat, StrDict
-from beamngpy.utils.prefab import get_uuid
+from beamngpy.utils.prefab import get_uuid, lua_serialize
 from beamngpy.utils.validation import validate_object_name
 from beamngpy.vehicle.sensors import Sensors
 
 if TYPE_CHECKING:
     from beamngpy.beamng import BeamNGpy
 
+_beamng_dummy_instance = None
 
 class Vehicle:
     """
@@ -36,7 +37,9 @@ class Vehicle:
         color2: The secondary vehicle color.
         color3: The tertiary vehicle color.
         extensions: A list of vehicle Lua extensions to load for the vehicle.
-        part_config: The path to the vehicle part configuration (a ``.pc`` file).
+        part_config: The path to the vehicle part configuration (a ``.pc`` file) or a dictionary of the part
+                     configuration (contents of a ``.pc`` file or value returned by
+                     :meth:`~beamngpy.Vehicle.get_part_config`).
         options: Other possible vehicle options.
 
     Attributes
@@ -47,8 +50,7 @@ class Vehicle:
             The API module to control the AI behavior of the vehicle.
             See :class:`.AIApi` for details.
         logging: LoggingApi
-            The API module to control the logging behavior of the vehicle inside the simulator.
-            See :class:`.LoggingApi` for details.
+            Vehicle Signal Logger. See :class:`.LoggingApi`.
     """
 
     @staticmethod
@@ -93,7 +95,7 @@ class Vehicle:
         color2: Color | None = None,
         color3: Color | None = None,
         extensions: List[str] | None = None,
-        part_config: str | None = None,
+        part_config: str | StrDict | None = None,
         **options: Any,
     ):
         self.logger = getLogger(f"{LOGGER_ID}.Vehicle")
@@ -105,6 +107,7 @@ class Vehicle:
 
         self.port = port
         self.connection = None
+        self.bng = None
 
         self.sensors = Sensors(self)
 
@@ -115,7 +118,10 @@ class Vehicle:
         options["color"] = color or options.get("colour")
         options["color2"] = color2 or options.get("colour2")
         options["color3"] = color3 or options.get("colour3")
-        options["partConfig"] = part_config or options.get("partConfig")
+        part_config = part_config or options.get("partConfig")
+        if isinstance(part_config, dict):
+            part_config = lua_serialize(part_config)
+        options["partConfig"] = part_config
         for key in ("licenseText", "partConfig"):
             if options[key] is None:
                 del options[key]
@@ -133,6 +139,7 @@ class Vehicle:
         self.ai_set_speed = self.ai.set_speed
         self.ai_set_target = self.ai.set_target
         self.ai_set_waypoint = self.ai.set_waypoint
+        self.ai_set_avoid_cars = self.ai.set_avoid_cars
         self.ai_drive_in_lane = self.ai.drive_in_lane
         self.ai_set_line = self.ai.set_line
         self.ai_set_script = self.ai.set_script
@@ -143,10 +150,6 @@ class Vehicle:
         )  # this API is meant to be at the global level, so it is not meant to be public
 
         self.logging = LoggingApi(self)
-        self.set_in_game_logging_options_from_json = self.logging.set_options_from_json
-        self.write_in_game_logging_options_to_json = self.logging.write_options_to_json
-        self.start_in_game_logging = self.logging.start
-        self.stop_in_game_logging = self.logging.stop
 
         self.attach_sensor = self.sensors.attach
         self.detach_sensor = self.sensors.detach
@@ -155,6 +158,7 @@ class Vehicle:
         self.acc = AccApi(self)  # this API is for ACC handling
         self.acc_load = self.acc.start
         self.acc_unload = self.acc.stop
+        self.acc_change_speed = self.acc.change_speed
 
         self.couplers = CouplersApi(self)
 
@@ -164,8 +168,10 @@ class Vehicle:
         # create dummy BeamNGpy object for API hints to work properly (it will be replaced during `connect`)
         if beamng is None:
             from beamngpy.beamng import BeamNGpy
-
-            beamng = BeamNGpy("", -1)
+            global _beamng_dummy_instance
+            if _beamng_dummy_instance is None:
+                _beamng_dummy_instance = BeamNGpy("", -1)
+            beamng = _beamng_dummy_instance
 
         self._ge_api = GEVehiclesApi(beamng, self)
         self.focus = self.switch  # alias
@@ -230,6 +236,8 @@ class Vehicle:
         """
         if not bng.connection:
             raise BNGError("The simulator is not connected to BeamNGpy!")
+        # Set early so disconnect() can clean up sensors if connect fails later.
+        self.bng = bng
         if self.connection is None:
             self.connection = Connection(bng.host, self.port)
 
@@ -251,20 +259,22 @@ class Vehicle:
         # Connect the vehicle sensors.
         for _, sensor in self.sensors.items():
             sensor.connect(bng, self)
-        self.bng = bng
         self._init_beamng_api(bng)
 
     def disconnect(self) -> None:
         """
         Closes socket communication with the corresponding vehicle.
         """
-        for name, sensor in self.sensors.items():
-            if name != "state":
-                sensor.disconnect(self.bng, self)
+        # Sensors need the BeamNGpy handle; skip if we never fully connected.
+        if self.bng is not None:
+            for name, sensor in self.sensors.items():
+                if name != "state":
+                    sensor.disconnect(self.bng, self)
 
         if self.connection is not None:
             self.connection.disconnect()
             self.connection = None
+        self.bng = None
 
     def close(self) -> None:
         """
@@ -524,7 +534,10 @@ class Vehicle:
         return self._ge_api.switch()
 
     def teleport(
-        self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True
+        self, pos: Float3,
+        rot_quat: Quat | None = None,
+        reset: bool = True,
+        safe_spawn: bool = False, 
     ) -> bool:
         """
         Teleports the vehicle to the given position with the given
@@ -534,8 +547,9 @@ class Vehicle:
             pos: The target position as an (x,y,z) tuple containing world-space coordinates.
             rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion.
             reset: Specifies if the vehicle will be reset to its initial state during teleport (including its velocity).
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to False.
         """
-        return self._ge_api.teleport(pos, rot_quat, reset)
+        return self._ge_api.teleport(pos, rot_quat, reset, safe_spawn=safe_spawn)
 
     def get_part_options(self) -> StrDict:
         """
@@ -574,6 +588,8 @@ class Vehicle:
             * ``decisionMethod``
                 Describes the reason why the part is used for the slot. Can be ``user-empty``, ``user``,
                 ``default-empty`` or ``default``.
+
+        See also: :meth:`~beamngpy.api.beamng.VehiclesApi.get_part_config_for_config`
 
         Returns:
             The current vehicle configuration tree as a dictionary.

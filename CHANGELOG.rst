@@ -2,6 +2,76 @@
 Changelog
 =========
 
+Version 1.36
+============
+- Fixed function :pydocs:`VehiclesApi.get_available <beamngpy.api.beamng.VehiclesApi.get_available>`: it now behaves as
+  described in the documentation. Note that existing code needs to be updated: You don't need to extract the ``vehicles``
+  key from the function return value anymore to get the dict of available vehicles.
+
+- Added ``safe_spawn`` and ``cling`` parameters to vehicle placement and teleport functions.
+
+  - ``safe_spawn`` places vehicle on ground, avoiding collisions/air/underground (default True for most functions).
+  - ``cling`` is an alias for ``safe_spawn``, for backwards compatibility.
+  - Both supported in: :pydocs:`Scenario.add_vehicle <beamngpy.Scenario.add_vehicle>`,
+    :pydocs:`BeamNGpy.vehicles.spawn <beamngpy.api.beamng.VehiclesApi.spawn>`,
+    :pydocs:`Vehicle.teleport <beamngpy.Vehicle.teleport>`, and
+    :pydocs:`BeamNGpy.teleport_vehicle <beamngpy.api.beamng.VehiclesApi.teleport>`.
+
+- Scenario API improvements
+
+  - :pydocs:`ScenarioApi.teleport_object <beamngpy.api.beamng.ScenarioApi.teleport_object>` now supports ``cling``
+    (snap to ground) and ``offset`` (z offset), matching :pydocs:`DebugApi <beamngpy.api.beamng.DebugApi>` shape
+    teleport functions.
+  - :pydocs:`Scenario <beamngpy.Scenario>` now errors if modified after
+    :pydocs:`make() <beamngpy.Scenario.make>` but before
+    :pydocs:`load() <beamngpy.api.beamng.ScenarioApi.load>`, to prevent silent failures.
+
+- Platooning
+
+  - Added :pydocs:`PlatoonApi.launch <beamngpy.api.beamng.PlatoonApi.launch>` functionality.
+  - Simplified usage, leveraging its improved flexibility.
+
+- Added :pydocs:`set_avoid_cars <beamngpy.api.vehicle.AIApi.set_avoid_cars>` to the
+  :pydocs:`Vehicle AI API <beamngpy.api.vehicle.AIApi>`.
+- Adaptive Cruise Control
+
+  - Simplified usage, reflecting the changes made in the Lua.
+  - Added :pydocs:`change_speed <beamngpy.api.vehicle.AccApi.change_speed>` to the
+    :pydocs:`Vehicle ACC API <beamngpy.api.vehicle.AccApi>`.
+
+- Any missions can now be loaded through BeamNGpy, no matter its unlock requirements.
+- Fixed a race condition during scenario start which could cause invalid scenario state.
+- Optimized scenario loading performance.
+- Added a traffic signals API
+
+  - Added the :pydocs:`TrafficSignalsApi <beamngpy.api.beamng.TrafficSignalsApi>` (``bng.traffic_signals``) that reads
+    and controls level traffic signals from the Traffic Signals Editor / ``signals.json`` data via BeamNG.tech. A loaded
+    level with signal data is required.
+  - Lists active signal instances (name, state, action, controller/sequence ids, position), reads a single instance's
+    live state including direction, and returns the navgraph map-node signal snapshot. Also exposes the same instance,
+    controller, and sequence data used by the Traffic Signals Editor and ``signals.json`` (including durations and
+    phases), plus a timing snapshot with runtime sequence step fields.
+    :pydocs:`get_traffic_light <beamngpy.api.beamng.TrafficSignalsApi.get_traffic_light>` returns a vehicle pose facing
+    a signal for teleport setups.
+  - Live control supports forcing a signal to a controller state with
+    :pydocs:`set_instance_strict_state <beamngpy.api.beamng.TrafficSignalsApi.set_instance_strict_state>` (or clearing
+    the override), and changing a controller state's **Duration** with
+    :pydocs:`set_controller_state_duration <beamngpy.api.beamng.TrafficSignalsApi.set_controller_state_duration>` (same
+    as the editor; ``-1`` = infinite). Duration changes apply live and reset the signal timer; they do not write
+    ``signals.json`` unless saved in the editor.
+
+- Improved OpenDRIVE import in Road Architect
+
+  - Improved **OpenDRIVE** import reliability in Road Architect, including crest-curve handling, safer terrain
+    conforming, and whole-network terraform when no road group is selected.
+
+- Camera: optional translucent surfaces in depth
+
+  - Added a ``Render Translucents In Depth`` option (Sensor Configuration Editor / camera
+    sensor config). When enabled, translucent materials (e.g. glass) are treated as opaque for the depth pass only, so
+    depth no longer "sees through" them. Colour output is unchanged. Off by default; may increase cost because depth
+    uses an extra pass.
+
 Version 1.35.1
 ==============
 - Fixed missing dependencies

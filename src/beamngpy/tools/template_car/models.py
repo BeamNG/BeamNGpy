@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 from enum import Enum
 import numpy as np
-from typing import Literal
+from typing import Literal, Optional
 
 
 class Settings(BaseModel):
@@ -42,6 +42,13 @@ class VehicleParameters(BaseModel):
     rear_overhang: float = Field(title="Rear overhang", description="unit: m", default=0.70, ge=0.3, le=2.0)
     body_width: float = Field(title="Body width", description="unit: m", default=1.60, ge=1.20, le=3.2)
     body_height: float = Field(title="Body height", description="unit: m", default=1.32, ge=0.8, le=4.2)
+    ride_height: float = Field(title="Ride height", description="unit: m", default=0.105, ge=-0.5, le=0.5)
+    front_spring_rate: float = Field(title="Front spring rate", description="unit: N/m", default=27465, ge=100, le=100000)
+    front_damping: float = Field(title="Front damping", description="unit: N/m/s", default=5708, ge=10, le=100000)
+    rear_spring_rate: float = Field(title="Rear spring rate", description="unit: N/m", default=33609, ge=100, le=100000)
+    rear_damping: float = Field(title="Rear damping", description="unit: N/m/s", default=6362, ge=10, le=100000)
+    front_swaybar_spring_rate: float = Field(title="Front sway bar spring rate", description="unit: Nm/rad", default=1200, ge=10, le=10000)
+    rear_swaybar_spring_rate: float = Field(title="Rear sway bar spring rate", description="unit: Nm/rad", default=500, ge=10, le=10000)
 
 
 class BodyShape(str, Enum):
@@ -89,7 +96,7 @@ class BaseVariables(BaseModel):
                 values.append(extractor(self, n))
         return values
 
-    def _get_bound(self, field_name: str, bound_type: Literal["ge", "le"]) -> float | None:
+    def _get_bound(self, field_name: str, bound_type: Literal["ge", "le"]) -> Optional[float]:
         constraints = type(self).model_fields[field_name].metadata
         for c in constraints:
             if hasattr(c, bound_type):
@@ -138,6 +145,9 @@ class OptimizationEnabled(BaseOptimizationEnabled):
     mass: bool = Field(default=False)
     cg_y: bool = Field(default=False)
     cg_z: bool = Field(default=False)
+    inertia_yaw: bool = Field(default=False)
+    inertia_pitch: bool = Field(default=False)
+    inertia_roll: bool = Field(default=False)
 
 
 class OptimizationVariables(BaseVariables):
@@ -149,6 +159,15 @@ class OptimizationVariables(BaseVariables):
     )
     cg_z_factor: float = Field(
         title="Center of gravity height (z) factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
+    )
+    inertia_yaw_factor: float = Field(
+        title="Inertia yaw factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
+    )
+    inertia_pitch_factor: float = Field(
+        title="Inertia pitch factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
+    )
+    inertia_roll_factor: float = Field(
+        title="Inertia roll factor", description="", default=0.0, ge=-10.0, le=10.0, json_schema_extra={"min_step": 1e-3}
     )
 
 
@@ -162,12 +181,24 @@ class TargetValues(BaseTargets):
     cg_z: float = Field(
         title="Center of gravity height (z)", description="unit: m", default=0.25, ge=0.0, le=5.0, json_schema_extra={"tolerance": 1e-3}
     )
+    inertia_yaw: float = Field(
+        title="Yaw Inertia", description="unit: kg m^2", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
+    )
+    inertia_pitch: float = Field(
+        title="Pitch Inertia", description="unit: kg m^2", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
+    )
+    inertia_roll: float = Field(
+        title="Roll Inertia", description="unit: kg m^2", default=400, ge=150, le=1500, json_schema_extra={"tolerance": 1e-3}
+    )
 
 
 class OutputValues(BaseModel):
     mass: float = Field(title="Mass", description="unit: kg")
     cg_y: float = Field(title="Center of gravity longitudinal (y)", description="unit: m")
     cg_z: float = Field(title="Center of gravity height (z)", description="unit: m")
+    inertia_yaw: float = Field(title="Yaw Inertia", description="unit: kg m^2")
+    inertia_pitch: float = Field(title="Pitch Inertia", description="unit: kg m^2")
+    inertia_roll: float = Field(title="Roll Inertia", description="unit: kg m^2")
 
 
 class Optimization(BaseModel):

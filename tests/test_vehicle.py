@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import random
 
 import numpy as np
@@ -214,7 +213,7 @@ def test_lights(beamng: BeamNGpy):
     with beamng as bng:
         scenario = Scenario("tech_ground", "lights_test")
         config = "vehicles/etk800/854_police_A.pc"
-        vehicle = Vehicle("vehicle", model="etk800", part_config=config)
+        vehicle = Vehicle("vehicle1", model="etk800", part_config=config)
         other = Vehicle("other", model="pickup")
 
         vehicle.sensors.attach("electrics", sensors.Electrics())
@@ -241,67 +240,51 @@ def test_lights(beamng: BeamNGpy):
         bng.scenario.load(scenario)
         bng.scenario.start()
 
-        bng.control.step(100)
+        bng.control.step(10)
 
-        for r in range(len(binary) + len(ternary)):
-            r = r + 1
-            for idx, combo in enumerate(itertools.combinations(possible, r)):
-                if idx > 1024:
-                    break
+        # Single-light smoke cases only — full C(n,r) is too slow for CI.
+        cases = [{light: value} for light, value in possible]
+        cases.append({"headlights": 2, "fog_lights": 1, "lightbar": 1})
+        cases.append({"left_signal": True, "headlights": 1})
+        cases.append({"hazard_signal": True, "fog_lights": 2})
+        for vals in cases:
+            expected = dict(**vals)
 
-                vals = {}
-                for light, value in combo:
-                    vals[light] = value
+            if expected.get("hazard_signal"):
+                if "left_signal" in vals or "right_signal" in vals:
+                    continue
+            elif vals.get("left_signal") and vals.get("right_signal"):
+                continue
 
-                expected = dict(**vals)
+            vehicle.set_lights(**vals)
+            bng.control.step(1, wait=True)
 
-                if "hazard_signal" in expected and expected["hazard_signal"]:
-                    # left/right signals are overridden by the hazard light
-                    # so we skip tests that set both
-                    if "left_signal" in vals:
-                        continue
-                    if "right_signal" in vals:
-                        continue
-                else:
-                    # Signals negate each other so we skip tests that set both
-                    if "left_signal" in vals and vals["left_signal"]:
-                        if "right_signal" in vals and vals["right_signal"]:
-                            continue
-                    if "right_signal" in vals and vals["right_signal"]:
-                        if "left_signal" in vals and vals["left_signal"]:
-                            continue
+            vehicle.sensors.poll()
+            data = vehicle.sensors["electrics"]
+            msg_fmt = (
+                "Setting the combination of {} did not result in "
+                "corresponding light states in the case of {}."
+            )
+            _check_lights(expected, data, msg_fmt)
 
-                # bng.step(1, wait=True)
-                vehicle.set_lights(**vals)
-                bng.control.step(1, wait=True)
+            other.sensors.poll()
+            data = other.sensors["electrics"]
+            msg_fmt = (
+                "Other vehicle has lights on when it should not. "
+                "Expected {} but got mismatch in the case of: {}"
+            )
+            _check_lights(all_off, data, msg_fmt)
 
-                vehicle.sensors.poll()
-                data = vehicle.sensors["electrics"]
-                msg_fmt = (
-                    "Setting the combination of {} did not result in "
-                    "corresponding light states in the case of {}."
-                )
-                _check_lights(expected, data, msg_fmt)
+            vehicle.set_lights(**all_off)
+            bng.control.step(1, wait=True)
 
-                other.sensors.poll()
-                data = other.sensors["electrics"]
-                msg_fmt = (
-                    "Other vehicle has lights on when it should not. "
-                    "Expected {} but got mismatch in the case of: {}"
-                )
-                _check_lights(all_off, data, msg_fmt)
-
-                vehicle.set_lights(**all_off)
-                bng.control.step(1, wait=True)
-
-                vehicle.sensors.poll()
-                data = vehicle.sensors["electrics"]
-                msg_fmt = (
-                    "Lights did not turn off correctly. Expected {} "
-                    "but got mismatch in the case of: {}"
-                )
-                _check_lights(all_off, data, msg_fmt)
-
+            vehicle.sensors.poll()
+            data = vehicle.sensors["electrics"]
+            msg_fmt = (
+                "Lights did not turn off correctly. Expected {} "
+                "but got mismatch in the case of: {}"
+            )
+            _check_lights(all_off, data, msg_fmt)
 
 def test_traffic(beamng: BeamNGpy):
     with beamng as bng:

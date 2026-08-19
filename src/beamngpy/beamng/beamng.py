@@ -3,13 +3,14 @@ from __future__ import annotations
 import logging
 import platform
 import subprocess
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List
 
 from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
                                  EnvironmentApi, PlatoonApi, ScenarioApi,
-                                 SettingsApi, SystemApi, TrafficApi, UiApi,
-                                 VehiclesApi)
+                                 SettingsApi, SystemApi, TrafficApi,
+                                 TrafficSignalsApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
 from beamngpy.connection import Connection
 from beamngpy.logging import LOGGER_ID, BNGError, create_warning, BNGDisconnectedError
@@ -65,6 +66,12 @@ class BeamNGpy:
                Sensors which require rendering pipeline will not be available.
         gfx: Instrument BeamNG to force to use a rendering API on launch. Possible choices are
              ``dx11`` for DirectX 11 and ``vk`` for Vulkan. Incompatible with the ``nogpu`` option.
+        socket_timeout: Optional timeout in seconds for socket operations when communicating
+                       with the simulator. If None (default), the socket blocks indefinitely.
+                       If set, recv/send will raise :class:`socket.timeout` when the simulator
+                       does not respond in time (e.g. under heavy load with UI). Useful for
+                       long experiments to avoid freezing forever; catch the timeout and retry
+                       or restart the simulator.
 
     Attributes
     ----------
@@ -98,6 +105,9 @@ class BeamNGpy:
         traffic: TrafficApi
             The API module to control the traffic.
             See :class:`.TrafficApi` for details.
+        traffic_signals: TrafficSignalsApi
+            The API module to read and override traffic signal instances.
+            See :class:`.TrafficSignalsApi` for details.
         vehicles: VehiclesApi
             The API module to control the vehicles in the scenario.
             See :class:`.VehiclesApi` for details.
@@ -115,6 +125,7 @@ class BeamNGpy:
         headless: bool = False,
         nogpu: bool = False,
         gfx: str | None = None,
+        socket_timeout: float | None = None,
     ):
         self.logger = logging.getLogger(f"{LOGGER_ID}.BeamNGpy")
         self.logger.setLevel(logging.DEBUG)
@@ -138,6 +149,7 @@ class BeamNGpy:
             self.gfx = None
         self.last_command_line = None
         self._debug = debug
+        self.socket_timeout = socket_timeout
         self.connection: Connection | None = None
         self._scenario: Scenario | None = None
         self._host_os: str | None = None
@@ -190,7 +202,9 @@ class BeamNGpy:
                      Set to ``*`` if you want BeamNG to listen on ALL network interfaces.
             opts: Additional key-value options to pass when launching a new process.
         """
-        self.connection = Connection(self.host, self.port)
+        self.connection = Connection(
+            self.host, self.port, timeout=self.socket_timeout
+        )
 
         # try to connect to existing instance
         connected = self.connection.connect_to_beamng(tries=1, log_tries=False)
@@ -264,7 +278,8 @@ class BeamNGpy:
             self._try_quit_beamng()
         self._disconnect()
         if self.quit_on_close and self.process:
-            self._kill_beamng()
+            if not self._wait_for_graceful_quit(timeout=10.0):
+                self._kill_beamng()
 
     def _load_system_info(self) -> None:
         info = self.system.get_info()
@@ -351,11 +366,14 @@ class BeamNGpy:
         self.reset_traffic = self.traffic.reset
         self.stop_traffic = self.traffic.stop
 
+        self.traffic_signals = TrafficSignalsApi(self)
+
         self.vehicles = VehiclesApi(self)
         self.spawn_vehicle = self.vehicles.spawn
         self.despawn_vehicle = self.vehicles.despawn
         self.get_available_vehicles = self.vehicles.get_available
         self.await_vehicle_spawn = self.vehicles.await_spawn
+        self.await_vehicle_reconnect = self.vehicles.await_reconnect
         self.switch_vehicle = self.vehicles.switch
         self.teleport_vehicle = self.vehicles.teleport
         self.get_part_annotation = self.vehicles.get_part_annotation
@@ -376,6 +394,18 @@ class BeamNGpy:
                 self.control.quit_beamng()
         except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, BNGDisconnectedError):
             pass
+
+    def _wait_for_graceful_quit(self, timeout: float = 10.0) -> bool:
+        """Waits for the BeamNG.* process to quit gracefully.
+        Returns True if the process quit gracefully, False if it timed out.
+        """
+        start_time = time.time()
+        while self.process.poll() is None:
+            if time.time() - start_time > timeout:
+                return False
+            time.sleep(0.1)
+        self.process = None
+        return True
 
     def _kill_beamng(self) -> None:
         """

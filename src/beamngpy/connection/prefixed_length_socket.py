@@ -15,13 +15,19 @@ class PrefixedLengthSocket:
     HEADER_BYTES = 4
 
     @staticmethod
-    def _initialize_socket() -> socket.socket:
+    def _initialize_socket(timeout: float | None = None) -> socket.socket:
         """
         Create a socket with the appropriate parameters for TCP_NODELAY.
+
+        Args:
+            timeout: Optional timeout in seconds for socket operations. If None,
+                     the socket blocks indefinitely (default). If set, recv/send
+                     will raise socket.timeout when the operation takes longer,
+                     which can be used to recover from simulator freezes.
         """
         skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        skt.settimeout(None)
+        skt.settimeout(timeout)
         return skt
 
     def _recv_exactly(self, length: int) -> bytes:
@@ -47,18 +53,25 @@ class PrefixedLengthSocket:
 
         return b"".join(recv_buffer)
 
-    def __init__(self, host: str, port: int, reconnect_tries: int = 5):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        reconnect_tries: int = 5,
+        timeout: float | None = None,
+    ):
         self.host = host
         self.port = port
         self.reconnect_tries = reconnect_tries
+        self.timeout = timeout
         self.SEND_LOCK = threading.Lock()
         self.RECV_LOCK = threading.Lock()
         self.recv_buffer = []
-        self.skt = self._initialize_socket()
+        self.skt = self._initialize_socket(timeout)
         self._process: subprocess.Popen | None = None
         try:
             self.skt.connect((host, port))
-        except: # cleanup resources
+        except:  # cleanup resources
             self.skt.close()
             raise
 
@@ -89,7 +102,7 @@ class PrefixedLengthSocket:
         Attempts to re-connect using this instance, with the cached port and host.
         This will be called if a connection has been lost, in order to re-establish the connection.
         """
-        self.skt = self._initialize_socket()
+        self.skt = self._initialize_socket(self.timeout)
         sleep_time = 0
         tries = self.reconnect_tries
         connected = False

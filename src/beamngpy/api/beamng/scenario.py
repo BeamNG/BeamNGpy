@@ -195,7 +195,12 @@ class ScenarioApi(Api):
         )
 
     def teleport_object(
-        self, scenario_object: ScenarioObject, pos: Float3, rot_quat: Quat | None = None
+        self,
+        scenario_object: ScenarioObject,
+        pos: Float3,
+        rot_quat: Quat | None = None,
+        cling: bool = False,
+        offset: float = 0.0,
     ) -> None:
         """
         Teleports the given scenario object to the given position with the
@@ -205,12 +210,19 @@ class ScenarioApi(Api):
             scenario_object: The vehicle to teleport.
             pos: The target position as an (x,y,z) tuple containing world-space coordinates.
             rot_quat: Optional tuple specifying object rotation as a quaternion.
+            cling: If True, the object will be snapped to the ground surface height at the given (x, y) position.
+            offset: The z-axis offset of the object coordinates. Can only be used together with
+                    ``cling=True`` to spawn objects an exact amount above the ground.
         """
         data: StrDict = dict(type="TeleportScenarioObject")
         data["id"] = scenario_object.id
         data["pos"] = pos
         if rot_quat:
             data["rot"] = rot_quat
+        if cling:
+            data["cling"] = cling
+        if offset != 0.0:
+            data["offset"] = offset
         self._send(data).ack("ScenarioObjectTeleported")
 
     def start(self, restrict_actions: bool | None = None) -> None:

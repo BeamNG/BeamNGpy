@@ -11,8 +11,8 @@
             ["template_car_hub_R", ["template_car_hub_R"], [], "template_car_hub_R_4", "Rear Hubs"],   // parts can be loaded from other jbeam files
             //the coordinates of the nodeOffset determine where the common wheel is placed when it is loaded
             ["template_car_wheeldata_R_liveaxle_4link", ["template_car_wheeldata_R_liveaxle_4link"], [], "template_car_wheeldata_R_liveaxle_4link", "Rear Spindles", {"coreSlot":true}],
-            ["template_car_coilover_R_liveaxle_4link", ["template_car_coilover_R_liveaxle_4link"], [], "template_car_coilover_R_liveaxle_4link", "Rear Coilovers", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":0.105}}],
-            ["template_car_swaybar_R_liveaxle_4link", ["template_car_swaybar_R_liveaxle_4link"], [], "template_car_swaybar_R_liveaxle_4link", "Rear Sway Bar", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":0.105}}],
+            ["template_car_coilover_R_liveaxle_4link", ["template_car_coilover_R_liveaxle_4link"], [], "template_car_coilover_R_liveaxle_4link", "Rear Coilovers", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
+            ["template_car_swaybar_R_liveaxle_4link", ["template_car_swaybar_R_liveaxle_4link"], [], "template_car_swaybar_R_liveaxle_4link", "Rear Sway Bar", {"nodeOffset":{"x":0, "y":{{ wheelbase|float }}, "z":{{ ride_height | float | round(3) }}}}],
         ],
         "flexbodies": [
             ["mesh", "[group]:", "nonFlexMaterials"],
@@ -374,7 +374,7 @@
         "torsionbars": [
             ["id1:", "id2:", "id3:", "id4:"],
             //torsional spring rate (Nm/rad) NOT end spring rate
-            {"spring":500, "damp":1, "deform":10000, "strength":50000},
+            {"spring":{{ rear_swaybar_spring_rate }}, "damp":1, "deform":10000, "strength":50000},
             ["arbrr", "rx1r", "rx1l", "arbrl"],
         ],
         "nodes": [
@@ -415,7 +415,7 @@
         "beams": [
             ["id1:", "id2:"],
             //springs
-            {"beamSpring":33609,"beamDamp":0},
+            {"beamSpring":{{ rear_spring_rate }},"beamDamp":0},
             {"beamDeform":51000,"beamStrength":251000},
             //precompressionRange specifies how much longer/shorter than spawn length the beam tries to achieve, in meters.
             //precompressionRange supersedes over beamPrecompression, make sure to only use this value inline with beams
@@ -426,7 +426,7 @@
 
             //dampers
             {"beamPrecompression":1, "beamType":"|BOUNDED", "beamLongBound":1, "beamShortBound":1},
-            {"beamSpring":0,"beamDamp":6362},
+            {"beamSpring":0,"beamDamp":{{ rear_damping }}},
             {"beamLimitSpring":0,"beamLimitDamp":0},
             ["ax4rr","rs1r", {"name":"damper_RR","beamDampRebound":7952,"beamDampVelocitySplit":0.1,"beamDampFast":4771,"beamDampReboundFast":3578,"dampCutoffHz":500}],
             ["ax4ll","rs1l", {"name":"damper_RL","beamDampRebound":7952,"beamDampVelocitySplit":0.1,"beamDampFast":4771,"beamDampReboundFast":3578,"dampCutoffHz":500}],

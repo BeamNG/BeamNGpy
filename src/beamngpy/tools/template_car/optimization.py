@@ -1,5 +1,7 @@
 """Optimization module for tuning vehicle parameters to match targets."""
 
+from typing import Optional
+
 from beamngpy import BeamNGpy, Scenario, Vehicle
 from .generation import generate_car
 from .models import TemplateVehicle
@@ -73,7 +75,7 @@ class BeamNG:
         self.beamng = BeamNGpy("localhost", 25252, home=install_path, user=user_folder)
         self.vehicle_id = id
         self.vehicle = vehicle
-        self.v: Vehicle | None = None
+        self.v: Optional[Vehicle] = None
 
     def load_scenario(self, pos=(0, 0, 0), pause=False):
         scenario = Scenario("smallgrid", "template_car_parametrization")
@@ -122,7 +124,10 @@ def measure_output_values(v: Vehicle, inputs: VehicleInputs, beamng: BeamNGpy, u
     last_sample = data[-1]
     p = get_mass_properties(last_sample)
     _, cg_y, cg_z = p["center_of_gravity"]
-    return OutputValues(mass=p["mass"], cg_y=cg_y, cg_z=cg_z)
+    inertia_yaw = p["inertia"]["z"]
+    inertia_pitch = p["inertia"]["x"]
+    inertia_roll = p["inertia"]["y"]
+    return OutputValues(mass=p["mass"], cg_y=cg_y, cg_z=cg_z, inertia_yaw=inertia_yaw, inertia_pitch=inertia_pitch, inertia_roll=inertia_roll)
 
 
 def get_mass_properties(sample: dict):
@@ -179,7 +184,7 @@ def reload_vehicle(v: Vehicle, debug=False):
     cmd = "return core_vehicle_manager.reloadVehicle(0)"
     beamng.queue_lua_command(cmd)
     t = time()
-    vehicles_api.await_spawn(v.vid)
+    vehicles_api.await_reconnect(v.vid)
     if debug:
         print(f"await spawn took {time() - t:.3f} seconds")
     t = time()

@@ -18,7 +18,8 @@
  "partConfig": "{{vehicle.partConfig}}",
 {% endif %}
  "rotationMatrix": {{vehicle.rotationMatrix}},
- "autoEnterVehicle": "false"
+ "autoEnterVehicle": "false",
+ "spawnAutoplace": "{{vehicle.spawnAutoplace}}"
 }
 |---|{% endfor %}
 {% for road in roads %}{
@@ -76,5 +77,6 @@
  "name": "{{scenario.name}}_group",
  "class": "SimGroup",
  "persistentId": "{{scenario._uuid}}",
- "groupPosition": "0.000000 0.000000 0.000000"
+ "groupPosition": "0.000000 0.000000 0.000000",
+ "noAutoReload": true
 }

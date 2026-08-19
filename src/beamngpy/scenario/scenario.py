@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Tuple
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
-from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError
+from beamngpy.logging import LOGGER_ID, BNGError, BNGValueError, create_warning
 from beamngpy.misc.colors import coerce_color
 from beamngpy.misc.quat import quat_as_rotation_mat_str
 from beamngpy.scenario.road import DecalRoad
@@ -123,6 +123,7 @@ class Scenario:
         self.options = options
 
         self.vehicles: Dict[str, Vehicle] = {}
+        self._vehicle_ids_order: List[str] = []
         self.transient_vehicles: Dict[str, Vehicle] = (
             {}
         )  # Vehicles added during scenario
@@ -194,7 +195,7 @@ class Scenario:
             difficulty=self.difficulty,
             authors=self.authors,
             lapConfig=self.checkpoints,
-            forceNoCountDown=True,
+            forceNoCountDown=True
         )
 
         vehicles_dict = dict()
@@ -226,6 +227,7 @@ class Scenario:
             pos, rot = self._vehicle_locations[vid]
             vehicle_dict = dict(vid=vid)
             vehicle_dict.update(vehicle.options)
+            vehicle_dict.setdefault("spawnAutoplace", "true")
             vehicle_dict["position"] = _list_to_str(pos)
             vehicle_dict["rotationMatrix"] = (
                 "[" + quat_as_rotation_mat_str(rot, ", ") + "]"
@@ -339,12 +341,24 @@ class Scenario:
 
         self.vehicles = current_vehicles
 
+    def _raise_if_made_but_not_loaded(self, operation: str) -> None:
+        if self.path is not None and self.bng is None:
+            raise BNGError(
+                f"Cannot {operation} after the scenario has been made but before it has been loaded. "
+                "Call bng.scenario.load(scenario) first, or perform this operation before scenario.make(bng)."
+            )
+
     def add_object(self, obj: ScenarioObject) -> None:
         """
         Adds an extra object to be placed in the prefab. Objects are expected
         to be :class:`.ScenarioObject` instances with additional, type-
         specific properties in that class's opts dictionary.
+        
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add an object after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add an object")
         self.objects.append(obj)
 
     def add_vehicle(
@@ -352,7 +366,8 @@ class Scenario:
         vehicle: Vehicle,
         pos: Float3 = (0, 0, 0),
         rot_quat: Quat = (0, 0, 0, 1),
-        cling: bool = True,
+        safe_spawn: bool = True,
+        cling: bool | None = None,
     ) -> None:
         """
         Adds a :class:`.Vehicle`: to this scenario at the given position with the given
@@ -362,9 +377,21 @@ class Scenario:
             vehicle: The vehicle to spawn.
             pos: ``(x, y, z)`` tuple specifying the position of the vehicle.
             rot_quat: ``(x, y, z, w)`` tuple specifying the rotation as quaternion.
-            cling: If True, the z-coordinate of the vehicle's position will be set to the ground level at the given
-                   position to avoid spawning the vehicle below ground or in the air.
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on
+                        the ground, avoiding spawning the vehicle below ground or in the air,
+                        and collisions with other vehicles or objects. If there is no safe
+                        position nearby, the vehicle will be spawned at the given position.
+                        This option may modify the spawn position (including x and y
+                        coordinates) as well as the rotation of the vehicle. Defaults to True.
+            cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
+
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
+            BNGValueError: If the vehicle has the same name as the scenario.
+            BNGValueError: If the vehicle is already in the scenario.
         """
+        # Cannot add a vehicle after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a vehicle")
         if self.name == vehicle.vid:
             error = (
                 "Cannot have vehicle with the same name as the scenario:"
@@ -380,14 +407,25 @@ class Scenario:
             vehicle.disconnect()
 
         self.vehicles[vehicle.vid] = vehicle
+        self._vehicle_ids_order.append(vehicle.vid)
         self._vehicle_locations[vehicle.vid] = (pos, rot_quat)
         self.logger.debug(f"Added vehicle with id '{vehicle.vid}'.")
+        
+        if cling is not None:
+            create_warning("cling is deprecated and will be removed in a future version. Use safe_spawn instead.")
+            if not cling:
+                safe_spawn = False
+            
+        if not safe_spawn and cling:
+            create_warning("cling=True conflicts with safe_spawn=False. cling will be ignored.")
 
         if self.bng:
-            self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, cling=cling)
+            self.bng.vehicles.spawn(vehicle, pos, rot_quat=rot_quat, safe_spawn=safe_spawn)
             self.transient_vehicles[vehicle.vid] = vehicle
             vehicle.connect(self.bng)
         else:
+            # Scenario not yet loaded: embed safe_spawn as spawnAutoplace in the prefab
+            vehicle.options["spawnAutoplace"] = "true" if safe_spawn else "false"
             self.logger.debug(
                 "No BeamNGpy instance available. "
                 f"Did not spawn vehicle with id '{vehicle.vid}'."
@@ -400,7 +438,12 @@ class Scenario:
 
         Args:
             vehicle: The vehicle to remove.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot remove a vehicle after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("remove a vehicle")
         if vehicle.vid in self.vehicles:
             if self.bng:
                 self.bng.vehicles.despawn(vehicle)
@@ -447,7 +490,12 @@ class Scenario:
 
         Args:
             road: Road to be added to the scenario.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add a road after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a road")
         self.roads.append(road)
 
     def add_mesh_road(self, road: MeshRoad) -> None:
@@ -456,7 +504,12 @@ class Scenario:
 
         Args:
             road: Mesh road to be added to the scenario.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add a mesh road after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a mesh road")
         self.mesh_roads.append(road)
 
     def add_procedural_mesh(self, mesh: ProceduralMesh) -> None:
@@ -465,7 +518,12 @@ class Scenario:
 
         Args:
             mesh: The mesh to place.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add a procedural mesh after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add a procedural mesh")
         self.proc_meshes[mesh.name] = mesh
         if self.bng:
             mesh.place(self.bng)
@@ -480,6 +538,8 @@ class Scenario:
         Raises:
             BNGError: If the mesh to remove was not found.
         """
+        # Cannot remove a procedural mesh after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("remove a procedural mesh")
         deleted = False
         if mesh.name in self.proc_meshes:
             del self.proc_meshes[mesh.name]
@@ -503,7 +563,12 @@ class Scenario:
             positions: Positions (tuple of length 3) of the individual points.
             scales: Scales (tuple of length 3) of the individual points
             ids: Optional, names of the individual points.
+            
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
+        # Cannot add checkpoints after the scenario has been made but before it has been loaded
+        self._raise_if_made_but_not_loaded("add checkpoints")
         if ids is None:
             ids = [f"wp{i}" for i in range(len(positions))]
         assert len(positions) == len(scales) == len(ids)
@@ -543,6 +608,9 @@ class Scenario:
         converting them into the most appropriate known (sub)class of
         :class:`.SceneObject`. The result is not returned but rather stored
         in the ``scene`` field of this class.
+        
+        Raises:
+            BNGError: If the scenario has been made but not loaded.
         """
         assert self.bng
         scenetree = self.bng._message("SyncScene")
@@ -576,7 +644,19 @@ class Scenario:
             player_vid = None
 
         self.logger.debug(f"Connecting to {len(self.vehicles)} vehicles.")
-        for vehicle in self.vehicles.values():
+        # Connect player first, then remaining vehicles in add_vehicle order
+        # (dict iteration order alone is not enough across Python versions / reloads).
+        order_index = {vid: i for i, vid in enumerate(self._vehicle_ids_order)}
+
+        def connect_order_key(vehicle: Vehicle) -> tuple:
+            return (
+                0 if player_vid and vehicle.vid == player_vid else 1,
+                order_index.get(vehicle.vid, len(order_index)),
+                vehicle.vid,
+            )
+
+        vehicles = sorted(self.vehicles.values(), key=connect_order_key)
+        for vehicle in vehicles:
             if connect_existing or (connect_player and vehicle.vid == player_vid):
                 vehicle.connect(bng)
 
@@ -610,6 +690,7 @@ class Scenario:
             prefab=prefab,
             info=info,
             json=True,
+            noAutoReload=True
         )
 
     def find(self, bng: BeamNGpy) -> str | None:

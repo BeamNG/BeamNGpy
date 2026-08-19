@@ -52,9 +52,10 @@ class GEVehiclesApi(Api):
         return self._beamng.switch_vehicle(self.vehicle)
 
     def teleport(
-        self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True
+        self, pos: Float3, rot_quat: Quat | None = None, reset: bool = True,
+        safe_spawn: bool = False
     ) -> bool:
-        return self._beamng.teleport_vehicle(self.vehicle.vid, pos, rot_quat, reset)
+        return self._beamng.teleport_vehicle(self.vehicle.vid, pos, rot_quat, reset, safe_spawn=safe_spawn)
 
     def get_part_options(self) -> StrDict:
         data = dict(type="GetPartOptions")
@@ -74,7 +75,7 @@ class GEVehiclesApi(Api):
         data["vid"] = self.vehicle.vid
         data["config"] = cfg
         self._send(data)
-        self._beamng.await_vehicle_spawn(self.vehicle.vid)
+        self._beamng.await_vehicle_reconnect(self.vehicle.vid)  # wait until spawned and re-opened server
         self.vehicle.connect(self._beamng)
 
     def set_license_plate(self, text: str) -> None:

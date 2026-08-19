@@ -13,3 +13,7 @@ def validate_object_name(name: str) -> None:
         raise BNGValueError(f"Object name cannot start with a digit - '{name}'")
     if "/" in name:
         raise BNGValueError(f"Object name cannot contain a '/'- '{name}'")
+    if name.lower() == "vehicle":
+        raise BNGValueError(
+            f"Object name '{name}' is reserved in the simulator; choose another vehicle id."
+        )

@@ -5,6 +5,8 @@ from typing import Dict, Iterable, List
 from beamngpy.misc.colors import coerce_color, rgba_to_str
 from beamngpy.types import Float3, Quat, StrDict
 from beamngpy.vehicle import Vehicle
+from beamngpy.logging import BNGValueError, create_warning
+from beamngpy.utils.validation import validate_object_name
 
 from .base import Api
 
@@ -31,7 +33,8 @@ class VehiclesApi(Api):
         vehicle: Vehicle,
         pos: Float3,
         rot_quat: Quat = (0, 0, 0, 1),
-        cling: bool = True,
+        safe_spawn: bool = True,
+        cling: bool | None = None,
         connect: bool = True,
     ) -> bool:
         """
@@ -45,21 +48,28 @@ class VehiclesApi(Api):
             vehicle: The vehicle to be spawned.
             pos: Where to spawn the vehicle as a (x, y, z) triplet.
             rot_quat: Vehicle rotation in form of a quaternion
-            cling: If set, the z-coordinate of the vehicle's position
-                   will be set to the ground level at the given
-                   position to avoid spawning the vehicle below ground
-                   or in the air.
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to True.
+            cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
             connect: Whether to connect the newly spawned vehicle to BeamNGpy.
 
         Returns:
             bool indicating whether the spawn was successful or not
         """
-        data: StrDict = dict(type="SpawnVehicle", cling=cling)
+        if cling is not None:
+            create_warning("cling is deprecated and will be removed in a future version. Use safe_spawn instead.")
+            if not cling:
+                safe_spawn = False
+            
+        if not safe_spawn and cling:
+            create_warning("cling=True conflicts with safe_spawn=False. cling will be ignored.")
+        
+        data: StrDict = dict(type="SpawnVehicle", safe_spawn=safe_spawn)
         data.update(vehicle.options)
         data["name"] = vehicle.vid
         data["model"] = vehicle.options["model"]
         data["pos"] = pos
         data["rot"] = rot_quat
+        data["safeSpawn"] = safe_spawn
         for color in ("color", "color2", "color3"):
             if data[color] is not None:
                 data[color] = rgba_to_str(coerce_color(data[color]))
@@ -132,8 +142,7 @@ class VehiclesApi(Api):
             BNGError: If the game is not running to accept a request.
         """
         data = dict(type="GetAvailableVehicles")
-        print("data:", data)
-        return self._send(data).recv("AvailableVehicles")
+        return self._send(data).recv("AvailableVehicles")['vehicles']
 
     def await_spawn(self, vid: str | Vehicle) -> None:
         """
@@ -147,6 +156,19 @@ class VehiclesApi(Api):
         data["name"] = vid
         resp = self._send(data).recv("VehicleSpawned")
         assert resp["name"] == vid
+    
+    def await_reconnect(self, vid: str | Vehicle) -> None:
+        """
+        Waits for the vehicle with the given name to re-open the server and returns once it
+        has.
+
+        Args:
+            vid: The name of the vehicle to wait for.
+        """
+        data: StrDict = dict(type="WaitForVehicleReconnect")
+        data["name"] = vid
+        resp = self._send(data).recv("StartVehicleConnection")
+        assert resp["vid"] == vid
 
     def switch(self, vehicle: str | Vehicle) -> None:
         """
@@ -167,6 +189,7 @@ class VehiclesApi(Api):
         pos: Float3,
         rot_quat: Quat | None = None,
         reset: bool = True,
+        safe_spawn: bool = False,
     ) -> bool:
         """
         Teleports the given vehicle to the given position with the given
@@ -178,6 +201,7 @@ class VehiclesApi(Api):
             rot_quat: Optional tuple (x, y, z, w) specifying vehicle rotation as quaternion.
             reset: Specifies if the vehicle will be reset to its initial
                    state during teleport (including its velocity).
+            safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to False.
         """
         vehicle_id = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
 
@@ -186,6 +210,7 @@ class VehiclesApi(Api):
         data["vehicle"] = vehicle_id
         data["pos"] = pos
         data["reset"] = reset
+        data["safe_spawn"] = safe_spawn
         if rot_quat:
             data["rot"] = rot_quat
         resp = self._send(data).recv("Teleported")
@@ -253,8 +278,21 @@ class VehiclesApi(Api):
             by this function.
         """
         vehicles = self.get_current_info(include_config=include_config)
-        vehicles = {n: Vehicle.from_dict(v) for n, v in vehicles.items()}
-        return vehicles
+        # Skip empty or invalid ids (e.g. reserved "vehicle") instead of raising;
+        # the sim can report entries that are not usable Vehicle objects.
+        result: Dict[str, Vehicle] = {}
+        for key, data in vehicles.items():
+            vid = key or data.get("name")
+            if not vid:
+                continue
+            try:
+                validate_object_name(vid)
+            except BNGValueError:
+                continue
+            entry = dict(data)
+            entry["name"] = vid
+            result[vid] = Vehicle.from_dict(entry)
+        return result
 
     def get_player_vehicle_id(self) -> StrDict:
         """
@@ -282,3 +320,27 @@ class VehiclesApi(Api):
         data["vid"] = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
         data["text"] = text
         self._send(data).ack("SetLicensePlate")
+
+    def get_part_config_for_config(self, model: str, config: dict | str | None = None):
+        """Get the part configuration for a given vehicle model, assuming the provided configuration was applied.
+
+        This function is useful to get the part configuration tree for a given vehicle model, assuming a hypothetical
+        configuration is applied. It can be used if no such vehicle is spawned or a different configuration is actually
+        applied to a spawned vehicle. This can be used to browse the part tree for available options, using different
+        hypothetically selected parts.
+
+        See also: :meth:`~beamngpy.Vehicle.get_part_config`
+
+        Args:
+            model: The name of the vehicle model
+            config: The configuration to be used. This can be
+                    - a dict, e.g. the return value of this function or of Vehicle.get_part_config()
+                    - a string representing the path to a .pc file
+                    - None, in which case the default configuration for the given vehicle model is used
+
+        Returns:
+            A dict of the part configuration tree, which can be used to set the part configuration of a vehicle.
+        """
+        data = dict(type="GetPartConfigForConfig", model=model, config=config)
+        resp = self._send(data).recv("PartConfigForConfig")
+        return resp["config"]

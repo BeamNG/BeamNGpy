@@ -8,7 +8,7 @@
          "slotType": "template_car_hub_F",
          "slots2": [
              ["name", "allowTypes", "denyTypes", "default", "description"],
-             ["wheel_F_4", ["wheel_F_4"], [], "steelwheel_01a_13x5_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.45) | round(3)  }}, "y":0, "z":0.105}}],
+             ["wheel_F_4", ["wheel_F_4"], [], "steelwheel_01a_13x5_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.45) | round(3)  }}, "y":0, "z":{{ ride_height | float | round(3) }}}}],
              ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
          ],
 
@@ -35,7 +35,7 @@
          "slotType": "template_car_hub_F",
          "slots2": [
              ["name", "allowTypes", "denyTypes", "default", "description"],
-             ["wheel_F_5", ["wheel_F_5"], [], "steelwheel_01a_14x5.5_F_alt", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.50) | round(3)  }}, "y":0, "z":0.105}}],
+             ["wheel_F_5", ["wheel_F_5"], [], "steelwheel_01a_14x5.5_F_alt", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.50) | round(3)  }}, "y":0, "z":{{ ride_height | float | round(3) }}}}],
              ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
          ],
 
@@ -62,7 +62,7 @@
          "slotType": "template_car_hub_F",
          "slots2": [
              ["name", "allowTypes", "denyTypes", "default", "description"],
-             ["wheel_F_6", ["wheel_F_6"], [], "steelwheel_02a_16x7_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":0.105}}],
+             ["wheel_F_6", ["wheel_F_6"], [], "steelwheel_02a_16x7_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":{{ ride_height | float | round(3) }}}}],
              ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
          ],
 
@@ -89,7 +89,7 @@
          "slotType": "template_car_hub_F",
          "slots2": [
              ["name", "allowTypes", "denyTypes", "default", "description"],
-             ["wheel_F_8", ["wheel_F_8"], [], "steelwheel_03a_17x9_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":0.105}}],
+             ["wheel_F_8", ["wheel_F_8"], [], "steelwheel_03a_17x9_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":{{ ride_height | float | round(3) }}}}],
              ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
          ],
 
@@ -116,7 +116,7 @@
          "slotType": "template_car_hub_F",
          "slots2": [
              ["name", "allowTypes", "denyTypes", "default", "description"],
-             ["wheel_F_8_alt", ["wheel_F_8_alt"], [], "steelwheel_04a_16x7_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":0.105}}],
+             ["wheel_F_8_alt", ["wheel_F_8_alt"], [], "steelwheel_04a_16x7_F", "Front Wheels", {"nodeOffset":{"x":{{ ((track_width_front | float * 0.5 ) - 0.54) | round(3)  }}, "y":0, "z":{{ ride_height | float | round(3) }}}}],
              ["template_car_brake_F", ["template_car_brake_F"], [], "template_car_brake_F", "Front Brakes"],
          ],
 

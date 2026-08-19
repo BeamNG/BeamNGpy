@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from beamngpy.logging import _generate_docstring
+from beamngpy.logging import _generate_docstring, PYTHON_INTERACTIVE
 
 if TYPE_CHECKING:
     from beamngpy.vehicle import Vehicle
@@ -20,4 +20,5 @@ class VehicleApi:
         self._vehicle = vehicle
         self._send = vehicle._send
         self._logger = vehicle.logger
-        self.__doc__ = _generate_docstring(self)
+        if PYTHON_INTERACTIVE:
+            self.__doc__ = _generate_docstring(self)

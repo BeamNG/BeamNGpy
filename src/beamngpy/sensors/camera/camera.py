@@ -44,6 +44,7 @@ class Camera(CommBase):
         is_render_annotations: A flag which indicates if this sensor should render semantic annotation data.
         is_render_instance: A flag which indicates if this sensor should render instance annotation data.
         is_render_depth: A flag which indicates if this sensor should render depth data.
+        is_render_translucent_as_opaque_depth: A flag which indicates if this sensor should render translucent objects as opaque in depth data.
         is_depth_inverted: A flag which indicates if the depth values should be shown white->black or black->white, as distance increases.
         is_visualised: A flag which indicates if this camera sensor should appear visualised or not.
         is_streaming: Whether or not to stream the data directly to shared memory (no poll required, for efficiency - BeamNGpy won't block.)
@@ -149,6 +150,7 @@ class Camera(CommBase):
         is_render_annotations: bool = True,
         is_render_instance: bool = False,
         is_render_depth: bool = True,
+        is_render_translucent_as_opaque_depth: bool = False,
         is_depth_inverted: bool = False,
         is_visualised: bool = False,
         is_streaming: bool = False,
@@ -251,6 +253,7 @@ class Camera(CommBase):
             is_render_annotations,
             is_render_instance,
             is_render_depth,
+            is_render_translucent_as_opaque_depth,
             is_visualised,
             is_streaming,
             is_static,
@@ -866,6 +869,7 @@ class Camera(CommBase):
         is_render_annotations: bool,
         is_render_instance: bool,
         is_render_depth: bool,
+        is_render_translucent_as_opaque_depth: bool,
         is_visualised: bool,
         is_streaming: bool,
         is_static: bool,
@@ -898,6 +902,7 @@ class Camera(CommBase):
         data["renderAnnotations"] = is_render_annotations
         data["renderInstance"] = is_render_instance
         data["renderDepth"] = is_render_depth
+        data["renderTranslucentAsOpaqueDepth"] = is_render_translucent_as_opaque_depth
         data["isVisualised"] = is_visualised
         data["isStreaming"] = is_streaming
         data["isStatic"] = is_static

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import socket
 from typing import TYPE_CHECKING
+import time
 
 import pytest
 
@@ -72,6 +73,12 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
         loaded = bng.scenario.get_current(connect=False)
         assert loaded.path == target.path
 
+        # TODO: the following should not be necessary, but it is in non-headless mode when
+        # this test is run sequentially with the different scenario_path arguments
+        time.sleep(5)
+        bng.scenario.stop()
+        time.sleep(5)
+
 
 def test_scenario_vehicle_name():
     scenario = Scenario("tech_ground", "same")
@@ -121,19 +128,14 @@ def test_get_level_and_scenarios(beamng: BeamNGpy):
 
 def test_get_current_vehicles(beamng: BeamNGpy):
     with beamng as bng:
-        scenarios = bng.scenario.get_scenarios()
-        target = None
-        for scenario in scenarios["west_coast_usa"]:
-            if scenario.path == "/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json":
-                target = scenario
-                break
-
-        assert target is not None
-
-        bng.scenario.load(target)
+        scenario = Scenario("tech_ground", "current_vehicles")
+        vehicle = Vehicle("ego_vehicle", model="etk800")
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
+        scenario.make(bng)
+        bng.scenario.load(scenario)
 
         vehicles = bng.vehicles.get_current(include_config=False)
-        player = vehicles["clone0"]
+        player = vehicles["ego_vehicle"]
         sensor = Electrics()
         player.sensors.attach("electrics", sensor)
         player.connect(bng)

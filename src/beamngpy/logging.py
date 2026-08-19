@@ -14,6 +14,13 @@ bngpy_logger = logging.getLogger(LOGGER_ID)
 module_logger = logging.getLogger(f"{LOGGER_ID}.beamngpycommon")
 comm_logger = logging.getLogger(f"{LOGGER_ID}.communication")
 bngpy_handlers = list()
+PYTHON_INTERACTIVE = False
+
+try:
+    get_ipython  # noqa  # pyright: ignore[reportUndefinedVariable]
+    PYTHON_INTERACTIVE = True
+except NameError:
+    pass
 
 
 class BNGError(Exception):
@@ -142,6 +149,8 @@ def set_up_simple_logging(
 
 
 def _generate_docstring(obj: Any) -> str:
+    # Used in interactive mode (e.g. in Jupyter notebooks) to generate docstrings including method signatures.
+    # Usage, e.g.: `?api`
     try:
         buffer = io.StringIO()
         pydoc.doc(obj, output=buffer)

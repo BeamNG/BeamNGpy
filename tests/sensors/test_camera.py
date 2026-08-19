@@ -90,6 +90,8 @@ def check_poll(
                 == exp_instance
             ), "Incorrect number of solid colors"
 
+    return all_readings
+
 
 def test_camera(beamng: BeamNGpy):
     with beamng as bng:
@@ -97,7 +99,7 @@ def test_camera(beamng: BeamNGpy):
             "ego_vehicle", model="etki", license="PYTHON", color="Green"
         )  # Create a vehicle.
         scenario = Scenario(
-            "tech_ground", "camera_test", description="Testing the camera sensor"
+            "smallgrid", "camera_test", description="Testing the camera sensor"
         )  # Create a scenario.
         # Add the vehicle to the scenario.
         scenario.add_vehicle(vehicle)
@@ -127,7 +129,7 @@ def test_camera(beamng: BeamNGpy):
             resolution=(512, 512),
         )
 
-        # Create a camera sensor which doesn't support full poll. This is placed to the left of the vehicle, facing towards the vehicle.
+        # Same view as camera1, but without shared memory and with translucent-as-opaque depth enabled.
         cam2 = Camera(
             "camera2",
             bng,
@@ -139,12 +141,12 @@ def test_camera(beamng: BeamNGpy):
             is_render_annotations=True,
             is_render_depth=True,
             is_render_instance=True,
+            is_render_translucent_as_opaque_depth=True,
             near_far_planes=(0.1, 100),
             resolution=(512, 512),
         )
 
-        # Create a camera sensor which does not use shared memory (data will be send back across the socket). This is placed to the right of the vehicle,
-        # facing towards the vehicle.
+        # Create a camera sensor using shared memory. This one is placed to the right of the vehicle, facing towards the vehicle.
         cam3 = Camera(
             "camera3",
             bng,
@@ -179,10 +181,18 @@ def test_camera(beamng: BeamNGpy):
         # We use each camera sensor to take: i) colour, ii) annotation, and iii) depth images, from their given positions.
         sleep(5)
         print("Testing camera 1...")
-        check_poll(cam1, True, 3, 3)
+        cam1_readings = check_poll(cam1, True, 3, 3)
 
         print("Testing camera 2...")
-        check_poll(cam2, True, 3, 3)
+        cam2_readings = check_poll(cam2, True, 3, 3)
+
+        print("Testing is_render_translucent_as_opaque_depth...")
+        assert not np.array_equal(
+            cam1_readings["depth"][-1][250, 260], cam2_readings["depth"][-1][250, 260]
+        ), (
+            f"Depth at pixel ({260}, {250}) should differ when "
+            "is_render_translucent_as_opaque_depth is True vs False"
+        )
 
         print("Testing camera 3...")
         check_poll(cam3, True, 3)

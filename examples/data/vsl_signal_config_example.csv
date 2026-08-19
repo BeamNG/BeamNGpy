@@ -1,0 +1,39 @@
+﻿type,groupName,name,description,dataType
+signal,Kinematics,vehiclePositionX,Vehicle position - Lateral - meters,number
+signal,Kinematics,vehiclePositionY,Vehicle position - Longitudinal - meters,number
+signal,Kinematics,vehiclePositionZ,Vehicle position - Vertical - meters,number
+signal,Kinematics,vehicleVelocityX,Vehicle velocity - Lateral - m/s,number
+signal,Kinematics,vehicleVelocityY,Vehicle velocity - Longitudinal - m/s,number
+signal,Kinematics,vehicleVelocityZ,Vehicle velocity - Vertical - m/s,number
+signal,Kinematics,vehicleAccelerationX,Vehicle acceleration - Lateral - ms^-2,number
+signal,Kinematics,vehicleAccelerationY,Vehicle acceleration - Longitudinal - ms^-2,number
+signal,Kinematics,vehicleAccelerationZ,Vehicle acceleration - Vertical - ms^-2,number
+signal,Kinematics,vehicleRoll,Roll angle - rad,number
+signal,Kinematics,vehiclePitch,Pitch angle - rad,number
+signal,Kinematics,vehicleYaw,Yaw angle - rad,number
+signal,Kinematics,vehicleGroundSpeed,Ground speed - m/s,number
+signal,Kinematics,vehicleAltitude,Altitude - meters,number
+signal,Driver,throttleInput,Throttle input,number
+signal,Driver,brakeInput,Brake input,number
+signal,Driver,clutchInput,Clutch input,number
+signal,Driver,parkingBrakeInput,Parking brake input,number
+signal,Driver,steeringWheelPositionInput,Steering wheel position input,number
+signal,Wheels,wheelSpeedFL,FL wheel speed - m/s,number
+signal,Wheels,wheelSpeedFR,FR wheel speed - m/s,number
+signal,Wheels,wheelSpeedRL,RL wheel speed - m/s,number
+signal,Wheels,wheelSpeedRR,RR wheel speed - m/s,number
+signal,Electrics,throttle,Throttle,number
+signal,Electrics,brake,Brake,number
+signal,Electrics,steering,Steering,number
+signal,Electrics,rpm,Engine RPM,number
+signal,Electrics,wheelspeed,Wheel speed,number
+signal,Electrics,gearIndex,Gear index,number
+signal,Electrics,fuel,Fuel level,number
+signal,Electrics,oiltemp,Oil temperature,number
+signal,Electrics,watertemp,Water temperature,number
+signal,Powertrain,mainEngine outputAV1,Main engine output angular velocity,number
+signal,Powertrain,mainEngine outputTorque1,Main engine output torque,number
+signal,Powertrain,gearbox gearRatio,Gearbox gear ratio,number
+signal,Powertrain,gearbox outputAV1,Gearbox output angular velocity,number
+settings,,filename,log/vehicle_logging_demo.csv,string
+settings,,steps,1000,number

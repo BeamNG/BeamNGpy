@@ -12,69 +12,54 @@ def main():
     bng = BeamNGpy("localhost", 25252)
     bng.open()
 
-    # Create the vehicles.
-    vehicle1 = Vehicle(
-        "ego_vehicle", model="pickup", license="ego vehicle", color="Red"
-    )
-    vehicle2 = Vehicle(
-        "relay_vehicle1", model="pickup", license="vehicle2", color="Blue"
-    )
-    vehicle3 = Vehicle(
-        "relay_vehicle2", model="pickup", license="vehicle3", color="Green"
-    )
+    # Define the platoons.
+    platoons = [
+        {
+            "vehicles": [
+                ("leader3", "bastion", "vehicle7", "Orange", (190.56, 1202.09, 169.69)),
+                ("follower1", "bastion", "vehicle8", "Purple", (200.56, 1202.09, 169.69)),
+                ("follower2", "bastion", "vehicle9", "Yellow", (212.76, 1203.09, 169.69)),
+                ("follower3", "bastion", "vehicle10", "Black", (222.76, 1203.09, 169.69)),
+            ],
+            "speed": 20.0,
+            "gap": 5,
+            "plot_colors": ["r", "b", "g", "purple"],
+            "diff_colors": ["r", "g", "b"],
+            "diff_labels": [
+                "Leader and follower 1",
+                "Follower 1 and follower2",
+                "Follower 2 and follower3",
+            ],
+        },
+        {
+            "vehicles": [
+                ("ego_vehicle", "pickup", "ego vehicle", "Red", (252.56, 1205.09, 169.69)),
+                ("follower1", "pickup", "vehicle2", "Blue", (262.56, 1205.79, 169.69)),
+                ("follower2", "pickup", "vehicle3", "Green", (270.76, 1206.59, 169.69)),
+            ],
+            "speed": 20.0,
+            "gap": 4.9,
+            "plot_colors": ["r", "b", "g"],
+            "diff_colors": ["m", "c"],
+            "diff_labels": ["Leader and follower 1", "Follower 1 and follower2"],
+        },
+    ]
 
-    vehicle7 = Vehicle("leader3", model="bastion", license="vehicle7", color="Orange")
-    vehicle8 = Vehicle(
-        "relay_vehicle31", model="bastion", license="vehicle8", color="Purple"
-    )
-    vehicle9 = Vehicle(
-        "relay_vehicle32", model="bastion", license="vehicle9", color="Yellow"
-    )
-    vehicle10 = Vehicle(
-        "relay_vehicle33", model="bastion", license="vehicle10", color="Black"
-    )
-
-    # Create a scenario.
     scenario = Scenario(
-        "italy", "platoontest", description="platoon"
-    )  # what is platoontest
-
-    scenario.add_vehicle(
-        vehicle1,
-        pos=(252.56, 1205.09, 169.69),
-        rot_quat=angle_to_quat((0, 0, 90)),
-    )
-    scenario.add_vehicle(
-        vehicle2,
-        pos=(262.56, 1205.79, 169.69),
-        rot_quat=angle_to_quat((0, 0, 90)),
-    )
-    scenario.add_vehicle(
-        vehicle3,
-        pos=(270.76, 1206.59, 169.69),
-        rot_quat=angle_to_quat((0, 0, 90)),
+        "italy", "platooning", description="platoon example"
     )
 
-    scenario.add_vehicle(
-        vehicle7,
-        pos=(190.56, 1202.09, 169.69),
-        rot_quat=angle_to_quat((0, 0, 90)),
-    )
-    scenario.add_vehicle(
-        vehicle8,
-        pos=(200.56, 1202.09, 169.69),
-        rot_quat=angle_to_quat((0, 0, 90)),
-    )
-    scenario.add_vehicle(
-        vehicle9,
-        pos=(212.76, 1203.09, 169.69),
-        rot_quat=angle_to_quat((0, 0, 90)),
-    )
-    scenario.add_vehicle(
-        vehicle10,
-        pos=(222.76, 1203.09, 169.69),
-        rot_quat=angle_to_quat((0, 0, 90)),
-    )
+    # Add the vehicles to the scenario.
+    vehicles_by_platoon = []
+    for platoon in platoons:
+        vehicles = []
+        for name, model, license, color, pos in platoon["vehicles"]:
+            vehicle = Vehicle(name, model=model, license=license, color=color)
+            scenario.add_vehicle(
+                vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, 90))
+            )
+            vehicles.append(vehicle)
+        vehicles_by_platoon.append(vehicles)
 
     scenario.make(bng)
 
@@ -86,363 +71,151 @@ def main():
 
     sleep(5)
 
-    speed1 = 20.0
-    speed3 = 20.0
-    traffic_mode = 0
+    # Create and launch the platoons.
+    for platoon, vehicles in zip(platoons, vehicles_by_platoon):
+        platoon_id = bng.platoon.create(vehicles[0], vehicles[1])
+        for index, vehicle in enumerate(vehicles[2:], start=2):
+            bng.platoon.join(platoon_id, vehicle, index=index)
+        bng.platoon.launch(platoon_id, 2, platoon["speed"])
+        sleep(5) # wait for platoon in front to get going
 
-    bng.platoon.load(vehicle1, vehicle2, vehicle3, None, speed1, True)
-    # second vehicle joins platoon
-    bng.platoon.load(vehicle7, vehicle8, vehicle9, vehicle10, speed3, True)
-
-    oldTime = 0
+    all_vehicles = [vehicle for vehicles in vehicles_by_platoon for vehicle in vehicles]
+    n_vehicles = len(all_vehicles)
 
     time = []
+    origins = [None] * n_vehicles
+    positions = [[] for _ in range(n_vehicles)]
+    velocities = [[] for _ in range(n_vehicles)]
+    accels = [[] for _ in range(n_vehicles)]
+    old_vels = [0.0] * n_vehicles
+    platoon_diffs = [
+        [[] for _ in range(len(vehicles) - 1)]
+        for vehicles in vehicles_by_platoon
+    ]
 
-    originV1x = 0
-    originV1y = 0
-    originV1z = 0
-
-    originV2x = 0
-    originV2y = 0
-    originV2z = 0
-
-    originV3x = 0
-    originV3y = 0
-    originV3z = 0
-
-    positionV1 = []
-    positionV2 = []
-    positionV3 = []
-
-    velocityV1 = []
-    velocityV2 = []
-    velocityV3 = []
-
-    accelV1 = []
-    accelV2 = []
-    accelV3 = []
-
-    diffPosV1V2 = []
-    diffPosV2V3 = []
-
-    originV7x = 0
-    originV8y = 0
-    originV9z = 0
-    originV10z = 0
-
-    originV7x = 0
-    originV8y = 0
-    originV9z = 0
-    originV10z = 0
-
-    originV7x = 0
-    originV8y = 0
-    originV9z = 0
-    originV10z = 0
-
-    positionV7 = []
-    positionV8 = []
-    positionV9 = []
-    positionV10 = []
-
-    velocityV7 = []
-    velocityV8 = []
-    velocityV9 = []
-    velocityV10 = []
-
-    accelV7 = []
-    accelV8 = []
-    accelV9 = []
-    accelV10 = []
-
-    diffPosV7V8 = []
-    diffPosV8V9 = []
-    diffPosV9V10 = []
+    old_time = 0
 
     sleep(3.0)
-    for i in range(60):
+    for i in range(120):
+        states = []
+        for vehicle in all_vehicles:
+            vehicle.sensors.poll()
+            states.append(vehicle.sensors["state"])
 
-        vehicle1.sensors.poll()
-        vehicle2.sensors.poll()
-        vehicle3.sensors.poll()
+        time.append(states[0]["time"])
+        current_positions = []
 
-        vehicle7.sensors.poll()
-        vehicle8.sensors.poll()
-        vehicle9.sensors.poll()
-        vehicle10.sensors.poll()
+        for idx, data in enumerate(states):
+            posx, posy, posz = data["pos"]
+            current_positions.append((posx, posy, posz))
 
-        data1 = vehicle1.sensors["state"]
-        data2 = vehicle2.sensors["state"]
-        data3 = vehicle3.sensors["state"]
+            if not positions[idx]:
+                origins[idx] = (posx, posy, posz)
 
-        data7 = vehicle7.sensors["state"]
-        data8 = vehicle8.sensors["state"]
-        data9 = vehicle9.sensors["state"]
-        data10 = vehicle10.sensors["state"]
+            ox, oy, oz = origins[idx]
+            positions[idx].append(
+                math.sqrt(
+                    (posx - ox) ** 2 + (posy - oy) ** 2 + (posz - oz) ** 2
+                )
+            )
 
-        time.append(data1["time"])
+            velx, vely, _ = data["vel"]
+            vel = math.sqrt(velx**2 + vely**2) * 3.6
+            velocities[idx].append(vel)
 
-        pos1x, pos1y, pos1z = data1["pos"]
+            if old_time != 0:
+                accels[idx].append(
+                    (vel / 3.6 - old_vels[idx] / 3.6) / (time[i] - old_time)
+                )
+            else:
+                accels[idx].append(0)
+            old_vels[idx] = vel
 
-        if len(positionV1) == 0:
-            originV1x = pos1x
-            originV1y = pos1y
-            originV1z = pos1z
+        offset = 0
+        for p_idx, vehicles in enumerate(vehicles_by_platoon):
+            gap = platoons[p_idx]["gap"]
+            for pair_idx in range(len(vehicles) - 1):
+                p1 = current_positions[offset + pair_idx]
+                p2 = current_positions[offset + pair_idx + 1]
+                platoon_diffs[p_idx][pair_idx].append(
+                    math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) - gap
+                )
+            offset += len(vehicles)
 
-        pos1 = math.sqrt(
-            (pos1x - originV1x) ** 2
-            + (pos1y - originV1y) ** 2
-            + (pos1z - originV1z) ** 2
-        )
-        positionV1.append(pos1)
-
-        pos2x, pos2y, pos2z = data2["pos"]
-
-        if len(positionV2) == 0:
-            originV2x = pos2x
-            originV2y = pos2y
-            originV2z = pos2z
-
-        pos2 = math.sqrt(
-            (pos2x - originV2x) ** 2
-            + (pos2y - originV2y) ** 2
-            + (pos2z - originV2z) ** 2
-        )
-
-        positionV2.append(pos2)
-
-        pos3x, pos3y, pos3z = data3["pos"]
-
-        if len(positionV3) == 0:
-            originV3x = pos3x
-            originV3y = pos3y
-            originV3z = pos3z
-
-        pos3 = math.sqrt(
-            (pos3x - originV3x) ** 2
-            + (pos3y - originV3y) ** 2
-            + (pos3z - originV3z) ** 2
-        )
-
-        positionV3.append(pos3)
-
-        pos7x, pos7y, pos7z = data7["pos"]
-
-        if len(positionV7) == 0:
-            originV7x = pos7x
-            originV7y = pos7y
-            originV7z = pos7z
-
-        pos7 = math.sqrt(
-            (pos7x - originV7x) ** 2
-            + (pos7y - originV7y) ** 2
-            + (pos7z - originV7z) ** 2
-        )
-
-        positionV7.append(pos7)
-
-        pos8x, pos8y, pos8z = data8["pos"]
-
-        if len(positionV8) == 0:
-            originV8x = pos8x
-            originV8y = pos8y
-            originV8z = pos8z
-
-        pos8 = math.sqrt(
-            (pos8x - originV8x) ** 2
-            + (pos8y - originV8y) ** 2
-            + (pos8z - originV8z) ** 2
-        )
-
-        positionV8.append(pos8)
-
-        pos9x, pos9y, pos9z = data9["pos"]
-
-        if len(positionV9) == 0:
-            originV9x = pos9x
-            originV9y = pos9y
-            originV9z = pos9z
-
-        pos9 = math.sqrt(
-            (pos9x - originV9x) ** 2
-            + (pos9y - originV9y) ** 2
-            + (pos9z - originV9z) ** 2
-        )
-
-        positionV9.append(pos9)
-
-        pos10x, pos10y, pos10z = data10["pos"]
-
-        if len(positionV10) == 0:
-            originV10x = pos10x
-            originV10y = pos10y
-            originV10z = pos10z
-
-        pos10 = math.sqrt(
-            (pos10x - originV10x) ** 2
-            + (pos10y - originV10y) ** 2
-            + (pos10z - originV10z) ** 2
-        )
-        positionV10.append(pos10)
-
-        vel1x, vel1y, vel1z = data1["vel"]
-        vel1 = (math.sqrt((vel1x**2 + vel1y**2))) * 3.6
-        velocityV1.append(vel1)
-
-        vel2x, vel2y, vel2z = data2["vel"]
-        vel2 = math.sqrt(((vel2x**2 + vel2y**2))) * 3.6
-        velocityV2.append(vel2)
-
-        vel3x, vel3y, vel3z = data3["vel"]
-        vel3 = (math.sqrt((vel3x**2 + vel3y**2))) * 3.6
-        velocityV3.append(vel3)
-
-        vel7x, vel7y, vel7z = data7["vel"]
-        vel7 = (math.sqrt((vel7x**2 + vel7y**2))) * 3.6
-        velocityV7.append(vel7)
-
-        vel8x, vel8y, vel8z = data8["vel"]
-        vel8 = (math.sqrt((vel8x**2 + vel8y**2))) * 3.6
-        velocityV8.append(vel8)
-
-        vel9x, vel9y, vel9z = data9["vel"]
-        vel9 = (math.sqrt((vel9x**2 + vel9y**2))) * 3.6
-        velocityV9.append(vel9)
-
-        vel10x, vel10y, vel10z = data10["vel"]
-        vel10 = (math.sqrt((vel10x**2 + vel10y**2))) * 3.6
-        velocityV10.append(vel10)
-
-        if oldTime != 0:
-
-            accelV1.append((vel1 / 3.6 - oldVelV1 / 3.6) / (time[i] - oldTime))
-            accelV2.append((vel2 / 3.6 - oldVelV2 / 3.6) / (time[i] - oldTime))
-            accelV3.append((vel3 / 3.6 - oldVelV3 / 3.6) / (time[i] - oldTime))
-
-            accelV7.append((vel7 / 3.6 - oldVelV7 / 3.6) / (time[i] - oldTime))
-            accelV8.append((vel8 / 3.6 - oldVelV8 / 3.6) / (time[i] - oldTime))
-            accelV9.append((vel9 / 3.6 - oldVelV9 / 3.6) / (time[i] - oldTime))
-            accelV10.append((vel10 / 3.6 - oldVelV10 / 3.6) / (time[i] - oldTime))
-
-        else:
-            accelV1.append(0)
-            accelV2.append(0)
-            accelV3.append(0)
-
-            accelV7.append(0)
-            accelV8.append(0)
-            accelV9.append(0)
-            accelV10.append(0)
-
-        oldTime = time[i]
-        oldVelV1 = vel1
-        oldVelV2 = vel2
-        oldVelV3 = vel3
-
-        oldVelV7 = vel7
-        oldVelV8 = vel8
-        oldVelV9 = vel9
-        oldVelV10 = vel10
-
-        diffPosV1V2.append(math.sqrt((pos1x - pos2x) ** 2 + (pos1y - pos2y) ** 2) - 4.9)
-        diffPosV2V3.append(math.sqrt((pos2x - pos3x) ** 2 + (pos2y - pos3y) ** 2) - 4.9)
-
-        diffPosV7V8.append(math.sqrt((pos7x - pos8x) ** 2 + (pos7y - pos8y) ** 2) - 5)
-        diffPosV8V9.append(math.sqrt((pos8x - pos9x) ** 2 + (pos8y - pos9y) ** 2) - 5)
-        diffPosV9V10.append(
-            math.sqrt((pos9x - pos10x) ** 2 + (pos9y - pos10y) ** 2) - 5
-        )
-
+        old_time = time[i]
         bng.step(20)
-    bng.close()
 
-    fig, ax = plt.subplots(2, 2, figsize=(9, 6), sharey=False)
+    bng.disconnect()
 
-    ax[0, 0].set(
-        xlabel="Simulation Time (s)", ylabel="Speed (Km/h)", title="Speed vs. Time"
-    )
-    ax[0, 0].plot(time, velocityV1, "r", label="Vehicle 1 Velocity (Km/h)")
-    ax[0, 0].plot(time, velocityV2, "b", label="Vehicle 2 Velocity (Km/h)")
-    ax[0, 0].plot(time, velocityV3, "g", label="Vehicle 3 Velocity (Km/h)")
-    ax[0, 0].legend()
+    vehicle_offset = 0
+    for platoon, vehicles, diffs in zip(platoons, vehicles_by_platoon, platoon_diffs):
+        n = len(vehicles)
+        colors = platoon["plot_colors"]
+        platoon_positions = positions[vehicle_offset : vehicle_offset + n]
+        platoon_velocities = velocities[vehicle_offset : vehicle_offset + n]
+        platoon_accels = accels[vehicle_offset : vehicle_offset + n]
+        vehicle_offset += n
 
-    ax[0, 1].set(
-        xlabel="Simulation Time (s)",
-        ylabel="Vehicle Position (m)",
-        title="Position vs. Time",
-    )
-    ax[0, 1].plot(time, positionV1, "r", label="Vehicle 1 Position")
-    ax[0, 1].plot(time, positionV2, "b", label="Vehicle 2 Position")
-    ax[0, 1].plot(time, positionV3, "g", label="Vehicle 3 Position")
-    ax[0, 1].legend()
+        fig, ax = plt.subplots(2, 2, figsize=(9, 6), sharey=False)
 
-    ax[1, 0].set(
-        xlabel="Simulation Time (s)",
-        ylabel=" Position difference between vehicles(m)",
-        title="interVehicular Distance",
-    )
-    ax[1, 0].plot(time, diffPosV1V2, "m", label="Leader and follower 1")
-    ax[1, 0].plot(time, diffPosV2V3, "c", label="Follower 1 and follower2")
-    ax[1, 0].legend()
+        ax[0, 0].set(
+            xlabel="Simulation Time (s)",
+            ylabel="Speed (Km/h)",
+            title="Speed vs. Time",
+        )
+        for v_idx in range(n):
+            ax[0, 0].plot(
+                time,
+                platoon_velocities[v_idx],
+                colors[v_idx],
+                label=f"Vehicle {v_idx + 1} Velocity (Km/h)",
+            )
+        ax[0, 0].legend()
 
-    ax[1, 1].set(
-        xlabel="Simulation Time (s)",
-        ylabel="Vehicle Acceleration (m/s^2)",
-        title="Acceleration vs. Time",
-    )
-    ax[1, 1].plot(time, accelV1, "r", label="Vehicle 1 acceleration")
-    ax[1, 1].plot(time, accelV2, "b", label="Vehicle 2 acceleration")
-    ax[1, 1].plot(time, accelV3, "g", label="Vehicle 3 acceleration")
-    ax[1, 1].legend()
+        ax[0, 1].set(
+            xlabel="Simulation Time (s)",
+            ylabel="Vehicle Position (m)",
+            title="Position vs. Time",
+        )
+        for v_idx in range(n):
+            ax[0, 1].plot(
+                time,
+                platoon_positions[v_idx],
+                colors[v_idx],
+                label=f"Vehicle {v_idx + 1} Position",
+            )
+        ax[0, 1].legend()
 
-    plt.tight_layout()
-    plt.show()
+        ax[1, 0].set(
+            xlabel="Simulation Time (s)",
+            ylabel=" Position difference between vehicles(m)",
+            title="interVehicular Distance",
+        )
+        for pair_idx, diff in enumerate(diffs):
+            ax[1, 0].plot(
+                time,
+                diff,
+                platoon["diff_colors"][pair_idx],
+                label=platoon["diff_labels"][pair_idx],
+            )
+        ax[1, 0].legend()
 
-    fig, ax = plt.subplots(2, 2, figsize=(9, 6), sharey=False)
+        ax[1, 1].set(
+            xlabel="Simulation Time (s)",
+            ylabel="Vehicle Acceleration (m/s^2)",
+            title="Acceleration vs. Time",
+        )
+        for v_idx in range(n):
+            ax[1, 1].plot(
+                time,
+                platoon_accels[v_idx],
+                colors[v_idx],
+                label=f"Vehicle {v_idx + 1} acceleration",
+            )
+        ax[1, 1].legend()
 
-    ax[0, 0].set(
-        xlabel="Simulation Time (s)", ylabel="Speed (Km/h)", title="Speed vs. Time"
-    )
-    ax[0, 0].plot(time, velocityV7, "r", label="Vehicle 1 Velocity (Km/h)")
-    ax[0, 0].plot(time, velocityV8, "b", label="Vehicle 2 Velocity (Km/h)")
-    ax[0, 0].plot(time, velocityV9, "g", label="Vehicle 3 Velocity (Km/h)")
-    ax[0, 0].plot(time, velocityV10, "purple", label="Vehicle 4 Velocity (Km/h)")
-    ax[0, 0].legend()
-
-    ax[0, 1].set(
-        xlabel="Simulation Time (s)",
-        ylabel="Vehicle Position (m)",
-        title="Position vs. Time",
-    )
-    ax[0, 1].plot(time, positionV7, "r", label="Vehicle 1 Position")
-    ax[0, 1].plot(time, positionV8, "b", label="Vehicle 2 Position")
-    ax[0, 1].plot(time, positionV9, "g", label="Vehicle 3 Position")
-    ax[0, 1].plot(time, positionV10, "purple", label="Vehicle 4 Position")
-    ax[0, 1].legend()
-
-    ax[1, 0].set(
-        xlabel="Simulation Time (s)",
-        ylabel=" Position difference between vehicles(m)",
-        title="interVehicular Distance",
-    )
-    ax[1, 0].plot(time, diffPosV7V8, "r", label="Leader and follower 1")
-    ax[1, 0].plot(time, diffPosV8V9, "g", label="Follower 1 and follower2")
-    ax[1, 0].plot(time, diffPosV9V10, "b", label="Follower 2 and follower3")
-    ax[1, 0].legend()
-
-    ax[1, 1].set(
-        xlabel="Simulation Time (s)",
-        ylabel="Vehicle Acceleration (m/s^2)",
-        title="Acceleration vs. Time",
-    )
-    ax[1, 1].plot(time, accelV7, "r", label="Vehicle 1 acceleration")
-    ax[1, 1].plot(time, accelV8, "b", label="Vehicle 2 acceleration")
-    ax[1, 1].plot(time, accelV9, "g", label="Vehicle 3 acceleration")
-    ax[1, 1].plot(time, accelV10, "purple", label="Vehicle 4 acceleration")
-    ax[1, 1].legend()
-
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
 
 if __name__ == "__main__":

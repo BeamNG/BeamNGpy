@@ -12,106 +12,119 @@ class PlatoonApi(Api):
         beamng: An instance of the simulator.
     """
 
-    def load(
-        self,
-        leader: Vehicle | str,
-        follower1: Vehicle | str,
-        follower2: Vehicle | str | None,
-        follower3: Vehicle | str | None,
-        speed: float,
-        debug: bool = False,
-    ) -> None:
+    def create(self, leader: Vehicle | str, follower: Vehicle | str) -> int:
         """
-        A function for forming the platoon that starts the platoon with one leader and three followers.
+        Create a platoon with a leader and one follower.
 
         Args:
-            leader: An instance of a vehicle object of the platoon's leader.
-            follower1: An instance of a vehicle object of the following vehicle.
-            follower2: An instance of a vehicle object of the following vehicle.
-            follower3: An instance of a vehicle object of the following vehicle.
-            speed: Target speed in m/s.
-            debug: Debugging flag.
+            leader: Platoon leader vehicle.
+            follower: First follower vehicle.
+
+        Returns:
+            The platoon id assigned by the simulator.
         """
         leaderID = leader.vid if isinstance(leader, Vehicle) else leader
-        follower1ID = follower1.vid if isinstance(follower1, Vehicle) else follower1
-        follower2ID = follower2.vid if isinstance(follower2, Vehicle) else follower2
-        follower3ID = follower3.vid if isinstance(follower3, Vehicle) else follower3
+        followerID = follower.vid if isinstance(follower, Vehicle) else follower
         data = dict(
-            type="LoadPlatoon",
+            type="CreatePlatoon",
             leaderID=leaderID,
-            follower1ID=follower1ID,
-            follower2ID=follower2ID,
-            follower3ID=follower3ID,
-            speed=speed,
-            debugFlag=debug,
+            followerID=followerID,
         )
-        self._send(data).ack("platoonLoaded")
+        resp = self._send(data).recv("CreatePlatoon")
+        return resp["platoonId"]
 
     def join(
         self,
-        leader: Vehicle | str,
-        veh: Vehicle | str,
-        speed: float,
-        debug: bool = False,
+        platoon_id: int,
+        follower: Vehicle | str,
+        index: int | None = None,
     ) -> None:
         """
-        A function for vehicles to join the platoon at the end of the platoon.
+        Add a vehicle to a platoon.
 
         Args:
-            leader: An instance of a vehicle object of the platoon's leader.
-            veh: An instance of a vehicle object of the external vehicle joining.
-            speed: Target speed in m/s.
-            debug: Debugging flag.
+            platoon_id: Platoon id returned by :meth:`create`.
+            follower: Vehicle joining the platoon.
+            index: 0-based insertion index (0=new leader, 1=first follower,
+                omit to append at the end).
         """
-        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
-        vid = veh.vid if isinstance(veh, Vehicle) else veh
+        followerID = follower.vid if isinstance(follower, Vehicle) else follower
+        data = dict(type="JoinPlatoon", platoonId=platoon_id, followerID=followerID)
+        if index is not None:
+            data["index"] = index
+        self._send(data).ack("JoinPlatoon")
+
+    def split(self, platoon_id: int, index: int) -> int:
+        """
+        Split a platoon at an index, forming a second platoon behind it.
+
+        Args:
+            platoon_id: Platoon id returned by :meth:`create`.
+            index: 0-based platoon index at which to split (0=leader,
+                1=first follower). Must leave at least two vehicles in each
+                resulting platoon; requires at least four vehicles total.
+
+        Returns:
+            The platoon id of the new rear platoon.
+        """
         data = dict(
-            type="JoinPlatoon",
-            leaderID=leaderID,
-            vid=vid,
-            speed=speed,
-            debugFlag=debug,
+            type="SplitPlatoon",
+            platoonId=platoon_id,
+            index=index,
         )
-        self._send(data).ack("platoonJoined")
+        resp = self._send(data).recv("SplitPlatoon")
+        return resp["platoonId"]
 
-    def leave(
-        self, leader: Vehicle | str, veh: Vehicle | str, debug: bool = False
-    ) -> None:
+    def launch(self, platoon_id: int, leader_mode: int, speed: float) -> None:
         """
-        A function for vehicles to leave the platoon.
+        Launch a platoon by setting the leader's driving mode and target speed.
 
         Args:
-            leader: An instance of a vehicle object of the platoon's leader.
-            veh: An instance of a vehicle object of the vehicle leaving the platoon.
-            debug: Debugging flag.
-        """
-        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
-        vid = veh.vid if isinstance(veh, Vehicle) else veh
-        data = dict(type="LeavePlatoon", leaderID=leaderID, vid=vid, debugFlag=debug)
-        self._send(data).ack("platoonLeft")
-
-    def join_middle(
-        self, leader: str, veh_platoon: str, veh: str, speed: float, debug: bool = False
-    ) -> None:
-        """
-        A function for vehicles to join in the middle of the platoon.
-
-        Args:
-            leader: An instance of a vehicle object of the platoon's leader.
-            veh_platoon: An instance of a vehicle object of the vehicle in the platoon the external is joining infront of.
-            veh: An instance of a vehicle object of the vehicle joining.
+            platoon_id: Platoon id returned by :meth:`create`.
+            leader_mode: Driving mode (0: manual, 1: span, 2: traffic, 3: ACC).
             speed: Target speed in m/s.
-            debug: Debugging flag.
         """
-        leaderID = leader.vid if isinstance(leader, Vehicle) else leader
-        vPid = veh_platoon.vid if isinstance(veh_platoon, Vehicle) else veh_platoon
-        vid = veh.vid if isinstance(veh, Vehicle) else veh
         data = dict(
-            type="JoinMiddlePlatoon",
-            leaderID=leaderID,
-            vPid=vPid,
-            vid=vid,
+            type="Launch",
+            platoonId=platoon_id,
+            leaderMode=leader_mode,
             speed=speed,
-            debugFlag=debug,
         )
-        self._send(data).ack("platoonJoined")
+        self._send(data).ack("Launch")
+
+    def change_speed(self, platoon_id: int, speed: float) -> None:
+        """
+        Change the commanded speed of a launched platoon.
+
+        Args:
+            platoon_id: Platoon id returned by :meth:`create`.
+            speed: Target speed in m/s.
+        """
+        data = dict(type="ChangePlatoonSpeed", platoonId=platoon_id, speed=speed)
+        self._send(data).ack("ChangePlatoonSpeed")
+
+    def leave(self, platoon_id: int, vehicle: Vehicle | str) -> None:
+        """
+        Remove a vehicle from a platoon.
+
+        Args:
+            platoon_id: Platoon id returned by :meth:`create`.
+            vehicle: Vehicle leaving the platoon.
+        """
+        vehicleID = vehicle.vid if isinstance(vehicle, Vehicle) else vehicle
+        data = dict(
+            type="LeavePlatoon",
+            platoonId=platoon_id,
+            vehicleID=vehicleID,
+        )
+        self._send(data).ack("LeavePlatoon")
+
+    def disband(self, platoon_id: int) -> None:
+        """
+        Disband a platoon and unload platooning from all vehicles.
+
+        Args:
+            platoon_id: Platoon id returned by :meth:`create`.
+        """
+        data = dict(type="DisbandPlatoon", platoonId=platoon_id)
+        self._send(data).ack("DisbandPlatoon")
