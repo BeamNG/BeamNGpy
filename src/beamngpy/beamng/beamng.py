@@ -65,7 +65,8 @@ class BeamNGpy:
         nogpu: Instrument BeamNG to launch in 'no-GPU mode'. Implies ``headless=True``.
                Sensors which require rendering pipeline will not be available.
         gfx: Instrument BeamNG to force to use a rendering API on launch. Possible choices are
-             ``dx11`` for DirectX 11 and ``vk`` for Vulkan. Incompatible with the ``nogpu`` option.
+             ``dx11`` for DirectX 11, ``d3d12`` for Direct3D 12 and ``vk`` for Vulkan.
+             Incompatible with the ``nogpu`` option.
         socket_timeout: Optional timeout in seconds for socket operations when communicating
                        with the simulator. If None (default), the socket blocks indefinitely.
                        If set, recv/send will raise :class:`socket.timeout` when the simulator
@@ -140,10 +141,10 @@ class BeamNGpy:
         self.headless = headless
         self.nogpu = nogpu
         self.gfx = None
-        if gfx == 'dx11' or gfx == 'vk':
+        if gfx == 'dx11' or gfx == 'd3d12' or gfx == 'vk':
             self.gfx = gfx
         elif gfx is not None:
-            create_warning('The `gfx` arguments supports only values of `dx11` and `vk`, discarding.')
+            create_warning('The `gfx` argument supports only values of `dx11`, `d3d12` and `vk`, discarding.')
         if self.nogpu:
             self.headless = True
             self.gfx = None
