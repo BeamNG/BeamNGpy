@@ -189,6 +189,7 @@ However, we do not maintain minor versions: bug fixes and new features will only
 
 | BeamNG.tech version | BeamNGpy version                                          |
 | ------------------- | --------------------------------------------------------- |
+| 0.39                | [1.36](https://github.com/BeamNG/BeamNGpy/tree/v1.36)     |
 | 0.38                | [1.35.1](https://github.com/BeamNG/BeamNGpy/tree/v1.35.1) |
 | 0.37                | [1.34.1](https://github.com/BeamNG/BeamNGpy/tree/v1.34.1) |
 | 0.36                | [1.33.1](https://github.com/BeamNG/BeamNGpy/tree/v1.33.1) |
