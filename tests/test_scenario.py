@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import socket
 from typing import TYPE_CHECKING
+import time
 
 import pytest
 
@@ -71,6 +72,12 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
 
         loaded = bng.scenario.get_current(connect=False)
         assert loaded.path == target.path
+
+        # TODO: the following should not be necessary, but it is in non-headless mode when
+        # this test is run sequentially with the different scenario_path arguments
+        time.sleep(5)
+        bng.scenario.stop()
+        time.sleep(5)
 
 
 def test_scenario_vehicle_name():
