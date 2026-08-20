@@ -11,12 +11,22 @@ stages:
 test-job:
   stage: test
   variables:
+    TESTING_REVISION: "123456"
     TESTING_TARGET: ".temp/testing"
   script:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
-    - ls -al $TESTING_TARGET
-    - "echo 'Hello from test job.'"
-    - "echo var is $TEST_VAR"
+    - python $TESTING_TARGET/setup_environment.py
+    - echo "Clean up BeamNG user folder."
+    - |
+      echo "Set up Python environment."
+      python -m venv .venv
+      source .venv/bin/activate
+      pip install -e .
+      pip install pytest
+    - |
+      echo "Running tests."
+      source .venv/bin/activate
+      pytest tests/test_minimal.py
   only:
     - dev
 
