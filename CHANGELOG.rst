@@ -60,6 +60,22 @@ Version 1.36
     as the editor; ``-1`` = infinite). Duration changes apply live and reset the signal timer; they do not write
     ``signals.json`` unless saved in the editor.
 
+- Vehicle Signal Logger API
+
+  - :pydocs:`Vehicle.logging <beamngpy.api.vehicle.LoggingApi>` now controls the new Vehicle Signal Logger
+    (``tech/vehicleSignalLogger``), the same logger as the World Editor *Vehicle Signal Logger* window. It replaces the
+    API of the removed Log Vehicle Stats logger.
+  - :pydocs:`logging.start() <beamngpy.api.vehicle.LoggingApi.start>` logs to a CSV in the user folder and accepts
+    ``signals`` (signal names), ``steps`` (log every N-th physics step) and ``output_file``.
+    :pydocs:`logging.stop() <beamngpy.api.vehicle.LoggingApi.stop>` stops logging and unloads the logger.
+  - ``config_path`` accepts a VSL configuration CSV exported from the World Editor, so the same signal selection can be
+    reused from Python. Explicit keyword arguments take priority over the values from the config file.
+  - Breaking change: ``set_options_from_json`` and ``write_options_to_json`` were removed, and ``start()`` now takes an
+    output file path instead of an output directory.
+  - Logging sensor signals through BeamNGpy is not supported yet; use the Vehicle Signal Logger window in the World
+    Editor instead.
+  - See the updated ``vehicle_logging.py`` example.
+
 - Improved OpenDRIVE import in Road Architect
 
   - Improved **OpenDRIVE** import reliability in Road Architect, including crest-curve handling, safer terrain
