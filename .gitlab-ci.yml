@@ -4,8 +4,17 @@ default:
     - docker
 
 stages:
+  - test
   - build
   - deploy
+
+test-job:
+  stage: test
+  script:
+    - "echo 'Hello from test job.'"
+    - "echo var is $TEST_VAR"
+  only:
+    - dev
 
 build-pages:
   stage: build
