@@ -9,7 +9,7 @@ from PIL import Image
 from beamngpy.connection import CommBase
 from beamngpy.logging import create_warning, LOGGER_ID, BNGError, BNGValueError
 from beamngpy.sensors.shmem import BNGSharedMemory
-from beamngpy.types import Float2, Float3, Int2, Int3, StrDict
+from beamngpy.types import Float2, Float3, Float4, Int2, Int3, StrDict
 
 from . import utils
 
@@ -160,6 +160,7 @@ class Camera(CommBase):
         postprocess_depth: bool = False,
         is_dir_world_space: bool = False,
         integer_depth: bool = True,
+        metric_depth: bool = False,
     ):
         super().__init__(bng, vehicle)
         self.logger = getLogger(f"{LOGGER_ID}.Camera")
@@ -169,6 +170,7 @@ class Camera(CommBase):
         self.name = name
         self.resolution = resolution
         self.near_far_planes = near_far_planes
+        self.field_of_view_y = field_of_view_y
         self.is_static = is_static
         self.is_depth_inverted = is_depth_inverted
         self.is_render_colours = is_render_colours
@@ -176,6 +178,11 @@ class Camera(CommBase):
         self.is_render_instance = is_render_instance
         self.is_render_depth = is_render_depth
         self.is_streaming = is_streaming
+        self.metric_depth = metric_depth
+        if self.metric_depth:
+            postprocess_depth = False # don't process if metric
+            integer_depth = False # don't use integer if metric
+
         self.postprocess_depth = postprocess_depth
         # Set up the shared memory for this sensor, if requested.
         self.is_using_shared_memory = is_using_shared_memory
@@ -330,6 +337,22 @@ class Camera(CommBase):
 
         return b
 
+    def depth_metric_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
+        """
+        Converts raw depth buffer data to metric depth values (distance in meters)
+
+        Args:
+            raw_depth_values: The raw 1D buffer of depth values.
+
+        Returns:
+            The processed metric depth values in meters (or nan if beyond range)
+        """
+        # Convert to metric
+        eps = 0.001
+        depth_values = raw_depth_values * self.near_far_planes[1]
+        depth_values[(depth_values >= (self.near_far_planes[1]-eps)) | (depth_values <= (self.near_far_planes[0]+eps))] = np.nan
+        return depth_values
+
     def depth_buffer_processing(self, raw_depth_values: np.ndarray) -> np.ndarray:
         """
         Converts raw depth buffer data to visually-clear intensity values in the range [0, 255].
@@ -433,6 +456,10 @@ class Camera(CommBase):
             elif not sim_data_processed:
                 # we got f32 array from shared memory but user wants an image made from u8
                 depth = np.clip(255.0 * depth, 0.0, 255.0).astype(np.uint8)
+            elif self.metric_depth:
+                create_image = False
+                depth = self.depth_metric_processing(depth)
+                max_depth_value = self.near_far_planes[1]
             else:  # return raw depth values in range [0.0, 1.0]
                 create_image = False
                 max_depth_value = 1.0
@@ -706,6 +733,19 @@ class Camera(CommBase):
             pointZ=point[2],
         )["data"]
         return (int(pixel_data["x"]), int(pixel_data["y"]))
+
+    def get_intrinsics(self) -> Float4:
+        """
+        Gets the camera intrinsics
+        
+        Returns:
+            The intrinsics of the camera (fx, fy, cx, cy).
+        """
+        width, height = int(self.resolution[0]), int(self.resolution[1])
+        fx = fy = float((height / 2.0) / np.tan(np.deg2rad(float(self.field_of_view_y)) / 2.0))
+        cx = width / 2
+        cy = height / 2
+        return (fx, fy, cx, cy)
 
     def get_position(self) -> Float3:
         """
