@@ -15,7 +15,7 @@ test-job:
     TESTING_TARGET: ".temp/testing"
   script:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
-    - python $TESTING_TARGET/setup_environment.py
+    - python $TESTING_TARGET/beamngpy/setup_environment.py
     - echo "Clean up BeamNG user folder."
     - |
       echo "Set up Python environment."
