@@ -10,7 +10,11 @@ stages:
 
 test-job:
   stage: test
+  variables:
+    TESTING_TARGET: ".temp/testing"
   script:
+    - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
+    - ls -al $TESTING_TARGET
     - "echo 'Hello from test job.'"
     - "echo var is $TEST_VAR"
   only:
