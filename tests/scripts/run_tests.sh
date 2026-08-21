@@ -1,9 +1,10 @@
 #!/bin/bash
 # Script to run tests on CI
 set -eo pipefail
-export BNG_HOME="$BNG_HOME_LINUX"
+export BNG_HOME="$PWD/$BNG_HOME"
 
 echo "Environment variables:"
+echo "Working directory: $PWD"
 echo "TESTING_REVISION: $TESTING_REVISION"
 echo "BNG_HOME: $BNG_HOME"
 echo "HEADLESS: $HEADLESS"

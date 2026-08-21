@@ -1,6 +1,6 @@
 # Script to run tests on CI
 $ErrorActionPreference = 'Stop'
-$env:BNG_HOME = $env:BNG_HOME_WINDOWS
+$env:BNG_HOME = Join-Path (Get-Location) $env:BNG_HOME
 
 # PowerShell does not fail on non-zero exit codes of native commands
 function Invoke-Checked {
@@ -12,6 +12,7 @@ function Invoke-Checked {
 }
 
 Write-Host "Environment variables:"
+Write-Host "Working directory: $(Get-Location)"
 Write-Host "TESTING_REVISION: $env:TESTING_REVISION"
 Write-Host "BNG_HOME: $env:BNG_HOME"
 Write-Host "HEADLESS: $env:HEADLESS"

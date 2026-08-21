@@ -13,6 +13,7 @@ test-job:
   variables:
     TESTING_REVISION: "123456"
     TESTING_TARGET: ".temp/testing"
+    BNG_HOME: ".temp/beamng"
     HEADLESS: "1"
     GFX: "vk"
   script:
