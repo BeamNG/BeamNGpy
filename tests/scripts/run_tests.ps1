@@ -4,10 +4,14 @@ $env:BNG_HOME = "$env:DATA_DIR_WINDOWS/$env:CI_PROJECT_PATH/beamng".Replace('/',
 
 # PowerShell does not fail on non-zero exit codes of native commands
 function Invoke-Checked {
-    $command, $arguments = $args
+    $command = $args[0]
+    $arguments = @()
+    if ($args.Count -gt 1) {
+        $arguments = @($args[1..($args.Count - 1)])
+    }
     & $command @arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "'$args' failed with exit code $LASTEXITCODE."
+        throw "'$command $($arguments -join ' ')' failed with exit code $LASTEXITCODE."
     }
 }
 
@@ -29,4 +33,4 @@ Write-Host "Cleaning up BeamNG user folder ..."
 Remove-Item -Recurse -Force "$env:LOCALAPPDATA\BeamNG" -ErrorAction SilentlyContinue
 
 Write-Host "Running tests ..."
-Invoke-Checked pytest "tests/test_minimal.py"
+Invoke-Checked pytest tests/test_minimal.py
