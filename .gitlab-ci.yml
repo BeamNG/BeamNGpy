@@ -8,7 +8,7 @@ stages:
   - build
   - deploy
 
-test-job:
+.test-job-base:
   stage: test
   variables:
     TESTING_REVISION: "123456"
@@ -16,12 +16,26 @@ test-job:
     BNG_HOME: ".temp/beamng"
     HEADLESS: "1"
     GFX: "vk"
-  script:
+  before_script:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
     - python $TESTING_TARGET/beamngpy/setup_environment.py
-    - bash tests/scripts/run_tests.sh
   only:
     - dev
+
+test-job-windows:
+  extends: .test-job-base
+  tags:
+    - testing_servers
+    - windows
+  script:
+    - .\tests\scripts\run_tests.ps1
+
+test-job-linux:
+  extends: .test-job-base
+  tags:
+    - docker
+  script:
+    - bash tests/scripts/run_tests.sh
 
 build-pages:
   stage: build
