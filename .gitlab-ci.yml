@@ -13,12 +13,14 @@ stages:
   variables:
     TESTING_REVISION: "123456"
     TESTING_TARGET: ".temp/testing"
-    BNG_HOME: ".temp/beamng"
     HEADLESS: "1"
     GFX: "vk"
   before_script:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
     - python $TESTING_TARGET/beamngpy/setup_environment.py
+  after_script:
+    - git clean -dfX
+    - python $TESTING_TARGET/beamngpy/kill_beamng.py
   only:
     - dev
 

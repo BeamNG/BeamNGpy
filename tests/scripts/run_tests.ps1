@@ -1,6 +1,6 @@
 # Script to run tests on CI
 $ErrorActionPreference = 'Stop'
-$env:BNG_HOME = Join-Path (Get-Location) $env:BNG_HOME
+$env:BNG_HOME = "$env:DATA_DIR_WINDOWS/$env:CI_PROJECT_PATH/beamng".Replace('/', '\')
 
 # PowerShell does not fail on non-zero exit codes of native commands
 function Invoke-Checked {
@@ -29,4 +29,4 @@ Write-Host "Cleaning up BeamNG user folder ..."
 Remove-Item -Recurse -Force "$env:LOCALAPPDATA\BeamNG" -ErrorAction SilentlyContinue
 
 Write-Host "Running tests ..."
-Invoke-Checked pytest tests/test_minimal.py
+Invoke-Checked pytest "tests/test_minimal.py"

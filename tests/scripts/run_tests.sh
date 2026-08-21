@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script to run tests on CI
 set -eo pipefail
-export BNG_HOME="$PWD/$BNG_HOME"
+export BNG_HOME="$DATA_DIR_LINUX/$CI_PROJECT_PATH/beamng"
 
 echo "Environment variables:"
 echo "Working directory: $PWD"
