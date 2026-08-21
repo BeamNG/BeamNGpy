@@ -11,7 +11,7 @@ stages:
 .test-job-base:
   stage: test
   variables:
-    TESTING_REVISION: "123456"
+    TESTING_REVISION: "185309"
     TESTING_TARGET: ".temp/testing"
     HEADLESS: "1"
     GFX: "vk"
@@ -40,6 +40,7 @@ test-job-linux:
     - bash tests/scripts/run_tests.sh
 
 build-pages:
+  needs: []  # do not wait for earlier stages
   stage: build
   variables:
     GIT_STRATEGY: clone  # use fresh clone of repository (avoiding any old branches)
@@ -55,6 +56,7 @@ build-pages:
     - dev
 
 deploy-production:
+  needs: []  # do not wait for earlier stages
   stage: deploy
   variables:
     GIT_STRATEGY: clone  # use fresh clone of repository (avoiding any old branches)
