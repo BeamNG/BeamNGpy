@@ -19,8 +19,8 @@ stages:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
     - python $TESTING_TARGET/beamngpy/setup_environment.py
   after_script:
-    - git clean -dffX
     - python $TESTING_TARGET/beamngpy/kill_beamng.py
+    - git clean -dffX
   only:
     - dev
 
