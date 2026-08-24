@@ -10,6 +10,7 @@ stages:
 
 .test-job-base:
   stage: test
+  environment: TESTING
   variables:
     TESTING_REVISION: "185309"
     TESTING_TARGET: ".temp/testing"
