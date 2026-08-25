@@ -2,6 +2,16 @@
 Changelog
 =========
 
+
+
+Version 1.37
+============
+- Added ``auto_enter`` and ``check_vehicle_limit`` parameters to
+  :pydocs:`BeamNGpy.vehicles.spawn <beamngpy.api.beamng.VehiclesApi.spawn>` and
+  :pydocs:`Scenario.add_vehicle <beamngpy.Scenario.add_vehicle>` for controlling
+  player focus and the configured vehicle-count limit when spawning vehicles.
+
+
 Version 1.36
 ============
 - Fixed function :pydocs:`VehiclesApi.get_available <beamngpy.api.beamng.VehiclesApi.get_available>`: it now behaves as
@@ -16,11 +26,6 @@ Version 1.36
     :pydocs:`BeamNGpy.vehicles.spawn <beamngpy.api.beamng.VehiclesApi.spawn>`,
     :pydocs:`Vehicle.teleport <beamngpy.Vehicle.teleport>`, and
     :pydocs:`BeamNGpy.teleport_vehicle <beamngpy.api.beamng.VehiclesApi.teleport>`.
-
-- Added ``auto_enter`` and ``check_vehicle_limit`` parameters to
-  :pydocs:`BeamNGpy.vehicles.spawn <beamngpy.api.beamng.VehiclesApi.spawn>` and
-  :pydocs:`Scenario.add_vehicle <beamngpy.Scenario.add_vehicle>` for controlling
-  player focus and the configured vehicle-count limit when spawning vehicles.
 
 - Scenario API improvements
 
