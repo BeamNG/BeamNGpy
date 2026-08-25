@@ -23,6 +23,26 @@ def test_get_available_vehicles(beamng: BeamNGpy):
         assert len(resp) > 0
 
 
+def test_spawn_without_entering_vehicle(beamng: BeamNGpy):
+    with beamng as bng:
+        scenario = Scenario("tech_ground", "spawn_without_entering_vehicle")
+        ego = Vehicle("ego", model="etk800")
+        scenario.add_vehicle(ego, pos=(0, 0, 0))
+        scenario.make(bng)
+
+        bng.scenario.load(scenario)
+        bng.scenario.start()
+
+        npc = Vehicle("npc", model="pickup")
+        assert bng.vehicles.spawn(
+            npc,
+            pos=(10, 0, 0),
+            auto_enter=False,
+            check_vehicle_limit=False,
+        )
+        assert bng.vehicles.get_player_vehicle_id()["vid"] == ego.vid
+
+
 def assert_continued_movement(bng: BeamNGpy, vehicle: Vehicle, start_pos: Float3):
     last_pos = np.array(start_pos)
     for _ in range(5):

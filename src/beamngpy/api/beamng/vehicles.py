@@ -36,6 +36,8 @@ class VehiclesApi(Api):
         safe_spawn: bool = True,
         cling: bool | None = None,
         connect: bool = True,
+        auto_enter: bool = True,
+        check_vehicle_limit: bool = True,
     ) -> bool:
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
@@ -51,6 +53,10 @@ class VehiclesApi(Api):
             safe_spawn: If True, the vehicle will be spawned in the nearest safe position on the ground, avoiding spawning the vehicle below ground or in the air, and collisions with other vehicles or objects. If there is no safe position nearby, the vehicle will be spawned at the given position. This options may modify the spawn position (including x and y coordinates) as well as the rotation of the vehicle. Defaults to True.
             cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
             connect: Whether to connect the newly spawned vehicle to BeamNGpy.
+            auto_enter: Whether to make the newly spawned vehicle the player vehicle.
+                        Defaults to True.
+            check_vehicle_limit: Whether to prevent spawning when the configured
+                                 vehicle limit has been reached. Defaults to True.
 
         Returns:
             bool indicating whether the spawn was successful or not
@@ -70,6 +76,8 @@ class VehiclesApi(Api):
         data["pos"] = pos
         data["rot"] = rot_quat
         data["safeSpawn"] = safe_spawn
+        data["auto_enter"] = auto_enter
+        data["check_vehicle_limit"] = check_vehicle_limit
         for color in ("color", "color2", "color3"):
             if data[color] is not None:
                 data[color] = rgba_to_str(coerce_color(data[color]))
