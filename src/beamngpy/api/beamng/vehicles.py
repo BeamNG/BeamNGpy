@@ -76,8 +76,8 @@ class VehiclesApi(Api):
         data["pos"] = pos
         data["rot"] = rot_quat
         data["safeSpawn"] = safe_spawn
-        data["auto_enter"] = auto_enter
-        data["check_vehicle_limit"] = check_vehicle_limit
+        data["autoEnterVehicle"] = auto_enter
+        data["canSpawnAnotherVehicleCheck"] = check_vehicle_limit
         for color in ("color", "color2", "color3"):
             if data[color] is not None:
                 data[color] = rgba_to_str(coerce_color(data[color]))
