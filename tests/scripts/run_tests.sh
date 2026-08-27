@@ -21,4 +21,4 @@ echo "Cleaning up BeamNG user folder ..."
 rm -rf ~/.local/share/BeamNG
 
 echo "Running tests ..."
-pytest tests/test_minimal.py
+pytest --junit-xml=junit.xml tests/test_minimal.py

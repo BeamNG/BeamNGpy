@@ -23,6 +23,12 @@ stages:
   after_script:
     - $PYTHON -u $TESTING_TARGET/beamngpy/cleanup_environment.py
     - git clean -dffX
+  artifacts:
+    when: always
+    paths:
+      - junit.xml
+    reports:
+      junit: junit.xml
   only:
     - dev
 
