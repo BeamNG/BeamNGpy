@@ -15,14 +15,13 @@ stages:
     TESTING_REVISION: "185309"
     TESTING_TARGET: ".temp/testing"
     TESTS_PATH: "tests"
-    PYTHON: "python"
     HEADLESS: "1"
     GFX: "vk"
   before_script:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
-    - $PYTHON -u $TESTING_TARGET/beamngpy/setup_environment.py
+    - python -u $TESTING_TARGET/beamngpy/setup_environment.py
   after_script:
-    - $PYTHON -u $TESTING_TARGET/beamngpy/cleanup_environment.py
+    - python -u $TESTING_TARGET/beamngpy/cleanup_environment.py
   artifacts:
     when: always
     paths:
@@ -44,8 +43,11 @@ test-job-linux:
   extends: .test-job-base
   tags:
     - testinglinux
-  variables:
-    PYTHON: "python3"
+  before_script:
+    - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
+    - python3 -u $TESTING_TARGET/beamngpy/setup_environment.py
+  after_script:
+    - python3 -u $TESTING_TARGET/beamngpy/cleanup_environment.py
   script:
     - bash tests/scripts/run_tests.sh
 
