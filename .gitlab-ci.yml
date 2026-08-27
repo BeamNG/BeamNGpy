@@ -14,6 +14,7 @@ stages:
   variables:
     TESTING_REVISION: "185309"
     TESTING_TARGET: ".temp/testing"
+    TESTS_PATH: "tests"
     PYTHON: "python"
     HEADLESS: "1"
     GFX: "vk"
