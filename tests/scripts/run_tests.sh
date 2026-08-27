@@ -12,7 +12,7 @@ echo "GFX: $GFX"
 
 echo "Setting up Python environment ..."
 rm -rf .venv
-python -m venv .venv
+$PYTHON -m venv .venv
 source .venv/bin/activate
 pip install -e .
 pip install pytest
