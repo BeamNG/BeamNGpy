@@ -36,7 +36,7 @@ test-job-windows:
 test-job-linux:
   extends: .test-job-base
   tags:
-    - docker
+    - testinglinux
   script:
     - bash tests/scripts/run_tests.sh
 
