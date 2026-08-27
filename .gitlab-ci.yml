@@ -22,7 +22,6 @@ stages:
     - $PYTHON -u $TESTING_TARGET/beamngpy/setup_environment.py
   after_script:
     - $PYTHON -u $TESTING_TARGET/beamngpy/cleanup_environment.py
-    - git clean -dffX
   artifacts:
     when: always
     paths:
