@@ -1,23 +1,23 @@
 """
-Keep spawning NPC vehicles while a scenario is already running, without the
+Keep spawning traffic vehicles while a scenario is already running, without the
 camera ever switching away from the player's vehicle.
 
 Passing ``auto_enter=False`` prevents the new vehicle from becoming the player
 vehicle, so camera and input focus stay where they are.
 
-Each NPC is spawned ahead of the player, so they keep appearing as the player
-drives. The player vehicle id is printed after every spawn to show that focus
-never moves.
+Each traffic vehicle is spawned ahead of the player, so they keep appearing as
+the player drives. The player vehicle id is printed after every spawn to show
+that focus never moves.
 """
 
 from time import sleep
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 
-NPC_COUNT = 6  # how many NPCs to spawn over the run
+TRAFFIC_COUNT = 6  # how many traffic vehicles to spawn over the run
 SPAWN_INTERVAL = 5.0  # seconds between spawns
 SPAWN_AHEAD = 60.0  # meters ahead of the player to spawn at
-NPC_MODELS = ("pickup", "covet", "midsize", "sunburst2")
+TRAFFIC_MODELS = ("pickup", "covet", "midsize", "sunburst2")
 
 
 def spawn_keep_focus(bng, vehicle, pos, rot_quat=(0, 0, 0, 1)):
@@ -28,7 +28,6 @@ def spawn_keep_focus(bng, vehicle, pos, rot_quat=(0, 0, 0, 1)):
         rot_quat=rot_quat,
         safe_spawn=True,
         auto_enter=False,
-        check_vehicle_limit=False,
     )
 
 
@@ -46,14 +45,14 @@ def main():
     beamng.scenario.load(scenario)
     beamng.scenario.start()
 
-    # Drive the player around so the NPCs keep appearing in front of a moving car.
+    # Drive the player around so the traffic vehicles keep appearing in front of a moving car.
     # A participant driving manually behaves the same way.
     player.ai.set_mode("span")
 
     print(f"focus after scenario start: {beamng.vehicles.get_player_vehicle_id()['vid']}")
 
-    npcs = []
-    for i in range(NPC_COUNT):
+    traffic_vehicles = []
+    for i in range(TRAFFIC_COUNT):
         sleep(SPAWN_INTERVAL)
 
         player.sensors.poll()
@@ -66,16 +65,16 @@ def main():
             pos[2] + 0.5,
         )
 
-        npc = Vehicle(f"npc_{i + 1}", model=NPC_MODELS[i % len(NPC_MODELS)])
-        if spawn_keep_focus(beamng, npc, spawn_pos, rot_quat=rotation):
-            npc.ai.set_mode("traffic")
-            npcs.append(npc)
-            print(f"spawned {npc.vid} ({npc.model})")
+        traffic = Vehicle(f"traffic_{i + 1}", model=TRAFFIC_MODELS[i % len(TRAFFIC_MODELS)])
+        if spawn_keep_focus(beamng, traffic, spawn_pos, rot_quat=rotation):
+            traffic.ai.set_mode("traffic")
+            traffic_vehicles.append(traffic)
+            print(f"spawned {traffic.vid} ({traffic.model})")
         else:
-            print(f"failed to spawn {npc.vid}")
+            print(f"failed to spawn {traffic.vid}")
 
         focus = beamng.vehicles.get_player_vehicle_id()["vid"]
-        print(f"  vehicles: {len(npcs) + 1}, focus: {focus}")
+        print(f"  vehicles: {len(traffic_vehicles) + 1}, focus: {focus}")
         if focus != player.vid:
             print(f"  WARNING: focus moved off {player.vid}")
 

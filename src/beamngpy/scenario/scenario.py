@@ -369,7 +369,6 @@ class Scenario:
         safe_spawn: bool = True,
         cling: bool | None = None,
         auto_enter: bool = True,
-        check_vehicle_limit: bool = True,
     ) -> None:
         """
         Adds a :class:`.Vehicle`: to this scenario at the given position with the given
@@ -388,8 +387,6 @@ class Scenario:
             cling: Alias for safe_spawn (for backward compatibility). Defaults to None.
             auto_enter: Whether to make the vehicle the player vehicle when adding it
                         to a running scenario. Defaults to True.
-            check_vehicle_limit: Whether to prevent spawning when the configured
-                                 vehicle limit has been reached. Defaults to True.
 
         Raises:
             BNGError: If the scenario has been made but not loaded.
@@ -432,7 +429,6 @@ class Scenario:
                 rot_quat=rot_quat,
                 safe_spawn=safe_spawn,
                 auto_enter=auto_enter,
-                check_vehicle_limit=check_vehicle_limit,
             )
             self.transient_vehicles[vehicle.vid] = vehicle
             vehicle.connect(self.bng)
@@ -576,7 +572,7 @@ class Scenario:
             positions: Positions (tuple of length 3) of the individual points.
             scales: Scales (tuple of length 3) of the individual points
             ids: Optional, names of the individual points.
-            
+
         Raises:
             BNGError: If the scenario has been made but not loaded.
         """
