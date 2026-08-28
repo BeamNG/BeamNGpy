@@ -145,7 +145,7 @@ def test_get_current_vehicles(beamng: BeamNGpy):
         bng.scenario.start()
 
         player.control(throttle=1.0)
-        bng.control.step(600)
+        bng.control.step(60)
         player.sensors.poll()
         assert sensor["wheelspeed"] > 0
 
@@ -164,9 +164,9 @@ def find_object_name(scene: SceneObject, name: str):
 
 def test_get_scenetree(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario("gridmap_v2", "test_scenario")
+        scenario = Scenario("tech_ground", "test_scenario")
         vehicle = Vehicle("egoVehicle", model="etk800")
-        scenario.add_vehicle(vehicle, pos=(0, 0, 100), rot_quat=(0, 0, 0, 1))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0.1), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
         bng.scenario.load(scenario)
         bng.scenario.start()
@@ -178,3 +178,4 @@ def test_get_scenetree(beamng: BeamNGpy):
 
         prefab = find_object_name(scenario.scene, "test_scenario")
         assert prefab is not None
+        assert prefab.name == "test_scenario"
