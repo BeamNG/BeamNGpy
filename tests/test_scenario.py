@@ -44,8 +44,8 @@ def test_no_scenario(beamng: BeamNGpy):
 @pytest.mark.parametrize(
     "scenario_path",
     [
-        "/levels/west_coast_usa/scenarios/bus/bus_wcusa.json",  # classic scenario
-        "/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json",  # mission
+        "/levels/GridMap/scenarios/gm_jumps.json",  # classic scenario
+        "/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json",  # mission
     ],
 )
 def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
@@ -55,7 +55,7 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
         print("Available levels:", scenarios.keys())
 
         # Use .get() to avoid KeyErrors
-        scenarios_to_search = scenarios.get("west_coast_usa", []) + scenarios.get("italy", [])
+        scenarios_to_search = scenarios.get("tech_ground", []) + scenarios.get("GridMap", [])
         target = None
 
         for scenario in scenarios_to_search:
@@ -75,9 +75,9 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
 
         # TODO: the following should not be necessary, but it is in non-headless mode when
         # this test is run sequentially with the different scenario_path arguments
-        time.sleep(5)
+        time.sleep(2)
         bng.scenario.stop()
-        time.sleep(5)
+        time.sleep(3)
 
 
 def test_scenario_vehicle_name():
