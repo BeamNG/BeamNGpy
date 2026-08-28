@@ -61,8 +61,8 @@ def main():
     recording_path = Path(bng.user_with_version) / recording_name
     print(f"Recording Script AI path to user folder: {recording_path}", flush=True)
 
-    # time_based=True (default) writes ``t``; False writes ``v`` (speed-based)
-    vehicle.ai.start_recording(time_based=True)
+    # record_speed=False (default) writes ``t``; True writes ``v`` (speed-based)
+    vehicle.ai.start_recording(record_speed=False)
     vehicle.control(throttle=0.3, steering=0.0, brake=0.0)
     for _ in range(40):
         bng.control.step(60)
