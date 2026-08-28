@@ -32,6 +32,7 @@ def beamng() -> Iterator[BeamNGpy]:
         gfx=gfx,
         socket_timeout=240,
     )
+    bng.open()
     yield bng
 
     # Teardown: close BeamNG instance only if we launched it
