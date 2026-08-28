@@ -223,7 +223,11 @@ class AIApi(VehicleApi):
                     it will automatically look in the BeamNG user folder first.
 
             Returns:
-                Script data in format: [{"x": ..., "y": ..., "z": ..., "t": ...}, ...]
+                Script data in the format of the file, either time-based
+                ``[{"x": ..., "y": ..., "z": ..., "t": ...}, ...]`` or velocity-based
+                ``[{"x": ..., "y": ..., "z": ..., "v": ...}, ...]``. The first node
+                also keeps its ``dir`` and ``up`` orientation if the file has them.
+                Both formats can be played with ``set_script`` / ``execute_script``.
 
             Example:
                     # //script location is userfolder
@@ -262,49 +266,26 @@ class AIApi(VehicleApi):
         if not path_data:
             raise ValueError(f"No path data found in {file_path}")
 
-        # Check if we have time values or need to calculate them
-        has_time = any(
-            "t" in waypoint for waypoint in path_data[:3]
-        )  # Check first 3 points
+        # A ``v`` on the first node means the file is velocity-based, otherwise it is
+        # time-based. The simulator picks its follower the same way, so the nodes are
+        # passed through as they are instead of turning velocities into timestamps.
+        node_key = "v" if "v" in path_data[0] else "t"
 
         script = []
 
-        if has_time:
-            # drawn_path_time.json and recorded_path.json - use existing time values
-            for waypoint in path_data:
-                script_point = {
-                    "x": float(waypoint["x"]),
-                    "y": float(waypoint["y"]),
-                    "z": float(waypoint["z"]),
-                    "t": float(waypoint["t"]),
-                }
-                script.append(script_point)
-        else:
-            # drawn_path_velocity.json - ignore velocity, calculate time from distance
-            current_time = 0.0
-
-            for i, waypoint in enumerate(path_data):
-                script_point = {
-                    "x": float(waypoint["x"]),
-                    "y": float(waypoint["y"]),
-                    "z": float(waypoint["z"]),
-                    "t": current_time,
-                }
-                script.append(script_point)
-
-                # Calculate time to next waypoint based on distance
-                if i < len(path_data) - 1:
-                    next_waypoint = path_data[i + 1]
-
-                    # Calculate distance to next point
-                    dx = float(next_waypoint["x"]) - float(waypoint["x"])
-                    dy = float(next_waypoint["y"]) - float(waypoint["y"])
-                    dz = float(next_waypoint["z"]) - float(waypoint["z"])
-                    distance = (dx**2 + dy**2 + dz**2) ** 0.5
-
-                    # Use distance-based timing (assume ~15 m/s average speed)
-                    time_increment = distance / 15.0 if distance > 0 else 1.0
-                    current_time += time_increment
+        for waypoint in path_data:
+            script_point: StrDict = {
+                "x": float(waypoint["x"]),
+                "y": float(waypoint["y"]),
+                "z": float(waypoint["z"]),
+            }
+            if node_key in waypoint:
+                script_point[node_key] = float(waypoint[node_key])
+            # The first node also holds the initial orientation of the vehicle.
+            for orientation in ("dir", "up"):
+                if orientation in waypoint:
+                    script_point[orientation] = waypoint[orientation]
+            script.append(script_point)
 
         if len(script) < 3:
             raise ValueError(
@@ -318,8 +299,18 @@ class AIApi(VehicleApi):
         data["aggression"] = aggr
         self._send(data).ack("AiAggressionSet")
 
-    def start_recording(self) -> None:
+    def start_recording(self, record_speed: bool = False) -> None:
+        """
+        Start recording a Script AI path, in the same file format as the
+        ScriptAI Editor: nodes carry either ``t`` or ``v``, never both.
+
+        Args:
+            record_speed: If False (default), nodes get a timestamp ``t`` in
+                          seconds. If True, nodes get a speed ``v`` in m/s
+                          instead. Maps to Lua ``recordSpeed``.
+        """
         data = dict(type="StartRecording")
+        data["recordSpeed"] = record_speed
         self._send(data).ack("CompletedStartRecording")
 
     def stop_recording(self, filename) -> None:
