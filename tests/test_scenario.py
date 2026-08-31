@@ -66,9 +66,11 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
 
         assert target is not None, f"Scenario with path {scenario_path} not found."
 
+        print("loading scenario")
         bng.scenario.load(
             target, connect_player_vehicle=False, connect_existing_vehicles=False
         )
+        print("scenario loaded")
 
         loaded = bng.scenario.get_current(connect=False)
         assert loaded.path == target.path
