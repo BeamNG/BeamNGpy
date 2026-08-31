@@ -6,10 +6,14 @@ Changelog
 
 Version 1.37
 ============
-- Added ``auto_enter`` and ``check_vehicle_limit`` parameters to
+- Added ``record_speed`` to :pydocs:`AIApi.start_recording <beamngpy.api.vehicle.AIApi.start_recording>`
+  (default False, matching Lua ``recordSpeed``). With ``record_speed=True`` the
+  recording stores node speeds (``v``) instead of timestamps (``t``), matching
+  the ScriptAI Editor file format.
+- Added ``auto_enter`` to
   :pydocs:`BeamNGpy.vehicles.spawn <beamngpy.api.beamng.VehiclesApi.spawn>` and
-  :pydocs:`Scenario.add_vehicle <beamngpy.Scenario.add_vehicle>` for controlling
-  player focus and the configured vehicle-count limit when spawning vehicles.
+  :pydocs:`Scenario.add_vehicle <beamngpy.Scenario.add_vehicle>` so a spawned
+  vehicle does not have to become the player vehicle.
 
 
 Version 1.36
