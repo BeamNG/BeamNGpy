@@ -44,8 +44,8 @@ def test_no_scenario(beamng: BeamNGpy):
 @pytest.mark.parametrize(
     "scenario_path",
     [
-        "/levels/west_coast_usa/scenarios/bus/bus_wcusa.json",  # classic scenario
-        "/gameplay/missions/west_coast_usa/aiRace/002-highway/info.json",  # mission
+        "/levels/GridMap/scenarios/gm_jumps.json",  # classic scenario
+        "/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json",  # mission
     ],
 )
 def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
@@ -55,7 +55,7 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
         print("Available levels:", scenarios.keys())
 
         # Use .get() to avoid KeyErrors
-        scenarios_to_search = scenarios.get("west_coast_usa", []) + scenarios.get("italy", [])
+        scenarios_to_search = scenarios.get("tech_ground", []) + scenarios.get("GridMap", [])
         target = None
 
         for scenario in scenarios_to_search:
@@ -66,18 +66,23 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
 
         assert target is not None, f"Scenario with path {scenario_path} not found."
 
+        print("loading scenario")
         bng.scenario.load(
             target, connect_player_vehicle=False, connect_existing_vehicles=False
         )
+        print("scenario loaded")
 
         loaded = bng.scenario.get_current(connect=False)
         assert loaded.path == target.path
+        print("loaded path matches target path")
 
         # TODO: the following should not be necessary, but it is in non-headless mode when
         # this test is run sequentially with the different scenario_path arguments
-        time.sleep(5)
+        time.sleep(2)
         bng.scenario.stop()
-        time.sleep(5)
+        time.sleep(3)
+
+        print("scenario stopped")
 
 
 def test_scenario_vehicle_name():
@@ -145,7 +150,7 @@ def test_get_current_vehicles(beamng: BeamNGpy):
         bng.scenario.start()
 
         player.control(throttle=1.0)
-        bng.control.step(600)
+        bng.control.step(60)
         player.sensors.poll()
         assert sensor["wheelspeed"] > 0
 
@@ -164,9 +169,9 @@ def find_object_name(scene: SceneObject, name: str):
 
 def test_get_scenetree(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario("gridmap_v2", "test_scenario")
+        scenario = Scenario("tech_ground", "test_scenario")
         vehicle = Vehicle("egoVehicle", model="etk800")
-        scenario.add_vehicle(vehicle, pos=(0, 0, 100), rot_quat=(0, 0, 0, 1))
+        scenario.add_vehicle(vehicle, pos=(0, 0, 0.1), rot_quat=(0, 0, 0, 1))
         scenario.make(bng)
         bng.scenario.load(scenario)
         bng.scenario.start()
@@ -178,3 +183,36 @@ def test_get_scenetree(beamng: BeamNGpy):
 
         prefab = find_object_name(scenario.scene, "test_scenario")
         assert prefab is not None
+        assert prefab.name == "test_scenario"
+
+
+if __name__ == "__main__":
+    from beamngpy.logging import set_up_simple_logging
+    set_up_simple_logging()
+    bng = BeamNGpy(
+        "localhost",
+        25252,
+        quit_on_close=False,
+        debug=False,
+        headless=True,
+        nogpu=False,
+        gfx="vk",
+        socket_timeout=240,
+    )
+    bng.open(None, "-quitonfatalerror")
+
+    print("==== test_new_scenario ====")
+    test_new_scenario(bng)
+
+    print("==== test_no_scenario ====")
+    test_no_scenario(bng)
+
+    print("==== test_find_scenario[/levels/GridMap/scenarios/gm_jumps.json] ====")
+    test_find_scenario(bng, "/levels/GridMap/scenarios/gm_jumps.json")
+
+    print("==== test_find_scenario[/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json] ====")
+    test_find_scenario(bng, "/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json")
+
+    if bng.process is not None:
+        bng.quit_on_close = True
+        bng.close()

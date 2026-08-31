@@ -12,7 +12,7 @@ echo "GFX: $GFX"
 
 echo "Setting up Python environment ..."
 rm -rf .venv
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 pip install pytest
@@ -21,4 +21,4 @@ echo "Cleaning up BeamNG user folder ..."
 rm -rf ~/.local/share/BeamNG
 
 echo "Running tests ..."
-pytest tests/test_minimal.py
+pytest --junit-xml=junit.xml $TESTS_PATH

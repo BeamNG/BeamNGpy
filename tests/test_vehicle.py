@@ -38,7 +38,6 @@ def test_spawn_without_entering_vehicle(beamng: BeamNGpy):
             npc,
             pos=(10, 0, 0),
             auto_enter=False,
-            check_vehicle_limit=False,
         )
         assert bng.vehicles.get_player_vehicle_id()["vid"] == ego.vid
 

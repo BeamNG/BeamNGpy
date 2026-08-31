@@ -12,8 +12,9 @@ stages:
   stage: test
   environment: TESTING
   variables:
-    TESTING_REVISION: "185309"
+    TESTING_REVISION: "185888"
     TESTING_TARGET: ".temp/testing"
+    TESTS_PATH: "tests/test_scenario.py"
     HEADLESS: "1"
     GFX: "vk"
   before_script:
@@ -21,7 +22,12 @@ stages:
     - python -u $TESTING_TARGET/beamngpy/setup_environment.py
   after_script:
     - python -u $TESTING_TARGET/beamngpy/cleanup_environment.py
-    - git clean -dffX
+  artifacts:
+    when: always
+    paths:
+      - junit.xml
+    reports:
+      junit: junit.xml
   only:
     - dev
 
@@ -36,7 +42,12 @@ test-job-windows:
 test-job-linux:
   extends: .test-job-base
   tags:
-    - docker
+    - testinglinux
+  before_script:
+    - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
+    - python3 -u $TESTING_TARGET/beamngpy/setup_environment.py
+  after_script:
+    - python3 -u $TESTING_TARGET/beamngpy/cleanup_environment.py
   script:
     - bash tests/scripts/run_tests.sh
 

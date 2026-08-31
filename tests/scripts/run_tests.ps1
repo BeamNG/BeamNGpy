@@ -33,4 +33,4 @@ Write-Host "Cleaning up BeamNG user folder ..."
 Remove-Item -Recurse -Force "$env:LOCALAPPDATA\BeamNG" -ErrorAction SilentlyContinue
 
 Write-Host "Running tests ..."
-Invoke-Checked pytest tests/test_minimal.py
+Invoke-Checked pytest --junit-xml=junit.xml $TESTS_PATH

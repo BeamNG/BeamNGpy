@@ -37,7 +37,6 @@ class VehiclesApi(Api):
         cling: bool | None = None,
         connect: bool = True,
         auto_enter: bool = True,
-        check_vehicle_limit: bool = True,
     ) -> bool:
         """
         Spawns the given :class:`.Vehicle` instance in the simulator. This
@@ -55,8 +54,6 @@ class VehiclesApi(Api):
             connect: Whether to connect the newly spawned vehicle to BeamNGpy.
             auto_enter: Whether to make the newly spawned vehicle the player vehicle.
                         Defaults to True.
-            check_vehicle_limit: Whether to prevent spawning when the configured
-                                 vehicle limit has been reached. Defaults to True.
 
         Returns:
             bool indicating whether the spawn was successful or not
@@ -76,8 +73,7 @@ class VehiclesApi(Api):
         data["pos"] = pos
         data["rot"] = rot_quat
         data["safeSpawn"] = safe_spawn
-        data["auto_enter"] = auto_enter
-        data["check_vehicle_limit"] = check_vehicle_limit
+        data["autoEnterVehicle"] = auto_enter
         for color in ("color", "color2", "color3"):
             if data[color] is not None:
                 data[color] = rgba_to_str(coerce_color(data[color]))

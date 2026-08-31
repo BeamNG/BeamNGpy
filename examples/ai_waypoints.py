@@ -20,11 +20,25 @@ def main():
 
     print("Lapping Hirochi Raceway three times...")
     vehicle.ai.drive_using_waypoints(
-        ['hr_start', 'quickrace_wp1', 'quickrace_wp2', 'quickrace_wp3', 'quickrace_wp4', 'quickrace_wp11', 'hr_start'],
-        drive_in_lane=False,
-        avoid_cars=True,
+        [
+            "hr_start",
+            "quickrace_wp1",
+            "quickrace_wp2",
+            "quickrace_wp3",
+            "quickrace_wp4",
+            "quickrace_wp11",
+            "hr_start",
+        ],
+        wp_speeds={
+            "quickrace_wp1": 25.0,
+            "quickrace_wp3": 35.0,
+        },
         no_of_laps=3,
-        route_speed=100.0/3.6
+        route_speed=100.0 / 3.6,
+        route_speed_mode="limit",
+        drive_in_lane=False,
+        aggression=0.5,
+        avoid_cars=True,
     )
 
     input("Press Enter to exit...")
