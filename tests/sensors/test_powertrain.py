@@ -1,75 +1,53 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from time import sleep
+from typing import Iterator
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
+import pytest
+
+from beamngpy import BeamNGpy, Vehicle
 from beamngpy.sensors import PowertrainSensor
 
+from tests.sensors.helpers import (
+    loaded_scenario,
+    make_module_scene_fixture,
+    poll_auto_or_adhoc,
+    using_sensor,
+)
 
-def test_powertrain(beamng: BeamNGpy):
-    with beamng as bng:
-        # Create a vehicle.
-        vehicle = Vehicle("ego_vehicle", model="etki", license="PYTHON", color="Red")
-        # Create a scenario.
-        scenario = Scenario(
-            "tech_ground",
-            "powertrain_test",
-            description="Testing the powertrain sensor",
-        )
-        # Add the vehicle to the scenario.
-        scenario.add_vehicle(vehicle)
-        scenario.make(bng)
-        # Set simulator to 60hz temporal resolution
-        bng.settings.set_deterministic(60)
-        bng.scenario.load(scenario)
-        bng.ui.hide_hud()
-        bng.scenario.start()
+def _default_powertrain(bng: BeamNGpy, vehicle: Vehicle) -> PowertrainSensor:
+    return PowertrainSensor(
+        "powertrain1", bng, vehicle,
+        is_send_immediately=False,
+        physics_update_time=0.001,
+    )
 
-        print("Powertrain test start.")
+@contextmanager
+def powertrain_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
+    vehicle = Vehicle("ego_vehicle", model="etki", license="PYTHON", color="Red")
+    with loaded_scenario(
+        beamng,
+        level="tech_ground",
+        name="powertrain_test",
+        description="Testing the powertrain sensor",
+        vehicles=[(vehicle, {})],
+        label="Powertrain test",
+    ) as scene:
+        yield scene
 
-        # Create a default powertrain sensor.
-        # will sample every ms with this setting.
-        powertrain1 = PowertrainSensor(
-            "powertrain1",
-            bng,
-            vehicle,
-            is_send_immediately=False,
-            physics_update_time=0.001,
-        )
+powertrain_scene = make_module_scene_fixture(powertrain_scenario)
 
-        # Test the automatic polling functionality of the powertrain sensor, to make sure we retrieve the readings data via shared memory.
+@pytest.mark.parametrize("is_auto", [True, False])
+def test_powertrain_poll(powertrain_scene, is_auto):
+    """Automatic and ad-hoc polling return powertrain readings."""
+    bng, vehicle = powertrain_scene
+    with using_sensor(_default_powertrain(bng, vehicle), "powertrain sensor removed.") as powertrain:
         sleep(2)
-        sensor_readings = powertrain1.poll()
-        print("powertrain readings (automatic polling): ", sensor_readings)
-
-        # Test the ad-hoc polling functionality of the powertrain sensor. We send an ad-hoc request to poll the sensor, then wait for it to return.
-        sleep(1)
-        print("Ad-hoc poll request test.")
-        # send an ad-hoc polling request to the simulator.
-        request_id = powertrain1.send_ad_hoc_poll_request()
-        print("Ad-hoc poll requests sent. Unique request Id number: ", request_id)
-        sleep(3)
-        # Ensure that the data has been processed before collecting.
-        print(
-            "Is ad-hoc request complete? ",
-            powertrain1.is_ad_hoc_poll_request_ready(request_id),
-        )
-        # Collect the data now that it has been computed.
-        sensor_readings_ad_hoc = powertrain1.collect_ad_hoc_poll_request(request_id)
-        print("powertrain readings (ad-hoc polling): ", sensor_readings_ad_hoc)
-        powertrain1.remove()
-        print("powertrain sensor removed.")
-
-        sleep(3)
-        print("Powertrain test complete.")
-        bng.ui.show_hud()
-
-
-# Executing this file will perform various tests on all available functionality relating to the powertrain sensor.
-# It is provided to give examples on how to use all powertrain sensor functions currently available in beamngpy.
-if __name__ == "__main__":
-    set_up_simple_logging()
-
-    # Start up the simulator.
-    bng = BeamNGpy("localhost", 25252)
-    test_powertrain(bng)
+        if is_auto:
+            sensor_readings = powertrain.poll()
+            print("powertrain readings (automatic polling): ", sensor_readings)
+        else:
+            print("Ad-hoc poll request test.")
+            sensor_readings = poll_auto_or_adhoc(powertrain, False)
+            print("powertrain readings (ad-hoc polling): ", sensor_readings)
