@@ -41,9 +41,7 @@ class PrefixedLengthSocket:
         recv_buffer.clear()
         while length > 0:
             try:
-                print("skt.recv called")  # TODO: remove
                 received = self.skt.recv(min(BUF_SIZE, length))
-                print(f"skt.recv finished, received {len(received)} bytes")  # TODO: remove
             except socket.error:
                 self.reconnect()
                 received = self.skt.recv(min(BUF_SIZE, length))
