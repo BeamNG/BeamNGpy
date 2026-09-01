@@ -19,6 +19,9 @@ DEFAULT_NUM_LANES = 2
 LANE_WIDTH = 1.0
 # The depth (from bottom to top) of the generated mesh roads in BeamNG.
 DEFAULT_DEPTH = 1.0
+# The material used to texture the generated mesh roads. The track_editor materials are
+# registered by the simulator on every level, so they resolve regardless of the level used.
+DEFAULT_MATERIAL = "track_editor_C_center"
 
 
 class Road:
@@ -94,7 +97,7 @@ class SumoImporter:
         return new_edges
 
     @staticmethod
-    def import_sumo(prefix, scenario: Scenario):
+    def import_sumo(prefix, scenario: Scenario, material: str = DEFAULT_MATERIAL):
 
         # Extract the road data primitives from the Sumo files.
         print("Extracting road data from Sumo files...")
@@ -117,7 +120,7 @@ class SumoImporter:
         # Create the all the roads from the road polyline data.
         print("Loading import in scenario...")
         for r in roads:
-            mesh_road = MeshRoad(r.name)
+            mesh_road = MeshRoad(material)
             mesh_road.add_nodes(*r.nodes)
             scenario.add_mesh_road(mesh_road)
 

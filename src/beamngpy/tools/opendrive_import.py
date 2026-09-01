@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 # User control parameters
 GRANULARITY = 100  # The granularity used when evaluating OpenDrive primitives.
 DEPTH = 1.0  # The depth (from bottom to top) of the generated mesh roads in BeamNG.
+# The material used to texture the generated mesh roads. The track_editor materials are
+# registered by the simulator on every level, so they resolve regardless of the level used.
+DEFAULT_MATERIAL = "track_editor_C_center"
 
 
 class Road:
@@ -967,7 +970,7 @@ class OpenDriveImporter:
         return roads
 
     @staticmethod
-    def import_xodr(filename, scenario: Scenario):
+    def import_xodr(filename, scenario: Scenario, material: str = DEFAULT_MATERIAL):
 
         # Extract the road data primitives from the OpenDrive file.
         print("Extracting road data from file...")
@@ -1004,7 +1007,7 @@ class OpenDriveImporter:
         # Create the all the roads from the road polyline data (which came from various OpenDrive primitive evaluators).
         print("Loading import in scenario...")
         for r in roads:
-            mesh_road = MeshRoad(r.name)
+            mesh_road = MeshRoad(material)
             mesh_road.add_nodes(*r.nodes)
             scenario.add_mesh_road(mesh_road)
 
