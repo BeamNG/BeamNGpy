@@ -72,15 +72,12 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
 
         loaded = bng.scenario.get_current(connect=False)
         assert loaded.path == target.path
-        print("loaded path matches target path")
 
         # TODO: the following should not be necessary, but it is in non-headless mode when
         # this test is run sequentially with the different scenario_path arguments
         time.sleep(2)
         bng.scenario.stop()
         time.sleep(3)
-
-        print("scenario stopped")
 
 
 def test_scenario_vehicle_name():
@@ -182,35 +179,3 @@ def test_get_scenetree(beamng: BeamNGpy):
         prefab = find_object_name(scenario.scene, "test_scenario")
         assert prefab is not None
         assert prefab.name == "test_scenario"
-
-
-if __name__ == "__main__":
-    from beamngpy.logging import set_up_simple_logging
-    set_up_simple_logging()
-    bng = BeamNGpy(
-        "localhost",
-        25252,
-        quit_on_close=False,
-        debug=False,
-        headless=True,
-        nogpu=False,
-        gfx="vk",
-        socket_timeout=240,
-    )
-    bng.open(None, "-quitonfatalerror")
-
-    print("==== test_new_scenario ====")
-    test_new_scenario(bng)
-
-    print("==== test_no_scenario ====")
-    test_no_scenario(bng)
-
-    print("==== test_find_scenario[/levels/GridMap/scenarios/gm_jumps.json] ====")
-    test_find_scenario(bng, "/levels/GridMap/scenarios/gm_jumps.json")
-
-    print("==== test_find_scenario[/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json] ====")
-    test_find_scenario(bng, "/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json")
-
-    if bng.process is not None:
-        bng.quit_on_close = True
-        bng.close()
