@@ -187,10 +187,7 @@ class ScenarioApi(Api):
             "path": scenario.path,
             "precompileShaders": precompile_shaders,
         }
-        res = self._send(data)
-        print("sent request to load scenario")  # TODO: remove
-        res.ack("MapLoaded")
-        print("got response from load scenario")  # TODO: remove
+        self._send(data).ack("MapLoaded")
         self._logger.info("Loaded map.")
         self._beamng._scenario = scenario
         self._beamng._scenario.connect(
