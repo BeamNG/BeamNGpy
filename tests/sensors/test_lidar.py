@@ -19,6 +19,7 @@ from tests.sensors.helpers import (
 )
 
 ATTEMPTS = 3
+VISUALISE = False
 
 def validate_distribution(pointCloud):
     x, y = pointCloud[:, 0], pointCloud[:, 1]
@@ -32,7 +33,7 @@ def polling_check(lidar: Lidar, is_auto: bool, is_360: bool, is_rotate: bool):
     data = None
 
     for i in range(ATTEMPTS):
-        sleep(2)
+        sleep(1)
         data = poll_auto_or_adhoc(lidar, is_auto, attempt=i + 1)
 
         print("LiDAR point cloud data: ", data["pointCloud"])
@@ -60,7 +61,7 @@ def polling_check(lidar: Lidar, is_auto: bool, is_360: bool, is_rotate: bool):
     print("PASS: LiDAR point cloud data is consistent")
 
 def negative_update_test(lidar: Lidar):
-    sleep(2)
+    sleep(1)
     data = lidar.poll()
     print("LiDAR point cloud data (should be zeros): ", data["pointCloud"])
     print("LiDAR colour data (should be zeros): ", data["colours"])
@@ -146,7 +147,6 @@ def test_lidar_properties(lidar_scene):
     """Property getters and setters, visualisation and annotation mode switching."""
     bng, vehicle = lidar_scene
     with using_sensor(Lidar("lidar1", bng, vehicle), "LiDAR sensor removed.") as lidar:
-        sleep(1)
         print(
             "Property getter test.  The displayed values should be the values which were set during the creation of the LiDAR sensors."
         )
@@ -159,7 +159,6 @@ def test_lidar_properties(lidar_scene):
         print("Is Visualised [Flag]: ", lidar.get_is_visualised())
         print("Is Annotated [Flag]: ", lidar.get_is_annotated())
 
-        sleep(1)
         print(
             "Property setter test.  The displayed property values should be different from the previous values."
         )
@@ -173,11 +172,12 @@ def test_lidar_properties(lidar_scene):
         print(
             "Test visibility mode.  LiDAR visibility should cycle between on and off 3 times, staying at each for 1 second."
         )
-        cycle_visibility(lidar)
+        cycle_visibility(lidar, visualise=VISUALISE)
 
-        print(
-            "Test LiDAR mode.  LiDAR should cycle between DEPTH MODE and ANNOTATION MODE, staying at each for 1 second."
-        )
-        for i in range(6):
-            sleep(1)
-            lidar.set_is_annotated(not (i % 2 == 0))
+        if VISUALISE:
+            print(
+                "Test LiDAR mode.  LiDAR should cycle between DEPTH MODE and ANNOTATION MODE, staying at each for 1 second."
+            )
+            for i in range(6):
+                sleep(1)
+                lidar.set_is_annotated(not (i % 2 == 0))

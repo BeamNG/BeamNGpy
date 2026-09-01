@@ -67,7 +67,7 @@ def check_poll(
 
     last_readings = {}
     for i in range(1, ATTEMPTS + 1):
-        sleep(2)
+        sleep(1)
         if len(fields) == TOTAL_FIELDS:
             print("\nFull poll attempt ", i)
             sensor_readings = cam.get_full_poll_request()
@@ -110,7 +110,7 @@ def check_stream(cam: Camera):
     expected_bytes = cam.resolution[0] * cam.resolution[1] * 4
     raw = None
     for i in range(1, ATTEMPTS + 1):
-        sleep(2)
+        sleep(1)
         cam.poll_raw()
         raw = cam.stream_raw()
         all_nonzero = all(
@@ -161,11 +161,9 @@ def test_camera_shmem(camera_scene):
     with using_sensor(
         make_camera(bng, vehicle, "camera1", is_using_shared_memory=True, **_LEFT_FULL),
     ) as cam:
-        sleep(5)
         print("Testing camera 1...")
         check_poll(cam, True, 3, 3)
 
-        sleep(1)
         print(
             "Property getter test.  The displayed values should be the values which were set during the creation of the camera sensors."
         )
@@ -176,7 +174,6 @@ def test_camera_shmem(camera_scene):
         print("Priority: ", cam.get_update_priority())
         print("Max Pending Requests: ", cam.get_max_pending_requests())
 
-        sleep(1)
         print(
             "Property setter test.  The displayed property values should be different from the previous values."
         )
@@ -211,7 +208,6 @@ def test_camera_no_shmem(camera_scene):
     with using_sensor(
         make_camera(bng, vehicle, "camera2", is_using_shared_memory=False, **_LEFT_FULL),
     ) as cam:
-        sleep(5)
         print("Testing camera 2...")
         check_poll(cam, True, 3, 3)
 
@@ -221,7 +217,6 @@ def test_camera_translucent_depth(camera_scene):
     with using_sensor(
         make_camera(bng, vehicle, "camera1", is_using_shared_memory=True, **_LEFT_FULL),
     ) as cam1:
-        sleep(5)
         cam1_readings = check_poll(cam1, True, 3, 3)
     with using_sensor(
         make_camera(
@@ -233,7 +228,6 @@ def test_camera_translucent_depth(camera_scene):
             **_LEFT_FULL,
         ),
     ) as cam2:
-        sleep(5)
         cam2_readings = check_poll(cam2, True, 3, 3)
 
     print("Testing is_render_translucent_as_opaque_depth...")
@@ -253,7 +247,6 @@ def test_camera_shmem_ad_hoc(camera_scene):
             pos=(5, 0, 1), dir=(-1, 0, 0), **_RENDER_STD,
         ),
     ) as cam:
-        sleep(5)
         print("Testing camera 3...")
         check_poll(cam, True, 3)
         check_poll(cam, False, 3)
@@ -269,7 +262,6 @@ def test_camera_shmem_stream(camera_scene):
             **_LEFT_VIEW, **_RENDER_STD,
         ),
     ) as cam:
-        sleep(5)
         print("Testing camera stream...")
         check_stream(cam)
 
@@ -282,7 +274,6 @@ def test_camera_no_shmem_oblique(camera_scene):
             pos=(0, 5, 1), dir=(0, -1, 0), up=(1, 0, 1), **_RENDER_STD,
         ),
     ) as cam:
-        sleep(5)
         print("Testing camera 4...")
         check_poll(cam, True, 3)
         check_poll(cam, False, 3)
@@ -313,7 +304,7 @@ def test_camera_idle(camera_scene):
             near_far_planes=(0.1, 1000), **_LEFT_VIEW, **_RENDER_STD,
         ),
     ) as idle_cam:
-        sleep(3)
+        sleep(1)
         images = idle_cam.poll()
         for field in ["colour", "annotation", "depth"]:
             images[field] = np.asarray(images[field].convert("RGB"))

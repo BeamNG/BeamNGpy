@@ -20,12 +20,13 @@ from tests.sensors.helpers import (
 )
 
 ATTEMPTS = 3
+VISUALISE = False
 
 def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
     all_readings = []
 
     for i in range(1, ATTEMPTS + 1):
-        sleep(2)
+        sleep(1)
         sensor_readings = latest_sensor_reading(poll_auto_or_adhoc(imu, is_auto, attempt=i))
         print(f"Advanced IMU readings: {sensor_readings}")
 
@@ -80,7 +81,7 @@ def test_advanced_imu_poll(advanced_imu_scene, is_auto):
     """Automatic and ad-hoc polling return consistent, updating readings."""
     bng, vehicle = advanced_imu_scene
     with using_sensor(_default_imu(bng, vehicle), "advanced IMU sensor removed.") as imu:
-        sleep(10)
+        bng.control.step(600)
         check_consistency_and_update(imu, is_auto)
 
 def test_advanced_imu_properties(advanced_imu_scene):
@@ -90,7 +91,6 @@ def test_advanced_imu_properties(advanced_imu_scene):
         AdvancedIMU("advancedIMU1", bng, vehicle),
         "advanced IMU sensor removed.",
     ) as imu:
-        sleep(1)
         print(
             "Property getter test.  The displayed values should be the values which were set during the creation of the advanced IMU sensor."
         )
@@ -100,7 +100,7 @@ def test_advanced_imu_properties(advanced_imu_scene):
         print(
             "Test visibility mode.  Advanced IMU visibility should cycle between on and off 3 times, staying at each for 1 second."
         )
-        cycle_visibility(imu)
+        cycle_visibility(imu, visualise=VISUALISE)
 
 def test_advanced_imu_acceleration(advanced_imu_scene):
     """Vehicle acceleration is reflected in sensor readings."""

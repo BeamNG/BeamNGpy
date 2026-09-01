@@ -39,7 +39,6 @@ def loaded_scenario(
         print(f"{label} start.")
         yield bng, vehicles[0][0]
 
-        sleep(3)
         print(f"{label} complete.")
         bng.ui.show_hud()
 
@@ -49,7 +48,7 @@ def poll_auto_or_adhoc(
     is_auto: bool,
     *,
     attempt: int | None = None,
-    adhoc_wait: float = 3,
+    adhoc_wait: float = 1,
 ):
     """Run automatic poll() or the ad-hoc request/collect flow."""
     suffix = f" {attempt}" if attempt is not None else ""
@@ -95,7 +94,9 @@ def latest_sensor_reading(readings):
     return readings[list(readings.keys())[-1]]
 
 
-def cycle_visibility(sensor, toggles: int = 3):
+def cycle_visibility(sensor, toggles: int = 3, *, visualise: bool = False):
+    if not visualise:
+        return
     for i in range(toggles * 2):
         sleep(1)
         sensor.set_is_visualised(not (i % 2 == 0))

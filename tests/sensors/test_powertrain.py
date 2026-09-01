@@ -43,7 +43,7 @@ def test_powertrain_poll(powertrain_scene, is_auto):
     """Automatic and ad-hoc polling return powertrain readings."""
     bng, vehicle = powertrain_scene
     with using_sensor(_default_powertrain(bng, vehicle), "powertrain sensor removed.") as powertrain:
-        sleep(2)
+        sleep(1)
         if is_auto:
             sensor_readings = powertrain.poll()
             print("powertrain readings (automatic polling): ", sensor_readings)

@@ -28,7 +28,7 @@ def check_consistency_and_update(radar: Radar, is_auto: bool):
     all_readings = []
 
     for i in range(1, ATTEMPTS + 1):
-        sleep(2)
+        sleep(1)
         sensor_readings = poll_auto_or_adhoc(radar, is_auto, attempt=i)
 
         assert len(sensor_readings) > 0, "Readings not present"
@@ -74,18 +74,13 @@ def _full_config_radar(bng: BeamNGpy, vehicle: Vehicle) -> Radar:
 @contextmanager
 def radar_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
     vehicle = Vehicle("ego_vehicle", model="etki", licence="PYTHON", color="Red")
+    vehicle2 = Vehicle("other_vehicle", model="etki", licence="PYTHON", color="Blue")
     with loaded_scenario(
         beamng,
-        level="italy",
+        level="smallgrid",
         name="radar_test",
         description="Testing the RADAR sensor",
-        vehicles=[(
-            vehicle,
-            {
-                "pos": (237.90, -894.42, 246.10),
-                "rot_quat": (0.0173, -0.0019, -0.6354, 0.7720),
-            },
-        )],
+        vehicles=[(vehicle, {}), (vehicle2, {"pos": (0, -10, 0)})],
         label="RADAR test",
     ) as scene:
         yield scene
@@ -97,7 +92,6 @@ def test_radar_poll(radar_scene, is_auto):
     """Automatic and ad-hoc polling return consistent, updating readings."""
     bng, vehicle = radar_scene
     with using_sensor(_full_config_radar(bng, vehicle), "RADAR sensor removed.") as radar:
-        sleep(10)
         check_consistency_and_update(radar, is_auto)
 
 def test_radar_negative_update(radar_scene):
@@ -105,7 +99,7 @@ def test_radar_negative_update(radar_scene):
     bng, vehicle = radar_scene
     with using_sensor(Radar("radar2", bng, vehicle, requested_update_time=-1.0)) as radar:
         print("Testing an ultrasonic sensor with a negative requested update time...")
-        sleep(2)
+        sleep(1)
         sensor_readings = radar.poll()
         print("RADAR readings (should be zeros): ", sensor_readings)
         assert sensor_readings.shape[0] == 0
@@ -114,7 +108,6 @@ def test_radar_properties(radar_scene):
     """Property getters and setters with expected default values."""
     bng, vehicle = radar_scene
     with using_sensor(Radar("radar1", bng, vehicle)) as radar:
-        sleep(1)
         print(
             "Property getter test.  The displayed values should be the values which were set during the creation of the ultrasonic sensors."
         )
@@ -129,7 +122,6 @@ def test_radar_properties(radar_scene):
         print("Max Pending Requests: ", radar.get_max_pending_requests())
         assert radar.get_max_pending_requests() == 10
 
-        sleep(1)
         print(
             "Property setter test.  The displayed property values should be different from the previous values."
         )

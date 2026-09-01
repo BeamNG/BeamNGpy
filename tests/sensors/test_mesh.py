@@ -32,7 +32,7 @@ def test_mesh(mesh_scene, steps: int = 3):
     print(nodes)
 
     for _ in range(steps):
-        sleep(5)
+        sleep(1)
         data = mesh.poll()
         print(data)
         print("data time: ", data["time"])
