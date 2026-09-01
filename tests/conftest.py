@@ -32,7 +32,8 @@ def beamng() -> Iterator[BeamNGpy]:
         gfx=gfx,
         socket_timeout=240,
     )
-    bng.open(None, "-quitonfatalerror")
+    bng.open(None, "-no-tcom-debug")  # launch BeamNG if necessary
+    bng.disconnect()  # to show no socket warning on next open()
     yield bng
 
     # Teardown: close BeamNG instance only if we launched it
