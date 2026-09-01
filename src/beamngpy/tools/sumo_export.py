@@ -11,14 +11,28 @@ class SumoExporter:
     @staticmethod
     def export(name, bng):
         """
-        Exports the road network data to Sumo (.nod.xml and .edg.xml) format.
-        The export contains all road sections, some basic lane data, and some junction connectivity data.
-        This function will generate both .xml files required to generate the Sumo road network. The user should then type the following into the command prompt:
-        `netconvert --node-files=<NAME>.nod.xml --edge-files=<NAME>.edg.xml -o converted.net.xml`
-        which will then generate the final road network, which can be loaded with the sumo applications.
+        Exports the road network data to SUMO (.nod.xml and .edg.xml) format.
+
+        The export contains road sections, lane counts, speed limits, one-way
+        direction, and junction connectivity from the loaded map's navgraph.
+        Files are written next to the current BeamNG.tech user folder (typically
+        ``<userpath>/BeamNG.tech/current/``).
+
+        After export, convert and smoke-test the network in SUMO (cmd)::
+
+            netconvert --node-files=<NAME>.nod.xml --edge-files=<NAME>.edg.xml -o <NAME>.net.xml
+            python "%SUMO_HOME%\\tools\\randomTrips.py" -n <NAME>.net.xml -r <NAME>.rou.xml -e 3600 -p 2
+            sumo-gui -n <NAME>.net.xml -r <NAME>.rou.xml
+
+        ``netconvert`` may print warnings and still succeed. Wait until
+        ``randomTrips.py`` finishes writing ``<NAME>.rou.xml`` before launching
+        ``sumo-gui``. This checks that the exported network loads and can carry
+        traffic in SUMO; it is not a live BeamNG–SUMO co-simulation. Prefer an
+        official map such as West Coast USA for the first test.
 
         Args:
-            name: the filename prefix, by which to save the sumo road network (the .nod.xml and .edg.xml extensions will be appended to the end of this name).
+            name: Filename prefix for the SUMO files (``.nod.xml`` and
+                ``.edg.xml`` are appended).
             bng: The BeamNG instance.
         """
         ExportSumo(bng,name)

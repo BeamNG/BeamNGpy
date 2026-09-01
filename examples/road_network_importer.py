@@ -18,17 +18,18 @@ def main():
     scenario.add_vehicle(vehicle)
 
     # Import OpenDrive (.xodr).
+    # Pass `material=...` to texture the imported roads with something other than the default.
     filename = SCRIPT_DIR / "data/Ex_LHT-Complex-X-Junction.xodr"
     OpenDriveImporter.import_xodr(
-        filename, scenario
+        filename, scenario, material="m_asphalt_new_01"
     )  # import an OpenDrive file (.xodr).
 
     # Import OpenStreetMap (.osm).
     # filename = SCRIPT_DIR / 'data' / 'London.osm'
-    # OpenStreetMapImporter.import_osm(filename, scenario)                 # import an OpenStreetMap file (.osm).
+    # OpenStreetMapImporter.import_osm(filename, scenario, material="m_asphalt_new_01")                 # import an OpenStreetMap file (.osm).
 
     # prefix = str(SCRIPT_DIR / 'data' / 'wcusa')                           # Import Sumo files (.nod.xml, .edg.xml).
-    # SumoImporter.import_sumo(prefix, scenario)
+    # SumoImporter.import_sumo(prefix, scenario, material="m_asphalt_new_01")
 
     # Start up BeamNG with the imported road network.
     print("Making scenario...")

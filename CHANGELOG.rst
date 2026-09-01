@@ -6,6 +6,10 @@ Changelog
 
 Version 1.37
 ============
+- Fixed the OpenDRIVE, OpenStreetMap and SUMO road network importers creating untextured roads.
+  They passed the road name where :pydocs:`MeshRoad <beamngpy.MeshRoad>` expects ``top_material``,
+  so every imported road referenced a material that does not exist in the level. The importers now
+  use ``track_editor_C_center`` and accept a ``material`` argument to override it.
 - Added ``record_speed`` to :pydocs:`AIApi.start_recording <beamngpy.api.vehicle.AIApi.start_recording>`
   (default False, matching Lua ``recordSpeed``). With ``record_speed=True`` the
   recording stores node speeds (``v``) instead of timestamps (``t``), matching
