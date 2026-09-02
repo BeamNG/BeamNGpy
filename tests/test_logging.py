@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
+from typing import Iterator
 import csv
+
+import pytest
 
 from beamngpy import BeamNGpy, Scenario, Vehicle
 
@@ -32,13 +36,9 @@ _VSL_CONFIG = (
 )
 
 
-def test_vehicle_signal_logging(beamng: BeamNGpy):
-    output_file = "log/vsl_logging_test.csv"
-    steps = 50
+@contextmanager
+def logging_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
     with beamng as bng:
-        file_path = Path(beamng.user_with_version) / Path(output_file)
-        if file_path.exists():
-            file_path.unlink()
         scenario = Scenario("tech_ground", "vsl_logging_test")
         vehicle = Vehicle("ego", model="etk800")
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), safe_spawn=True)
@@ -48,8 +48,33 @@ def test_vehicle_signal_logging(beamng: BeamNGpy):
         # precompile_shaders=False avoids long GPU work during load that can reset the TCP link on some setups.
         bng.scenario.load(scenario, precompile_shaders=False)
         bng.scenario.start()
-
         vehicle.connect(bng)
+        yield bng, vehicle
+
+
+@pytest.fixture(scope="module")
+def logging_scene(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
+    with logging_scenario(beamng) as scene:
+        yield scene
+
+
+def _reset_logging_scene(bng: BeamNGpy, vehicle: Vehicle) -> None:
+    bng.scenario.restart()
+    vehicle.connect(bng)
+    vehicle.control(throttle=0.0, brake=0.0, steering=0.0)
+
+
+def test_vehicle_signal_logging(logging_scene):
+    bng, vehicle = logging_scene
+    _reset_logging_scene(bng, vehicle)
+
+    output_file = "log/vsl_logging_test.csv"
+    steps = 50
+    file_path = Path(bng.user_with_version) / Path(output_file)
+    if file_path.exists():
+        file_path.unlink()
+
+    try:
         vehicle.logging.start(
             output_file,
             signals=_VSL_SIGNALS,
@@ -59,29 +84,23 @@ def test_vehicle_signal_logging(beamng: BeamNGpy):
         vehicle.control(throttle=1.0, steering=0.2)
         for _ in range(5):
             sleep(1)
+    finally:
         vehicle.logging.stop()
 
-        check_csv_file(file_path, steps / PHYSICS_FREQUENCY)
+    check_csv_file(file_path, steps / PHYSICS_FREQUENCY)
 
 
-def test_vehicle_signal_logging_from_config(beamng: BeamNGpy):
-    output_file="log/vsl_logging_from_config_test.csv"
+def test_vehicle_signal_logging_from_config(logging_scene):
+    bng, vehicle = logging_scene
+    _reset_logging_scene(bng, vehicle)
+
+    output_file = "log/vsl_logging_from_config_test.csv"
     steps = 100
-    with beamng as bng:
-        file_path = Path(beamng.user_with_version) / Path(output_file)
-        if file_path.exists():
-            file_path.unlink()
-        scenario = Scenario("tech_ground", "vsl_logging_from_config_test")
-        vehicle = Vehicle("ego", model="etk800")
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), safe_spawn=True)
-        scenario.make(bng)
+    file_path = Path(bng.user_with_version) / Path(output_file)
+    if file_path.exists():
+        file_path.unlink()
 
-        bng.settings.set_deterministic(60)
-        # precompile_shaders=False avoids long GPU work during load that can reset the TCP link on some setups.
-        bng.scenario.load(scenario, precompile_shaders=False)
-        bng.scenario.start()
-
-        vehicle.connect(bng)
+    try:
         # signals + default settings come from the config; override path/steps for the test run.
         vehicle.logging.start(
             config_path=_VSL_CONFIG,
@@ -92,9 +111,10 @@ def test_vehicle_signal_logging_from_config(beamng: BeamNGpy):
         vehicle.control(throttle=1.0, steering=0.2)
         for _ in range(5):
             sleep(1)
+    finally:
         vehicle.logging.stop()
 
-        check_csv_file(file_path, steps / PHYSICS_FREQUENCY)
+    check_csv_file(file_path, steps / PHYSICS_FREQUENCY)
 
 
 def check_csv_file(file_path: Path, row_time_delta: float):
