@@ -30,7 +30,7 @@ def beamng() -> Iterator[BeamNGpy]:
         headless=headless,
         nogpu=nogpu,
         gfx=gfx,
-        socket_timeout=120,
+        socket_timeout=180,
     )
     bng.open(None, "-no-tcom-debug")  # launch BeamNG if necessary
     bng.disconnect()  # to show no socket warning on next open()
