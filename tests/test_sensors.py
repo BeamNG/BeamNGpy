@@ -1,84 +1,94 @@
 from __future__ import annotations
 
-import random
+from contextlib import contextmanager
+from typing import Iterator
 
-import numpy as np
+import pytest
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat
 from beamngpy.sensors import Damage, Electrics, State
 
 
-def test_electrics(beamng: BeamNGpy):
+@contextmanager
+def sensors_scenario(
+    beamng: BeamNGpy,
+) -> Iterator[tuple[BeamNGpy, Vehicle, Electrics, Damage, State]]:
     with beamng as bng:
-        scenario = Scenario("tech_ground", "electrics_test")
+        scenario = Scenario("tech_ground", "sensors_test")
         vehicle = Vehicle("test_car", model="etk800")
 
         electrics = Electrics()
+        damage = Damage()
+        state = State()
         vehicle.sensors.attach("electrics", electrics)
+        vehicle.sensors.attach("damage", damage)
+        vehicle.sensors.attach("newstate", state)
 
         scenario.add_vehicle(vehicle, pos=(0, 0, 0))
-        scenario.make(beamng)
+        scenario.make(bng)
 
+        bng.settings.set_deterministic(60)
+        bng.control.pause()
         bng.scenario.load(scenario)
         bng.scenario.start()
-        bng.control.step(120)
 
-        vehicle.control(throttle=1.0)
+        yield bng, vehicle, electrics, damage, state
 
-        bng.control.step(360)
 
-        vehicle.sensors.poll()
+@pytest.fixture(scope="module")
+def sensors_scene(
+    beamng: BeamNGpy,
+) -> Iterator[tuple[BeamNGpy, Vehicle, Electrics, Damage, State]]:
+    with sensors_scenario(beamng) as scene:
+        yield scene
+
+
+def _reset_scene(bng: BeamNGpy, vehicle: Vehicle) -> None:
+    bng.scenario.restart()
+    bng.control.pause()
+    vehicle.control(throttle=0.0, brake=0.0, steering=0.0)
+
+
+def test_electrics(sensors_scene):
+    bng, vehicle, electrics, _, _ = sensors_scene
+    _reset_scene(bng, vehicle)
+
+    bng.control.step(120)
+    vehicle.control(throttle=1.0)
+    bng.control.step(360)
+    vehicle.sensors.poll()
 
     assert electrics["airspeed"] > 0
     assert electrics["wheelspeed"] > 0
     assert electrics["throttle_input"] > 0
 
 
-def test_damage(beamng: BeamNGpy):
-    with beamng as bng:
-        scenario = Scenario("tech_ground", "damage_test")
-        dummy = Vehicle("dummy", model="pickup")
-        scenario.add_vehicle(dummy, pos=(0, 0, 0))
-        scenario.make(beamng)
+def test_damage(sensors_scene):
+    bng, vehicle, _, damage, _ = sensors_scene
+    _reset_scene(bng, vehicle)
 
-        vehicle = Vehicle("test_car", model="etk800")
-        damage = Damage()
-        vehicle.sensors.attach("damage", damage)
-
-        bng.scenario.load(scenario)
-        bng.scenario.start()
-
-        scenario.add_vehicle(
-            vehicle, pos=(0, 0, 32), rot_quat=angle_to_quat((-90, 0, 0)), cling=False
-        )
-
-        bng.control.step(600)
-
-        vehicle.sensors.poll()
+    # Drop the shared vehicle instead of building a separate crash scenario.
+    vehicle.teleport(
+        (0, 0, 32), rot_quat=angle_to_quat((-90, 0, 0)), reset=True
+    )
+    bng.control.step(600)
+    vehicle.sensors.poll()
 
     assert damage["damage"] > 100
 
 
-def test_state(beamng: BeamNGpy):
-    with beamng as bng:
-        scenario = Scenario("tech_ground", "state_test")
-        vehicle = Vehicle("test_car", model="pickup")
+def test_state(sensors_scene):
+    bng, vehicle, _, _, state = sensors_scene
+    _reset_scene(bng, vehicle)
 
-        state = State()
-        vehicle.sensors.attach("newstate", state)
-
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
-        scenario.make(beamng)
-
-        bng.scenario.load(scenario)
-        bng.scenario.start()
-        bng.control.step(20)
-
-        vehicle.sensors.poll()
+    bng.control.step(20)
+    vehicle.sensors.poll()
 
     assert state["pos"][0] < 0.1
 
 
 if __name__ == "__main__":
-    bng = BeamNGpy("localhost", 25252)
-    test_electrics(bng)
+    bng = BeamNGpy("localhost", 25252, quit_on_close=False)
+    with sensors_scenario(bng) as scene:
+        for test in (test_electrics, test_damage, test_state):
+            test(scene)
