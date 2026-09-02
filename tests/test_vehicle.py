@@ -85,13 +85,13 @@ def test_vehicle_ai(beamng: BeamNGpy):
     with beamng as bng:
         bng.settings.set_deterministic(50)
 
-        scenario = Scenario("west_coast_usa", "ai_test")
+        scenario = Scenario("small_island", "ai_test")
         vehicle = Vehicle("test_car", model="etk800")
         other = Vehicle("other", model="etk800")
-        pos = (-717.121, 101, 118.675)
-        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
+        pos = (-241.901, -379.48, 31.719)
+        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, -85)))
         scenario.add_vehicle(
-            other, pos=(-453, 700, 75), rot_quat=angle_to_quat((0, 0, 45))
+            other, pos=(148.242, 292.909, 41.847), rot_quat=angle_to_quat((0, 0, 95))
         )
         scenario.make(bng)
 
@@ -108,7 +108,7 @@ def test_vehicle_ai(beamng: BeamNGpy):
         bng.scenario.restart()
         bng.control.pause()
 
-        vehicle.ai.set_waypoint("Bridge26_2")
+        vehicle.ai.set_waypoint("wp_1")
         bng.control.step(500)
         assert_continued_movement(bng, vehicle, pos)
 
@@ -129,14 +129,16 @@ def test_vehicle_ai(beamng: BeamNGpy):
 
         bng.scenario.restart()
         vehicle.teleport(
-            (-719.19, 106.10, 118.53), rot_quat=angle_to_quat((0, 0, 45)), reset=False
+            (-241.901, -379.48, 31.719),
+            rot_quat=angle_to_quat((0, 0, -85)),
+            reset=False,
         )
         bng.control.pause()
 
         script = [
-            {"x": -719.0, "y": 106.0, "z": 118.0, "t": 0.0},
-            {"x": -758.0, "y": 67.0, "z": 118.0, "t": 5.0},
-            {"x": -825.0, "y": 0.0, "z": 117.0, "t": 12.0},
+            {"x": -241.9, "y": -379.5, "z": 31.7, "t": 0.0},
+            {"x": -231.9, "y": -380.3, "z": 31.7, "t": 5.0},
+            {"x": -221.9, "y": -381.2, "z": 31.7, "t": 10.0},
         ]
         vehicle.ai.set_script(script)
         bng.control.step(670, wait=True)
@@ -190,13 +192,13 @@ def test_vehicle_spawn(beamng: BeamNGpy):
 
 def test_vehicle_bbox(beamng: BeamNGpy):
     with beamng as bng:
-        scenario = Scenario("west_coast_usa", "bbox_test")
+        scenario = Scenario("small_island", "bbox_test")
         vehicle_a = Vehicle("vehicle_a", model="etk800")
         vehicle_b = Vehicle("vehicle_b", model="etk800")
-        pos = (-717.121, 101, 118.675)
-        scenario.add_vehicle(vehicle_a, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
-        pos = (-453, 700, 75)
-        scenario.add_vehicle(vehicle_b, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
+        pos = (-241.901, -379.48, 31.719)
+        scenario.add_vehicle(vehicle_a, pos=pos, rot_quat=angle_to_quat((0, 0, -85)))
+        pos = (148.242, 292.909, 41.847)
+        scenario.add_vehicle(vehicle_b, pos=pos, rot_quat=angle_to_quat((0, 0, 95)))
         scenario.make(beamng)
 
         bng.control.pause()
@@ -309,13 +311,13 @@ def test_traffic(beamng: BeamNGpy):
     with beamng as bng:
         bng.settings.set_deterministic(50)
 
-        scenario = Scenario("west_coast_usa", "traffic_test")
+        scenario = Scenario("small_island", "traffic_test")
         vehicle = Vehicle("ego", model="etk800", color="maroon")
         other = Vehicle("traffic", model="etk800", color="darkgreen")
-        pos = (-717.121, 101, 118.675)
-        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, 45)))
-        pos = (-425, 675, 75)
-        scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, -45)))
+        pos = (-241.901, -379.48, 31.719)
+        scenario.add_vehicle(vehicle, pos=pos, rot_quat=angle_to_quat((0, 0, -85)))
+        pos = (148.242, 292.909, 41.847)
+        scenario.add_vehicle(other, pos=pos, rot_quat=angle_to_quat((0, 0, 95)))
         scenario.make(bng)
 
         bng.control.pause()

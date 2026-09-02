@@ -9,12 +9,12 @@ from beamngpy import BeamNGpy, Scenario, Vehicle
 def test_traffic_signals_api(beamng: BeamNGpy) -> None:
     rid = uuid.uuid4().hex[:8]
     with beamng as bng:
-        scenario = Scenario("west_coast_usa", f"ts_{rid}")
+        scenario = Scenario("east_coast_usa", f"ts_{rid}")
         vehicle = Vehicle(f"ego_{rid}", model="etk800", license="TS1")
         scenario.add_vehicle(
             vehicle,
-            pos=(-717.121, 101, 118.675),
-            rot_quat=(0, 0, 0.9238795, -0.3826834),
+            pos=(723.16, -5.944, 52.077),
+            safe_spawn=True,
         )
         scenario.make(bng)
         bng.scenario.load(scenario, precompile_shaders=False)
