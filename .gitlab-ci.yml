@@ -28,8 +28,13 @@ stages:
       - junit.xml
     reports:
       junit: junit.xml
-  only:
-    - dev
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      variables:
+        TESTING_REVISION: "latest"
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+    - when: never
 
 test-job-windows:
   extends: .test-job-base
@@ -64,8 +69,10 @@ build-pages:
   artifacts:
     paths:
       - docs/build
-  only:
-    - dev
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+    - when: never
 
 deploy-production:
   needs: []  # do not wait for earlier stages
@@ -87,5 +94,7 @@ deploy-production:
   artifacts:
     paths:
       - docs/build
-  only:
-    - master
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+    - when: never
