@@ -41,6 +41,9 @@ test-job-windows:
   tags:
     - testing_servers
     - windows
+  parallel:
+    matrix:
+      - GFX: ["d3d12", "dx11", "vk"]
   script:
     - .\tests\scripts\run_tests.ps1
 
