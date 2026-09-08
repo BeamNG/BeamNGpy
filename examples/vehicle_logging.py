@@ -52,7 +52,7 @@ def main():
     #         "brake",
     #         "steering",
     #     ],
-    #     steps=50,  # 40 Hz at 2000 Hz physics
+    #     steps=50,  # Log every 50th physics step
     # )
 
     vehicle.ai.set_mode("span")

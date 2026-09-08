@@ -25,7 +25,6 @@ _VSL_SIGNALS = [
     "gearIndex",
     "mainEngine outputTorque1",
 ]
-PHYSICS_FREQUENCY = 2000
 
 # Same format as World Editor > Vehicle Signal Logger > Save configuration.
 _VSL_CONFIG = (
@@ -87,7 +86,7 @@ def test_vehicle_signal_logging(logging_scene):
     finally:
         vehicle.logging.stop()
 
-    check_csv_file(file_path, steps / PHYSICS_FREQUENCY)
+    check_csv_file(file_path, steps / bng.settings.get_physics_frequency())
 
 
 def test_vehicle_signal_logging_from_config(logging_scene):
@@ -114,7 +113,7 @@ def test_vehicle_signal_logging_from_config(logging_scene):
     finally:
         vehicle.logging.stop()
 
-    check_csv_file(file_path, steps / PHYSICS_FREQUENCY)
+    check_csv_file(file_path, steps / bng.settings.get_physics_frequency())
 
 
 def check_csv_file(file_path: Path, row_time_delta: float):

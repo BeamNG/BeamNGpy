@@ -83,6 +83,19 @@ class SettingsApi(Api):
         data = dict(type="FPSLimit", fps=sps)
         self._send(data).ack("SetFPSLimit")
 
+    def get_physics_frequency(self) -> float:
+        """
+        Gets the frequency of the physics simulation in Hz, i.e. the number of
+        physics steps the simulator computes per simulated second. It defaults to
+        2000 Hz and can be changed with the ``-physicsfps`` startup argument.
+
+        Returns:
+            The physics frequency in Hz.
+        """
+        data = dict(type="GetPhysicsFrequency")
+        resp = self._send(data).recv("PhysicsFrequency")
+        return float(resp["frequency"])
+
     def remove_step_limit(self) -> None:
         """
         Removes the steps-per-second setting, making the simulation run at

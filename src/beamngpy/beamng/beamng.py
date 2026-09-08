@@ -356,6 +356,7 @@ class BeamNGpy:
         self.set_deterministic = self.settings.set_deterministic
         self.set_nondeterministic = self.settings.set_nondeterministic
         self.set_steps_per_second = self.settings.set_steps_per_second
+        self.get_physics_frequency = self.settings.get_physics_frequency
         self.remove_step_limit = self.settings.remove_step_limit
         self.set_particles_enabled = self.settings.set_particles_enabled
 
