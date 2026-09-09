@@ -4,8 +4,14 @@ Changelog
 
 
 
+
+
 Version 1.37
 ============
+- Added :pydocs:`BeamNGpy.settings.get_physics_frequency <beamngpy.api.beamng.SettingsApi.get_physics_frequency>`,
+  which returns the physics rate of the simulator in Hz (2000 Hz unless changed with the
+  ``-physicsfps`` startup argument). Useful for converting the ``steps`` of
+  :pydocs:`Vehicle.logging.start <beamngpy.api.vehicle.LoggingApi.start>` into a sampling rate.
 - Fixed the OpenDRIVE, OpenStreetMap and SUMO road network importers creating untextured roads.
   They passed the road name where :pydocs:`MeshRoad <beamngpy.MeshRoad>` expects ``top_material``,
   so every imported road referenced a material that does not exist in the level. The importers now
