@@ -12,7 +12,7 @@ stages:
   stage: test
   environment: TESTING
   variables:
-    TESTING_REVISION: "186824" #has 9 broken tests in total test_get_physics_frequency, test_vehicle_signal_logging test_vehicle_signal_logging_from_config. 
+    TESTING_REVISION: "186836" # last commit before camera fail  
     TESTING_TARGET: ".temp/testing"
     TESTS_PATH: "tests"
     HEADLESS: "1"
