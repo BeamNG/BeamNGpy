@@ -27,7 +27,7 @@ class AdvancedIMU(CommBase):
         vehicle: The vehicle to which this sensor should be attached. Note: a vehicle must be provided for the advanced IMU sensor.
         gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
         physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
-        pos: (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
+        pos: (X, Y, Z) Coordinate triplet specifying the sensor position, in vehicle space.
         dir: (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
         up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
         smoother_strength: The strength of the smoothing filter to be used for the acceleration and gyroscopic data, if required. (0.0 = no smoothing, 5.0 = maximum smoothing)
@@ -37,7 +37,7 @@ class AdvancedIMU(CommBase):
         is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle.
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle.
-        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
+        is_dir_world_space: If True, ``dir`` and ``up`` are in world-space; otherwise vehicle space.
     """
 
     def __init__(
@@ -185,6 +185,26 @@ class AdvancedIMU(CommBase):
             f"{self.name}"
         )
         return readings
+
+    def get_requested_update_time(self) -> float:
+        """Gets the current requested update time for this sensor."""
+        return float(
+            self.send_recv_ge("GetAdvancedIMURequestedUpdateTime", name=self.name)[
+                "data"
+            ]
+        )
+
+    def get_is_using_gravity(self) -> bool:
+        """Gets whether this sensor includes gravity in its computation."""
+        return bool(
+            self.send_recv_ge("GetAdvancedIMUIsUsingGravity", name=self.name)["data"]
+        )
+
+    def get_is_visualised(self) -> bool:
+        """Gets whether this sensor is visualised in the simulator."""
+        return bool(
+            self.send_recv_ge("GetAdvancedIMUIsVisualised", name=self.name)["data"]
+        )
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
         """

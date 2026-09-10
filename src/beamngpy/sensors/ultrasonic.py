@@ -30,7 +30,7 @@ class Ultrasonic(CommBase):
         vehicle: The vehicle to which this sensor should be attached, if any.
         requested_update_time: The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
         update_priority: The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1.
-        pos: (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
+        pos: (X, Y, Z) Coordinate triplet specifying the sensor position. Vehicle-space when attached to a vehicle; world-space when ``is_static=True``.
         dir: (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
         up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
         size: (X, Y) The resolution of the sensor (the size of the depth buffer image in the distance measurement computation).
@@ -50,7 +50,7 @@ class Ultrasonic(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
-        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
+        is_dir_world_space: If True, ``dir`` and ``up`` are in world-space; otherwise vehicle space. Does not affect ``pos``.
     """
 
     def __init__(
@@ -239,14 +239,21 @@ class Ultrasonic(CommBase):
         """
         return self.send_recv_ge("GetUltrasonicUpdatePriority", name=self.name)["data"]
 
-    def get_position(self) -> Float3:
+    def get_position(self, world_space: bool = True) -> Float3:
         """
-        Gets the current world-space position of this sensor.
+        Gets the sensor position.
+
+        Args:
+            world_space: If True (default), returns the sensor's current world-space position.
+                If False, returns the configured position, which is vehicle-space
+                (jbeam rest frame) when attached to a vehicle and world-space when ``is_static=True``.
 
         Returns:
             The sensor position.
         """
-        table = self.send_recv_ge("GetUltrasonicSensorPosition", name=self.name)["data"]
+        table = self.send_recv_ge(
+            "GetUltrasonicSensorPosition", name=self.name, isWorldSpace=world_space
+        )["data"]
         return (table["x"], table["y"], table["z"])
 
     def get_direction(self) -> Float3:
@@ -260,6 +267,19 @@ class Ultrasonic(CommBase):
             "data"
         ]
         return (table["x"], table["y"], table["z"])
+
+    def get_up(self) -> Float3:
+        """Gets the current up direction vector of this sensor."""
+        table = self.send_recv_ge("GetUltrasonicSensorUp", name=self.name)["data"]
+        return (table["x"], table["y"], table["z"])
+
+    def get_radius_at_distance(self, distance: float) -> float:
+        """Gets the beam radius at the given distance from the sensor."""
+        return float(
+            self.send_recv_ge(
+                "GetUltrasonicSensorRadius", name=self.name, distance=distance
+            )["data"]
+        )
 
     def get_max_pending_requests(self) -> int:
         """
@@ -337,6 +357,46 @@ class Ultrasonic(CommBase):
             ack="CompletedSetUltrasonicIsVisualised",
             name=self.name,
             isVisualised=is_visualised,
+        )
+
+    def set_position(self, pos: Float3, world_space: bool = False) -> None:
+        """
+        Sets the sensor position.
+
+        Args:
+            pos: The new position.
+            world_space: If True, ``pos`` is interpreted as world-space. Only supported for static sensors.
+        """
+        self.send_ack_ge(
+            "SetUltrasonicSensorPosition",
+            ack="CompletedSetUltrasonicSensorPosition",
+            name=self.name,
+            posX=pos[0],
+            posY=pos[1],
+            posZ=pos[2],
+            isWorldSpace=world_space,
+        )
+
+    def set_direction(self, dir: Float3) -> None:
+        """Sets the current forward direction vector of this sensor."""
+        self.send_ack_ge(
+            "SetUltrasonicSensorDirection",
+            ack="CompletedSetUltrasonicSensorDirection",
+            name=self.name,
+            dirX=dir[0],
+            dirY=dir[1],
+            dirZ=dir[2],
+        )
+
+    def set_up(self, up: Float3) -> None:
+        """Sets the current up vector of this sensor."""
+        self.send_ack_ge(
+            "SetUltrasonicSensorUp",
+            ack="CompletedSetUltrasonicSensorUp",
+            name=self.name,
+            upX=up[0],
+            upY=up[1],
+            upZ=up[2],
         )
 
     def _open_ultrasonic(

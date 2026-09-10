@@ -1,25 +1,15 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from time import sleep
-from typing import Iterator
 
 import numpy as np
 import pytest
 
-from beamngpy import BeamNGpy, Vehicle
+from beamngpy import BeamNGpy
 from beamngpy.sensors import Lidar
 
-from tests.sensors.helpers import (
-    cycle_visibility,
-    loaded_scenario,
-    make_module_scene_fixture,
-    poll_auto_or_adhoc,
-    using_sensor,
-)
+import tests.sensors.helpers as h
 
-ATTEMPTS = 3
-VISUALISE = False
 
 def validate_distribution(pointCloud):
     x, y = pointCloud[:, 0], pointCloud[:, 1]
@@ -27,14 +17,30 @@ def validate_distribution(pointCloud):
     counts, _ = np.histogram(phi, bins=16, range=(-180, 180))
     return np.max(counts) - np.min(counts) < np.max(counts) / 5
 
-def polling_check(lidar: Lidar, is_auto: bool, is_360: bool, is_rotate: bool):
-    data_total = []
-    prev_first_point = None
-    data = None
 
-    for i in range(ATTEMPTS):
-        sleep(1)
-        data = poll_auto_or_adhoc(lidar, is_auto, attempt=i + 1)
+def _cloud_signature(point_cloud: np.ndarray) -> float:
+    finite = point_cloud[np.isfinite(point_cloud).all(axis=1)]
+    valid = finite[(np.abs(finite) < 1e6).all(axis=1)]
+    return float(np.sum(np.round(valid, 1)))
+
+
+def polling_check(
+    bng: BeamNGpy, lidar: Lidar, is_auto: bool, is_360: bool, is_rotate: bool,
+):
+    signatures: list[float] = []
+    update_min_delta = 1.0 if is_rotate else 250.0
+
+    for i in range(h.ATTEMPTS):
+        if not is_rotate:
+            start, step = h.OBSTACLE_START, h.LIDAR_OBSTACLE_STEP_Y
+            h.place_other_vehicle(
+                bng, (start[0], start[1] + i * step, start[2]),
+                settle_s=h.SETTLE_AFTER_TELEPORT_S,
+            )
+        else:
+            sleep(2)
+
+        data = h.poll_auto_or_adhoc(lidar, is_auto, attempt=i + 1)
 
         print("LiDAR point cloud data: ", data["pointCloud"])
         print("LiDAR colour data: ", data["colours"])
@@ -42,59 +48,42 @@ def polling_check(lidar: Lidar, is_auto: bool, is_360: bool, is_rotate: bool):
         assert len(data["pointCloud"]) > 0
         print("PASS: Point cloud is present")
 
-        if is_360:
+        if is_360 and i == 0:
             assert validate_distribution(data["pointCloud"]), "360 point cloud data is not uniform."
             print("PASS: Data is uniform")
 
-        if i == 0:
-            prev_first_point = data["pointCloud"][0]
-        if not is_rotate:
-            data_total.append(len(data["pointCloud"]))
+        signatures.append(_cloud_signature(data["pointCloud"]))
         assert len(data["colours"]) > 0
         print("PASS: Colour data is present")
 
-    assert prev_first_point is not None and (data["pointCloud"][0] != prev_first_point).all(), "Point cloud doesn't get updated"
-    print("PASS: Point cloud gets updated")
+    h.assert_responds_to_motion(signatures, min_delta=update_min_delta, label="lidar cloud signature")
+    print("PASS: Point cloud reflects scene changes")
 
-    if not is_rotate:
-        assert np.max(data_total) - np.min(data_total) < np.max(data_total) * 0.01, "360 or static point cloud data is inconsistent"
+    h.assert_duplicate_poll_consistent(lidar, is_auto, lambda d: len(d["pointCloud"]))
     print("PASS: LiDAR point cloud data is consistent")
 
-def negative_update_test(lidar: Lidar):
-    sleep(1)
-    data = lidar.poll()
-    print("LiDAR point cloud data (should be zeros): ", data["pointCloud"])
-    print("LiDAR colour data (should be zeros): ", data["colours"])
-    assert len(data["pointCloud"]) == 0 and len(data["colours"]) == 0
-    print("PASS: No data is present")
 
-@contextmanager
-def lidar_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
-    vehicle = Vehicle("ego_vehicle", model="etki", license="PYTHON", color="Blue")
-    with loaded_scenario(
-        beamng,
-        level="tech_ground",
-        name="lidar_test",
-        description="Testing the LiDAR sensor",
-        vehicles=[(vehicle, {"pos": (0, 0, 0)})],
-        label="LiDAR test",
-    ) as scene:
-        yield scene
+lidar_scene = h.module_scene(
+    "lidar_test",
+    "Testing the LiDAR sensor",
+    "LiDAR test",
+    obstacle_pos=h.OBSTACLE_START,
+)
 
-lidar_scene = make_module_scene_fixture(lidar_scenario)
 
 @pytest.mark.parametrize("is_using_shared_memory", [True, False])
-def test_lidar_shmem(lidar_scene, is_using_shared_memory):
+@pytest.mark.parametrize("is_auto", [True, False])
+def test_lidar_shmem(lidar_scene, is_using_shared_memory, is_auto):
     """Default 360 mode with and without shared memory."""
     bng, vehicle = lidar_scene
     label = "shared memory" if is_using_shared_memory else "socket (no shared memory)"
     print(f"Testing a LiDAR sensor which uses {label}...")
-    with using_sensor(
+    with h.using_sensor(
         Lidar("lidar1", bng, vehicle, is_using_shared_memory=is_using_shared_memory),
         "LiDAR sensor removed.",
     ) as lidar:
-        polling_check(lidar, True, True, False)
-        polling_check(lidar, False, True, False)
+        polling_check(bng, lidar, is_auto, True, False)
+
 
 @pytest.mark.parametrize("is_using_shared_memory", [True, False])
 def test_lidar_negative_update(lidar_scene, is_using_shared_memory):
@@ -102,7 +91,7 @@ def test_lidar_negative_update(lidar_scene, is_using_shared_memory):
     bng, vehicle = lidar_scene
     mem = "WITH" if is_using_shared_memory else "WITHOUT"
     print(f"Testing a LiDAR sensor with a negative requested update time ({mem} shared memory)...")
-    with using_sensor(
+    with h.using_sensor(
         Lidar(
             "lidar3",
             bng,
@@ -112,13 +101,19 @@ def test_lidar_negative_update(lidar_scene, is_using_shared_memory):
         ),
         "LiDAR sensor removed.",
     ) as lidar:
-        negative_update_test(lidar)
+        h.assert_negative_update(
+            lidar,
+            lambda d: len(d["pointCloud"]) == 0 and len(d["colours"]) == 0,
+        )
+        print("PASS: No data is present")
 
-def test_lidar_lfo_mode(lidar_scene):
+
+@pytest.mark.parametrize("is_auto", [True, False])
+def test_lidar_lfo_mode(lidar_scene, is_auto):
     """LFO (rotate) mode with a 90 degree aperture."""
     bng, vehicle = lidar_scene
     print("Testing a LiDAR sensor in LFO mode...")
-    with using_sensor(
+    with h.using_sensor(
         Lidar(
             "lidar5", bng, vehicle,
             is_using_shared_memory=True, is_360_mode=False,
@@ -126,55 +121,45 @@ def test_lidar_lfo_mode(lidar_scene):
         ),
         "LiDAR sensor removed.",
     ) as lidar:
-        polling_check(lidar, True, False, True)
-        polling_check(lidar, False, False, True)
+        polling_check(bng, lidar, is_auto, False, True)
 
-def test_lidar_static_mode(lidar_scene):
+
+@pytest.mark.parametrize("is_auto", [True, False])
+def test_lidar_static_mode(lidar_scene, is_auto):
     """Static mode with a 90 degree aperture."""
     bng, vehicle = lidar_scene
     print("Testing a LiDAR sensor in static mode...")
-    with using_sensor(
+    with h.using_sensor(
         Lidar(
             "lidar6", bng, vehicle,
             is_using_shared_memory=True, is_360_mode=False, horizontal_angle=90,
         ),
         "LiDAR sensor removed.",
     ) as lidar:
-        polling_check(lidar, True, False, False)
-        polling_check(lidar, False, False, False)
+        polling_check(bng, lidar, is_auto, False, False)
 
-def test_lidar_properties(lidar_scene):
-    """Property getters and setters, visualisation and annotation mode switching."""
+
+def test_lidar_property_roundtrips(lidar_scene):
+    """Assert getter/setter round-trips for LiDAR pose, tuning, and scheduling."""
     bng, vehicle = lidar_scene
-    with using_sensor(Lidar("lidar1", bng, vehicle), "LiDAR sensor removed.") as lidar:
-        print(
-            "Property getter test.  The displayed values should be the values which were set during the creation of the LiDAR sensors."
+    with h.using_sensor(Lidar("lidar_props", bng, vehicle), "LiDAR sensor removed.") as lidar:
+        h.exercise_roundtrip(
+            lidar,
+            h.scheduling_pose_cases(lidar, (-2.0, 0.5, 1.5), extra=[
+                ("get_vertical_resolution", 32, lidar.set_vertical_resolution),
+                ("get_frequency", 15.0, lidar.set_frequency),
+                ("get_max_distance", 90.0, lidar.set_max_distance),
+            ]),
         )
-        print("Sensor Name: ", lidar.name)
-        print("Position: ", lidar.get_position())
-        print("Direction: ", lidar.get_direction())
-        print("Requested update time: ", lidar.get_requested_update_time())
-        print("Priority: ", lidar.get_update_priority())
-        print("Max Pending Requests: ", lidar.get_max_pending_requests())
-        print("Is Visualised [Flag]: ", lidar.get_is_visualised())
-        print("Is Annotated [Flag]: ", lidar.get_is_annotated())
-
-        print(
-            "Property setter test.  The displayed property values should be different from the previous values."
-        )
-        lidar.set_requested_update_time(0.3)
-        print("Newly-set Requested Update Time: ", lidar.get_requested_update_time())
-        lidar.set_update_priority(0.5)
-        print("Newly-set Priority: ", lidar.get_update_priority())
-        lidar.set_max_pending_requests(5)
-        print("Newly-set Max Pending Requests: ", lidar.get_max_pending_requests())
-
+        lidar.set_is_visualised(False)
+        assert lidar.get_is_visualised() is False
+        lidar.set_is_annotated(True)
+        assert lidar.get_is_annotated() is True
         print(
             "Test visibility mode.  LiDAR visibility should cycle between on and off 3 times, staying at each for 1 second."
         )
-        cycle_visibility(lidar, visualise=VISUALISE)
-
-        if VISUALISE:
+        h.cycle_visibility(lidar)
+        if h.VISUALISE:
             print(
                 "Test LiDAR mode.  LiDAR should cycle between DEPTH MODE and ANNOTATION MODE, staying at each for 1 second."
             )

@@ -33,7 +33,7 @@ class Camera(CommBase):
         vehicle: The vehicle to which this sensor should be attached, if any.
         requested_update_time: The time which should pass between sensor reading updates, in seconds. This is just a suggestion to the manager.
         update_priority: The priority which the sensor should ask for new readings. lowest -> 0, highest -> 1.
-        pos: (X, Y, Z) Coordinate triplet specifying the position of the sensor, in world space.
+        pos: (X, Y, Z) Coordinate triplet specifying the sensor position. Vehicle-space when attached to a vehicle; world-space when ``is_static=True``.
         dir: (X, Y, Z) Coordinate triplet specifying the forward direction of the sensor.
         up: (X, Y, Z) Coordinate triplet specifying the up direction of the sensor.
         resolution: (X, Y) The resolution of the sensor images.
@@ -53,7 +53,7 @@ class Camera(CommBase):
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
         postprocess_depth: If True, the raw depth data will be postprocessed to better represent values with middle intensity. Defaults to False,
                            as the postprocessing is computationally intensive.
-        is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).
+        is_dir_world_space: If True, ``dir`` and ``up`` are in world-space; otherwise vehicle space.
         integer_depth: If True, depth values will be quantized to the integer range 0-255. If False, depth values will be sent as 32-bit floats in the range
                        of 0.0-1.0. Will be set to False if ``postprocess_depth=True`` as full precision is needed for postprocessing. Defaults to True.
     """
@@ -160,6 +160,8 @@ class Camera(CommBase):
         postprocess_depth: bool = False,
         is_dir_world_space: bool = False,
         integer_depth: bool = True,
+        auto_exposure: bool = True,
+        manual_exposure: float = 0.001,
     ):
         super().__init__(bng, vehicle)
         self.logger = getLogger(f"{LOGGER_ID}.Camera")
@@ -261,6 +263,8 @@ class Camera(CommBase):
             is_force_inside_triangle,
             is_dir_world_space,
             integer_depth,
+            auto_exposure,
+            manual_exposure,
         )
         self.logger.debug("Camera - sensor created: " f"{self.name}")
 
@@ -707,14 +711,21 @@ class Camera(CommBase):
         )["data"]
         return (int(pixel_data["x"]), int(pixel_data["y"]))
 
-    def get_position(self) -> Float3:
+    def get_position(self, world_space: bool = True) -> Float3:
         """
-        Gets the current world-space position of this sensor.
+        Gets the sensor position.
+
+        Args:
+            world_space: If True (default), returns the sensor's current world-space position.
+                If False, returns the configured position, which is vehicle-space
+                when attached to a vehicle and world-space when ``is_static=True``.
 
         Returns:
             The sensor position.
         """
-        table = self.send_recv_ge("GetCameraSensorPosition", name=self.name)["data"]
+        table = self.send_recv_ge(
+            "GetCameraSensorPosition", name=self.name, isWorldSpace=world_space
+        )["data"]
         return (table["x"], table["y"], table["z"])
 
     def get_direction(self) -> Float3:
@@ -725,6 +736,16 @@ class Camera(CommBase):
             The sensor direction.
         """
         table = self.send_recv_ge("GetCameraSensorDirection", name=self.name)["data"]
+        return (table["x"], table["y"], table["z"])
+
+    def get_up(self) -> Float3:
+        """
+        Gets the current up direction vector of this sensor.
+
+        Returns:
+            The sensor up vector.
+        """
+        table = self.send_recv_ge("GetCameraSensorUp", name=self.name)["data"]
         return (table["x"], table["y"], table["z"])
 
     def get_requested_update_time(self) -> float:
@@ -756,12 +777,39 @@ class Camera(CommBase):
             self.send_recv_ge("GetCameraMaxPendingGpuRequests", name=self.name)["data"]
         )
 
-    def set_position(self, pos: Float3) -> None:
+    def get_resolution(self) -> Int2:
+        """Gets the current image resolution of this sensor."""
+        table = self.send_recv_ge("GetCameraSize", name=self.name)["data"]
+        return (int(table["x"]), int(table["y"]))
+
+    def get_field_of_view_y(self) -> float:
+        """Gets the vertical field of view of this sensor, in degrees."""
+        return float(self.send_recv_ge("GetCameraSensorFOVY", name=self.name)["data"])
+
+    def get_field_of_view_x(self) -> float:
+        """Gets the horizontal field of view of this sensor, in degrees."""
+        return float(self.send_recv_ge("GetCameraSensorFOVX", name=self.name)["data"])
+
+    def get_near_far_planes(self) -> Float2:
+        """Gets the near and far plane distances of this sensor."""
+        table = self.send_recv_ge("GetCameraSensorNearFarPlanes", name=self.name)["data"]
+        return (float(table["near"]), float(table["far"]))
+
+    def get_is_auto_exposure(self) -> bool:
+        """Returns whether auto exposure is enabled for this sensor."""
+        return bool(self.send_recv_ge("GetCameraUseManualEV", name=self.name)["data"])
+
+    def get_manual_exposure(self) -> float:
+        """Gets the manual exposure linear tonemap scale when auto exposure is off."""
+        return float(self.send_recv_ge("GetCameraManualEV", name=self.name)["data"])
+
+    def set_position(self, pos: Float3, world_space: bool = False) -> None:
         """
-        Sets the current world-space position for this sensor.
+        Sets the sensor position.
 
         Args:
             pos: The new position.
+            world_space: If True, ``pos`` is interpreted as world-space. Only supported for static sensors.
         """
         return self.send_ack_ge(
             "SetCameraSensorPosition",
@@ -770,6 +818,7 @@ class Camera(CommBase):
             posX=pos[0],
             posY=pos[1],
             posZ=pos[2],
+            isWorldSpace=world_space,
         )
 
     def set_direction(self, dir: Float3) -> None:
@@ -803,6 +852,57 @@ class Camera(CommBase):
             upY=up[1],
             upZ=up[2],
         )
+
+    def set_resolution(self, resolution: Int2) -> None:
+        """Sets the image resolution of this sensor."""
+        self.send_ack_ge(
+            "SetCameraSensorResolution",
+            ack="CompletedSetCameraSensorResolution",
+            name=self.name,
+            x=resolution[0],
+            y=resolution[1],
+        )
+        self.resolution = resolution
+
+    def set_field_of_view_x(self, field_of_view_x: float) -> None:
+        """Sets the horizontal field of view of this sensor, in degrees."""
+        self.send_ack_ge(
+            "SetCameraSensorFOVX",
+            ack="CompletedSetCameraSensorFOVX",
+            name=self.name,
+            fovX=field_of_view_x,
+        )
+
+    def set_near_far_planes(self, near_far_planes: Float2) -> None:
+        """Sets the near and far plane distances of this sensor."""
+        self.send_ack_ge(
+            "SetCameraSensorNearFarPlanes",
+            ack="CompletedSetCameraSensorNearFarPlanes",
+            name=self.name,
+            near=near_far_planes[0],
+            far=near_far_planes[1],
+        )
+        self.near_far_planes = near_far_planes
+
+    def set_manual_exposure(self, manual_exposure: float) -> None:
+        """Sets manual exposure and disables auto exposure."""
+        self.send_ack_ge(
+            "SetCameraManualEV",
+            ack="CompletedSetCameraManualEV",
+            name=self.name,
+            manualExposure=manual_exposure,
+        )
+
+    def set_auto_exposure(self, auto_exposure: bool = True) -> None:
+        """Enables or disables auto exposure for this sensor."""
+        if auto_exposure:
+            self.send_ack_ge(
+                "ClearCameraManualEV",
+                ack="CompletedClearCameraManualEV",
+                name=self.name,
+            )
+        else:
+            self.set_manual_exposure(self.get_manual_exposure())
 
     def set_requested_update_time(self, requested_update_time: float) -> None:
         """
@@ -877,6 +977,8 @@ class Camera(CommBase):
         is_force_inside_triangle: bool,
         is_dir_world_space: bool,
         integer_depth: bool,
+        auto_exposure: bool,
+        manual_exposure: float,
     ) -> None:
         data: StrDict = dict()
         data["vid"] = 0
@@ -910,6 +1012,8 @@ class Camera(CommBase):
         data["isForceInsideTriangle"] = is_force_inside_triangle
         data["isDirWorldSpace"] = is_dir_world_space
         data["integerDepth"] = integer_depth
+        data["autoExposure"] = auto_exposure
+        data["manualExposure"] = manual_exposure
         self.send_ack_ge(type="OpenCamera", ack="OpenedCamera", **data)
         self.logger.info(f'Opened Camera: "{name}"')
 

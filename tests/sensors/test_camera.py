@@ -1,24 +1,12 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from time import sleep
-from typing import Iterator
 
-import matplotlib.pyplot as plt
 import numpy as np
 
-from beamngpy import BeamNGpy, Vehicle
 from beamngpy.sensors import Camera
-from tests.sensors.helpers import (
-    loaded_scenario,
-    make_module_scene_fixture,
-    poll_auto_or_adhoc,
-    using_sensor,
-)
 
-TOTAL_FIELDS = 4
-VISUALISE = False
-ATTEMPTS = 1 if VISUALISE else 3
+import tests.sensors.helpers as h
 
 _RESOLUTION = (512, 512)
 _BASE_CAM = dict(
@@ -40,50 +28,48 @@ def make_camera(bng, vehicle, name: str, **overrides) -> Camera:
     return Camera(name, bng, vehicle, **{**_BASE_CAM, **overrides})
 
 
-def check_field(sensor_readings, field: str, cam: Camera):
-    assert field in sensor_readings
-    assert (
-        sensor_readings[field].shape[0] * sensor_readings[field].shape[1]
-        == cam.resolution[0] * cam.resolution[1]
-    )
-    assert (sensor_readings[field] != 0).any()
-    assert (sensor_readings[field] >= 0).all() and (sensor_readings[field] <= 255).all()
-
-def check_poll(
-    cam: Camera,
-    is_auto: bool,
-    exp_semantic: int | None = None,
-    exp_instance: int | None = None,
-):
+def camera_poll_fields(cam: Camera, *, include_instance: bool = True) -> list[str]:
     fields = []
     if cam.is_render_colours:
         fields.append("colour")
     if cam.is_render_annotations:
         fields.append("annotation")
-    if cam.is_render_instance:
+    if include_instance and cam.is_render_instance:
         fields.append("instance")
     if cam.is_render_depth:
         fields.append("depth")
+    return fields
 
+
+def check_field(arr: np.ndarray, cam: Camera):
+    assert (
+        arr.shape[0] * arr.shape[1]
+        == cam.resolution[0] * cam.resolution[1]
+    )
+    assert (arr != 0).any()
+    assert (arr >= 0).all() and (arr <= 255).all()
+
+
+def check_poll(
+    cam: Camera, test_name: str, is_auto: bool, exp_semantic: int | None = None, exp_instance: int | None = None,
+):
+    fields = camera_poll_fields(cam)
     last_readings = {}
-    for i in range(1, ATTEMPTS + 1):
-        sleep(1)
-        if len(fields) == TOTAL_FIELDS:
-            print("\nFull poll attempt ", i)
-            sensor_readings = cam.get_full_poll_request()
-        else:
-            sensor_readings = poll_auto_or_adhoc(cam, is_auto, attempt=i)
 
+    for i in range(1, h.ATTEMPTS + 1):
+        sleep(1)
+        if "instance" in fields:
+            raw = cam.get_full_poll_request()
+        else:
+            raw = h.poll_auto_or_adhoc(cam, is_auto, attempt=i)
+        sensor_readings = {f: np.asarray(raw[f].convert("RGB")) for f in fields}
         for field in fields:
-            sensor_readings[field] = np.asarray(sensor_readings[field].convert("RGB"))
-            if VISUALISE:
-                plt.imshow(sensor_readings[field])
-                plt.show()
-            else:
+            if not h.VISUALISE:
                 print(field + " readings: \n")
                 print(sensor_readings[field])
-            check_field(sensor_readings, field, cam)
-            last_readings[field] = sensor_readings[field]
+            check_field(sensor_readings[field], cam)
+        last_readings = {f: sensor_readings[f] for f in fields}
+        h.save_sensor_images("camera", test_name, sensor_readings, tag=f"attempt{i}")
 
         for field, expected in (("annotation", exp_semantic), ("instance", exp_instance)):
             if expected is not None:
@@ -92,6 +78,7 @@ def check_poll(
 
     return last_readings
 
+
 def check_stream(cam: Camera):
     """Validate stream/stream_raw shared-memory reads.
 
@@ -99,17 +86,10 @@ def check_stream(cam: Camera):
     """
     assert cam.is_streaming and cam.is_using_shared_memory
 
-    fields = []
-    if cam.is_render_colours:
-        fields.append("colour")
-    if cam.is_render_annotations:
-        fields.append("annotation")
-    if cam.is_render_depth:
-        fields.append("depth")
-
+    fields = camera_poll_fields(cam, include_instance=False)
     expected_bytes = cam.resolution[0] * cam.resolution[1] * 4
     raw = None
-    for i in range(1, ATTEMPTS + 1):
+    for i in range(1, h.ATTEMPTS + 1):
         sleep(1)
         cam.poll_raw()
         raw = cam.stream_raw()
@@ -135,54 +115,24 @@ def check_stream(cam: Camera):
             f"shared-memory {field} empty after PollCamera + stream_raw"
         )
 
-    streamed_raw = cam.stream()
+    streamed = {k: np.asarray(v.convert("RGB")) for k, v in cam.stream().items()}
     for field in fields:
-        colour_img = np.asarray(streamed_raw[field].convert("RGB"))
-        check_field({field: np.asarray(streamed_raw[field].convert("RGB"))}, field, cam)
+        check_field(streamed[field], cam)
 
-@contextmanager
-def camera_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
-    vehicle = Vehicle("ego_vehicle", model="etki", license="PYTHON", color="Green")
-    with loaded_scenario(
-        beamng,
-        level="smallgrid",
-        name="camera_test",
-        description="Testing the camera sensor",
-        vehicles=[(vehicle, {})],
-        label="Camera test",
-    ) as scene:
-        yield scene
 
-camera_scene = make_module_scene_fixture(camera_scenario)
+camera_scene = h.module_scene(
+    "camera_test", "Testing the camera sensor", "Camera test", color="Green",
+)
 
-def test_camera_shmem(camera_scene):
+
+def test_camera_shmem(camera_scene, request):
     """Shared memory, to the left of the vehicle, facing towards it."""
     bng, vehicle = camera_scene
-    with using_sensor(
+    with h.using_sensor(
         make_camera(bng, vehicle, "camera1", is_using_shared_memory=True, **_LEFT_FULL),
     ) as cam:
         print("Testing camera 1...")
-        check_poll(cam, True, 3, 3)
-
-        print(
-            "Property getter test.  The displayed values should be the values which were set during the creation of the camera sensors."
-        )
-        print("Camera Name: ", cam.name)
-        print("Position: ", cam.get_position())
-        print("Direction: ", cam.get_direction())
-        print("Requested update time: ", cam.get_requested_update_time())
-        print("Priority: ", cam.get_update_priority())
-        print("Max Pending Requests: ", cam.get_max_pending_requests())
-
-        print(
-            "Property setter test.  The displayed property values should be different from the previous values."
-        )
-        cam.set_requested_update_time(0.3)
-        print("Newly-set Requested Update Time: ", cam.get_requested_update_time())
-        cam.set_update_priority(0.5)
-        print("Newly-set Priority: ", cam.get_update_priority())
-        cam.set_max_pending_requests(5)
-        print("Newly-set Max Pending Requests: ", cam.get_max_pending_requests())
+        check_poll(cam, request.node.name, True, 3, 3)
 
         print(
             "out of range pixel. should be [-1, -1]: ",
@@ -202,23 +152,50 @@ def test_camera_shmem(camera_scene):
             cam.world_point_to_pixel((0, 3, 4)),
         )
 
-def test_camera_no_shmem(camera_scene):
+
+def test_camera_property_roundtrips(camera_scene):
+    """Assert getter/setter round-trips for camera pose, scheduling, frustum, and exposure."""
+    bng, vehicle = camera_scene
+    with h.using_sensor(
+        make_camera(bng, vehicle, "camera_props", is_using_shared_memory=False, **_LEFT_FULL),
+    ) as cam:
+        h.exercise_roundtrip(
+            cam,
+            h.scheduling_pose_cases(
+                cam, (-4.0, 0.5, 1.2), direction=(-0.9, 0.1, 0.0),
+                extra=[
+                    ("get_resolution", (256, 256), cam.set_resolution),
+                    ("get_field_of_view_x", 80.0, cam.set_field_of_view_x),
+                    ("get_near_far_planes", (0.2, 50.0), cam.set_near_far_planes),
+                ],
+            ),
+        )
+        assert cam.get_is_auto_exposure() is True
+        cam.set_manual_exposure(0.002)
+        h.assert_float_close(cam.get_manual_exposure(), 0.002)
+        assert cam.get_is_auto_exposure() is False
+        cam.set_auto_exposure(True)
+        assert cam.get_is_auto_exposure() is True
+
+
+def test_camera_no_shmem(camera_scene, request):
     """No shared memory, to the left of the vehicle, facing towards it."""
     bng, vehicle = camera_scene
-    with using_sensor(
+    with h.using_sensor(
         make_camera(bng, vehicle, "camera2", is_using_shared_memory=False, **_LEFT_FULL),
     ) as cam:
         print("Testing camera 2...")
-        check_poll(cam, True, 3, 3)
+        check_poll(cam, request.node.name, True, 3, 3)
 
-def test_camera_translucent_depth(camera_scene):
+
+def test_camera_translucent_depth(camera_scene, request):
     """Depth differs when is_render_translucent_as_opaque_depth is enabled."""
     bng, vehicle = camera_scene
-    with using_sensor(
+    with h.using_sensor(
         make_camera(bng, vehicle, "camera1", is_using_shared_memory=True, **_LEFT_FULL),
     ) as cam1:
-        cam1_readings = check_poll(cam1, True, 3, 3)
-    with using_sensor(
+        cam1_readings = check_poll(cam1, request.node.name, True, 3, 3)
+    with h.using_sensor(
         make_camera(
             bng,
             vehicle,
@@ -228,7 +205,7 @@ def test_camera_translucent_depth(camera_scene):
             **_LEFT_FULL,
         ),
     ) as cam2:
-        cam2_readings = check_poll(cam2, True, 3, 3)
+        cam2_readings = check_poll(cam2, request.node.name, True, 3, 3)
 
     print("Testing is_render_translucent_as_opaque_depth...")
     assert not np.array_equal(
@@ -238,23 +215,25 @@ def test_camera_translucent_depth(camera_scene):
         "is_render_translucent_as_opaque_depth is True vs False"
     )
 
-def test_camera_shmem_ad_hoc(camera_scene):
+
+def test_camera_shmem_ad_hoc(camera_scene, request):
     """Shared memory, to the right of the vehicle, automatic and ad-hoc polling."""
     bng, vehicle = camera_scene
-    with using_sensor(
+    with h.using_sensor(
         make_camera(
             bng, vehicle, "camera3", is_using_shared_memory=True,
             pos=(5, 0, 1), dir=(-1, 0, 0), **_RENDER_STD,
         ),
     ) as cam:
         print("Testing camera 3...")
-        check_poll(cam, True, 3)
-        check_poll(cam, False, 3)
+        check_poll(cam, request.node.name, True, 3)
+        check_poll(cam, request.node.name, False, 3)
+
 
 def test_camera_shmem_stream(camera_scene):
     """Shared-memory streaming: poll fills SHM, then stream/stream_raw read it back."""
     bng, vehicle = camera_scene
-    with using_sensor(
+    with h.using_sensor(
         make_camera(
             bng, vehicle, "camera_stream",
             requested_update_time=0.05,
@@ -265,18 +244,19 @@ def test_camera_shmem_stream(camera_scene):
         print("Testing camera stream...")
         check_stream(cam)
 
-def test_camera_no_shmem_oblique(camera_scene):
+
+def test_camera_no_shmem_oblique(camera_scene, request):
     """No shared memory, oblique angle to the world, then repositioned."""
     bng, vehicle = camera_scene
-    with using_sensor(
+    with h.using_sensor(
         make_camera(
             bng, vehicle, "camera4", is_using_shared_memory=False,
             pos=(0, 5, 1), dir=(0, -1, 0), up=(1, 0, 1), **_RENDER_STD,
         ),
     ) as cam:
         print("Testing camera 4...")
-        check_poll(cam, True, 3)
-        check_poll(cam, False, 3)
+        check_poll(cam, request.node.name, True, 3)
+        check_poll(cam, request.node.name, False, 3)
 
         cam.set_position((-10, 0, 1))
         print("Newly-set Position: ", cam.get_position())
@@ -285,19 +265,17 @@ def test_camera_no_shmem_oblique(camera_scene):
 
         print("Camera 4 images (after altering position, direction, and up vectors)...")
         sleep(1)
-        images = cam.poll()
-        if VISUALISE:
-            for field in ["colour", "annotation", "depth"]:
-                plt.imshow(np.asarray(images[field].convert("RGB")))
-                plt.show()
+        repositioned = {k: np.asarray(v.convert("RGB")) for k, v in cam.poll().items()}
+        h.save_sensor_images("camera", request.node.name, repositioned, tag="repositioned")
 
-def test_camera_idle(camera_scene):
+
+def test_camera_idle(camera_scene, request):
     """A negative requested update time must not automatically poll."""
     bng, vehicle = camera_scene
     print(
         "Negative update time test.  The next 3 images should be blank, since the camera is set to not poll."
     )
-    with using_sensor(
+    with h.using_sensor(
         make_camera(
             bng, vehicle, "idle cam",
             requested_update_time=-1.0, is_using_shared_memory=True,
@@ -305,10 +283,7 @@ def test_camera_idle(camera_scene):
         ),
     ) as idle_cam:
         sleep(1)
-        images = idle_cam.poll()
-        for field in ["colour", "annotation", "depth"]:
-            images[field] = np.asarray(images[field].convert("RGB"))
-            if VISUALISE:
-                plt.imshow(images[field])
-                plt.show()
-            assert np.all(images[field] == 0)
+        images = {k: np.asarray(v.convert("RGB")) for k, v in idle_cam.poll().items()}
+        h.save_sensor_images("camera", request.node.name, images)
+        print("Sensor readings (should be empty): ", images)
+        assert all(np.all(images[f] == 0) for f in images)

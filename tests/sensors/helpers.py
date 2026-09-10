@@ -2,24 +2,136 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from math import sqrt
+from pathlib import Path
 from time import sleep
 from typing import Any
 
+import numpy as np
 import pytest
+from PIL import Image
 
 from beamngpy import BeamNGpy, Scenario, Vehicle
+
+VISUALISE = False
+ATTEMPTS = 3
+TEST_LEVEL = "smallgrid"
+TEST_VEHICLE_MODEL = "etk800"
+OTHER_VEHICLE_ID = "other_vehicle"
+SETTLE_AFTER_TELEPORT_S = 2.0
+
+# Obstacle ahead of ego (-Y). LiDAR needs >= ~9 m separation; ultrasonic max range is shorter.
+OBSTACLE_START = (0.0, -10.0, 0.21)
+LIDAR_OBSTACLE_STEP_Y = 0.5
+USS_OBSTACLE_START = (0.0, -8.0, 0.21)
+USS_OBSTACLE_STEP_Y = 0.25
+
+SENSOR_TEST_DIR = (0, -1, 0)
+SENSOR_TEST_UP = (0, 0, 1)
+
+# Root directory for VISUALISE=True test outputs (PNGs, plots). One subfolder per sensor type.
+_OUTPUT_ROOT = Path(__file__).resolve().parent / "output"
+
+
+RoundtripCase = tuple[str, Any, Callable[[Any], None]] | tuple[str, Any, Callable[[Any], None], dict[str, Any]]
+
+
+def scheduling_pose_cases(
+    sensor,
+    pos: tuple[float, float, float],
+    direction: tuple[float, float, float] = SENSOR_TEST_DIR,
+    up: tuple[float, float, float] = SENSOR_TEST_UP,
+    extra: list[RoundtripCase] | None = None,
+) -> list[RoundtripCase]:
+    cases: list[RoundtripCase] = [
+        ("get_requested_update_time", 0.25, sensor.set_requested_update_time),
+        ("get_update_priority", 0.4, sensor.set_update_priority),
+        ("get_max_pending_requests", 4, sensor.set_max_pending_requests),
+        ("get_position", pos, sensor.set_position, {"world_space": False}),
+        ("get_direction", direction, sensor.set_direction),
+        ("get_up", up, sensor.set_up),
+    ]
+    if extra:
+        cases.extend(extra)
+    return cases
+
+
+def assert_negative_update(sensor, is_empty, sleep_s: float = 1.0) -> None:
+    sleep(sleep_s)
+    readings = sensor.poll()
+    print("Sensor readings (should be empty): ", readings)
+    assert is_empty(readings)
+
+
+def wait_until_poll_valid(
+    bng: BeamNGpy, sensor, predicate, *, max_attempts: int = 5, step: int = 60,
+) -> Any:
+    readings = sensor.poll()
+    for _ in range(max_attempts):
+        if predicate(readings):
+            return readings
+        bng.control.step(step, wait=True)
+        sleep(0.2)
+        readings = sensor.poll()
+    return readings
+
+
+def assert_polls_change(values) -> None:
+    ref = values[0]
+    for v in values[1:]:
+        if isinstance(ref, np.ndarray):
+            if np.any(ref != v):
+                return
+        elif ref != v:
+            return
+    assert False, "Readings don't get updated"
+
+
+def assert_duplicate_poll_consistent(sensor, is_auto: bool, count_fn) -> None:
+    """Two polls at the same scene pose should agree within tolerance."""
+    if is_auto:
+        sleep(1)
+        first = count_fn(sensor.poll())
+        sleep(1)
+        second = count_fn(sensor.poll())
+    else:
+        request_id = sensor.send_ad_hoc_poll_request()
+        sleep(1)
+        first = count_fn(sensor.collect_ad_hoc_poll_request(request_id))
+        request_id = sensor.send_ad_hoc_poll_request()
+        sleep(1)
+        second = count_fn(sensor.collect_ad_hoc_poll_request(request_id))
+    assert abs(first - second) / first < 0.01, (
+        f"duplicate polls inconsistent at fixed pose: {first} vs {second}"
+    )
+
+
+def save_sensor_images(sensor_type: str, test_name: str, readings: dict[str, np.ndarray], tag: str | None = None) -> None:
+    """Write {test_name}[_{tag}]_{field}.png under output/{sensor_type}/ when VISUALISE."""
+    if not VISUALISE:
+        return
+    (_OUTPUT_ROOT / sensor_type).mkdir(parents=True, exist_ok=True)
+    prefix = test_name if tag is None else f"{test_name}_{tag}"
+    for field, arr in readings.items():
+        Image.fromarray(arr).save(_OUTPUT_ROOT / sensor_type / f"{prefix}_{field}.png")
+
+
+def save_radar_plot(
+    radar, test_name: str, attempt: int, readings,
+    resolution: tuple[int, int], fov: float, near_far: tuple[float, float],
+) -> None:
+    if not VISUALISE:
+        return
+    out_path = _OUTPUT_ROOT / "radar" / f"{test_name}_attempt{attempt}.png"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    radar.save_plot(str(out_path), readings, resolution, fov, near_far[0], near_far[1], *resolution)
 
 
 @contextmanager
 def loaded_scenario(
-    beamng: BeamNGpy,
-    *,
-    level: str,
-    name: str,
-    description: str,
-    vehicles: list[tuple[Vehicle, dict[str, Any]]],
-    label: str,
-    hz: int = 60,
+    beamng: BeamNGpy, *, name: str, description: str,
+    vehicles: list[tuple[Vehicle, dict[str, Any]]], label: str,
+    level: str = TEST_LEVEL, hz: int = 60,
 ) -> Iterator[tuple[BeamNGpy, Vehicle]]:
     """Standard sensor-test scenario load: deterministic Hz, hide HUD, yield ego vehicle."""
     with beamng as bng:
@@ -40,16 +152,9 @@ def loaded_scenario(
         yield bng, vehicles[0][0]
 
         print(f"{label} complete.")
-        bng.ui.show_hud()
 
 
-def poll_auto_or_adhoc(
-    sensor,
-    is_auto: bool,
-    *,
-    attempt: int | None = None,
-    adhoc_wait: float = 1,
-):
+def poll_auto_or_adhoc(sensor, is_auto: bool, *, attempt: int | None = None, adhoc_wait: float = 1):
     """Run automatic poll() or the ad-hoc request/collect flow."""
     suffix = f" {attempt}" if attempt is not None else ""
     if is_auto:
@@ -67,12 +172,21 @@ def poll_auto_or_adhoc(
     return sensor.collect_ad_hoc_poll_request(request_id)
 
 
-def make_module_scene_fixture(
-    scenario_cm: Callable[[BeamNGpy], Iterator[tuple[BeamNGpy, Vehicle]]],
+def module_scene(
+    name: str, description: str, label: str, *, color: str = "Red",
+    obstacle_pos: tuple[float, float, float] | None = None,
 ):
     @pytest.fixture(scope="module")
     def scene(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
-        with scenario_cm(beamng) as loaded:
+        ego = Vehicle("ego_vehicle", model=TEST_VEHICLE_MODEL, license="PYTHON", color=color)
+        if obstacle_pos is None:
+            vehicles = [(ego, {})]
+        else:
+            other = Vehicle(OTHER_VEHICLE_ID, model=TEST_VEHICLE_MODEL, license="PYTHON", color="Blue")
+            vehicles = [(ego, {}), (other, {"pos": obstacle_pos})]
+        with loaded_scenario(
+            beamng, name=name, description=description, vehicles=vehicles, label=label,
+        ) as loaded:
             yield loaded
 
     return scene
@@ -88,15 +202,81 @@ def using_sensor(sensor, removed_msg: str | None = None):
             print(removed_msg)
 
 
-def latest_sensor_reading(readings):
-    if isinstance(readings, list):
-        return readings[-1]
-    return readings[list(readings.keys())[-1]]
+def place_other_vehicle(
+    bng: BeamNGpy, position: tuple[float, float, float], *, sim_steps: int = 60,
+    settle_s: float = SETTLE_AFTER_TELEPORT_S,
+) -> Vehicle:
+    """Teleport the obstacle vehicle, advance the sim, then wait for physics to settle."""
+    vehicle = bng.scenario.get_vehicle(OTHER_VEHICLE_ID)
+    assert vehicle is not None, f"scenario vehicle {OTHER_VEHICLE_ID} not found"
+    vehicle.teleport(position, reset=False)
+    bng.control.step(sim_steps, wait=True)
+    if settle_s > 0:
+        sleep(settle_s)
+    return vehicle
 
 
-def cycle_visibility(sensor, toggles: int = 3, *, visualise: bool = False):
+def assert_responds_to_motion(values: list[float], min_delta: float = 0.03, label: str = "values") -> None:
+    """Scene motion should change readings; identical consecutive values indicate stale cache."""
+    spread = max(values) - min(values)
+    assert spread >= min_delta, (
+        f"{label} did not change with scene motion: {values} (spread {spread:.4f})"
+    )
+    for i in range(1, len(values)):
+        assert abs(values[i] - values[i - 1]) >= 1e-6, (
+            f"{label} stale between motion steps: {values}"
+        )
+
+
+def cycle_visibility(sensor, toggles: int = 3, *, visualise: bool | None = None):
+    if visualise is None:
+        visualise = VISUALISE
     if not visualise:
         return
     for i in range(toggles * 2):
         sleep(1)
         sensor.set_is_visualised(not (i % 2 == 0))
+
+
+def assert_vec3_close(actual, expected, tol: float = 1e-2):
+    for a, e in zip(actual, expected):
+        assert abs(a - e) <= tol, f"expected {expected}, got {actual}"
+
+
+def assert_float_close(actual, expected, tol: float = 1e-3):
+    assert abs(actual - expected) <= tol, f"expected {expected}, got {actual}"
+
+
+def _normalized(v: tuple[float, float, float]) -> tuple[float, float, float]:
+    length = sqrt(sum(c * c for c in v))
+    if length == 0:
+        return v
+    return tuple(c / length for c in v)
+
+
+# Getters whose values are unit vectors: setters normalize on the engine side, so
+# compare against the normalized expected value rather than the raw input.
+_UNIT_VECTOR_GETTERS = {"get_direction", "get_up"}
+
+
+def exercise_roundtrip(sensor, cases: list[RoundtripCase] | None = None, *, update_time: float | None = None):
+    """Assert getter/setter round-trips for each (getter_name, value, setter[, getter_kwargs]) tuple."""
+    if cases is None:
+        cases = [
+            ("get_requested_update_time", update_time if update_time is not None else 0.2, sensor.set_requested_update_time),
+        ]
+    for case in cases:
+        getter_name, value, setter = case[0], case[1], case[2]
+        getter_kwargs = case[3] if len(case) > 3 else {}
+        setter(value)
+        actual = getattr(sensor, getter_name)(**getter_kwargs)
+        if isinstance(value, tuple) and len(value) == 3:
+            expected = _normalized(value) if getter_name in _UNIT_VECTOR_GETTERS else value
+            assert_vec3_close(actual, expected)
+        elif isinstance(value, tuple) and len(value) == 2:
+            assert_float_close(actual[0], value[0])
+            assert_float_close(actual[1], value[1])
+        elif isinstance(value, bool):
+            assert actual == value
+        else:
+            assert_float_close(float(actual), float(value))

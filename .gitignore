@@ -165,3 +165,6 @@ pip-wheel-metadata/*
 
 # Temporary files
 /.temp/
+
+# Sensor test VISUALISE=True outputs
+/tests/sensors/output/

@@ -181,6 +181,14 @@ class RoadsSensor(CommBase):
         )
         return readings
 
+    def get_requested_update_time(self) -> float:
+        """Gets the current requested update time for this sensor."""
+        return float(
+            self.send_recv_ge("GetRoadsSensorRequestedUpdateTime", name=self.name)[
+                "data"
+            ]
+        )
+
     def set_requested_update_time(self, requested_update_time: float) -> None:
         """
         Sets the current 'requested update time' value for this sensor.

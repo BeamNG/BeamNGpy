@@ -166,6 +166,16 @@ class GPS(CommBase):
         )
         return readings
 
+    def get_requested_update_time(self) -> float:
+        """Gets the current requested update time for this sensor."""
+        return float(
+            self.send_recv_ge("GetGPSRequestedUpdateTime", name=self.name)["data"]
+        )
+
+    def get_is_visualised(self) -> bool:
+        """Gets whether this sensor is visualised in the simulator."""
+        return bool(self.send_recv_ge("GetGPSIsVisualised", name=self.name)["data"])
+
     def set_requested_update_time(self, requested_update_time: float) -> None:
         """
         Sets the current 'requested update time' value for this sensor.
