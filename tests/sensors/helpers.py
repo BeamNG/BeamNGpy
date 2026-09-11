@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from contextlib import contextmanager
 from math import sqrt
 from pathlib import Path
 from time import sleep
-from typing import Any
+from typing import Any, Callable, Union
 
 import numpy as np
 import pytest
@@ -33,7 +33,10 @@ SENSOR_TEST_UP = (0, 0, 1)
 _OUTPUT_ROOT = Path(__file__).resolve().parent / "output"
 
 
-RoundtripCase = tuple[str, Any, Callable[[Any], None]] | tuple[str, Any, Callable[[Any], None], dict[str, Any]]
+RoundtripCase = Union[
+    tuple[str, Any, Callable[[Any], None]],
+    tuple[str, Any, Callable[[Any], None], dict[str, Any]],
+]
 
 
 def scheduling_pose_cases(
