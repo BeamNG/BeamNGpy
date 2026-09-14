@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
-from time import sleep
 from typing import Iterator
 import csv
 
@@ -57,10 +56,20 @@ def logging_scene(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
         yield scene
 
 
+_LOGGING_PHYSICS_STEPS = 300
+
+
 def _reset_logging_scene(bng: BeamNGpy, vehicle: Vehicle) -> None:
     bng.scenario.restart()
     vehicle.connect(bng)
     vehicle.control(throttle=0.0, brake=0.0, steering=0.0)
+    bng.control.pause()
+    bng.control.step(1, wait=True)
+
+
+def _record_logging(bng: BeamNGpy, vehicle: Vehicle) -> None:
+    vehicle.control(throttle=1.0, steering=0.2)
+    bng.control.step(_LOGGING_PHYSICS_STEPS, wait=True)
 
 
 def test_vehicle_signal_logging(logging_scene):
@@ -79,12 +88,12 @@ def test_vehicle_signal_logging(logging_scene):
             signals=_VSL_SIGNALS,
             steps=steps,
         )
-        # tech_ground has no traffic graph — drive inputs + sim steps so signals change while logging.
-        vehicle.control(throttle=1.0, steering=0.2)
-        for _ in range(5):
-            sleep(1)
+        _record_logging(bng, vehicle)
     finally:
-        vehicle.logging.stop()
+        try:
+            vehicle.logging.stop()
+        finally:
+            bng.control.resume()
 
     check_csv_file(file_path, steps / bng.settings.get_physics_frequency())
 
@@ -106,12 +115,12 @@ def test_vehicle_signal_logging_from_config(logging_scene):
             output_file=output_file,
             steps=steps,
         )
-        # tech_ground has no traffic graph — drive inputs + sim steps so signals change while logging.
-        vehicle.control(throttle=1.0, steering=0.2)
-        for _ in range(5):
-            sleep(1)
+        _record_logging(bng, vehicle)
     finally:
-        vehicle.logging.stop()
+        try:
+            vehicle.logging.stop()
+        finally:
+            bng.control.resume()
 
     check_csv_file(file_path, steps / bng.settings.get_physics_frequency())
 
