@@ -12,7 +12,7 @@ stages:
   stage: test
   environment: TESTING
   variables:
-    TESTING_REVISION: "186835" # last commit before camera fail  
+    TESTING_REVISION: "187231"
     TESTING_TARGET: ".temp/testing"
     TESTS_PATH: "tests"
     HEADLESS: "1"
