@@ -152,7 +152,10 @@ def loaded_scenario(
         bng.scenario.start()
 
         print(f"{label} start.")
-        yield bng, vehicles[0][0]
+        try:
+            yield bng, vehicles[0][0]
+        finally:
+            bng.control.resume()
 
         print(f"{label} complete.")
 
