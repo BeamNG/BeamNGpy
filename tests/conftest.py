@@ -12,26 +12,12 @@ from beamngpy.logging import BNGDisconnectedError
 GFX_BACKENDS = ("d3d12", "dx11", "vk")
 
 
-def pytest_addoption(parser: pytest.Parser) -> None:
-    group = parser.getgroup("beamng")
-    group.addoption(
-        "--gfx",
-        action="store",
-        default=None,
-        choices=list(GFX_BACKENDS),
-        help="Force one graphics backend. Overrides the GFX environment variable.",
-    )
-    group.addoption(
-        "--gfx-loop",
-        action="store_true",
-        default=False,
-        help="Run the full suite once per graphics backend (d3d12, dx11, vk). "
-        "Relaunches BeamNG between backends.",
-    )
+def _gfx_loop() -> bool:
+    return os.environ.get("GFX", "").lower() == "loop"
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
-    if not metafunc.config.getoption("--gfx-loop"):
+    if not _gfx_loop():
         return
     # pytest errors if the parametrized fixture is not in this test's tree
     # (offline tests such as test_minimal do not use BeamNG).
@@ -48,9 +34,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 def pytest_report_header(config: pytest.Config) -> list[str]:
     headless = os.environ.get("HEADLESS", "0")
-    if config.getoption("--gfx-loop"):
+    if _gfx_loop():
         return [f"BeamNG gfx: looping {', '.join(GFX_BACKENDS)}  HEADLESS={headless}"]
-    gfx = config.getoption("--gfx") or os.environ.get("GFX") or "default"
+    gfx = os.environ.get("GFX") or "default"
     return [f"BeamNG gfx: {gfx}  HEADLESS={headless}"]
 
 
@@ -65,10 +51,10 @@ def run_before_tests():
 def gfx_backend(request: pytest.FixtureRequest) -> str | None:
     if hasattr(request, "param"):
         return request.param
-    cli = request.config.getoption("--gfx")
-    if cli:
-        return cli
-    return os.environ.get("GFX") or None
+    env = os.environ.get("GFX") or None
+    if env and env.lower() == "loop":
+        return None
+    return env
 
 
 @pytest.fixture(scope="session")
