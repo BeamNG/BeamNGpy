@@ -44,11 +44,11 @@ class VehicleParameters(BaseModel):
     body_height: float = Field(title="Body height", description="unit: m", default=1.32, ge=0.8, le=4.2)
     ride_height: float = Field(title="Ride height", description="unit: m", default=0.105, ge=-0.5, le=0.5)
     front_spring_rate: float = Field(title="Front spring rate", description="unit: N/m", default=27465, ge=100, le=100000)
-    front_damping: float = Field(title="Front damping", description="unit: N/m/s", default=5708, ge=10, le=100000)
+    front_damping: float = Field(title="Front damping", description="unit: N s/m", default=5708, ge=10, le=100000)
     rear_spring_rate: float = Field(title="Rear spring rate", description="unit: N/m", default=33609, ge=100, le=100000)
-    rear_damping: float = Field(title="Rear damping", description="unit: N/m/s", default=6362, ge=10, le=100000)
-    front_swaybar_spring_rate: float = Field(title="Front sway bar spring rate", description="unit: Nm/rad", default=1200, ge=10, le=10000)
-    rear_swaybar_spring_rate: float = Field(title="Rear sway bar spring rate", description="unit: Nm/rad", default=500, ge=10, le=10000)
+    rear_damping: float = Field(title="Rear damping", description="unit: N/m", default=6362, ge=10, le=100000)
+    front_swaybar_spring_rate: float = Field(title="Front sway bar spring rate", description="unit: N m/rad", default=1200, ge=10, le=10000)
+    rear_swaybar_spring_rate: float = Field(title="Rear sway bar spring rate", description="unit: N m/rad", default=500, ge=10, le=10000)
 
 
 class BodyShape(str, Enum):
@@ -182,13 +182,13 @@ class TargetValues(BaseTargets):
         title="Center of gravity height (z)", description="unit: m", default=0.25, ge=0.0, le=5.0, json_schema_extra={"tolerance": 1e-3}
     )
     inertia_yaw: float = Field(
-        title="Yaw Inertia", description="unit: kg m^2", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
+        title="Yaw Inertia", description="unit: kg m²", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
     )
     inertia_pitch: float = Field(
-        title="Pitch Inertia", description="unit: kg m^2", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
+        title="Pitch Inertia", description="unit: kg m²", default=1500, ge=800, le=9000, json_schema_extra={"tolerance": 1e-3}
     )
     inertia_roll: float = Field(
-        title="Roll Inertia", description="unit: kg m^2", default=400, ge=150, le=1500, json_schema_extra={"tolerance": 1e-3}
+        title="Roll Inertia", description="unit: kg m²", default=400, ge=150, le=1500, json_schema_extra={"tolerance": 1e-3}
     )
 
 
