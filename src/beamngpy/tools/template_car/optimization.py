@@ -80,7 +80,7 @@ class BeamNG:
     def load_scenario(self, pos=(0, 0, 0), pause=False):
         scenario = Scenario("smallgrid", "template_car_parametrization")
         v = Vehicle("template_car", model=self.vehicle_id)
-        scenario.add_vehicle(v, pos=pos)
+        scenario.add_vehicle(v, pos=pos, safe_spawn=False)
         scenario.make(self.beamng)
         if pause:
             self.beamng.pause()
