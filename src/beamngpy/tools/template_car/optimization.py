@@ -3,6 +3,7 @@
 from typing import Optional
 
 from beamngpy import BeamNGpy, Scenario, Vehicle
+from beamngpy.logging import BNGDisconnectedError
 from .generation import generate_car
 from .models import TemplateVehicle
 from .models import OptimizationVariables, OutputValues, TargetValues, VehicleInputs, OptimizationEnabled
@@ -120,7 +121,16 @@ def measure_output_values(v: Vehicle, inputs: VehicleInputs, beamng: BeamNGpy, u
     beamng.pause()
     beamng.scenario.restart()
     reload_vehicle(v)
-    data = measure_samples(v, beamng)
+    try:
+        data = measure_samples(v, beamng)
+    except BNGDisconnectedError:
+        msg = [
+            "The simulation was stopped by the simulator.",
+            "Possibly an instability has been detected.",
+            "Your chosen parameter values might be too extreme.",
+            "Try using different values.",
+        ]
+        raise RuntimeError(" ".join(msg))
     last_sample = data[-1]
     p = get_mass_properties(last_sample)
     _, cg_y, cg_z = p["center_of_gravity"]
