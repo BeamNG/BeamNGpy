@@ -14,6 +14,8 @@ from time import time
 import shutil
 from time import sleep
 
+PAUSE_ON_INSTABILITY_SETTING = "pauseGameOnInstability"
+
 
 def generate_optimal_car(id: str, vehicle: TemplateVehicle, user_folder: str, install_path: str, file=None):
     """Optimize and generate template car using the given vehicle."""
@@ -77,6 +79,7 @@ class BeamNG:
         self.vehicle_id = id
         self.vehicle = vehicle
         self.v: Optional[Vehicle] = None
+        self.restore_pause_on_instability = False
 
     def load_scenario(self, pos=(0, 0, 0), pause=False):
         scenario = Scenario("smallgrid", "template_car_parametrization")
@@ -93,6 +96,11 @@ class BeamNG:
         self.beamng.open([], "-gfx", "vk")
         self.beamng.settings.change("fpsLimitEnabled", False)
         self.beamng.settings.change("fpsLimitBackgroundEnabled", False)
+        # An instability has to pause the simulation, otherwise the game resets the vehicle
+        # and we keep measuring it as if nothing happened.
+        self.restore_pause_on_instability = not is_setting_enabled(self.beamng, PAUSE_ON_INSTABILITY_SETTING)
+        if self.restore_pause_on_instability:
+            self.beamng.settings.change(PAUSE_ON_INSTABILITY_SETTING, True)
         self.beamng.set_deterministic(speed_factor=1)
         cleanup(self.user_folder, self.vehicle_id)
         inputs = self.vehicle.to_inputs(self.vehicle_id, self.vehicle.optimization.variables)
@@ -101,7 +109,19 @@ class BeamNG:
 
     def __exit__(self, exc_type, exc_value, traceback):
         cleanup(self.user_folder, self.vehicle_id)
+        if self.restore_pause_on_instability:
+            # Has to happen before closing, the game persists its settings on quit.
+            self.beamng.settings.change(PAUSE_ON_INSTABILITY_SETTING, False)
         self.beamng.close()
+
+
+def is_setting_enabled(beamng: BeamNGpy, key: str) -> bool:
+    """Return whether the given boolean game setting is enabled.
+
+    TODO: Move this to BeamNGpy.
+    """
+    cmd = f"return settings.getValue('{key}')"
+    return beamng.queue_lua_command(cmd, response=True) == "true"
 
 
 def deviations(targets: TargetValues, outputs: OutputValues, enabled: OptimizationEnabled) -> np.ndarray:
