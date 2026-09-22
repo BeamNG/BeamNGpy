@@ -1,3 +1,15 @@
+"""
+Minimal example: built-in AI follows a time-stamped path via ``Vehicle.ai.set_script``.
+
+Each node is ``{"x": ..., "y": ..., "z": ..., "t": ...}``. Speed comes from the
+timestamps. By default the polyline clings to the ground (``z`` is filled in).
+
+Compare:
+
+* ``ai_set_line.py`` — ``set_line`` with ``pos`` + ``speed`` (no timestamps).
+* ``ai_waypoints.py`` — named navgraph waypoints and ``drive_using_waypoints``.
+"""
+
 import numpy as np
 
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
@@ -56,15 +68,20 @@ def main():
     beamng.scenario.load(scenario)
 
     beamng.scenario.start()
-    beamng.debug.add_spheres(
+    sphere_ids = beamng.debug.add_spheres(
         sphere_coordinates, sphere_radii, sphere_colors, cling=True, offset=0.1
     )
-    beamng.debug.add_polyline(points, point_color, cling=True, offset=0.1)
+    poly_id = beamng.debug.add_polyline(points, point_color, cling=True, offset=0.1)
+    preview_script = script[:12]
+    spawn_info = vehicle.ai.get_initial_spawn_position_orientation(preview_script)
+    print("get_initial_spawn_position_orientation (first nodes):", spawn_info)
     vehicle.ai.set_script(script)
 
     for i in range(65):
         beamng.control.step(60)
 
+    beamng.debug.remove_spheres(sphere_ids)
+    beamng.debug.remove_polyline(poly_id)
     beamng.control.resume()
     beamng.disconnect()
     print("Scenario finished!")
