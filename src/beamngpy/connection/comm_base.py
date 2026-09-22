@@ -17,6 +17,11 @@ class CommBase:
     """
 
     @staticmethod
+    def ensure_bytes(value: bytes | str) -> bytes:
+        """Ensure value is bytes, re-encoding UTF-8 strings if needed."""
+        return value.encode("utf-8") if isinstance(value, str) else value
+
+    @staticmethod
     def _send_recv(connection: Connection, type: str, **kwargs) -> StrDict:
         """
         Sends data to the specified connection, receives the answer and returns it.

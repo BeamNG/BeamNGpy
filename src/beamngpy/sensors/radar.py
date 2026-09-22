@@ -154,7 +154,7 @@ class Radar(CommBase):
 
     def _unpack_float(self, binary):
         # Convert the given binary string into a 1D array of floats.
-        return np.frombuffer(binary, dtype=np.float32)
+        return np.frombuffer(self.ensure_bytes(binary), dtype=np.float32)
 
     def _decode_poll_data(self, binary):
         floats = self._unpack_float(binary)
@@ -178,8 +178,7 @@ class Radar(CommBase):
             (range, doppler velocity, azimuth angle, elevation angle, radar cross section, signal to noise ratio).
         """
         # Send and receive a request for readings data from this sensor.
-        # Missing/empty "data" can occur with no returns, or when msgpack
-        # packs an empty payload as a non-bytes type — treat both as empty.
+        # Missing "data" occurs when the sensor has had no returns yet.
         binary = self.send_recv_ge("PollRadar", name=self.name).get("data")
         if not binary:
             binary = bytes()
@@ -268,8 +267,8 @@ class Radar(CommBase):
         Returns:
             The readings data.
         """
-        # Same empty-payload handling as poll(): missing or empty radarData
-        # becomes an empty bytes object before decoding.
+        # Same empty-payload handling as poll(): missing radarData occurs
+        # when the sensor has had no returns yet.
         binary = self.send_recv_ge(
             "CollectAdHocPollRequestRadar", requestId=request_id
         ).get("data", {}).get("radarData")

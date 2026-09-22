@@ -294,8 +294,7 @@ class Camera(CommBase):
         if raw_data is None or len(raw_data) == 0:
             return None
 
-        data = raw_data.encode() if isinstance(raw_data, str) else raw_data
-        data_copy = np.frombuffer(data, dtype=np.uint8).copy()  # prevent data races
+        data_copy = np.frombuffer(self.ensure_bytes(raw_data), dtype=np.uint8).copy()  # prevent data races
 
         header_size = palette and 1 or 0
         palette_bytes = (
@@ -423,15 +422,14 @@ class Camera(CommBase):
         if binary.get("depth") is None or len(binary["depth"]) == 0:
             processed_readings["depth"] = None
             return processed_readings
+        depth_buffer = self.ensure_bytes(binary["depth"])
 
         create_image = True
         max_depth_value = 255
-        if type(binary["depth"]) == str:
-            binary["depth"] = binary["depth"].encode()
         if self.integer_depth and sim_data_processed:
-            depth = np.frombuffer(binary["depth"], dtype=np.uint8)
+            depth = np.frombuffer(depth_buffer, dtype=np.uint8)
         else:
-            depth = np.frombuffer(binary["depth"], dtype=np.float32)
+            depth = np.frombuffer(depth_buffer, dtype=np.float32)
             if self.postprocess_depth:
                 depth = self.depth_buffer_processing(depth)
             elif not sim_data_processed:

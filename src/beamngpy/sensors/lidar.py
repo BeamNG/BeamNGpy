@@ -186,7 +186,7 @@ class Lidar(CommBase):
             return processed_readings
 
         # Format the point cloud data.
-        floats = np.frombuffer(binary["pointCloud"], dtype=np.float32)
+        floats = np.frombuffer(self.ensure_bytes(binary["pointCloud"]), dtype=np.float32)
         if self.is_streaming:
             
             # Add safety checks
@@ -207,7 +207,7 @@ class Lidar(CommBase):
         processed_readings["pointCloud"] = floats.reshape((-1, 3)).copy()
 
         # Format the corresponding colour data.
-        colours = np.frombuffer(binary["colours"], dtype=np.uint8)
+        colours = np.frombuffer(self.ensure_bytes(binary["colours"]), dtype=np.uint8)
         if self.is_streaming:
             colours = colours[: 3 * n_points]
         processed_readings["colours"] = colours.reshape((-1, 3)).copy()  # rgb
