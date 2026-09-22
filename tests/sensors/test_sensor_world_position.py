@@ -99,7 +99,7 @@ def test_world_position_smooth_far_from_origin(world_position_scene, sensor_type
             pos = list(FAR_ORIGIN)
             pos[motion_axis] += i * STEP_M
             vehicle.teleport(tuple(pos), reset=False)
-            bng.control.step(30, wait=True)
+            bng.control.step(60, wait=True)
             vehicle.sensors.poll("state")
             vehicle_positions.append(tuple(vehicle.state["pos"]))
             world_positions.append(sensor.get_position())
