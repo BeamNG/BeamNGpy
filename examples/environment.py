@@ -24,8 +24,6 @@ TRANSITION_S = 10.0
 HOLD_S = 1.5
 
 
-def _log(msg: str) -> None:
-    print(msg, flush=True)
 
 
 def main() -> None:
@@ -42,34 +40,34 @@ def main() -> None:
         )
         scenario.make(bng)
 
-        _log(f"Loading {LEVEL!r}...")
+        print(f"Loading {LEVEL!r}...")
         bng.scenario.load(scenario)
         bng.ui.hide_hud()
         bng.scenario.start()
 
         tod = bng.env.get_tod()
-        _log(f"get_tod keys: {sorted(tod.keys())}")
-        _log(f"  time: {tod.get('time')} timeStr: {tod.get('timeStr')}")
+        print(f"get_tod keys: {sorted(tod.keys())}")
+        print(f"  time: {tod.get('time')} timeStr: {tod.get('timeStr')}")
         bng.env.set_tod(tod=0.35, play=False)
-        _log("set_tod done")
+        print("set_tod done")
 
         g0 = bng.env.get_gravity()
-        _log(f"get_gravity: {g0}")
+        print(f"get_gravity: {g0}")
         bng.env.set_gravity(-9.807)
         bng.env.set_gravity()
-        _log("set_gravity done")
+        print("set_gravity done")
 
         for preset in PRESETS:
             try:
-                _log(f"Applying weather preset {preset!r} (transition={TRANSITION_S}s)...")
+                print(f"Applying weather preset {preset!r} (transition={TRANSITION_S}s)...")
                 bng.env.set_weather_preset(preset, time=TRANSITION_S)
-                _log(f"set_weather_preset({preset!r}) returned")
+                print(f"set_weather_preset({preset!r}) returned")
                 time.sleep(HOLD_S)
-                _log(f"Held {preset!r} for {HOLD_S}s")
+                print(f"Held {preset!r} for {HOLD_S}s")
             except Exception as exc:
-                _log(f"set_weather_preset({preset!r}) skipped: {exc}")
+                print(f"set_weather_preset({preset!r}) skipped: {exc}")
 
-        _log("Environment demo finished.")
+        print("Environment demo finished.")
         input("Press Enter to exit...")
     finally:
         bng.ui.show_hud()
