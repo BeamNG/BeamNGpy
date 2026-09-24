@@ -1,116 +1,66 @@
 from __future__ import annotations
 
-import math
-import xml.etree.ElementTree as ET
-import re
+import os
 from typing import TYPE_CHECKING
 
-from beamngpy import MeshRoad, vec3
+from beamngpy.connection import CommBase
+from beamngpy.logging import BNGError
+from beamngpy.tools._import_file import local_text
+from beamngpy.types import StrDict
 
 if TYPE_CHECKING:
-    from beamngpy import Scenario
+    from os import PathLike
 
-# User control parameters
-# The default road width value (when no width is supplied to a 'way').
-DEFAULT_WIDTH = 1.0
-# The default elevation value (height above sea level).
-DEFAULT_ELEVATION = 0.1
-# The depth (from bottom to top) of the generated mesh roads in BeamNG.
-DEFAULT_DEPTH = 1.0
-# The material used to texture the generated mesh roads. The track_editor materials are
-# registered by the simulator on every level, so they resolve regardless of the level used.
-DEFAULT_MATERIAL = "track_editor_C_center"
+    from beamngpy.beamng import BeamNGpy
 
 
-class Road:
-    """
-    A container for storing a road polyline, before rendering in BeamNG.
-    """
+class OpenStreetMapImporter(CommBase):
+    """Imports OpenStreetMap files into Road Architect."""
 
-    def __init__(self, name, nodes):
-        self.name = name
-        self.nodes = nodes
+    def __init__(self, bng: BeamNGpy):
+        super().__init__(bng, None)
 
+    def import_osm(
+        self,
+        file_path: str | PathLike[str],
+        options: StrDict | None = None,
+    ) -> StrDict:
+        """
+        Import an OSM file into the loaded level as playable DecalRoads.
 
-class Way:
-    """
-    A container for storing an OpenStreetMap way, with any relevant metadata.
-    """
+        ``file_path`` may be a native absolute path on the machine running the
+        simulator, or a virtual/game path. When the path exists on the BeamNGpy
+        host it is sent as ``fileContent`` and staged under the simulator VFS.
+        Otherwise the path must already be VFS-visible. A level must be loaded;
+        World Editor modules are initialized automatically if needed (no manual
+        F11). Coordinates use the file bounds' minimum longitude and latitude
+        as the local origin.
 
-    def __init__(self, nodes, width):
-        self.nodes = nodes
-        self.width = width
+        By default ``finalize=True``: after import, Road Architect's Render /
+        finalise step runs headlessly so roads are usable in-sim without
+        opening World Editor. Pass ``finalize=False`` to keep an editable
+        Road Architect session.
 
-
-class OpenStreetMapImporter:
-
-    # Extracts the road data from the OpenStreetMap file.
-    @staticmethod
-    def extract_road_data(filename):
-        tree = ET.parse(filename)
-        root = tree.getroot()
-        minLat, maxLat, minLon, maxLon = 0.0, 0.0, 0.0, 0.0
-        nodes = {}
-        ways = {}
-        width = DEFAULT_WIDTH
-        for i in root:
-            if i.tag == "bounds":
-                minLat, maxLat, minLon, maxLon = (
-                    float(i.attrib["minlat"]),
-                    float(i.attrib["maxlat"]),
-                    float(i.attrib["minlon"]),
-                    float(i.attrib["maxlon"]),
-                )
-            elif i.tag == "node":
-                nodes[i.attrib["id"]] = vec3(
-                    float(i.attrib["lon"]), float(i.attrib["lat"])
-                )
-            elif i.tag == "way":
-                nd = []
-                for j in i:
-                    if j.tag == "nd":
-                        nd.append(j.attrib["ref"])
-                    elif j.tag == "tag" and j.attrib["k"] == "width":
-                        try:
-                            width = float(j.attrib["v"])
-                        except ValueError:
-                            temp = re.findall(r"\d+", j.attrib["v"])
-                            width = list(map(float, temp))
-                ways[int(i.attrib["id"])] = Way(nd, width)
-        return nodes, ways, minLat, maxLat, minLon, maxLon
-
-    @staticmethod
-    def import_osm(filename, scenario: Scenario, material: str = DEFAULT_MATERIAL):
-
-        # Extract the road data primitives from the OpenStreetMap file.
-        print("Extracting road data from file...")
-        nodes, ways, minLat, maxLat, minLon, maxLon = (
-            OpenStreetMapImporter.extract_road_data(filename)
-        )
-        print("Primitives to import:  nodes:", len(nodes), "; ways:", len(ways))
-
-        # Convert from lattitude/longitude to metres, with world origin (0, 0) at the (minLon, minLat) position.
-        for _, n in nodes.items():
-            lat = n.y
-            n.y = (n.y - minLat) * 111.32
-            n.x = (n.x - minLon) * 40075 * math.cos(lat) / 360
-            n.x = n.x * 1000
-            n.y = n.y * 1000
-
-        # Create the road polylines from the OpenStreetMap 'ways' data.
-        roads = []
-        for id, w in ways.items():
-            nds = []
-            for i in range(len(w.nodes)):
-                nd = nodes[w.nodes[i]]
-                nds.append([nd.x, nd.y, DEFAULT_ELEVATION, w.width, DEFAULT_DEPTH])
-            roads.append(Road("imported_" + str(id), nds))
-
-        # Create the all the roads from the road polyline data.
-        print("Loading import in scenario...")
-        for r in roads:
-            mesh_road = MeshRoad(material)
-            mesh_road.add_nodes(*r.nodes)
-            scenario.add_mesh_road(mesh_road)
-
-        print("Import complete.")
+        Args:
+            file_path: Path to an ``.osm`` file readable by the simulator.
+            options: Road Architect import options. Supported keys include
+                ``finalize`` (default ``True``), ``offsetToTerrain``,
+                ``verticalOffset``, ``terraform``, ``domainOfInfluence``,
+                ``margin``, ``placeMode``, ``placeX``, and ``placeY``.
+        """
+        path_str = os.fspath(file_path)
+        opts: StrDict = dict(options or {})
+        if "finalize" not in opts:
+            opts["finalize"] = True
+        payload: StrDict = {
+            "filePath": path_str,
+            "options": opts,
+        }
+        content = local_text(path_str)
+        if content is not None:
+            payload["fileContent"] = content
+        response = self.send_recv_ge("ImportOpenStreetMap", **payload)
+        result = response["data"]
+        if not result.get("success"):
+            raise BNGError(result.get("error", "OpenStreetMap import failed."))
+        return result

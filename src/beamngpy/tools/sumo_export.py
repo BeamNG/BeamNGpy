@@ -21,14 +21,14 @@ class SumoExporter:
         After export, convert and smoke-test the network in SUMO (cmd)::
 
             netconvert --node-files=<NAME>.nod.xml --edge-files=<NAME>.edg.xml -o <NAME>.net.xml
+            
             python "%SUMO_HOME%\\tools\\randomTrips.py" -n <NAME>.net.xml -r <NAME>.rou.xml -e 3600 -p 2
+            
             sumo-gui -n <NAME>.net.xml -r <NAME>.rou.xml
 
         ``netconvert`` may print warnings and still succeed. Wait until
         ``randomTrips.py`` finishes writing ``<NAME>.rou.xml`` before launching
         ``sumo-gui``. This checks that the exported network loads and can carry
-        traffic in SUMO; it is not a live BeamNG–SUMO co-simulation. Prefer an
-        official map such as West Coast USA for the first test.
 
         Args:
             name: Filename prefix for the SUMO files (``.nod.xml`` and
