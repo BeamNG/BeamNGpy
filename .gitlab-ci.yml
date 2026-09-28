@@ -26,6 +26,7 @@ stages:
     when: always
     paths:
       - junit.xml
+    expire_in: 6 months
     reports:
       junit: junit.xml
   rules:
