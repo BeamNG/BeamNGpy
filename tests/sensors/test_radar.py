@@ -8,7 +8,7 @@ import pytest
 from beamngpy import BeamNGpy, Vehicle
 from beamngpy.sensors import Radar
 
-import tests.sensors.helpers as h
+import tests.helpers as h
 
 _RADAR = {
     "range_min": 0.1,
@@ -75,7 +75,7 @@ radar_scene = h.module_scene(
 )
 
 
-@pytest.mark.parametrize("is_auto", [True, False])
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
 def test_radar_poll(radar_scene, request, is_auto):
     """Automatic and ad-hoc polling return consistent, updating readings."""
     bng, vehicle = radar_scene

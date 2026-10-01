@@ -8,7 +8,7 @@ import pytest
 from beamngpy import BeamNGpy, Vehicle
 from beamngpy.sensors import AdvancedIMU
 
-import tests.sensors.helpers as h
+import tests.helpers as h
 
 
 def check_consistency_and_update(imu: AdvancedIMU, is_auto: bool):
@@ -58,7 +58,13 @@ advanced_imu_scene = h.module_scene(
 )
 
 
-@pytest.mark.parametrize("is_auto", [True, False])
+@pytest.fixture(autouse=True)
+def _reset_shared_scene(advanced_imu_scene):
+    bng, vehicle = advanced_imu_scene
+    h.restart_vehicles(bng, vehicle, pause=False)
+
+
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
 def test_advanced_imu_poll(advanced_imu_scene, is_auto):
     """Automatic and ad-hoc polling return consistent, updating readings."""
     bng, vehicle = advanced_imu_scene

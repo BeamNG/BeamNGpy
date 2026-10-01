@@ -21,35 +21,42 @@ def test_multi_vehicle(beamng: BeamNGpy):
 
         a_client.scenario.load(scenario)
         a_client.scenario.start()
+        second.set_shift_mode("arcade")
 
-        b_client = BeamNGpy("localhost", 25252)
-        #  Do not launch new process
-        b_client.open(launch=False)
-        vehicles = b_client.vehicles.get_current(include_config=False)
-        assert "second" in vehicles
-        vehicle = vehicles["second"]
-        vehicle.connect(b_client)
-        assert vehicle.is_connected()
+        b_client = BeamNGpy("localhost", 25252, quit_on_close=False)
+        vehicle = None
+        try:
+            #  Do not launch new process
+            b_client.open(launch=False)
+            vehicles = b_client.vehicles.get_current(include_config=False)
+            assert "second" in vehicles
+            vehicle = vehicles["second"]
+            vehicle.connect(b_client)
+            assert vehicle.is_connected()
 
-        a_veh = second
-        b_veh = vehicle
+            a_veh = second
+            b_veh = vehicle
 
-        b_veh.control(throttle=1.0)
+            b_veh.control(throttle=1.0)
 
-        for _ in range(8):
-            # Verify position updating in both clients
-            a_veh.sensors.poll()
-            b_veh.sensors.poll()
-            a_ref = a_veh.sensors["state"]["pos"]
-            b_ref = b_veh.sensors["state"]["pos"]
-            b_client.control.step(100)
-            a_veh.sensors.poll()
-            b_veh.sensors.poll()
-            a_new = a_veh.sensors["state"]["pos"]
-            b_new = b_veh.sensors["state"]["pos"]
+            for _ in range(8):
+                # Verify position updating in both clients
+                a_veh.sensors.poll()
+                b_veh.sensors.poll()
+                a_ref = a_veh.sensors["state"]["pos"]
+                b_ref = b_veh.sensors["state"]["pos"]
+                b_client.control.step(100)
+                a_veh.sensors.poll()
+                b_veh.sensors.poll()
+                a_new = a_veh.sensors["state"]["pos"]
+                b_new = b_veh.sensors["state"]["pos"]
 
-            assert a_ref[0] != a_new[0] or a_ref[1] != a_new[1]
-            assert b_ref[0] != b_new[0] or b_ref[1] != b_new[1]
+                assert a_ref[0] != a_new[0] or a_ref[1] != a_new[1]
+                assert b_ref[0] != b_new[0] or b_ref[1] != b_new[1]
+        finally:
+            if vehicle is not None and vehicle.is_connected():
+                vehicle.disconnect()
+            b_client.disconnect()
 
 
 def test_multi_scenario(beamng: BeamNGpy):
@@ -64,15 +71,23 @@ def test_multi_scenario(beamng: BeamNGpy):
         scenario.add_vehicle(vehicle, pos=(0, 0, 100))
         scenario.make(a_client)
 
-        b_client = BeamNGpy("localhost", 25252)
-        b_client.open(launch=False)
+        b_client = BeamNGpy("localhost", 25252, quit_on_close=False)
+        running = None
+        try:
+            b_client.open(launch=False)
 
-        with pytest.raises(BNGValueError):
+            with pytest.raises(BNGValueError):
+                b_client.scenario.get_current()
+
+            a_client.scenario.load(scenario)
+            a_client.scenario.start()
+
             running = b_client.scenario.get_current()
-
-        a_client.scenario.load(scenario)
-        a_client.scenario.start()
-
-        running = b_client.scenario.get_current()
-        assert str(running.level) == scenario.level
-        assert running.name == scenario.name
+            assert str(running.level) == scenario.level
+            assert running.name == scenario.name
+        finally:
+            if running is not None:
+                for connected in running.vehicles.values():
+                    if connected.is_connected():
+                        connected.disconnect()
+            b_client.disconnect()

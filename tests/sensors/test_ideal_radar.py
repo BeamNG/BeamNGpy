@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from beamngpy.sensors import IdealRadar
 
-from tests.sensors.helpers import OBSTACLE_START, exercise_roundtrip, module_scene, using_sensor
+from tests.helpers import OBSTACLE_START, exercise_roundtrip, module_scene, using_sensor
 
 ideal_radar_scene = module_scene(
     "ideal_radar_test", "Testing the ideal RADAR sensor", "Ideal RADAR test",

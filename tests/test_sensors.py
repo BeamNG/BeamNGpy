@@ -1,57 +1,47 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from typing import Iterator
 
 import pytest
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat
+from beamngpy import BeamNGpy, Vehicle, angle_to_quat
 from beamngpy.sensors import Damage, Electrics, State
 
+from tests.helpers import loaded_scenario, restart_vehicles
 
-@contextmanager
-def sensors_scenario(
-    beamng: BeamNGpy,
-) -> Iterator[tuple[BeamNGpy, Vehicle, Electrics, Damage, State]]:
-    with beamng as bng:
-        scenario = Scenario("tech_ground", "sensors_test")
-        vehicle = Vehicle("test_car", model="etk800")
 
-        electrics = Electrics()
-        damage = Damage()
-        state = State()
-        vehicle.sensors.attach("electrics", electrics)
-        vehicle.sensors.attach("damage", damage)
-        vehicle.sensors.attach("newstate", state)
-
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0))
-        scenario.make(bng)
-
-        bng.settings.set_deterministic(60)
-        bng.control.pause()
-        bng.scenario.load(scenario)
-        bng.scenario.start()
-
-        yield bng, vehicle, electrics, damage, state
+def _attached_sensors() -> tuple[Vehicle, Electrics, Damage, State]:
+    vehicle = Vehicle("test_car", model="etk800")
+    electrics = Electrics()
+    damage = Damage()
+    state = State()
+    vehicle.sensors.attach("electrics", electrics)
+    vehicle.sensors.attach("damage", damage)
+    vehicle.sensors.attach("newstate", state)
+    return vehicle, electrics, damage, state
 
 
 @pytest.fixture(scope="module")
 def sensors_scene(
     beamng: BeamNGpy,
 ) -> Iterator[tuple[BeamNGpy, Vehicle, Electrics, Damage, State]]:
-    with sensors_scenario(beamng) as scene:
-        yield scene
+    vehicle, electrics, damage, state = _attached_sensors()
+    with loaded_scenario(
+        beamng, level="tech_ground", name="sensors_test",
+        vehicles=[(vehicle, {"pos": (0, 0, 0)})],
+        pause=True,
+    ) as (bng, _scenario):
+        yield bng, vehicle, electrics, damage, state
 
 
-def _reset_scene(bng: BeamNGpy, vehicle: Vehicle) -> None:
-    bng.scenario.restart()
-    bng.control.pause()
-    vehicle.control(throttle=0.0, brake=0.0, steering=0.0)
+@pytest.fixture(autouse=True)
+def _reset_shared_scene(sensors_scene):
+    bng, vehicle, *_ = sensors_scene
+    restart_vehicles(bng, vehicle)
 
 
 def test_electrics(sensors_scene):
     bng, vehicle, electrics, _, _ = sensors_scene
-    _reset_scene(bng, vehicle)
 
     bng.control.step(120)
     vehicle.control(throttle=1.0)
@@ -65,7 +55,6 @@ def test_electrics(sensors_scene):
 
 def test_damage(sensors_scene):
     bng, vehicle, _, damage, _ = sensors_scene
-    _reset_scene(bng, vehicle)
 
     # Drop the shared vehicle instead of building a separate crash scenario.
     vehicle.teleport(
@@ -79,16 +68,9 @@ def test_damage(sensors_scene):
 
 def test_state(sensors_scene):
     bng, vehicle, _, _, state = sensors_scene
-    _reset_scene(bng, vehicle)
 
     bng.control.step(20)
     vehicle.sensors.poll()
 
     assert state["pos"][0] < 0.1
 
-
-if __name__ == "__main__":
-    bng = BeamNGpy("localhost", 25252, quit_on_close=False)
-    with sensors_scenario(bng) as scene:
-        for test in (test_electrics, test_damage, test_state):
-            test(scene)

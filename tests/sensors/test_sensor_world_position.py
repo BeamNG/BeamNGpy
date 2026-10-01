@@ -6,7 +6,7 @@ from time import sleep
 import pytest
 
 from beamngpy.sensors import Camera, Lidar, Radar, Ultrasonic
-from tests.sensors.helpers import assert_vec3_close, module_scene, using_sensor
+from tests.helpers import assert_vec3_close, module_scene, resume_after, using_sensor
 
 _SENSOR_TYPES = ("camera", "lidar", "radar", "ultrasonic")
 _MOUNT = (-5.0, 0.0, 1.0)
@@ -88,7 +88,7 @@ def test_world_position_smooth_far_from_origin(world_position_scene, sensor_type
     vehicle.teleport(FAR_ORIGIN, reset=True)
     bng.control.step(60, wait=True)
 
-    with using_sensor(_ATTACHED[sensor_type](name, bng, vehicle)) as sensor:
+    with using_sensor(_ATTACHED[sensor_type](name, bng, vehicle)) as sensor, resume_after(bng):
         bng.control.pause()
         vehicle_positions: list[tuple[float, float, float]] = []
         world_positions: list[tuple[float, float, float]] = []

@@ -6,12 +6,12 @@ import pytest
 
 from beamngpy.sensors import PowertrainSensor
 
-from tests.sensors.helpers import exercise_roundtrip, module_scene, poll_auto_or_adhoc, using_sensor
+from tests.helpers import exercise_roundtrip, module_scene, poll_auto_or_adhoc, using_sensor
 
 powertrain_scene = module_scene("powertrain_test", "Testing the powertrain sensor", "Powertrain test")
 
 
-@pytest.mark.parametrize("is_auto", [True, False])
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
 def test_powertrain_poll(powertrain_scene, is_auto):
     """Automatic and ad-hoc polling return powertrain readings."""
     bng, vehicle = powertrain_scene
