@@ -7,7 +7,7 @@ import pytest
 from beamngpy import BeamNGpy
 from beamngpy.sensors import Ultrasonic
 
-import tests.sensors.helpers as h
+import tests.helpers as h
 
 USS_POS = (0, -2.3, 0.6)
 
@@ -54,7 +54,7 @@ ultrasonic_scene = h.module_scene(
 )
 
 
-@pytest.mark.parametrize("is_auto", [True, False])
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
 def test_ultrasonic_poll(ultrasonic_scene, is_auto):
     """Automatic and ad-hoc polling return accurate distance readings."""
     bng, vehicle = ultrasonic_scene

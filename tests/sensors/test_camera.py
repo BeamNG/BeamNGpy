@@ -3,10 +3,11 @@ from __future__ import annotations
 from time import sleep
 
 import numpy as np
+import pytest
 
 from beamngpy.sensors import Camera
 
-import tests.sensors.helpers as h
+import tests.helpers as h
 
 _RESOLUTION = (512, 512)
 _BASE_CAM = dict(
@@ -125,14 +126,22 @@ camera_scene = h.module_scene(
 )
 
 
-def test_camera_shmem(camera_scene, request):
-    """Shared memory, to the left of the vehicle, facing towards it."""
+@pytest.mark.parametrize("is_using_shared_memory", [True, False], ids=["shared_memory", "socket"])
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
+def test_camera_poll(camera_scene, request, is_using_shared_memory, is_auto):
+    """Colour, annotation, and depth polls for each transport and polling mode."""
     bng, vehicle = camera_scene
+    transport = "shared memory" if is_using_shared_memory else "socket"
+    polling = "automatic" if is_auto else "ad-hoc"
     with h.using_sensor(
-        make_camera(bng, vehicle, "camera1", is_using_shared_memory=True, **_LEFT_FULL),
+        make_camera(
+            bng, vehicle, "camera_poll",
+            is_using_shared_memory=is_using_shared_memory,
+            **_LEFT_VIEW, **_RENDER_STD,
+        ),
     ) as cam:
-        print("Testing camera 1...")
-        check_poll(cam, request.node.name, True, 3, 3)
+        print(f"Testing camera ({transport}, {polling})...")
+        check_poll(cam, request.node.name, is_auto, 3)
 
         print(
             "out of range pixel. should be [-1, -1]: ",
@@ -178,16 +187,6 @@ def test_camera_property_roundtrips(camera_scene):
         assert cam.get_is_auto_exposure() is True
 
 
-def test_camera_no_shmem(camera_scene, request):
-    """No shared memory, to the left of the vehicle, facing towards it."""
-    bng, vehicle = camera_scene
-    with h.using_sensor(
-        make_camera(bng, vehicle, "camera2", is_using_shared_memory=False, **_LEFT_FULL),
-    ) as cam:
-        print("Testing camera 2...")
-        check_poll(cam, request.node.name, True, 3, 3)
-
-
 def test_camera_translucent_depth(camera_scene, request):
     """Depth differs when is_render_translucent_as_opaque_depth is enabled."""
     bng, vehicle = camera_scene
@@ -216,20 +215,6 @@ def test_camera_translucent_depth(camera_scene, request):
     )
 
 
-def test_camera_shmem_ad_hoc(camera_scene, request):
-    """Shared memory, to the right of the vehicle, automatic and ad-hoc polling."""
-    bng, vehicle = camera_scene
-    with h.using_sensor(
-        make_camera(
-            bng, vehicle, "camera3", is_using_shared_memory=True,
-            pos=(5, 0, 1), dir=(-1, 0, 0), **_RENDER_STD,
-        ),
-    ) as cam:
-        print("Testing camera 3...")
-        check_poll(cam, request.node.name, True, 3)
-        check_poll(cam, request.node.name, False, 3)
-
-
 def test_camera_shmem_stream(camera_scene):
     """Shared-memory streaming: poll fills SHM, then stream/stream_raw read it back."""
     bng, vehicle = camera_scene
@@ -245,18 +230,19 @@ def test_camera_shmem_stream(camera_scene):
         check_stream(cam)
 
 
-def test_camera_no_shmem_oblique(camera_scene, request):
-    """No shared memory, oblique angle to the world, then repositioned."""
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
+def test_camera_socket_oblique(camera_scene, request, is_auto):
+    """Socket camera at an oblique angle, then repositioned."""
     bng, vehicle = camera_scene
+    polling = "automatic" if is_auto else "ad-hoc"
     with h.using_sensor(
         make_camera(
             bng, vehicle, "camera4", is_using_shared_memory=False,
             pos=(0, 5, 1), dir=(0, -1, 0), up=(1, 0, 1), **_RENDER_STD,
         ),
     ) as cam:
-        print("Testing camera 4...")
-        check_poll(cam, request.node.name, True, 3)
-        check_poll(cam, request.node.name, False, 3)
+        print(f"Testing camera 4 ({polling})...")
+        check_poll(cam, request.node.name, is_auto, 3)
 
         cam.set_position((-10, 0, 1))
         print("Newly-set Position: ", cam.get_position())

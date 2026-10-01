@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import random
-from contextlib import contextmanager
 from typing import Iterator
 
 import numpy as np
@@ -10,6 +9,8 @@ import pytest
 from beamngpy import BeamNGpy, Scenario, Vehicle, angle_to_quat, sensors
 from beamngpy.logging import BNGValueError
 from beamngpy.types import Float3, StrDict
+
+from tests.helpers import loaded_scenario, restart_vehicles
 
 _ISLAND_EGO_POS: Float3 = (-241.901, -379.48, 31.719)
 _ISLAND_OTHER_POS: Float3 = (148.242, 292.909, 41.847)
@@ -28,66 +29,41 @@ def assert_continued_movement(bng: BeamNGpy, vehicle: Vehicle, start_pos: Float3
         last_pos = current_pos
 
 
-def assert_non_movement(bng: BeamNGpy, vehicle: Vehicle, start_pos: Float3):
-    last_pos = np.array(start_pos)
-    for _ in range(5):
-        bng.control.step(60, wait=True)
-        vehicle.sensors.poll()
-        current_pos = np.array(vehicle.sensors["state"]["pos"])
-        assert np.linalg.norm(current_pos - last_pos) < 0.5
-        last_pos = current_pos
-
-
-def _reset_vehicles(bng: BeamNGpy, *vehicles: Vehicle) -> None:
-    bng.scenario.restart()
-    bng.control.pause()
-    for vehicle in vehicles:
-        vehicle.control(throttle=0.0, brake=0.0, steering=0.0)
-
-
-@contextmanager
-def vehicle_scenario(
-    beamng: BeamNGpy,
-) -> Iterator[tuple[BeamNGpy, Vehicle, Vehicle, Scenario]]:
-    with beamng as bng:
-        scenario = Scenario("small_island", "vehicle_shared")
-        config = "vehicles/etk800/854_police_A.pc"
-        vehicle = Vehicle("test_car", model="etk800", part_config=config)
-        other = Vehicle("other", model="etk800")
-        vehicle.sensors.attach("electrics", sensors.Electrics())
-        other.sensors.attach("electrics", sensors.Electrics())
-        scenario.add_vehicle(
-            vehicle, pos=_ISLAND_EGO_POS, rot_quat=_ISLAND_EGO_ROT
-        )
-        scenario.add_vehicle(
-            other, pos=_ISLAND_OTHER_POS, rot_quat=_ISLAND_OTHER_ROT
-        )
-        scenario.make(bng)
-
-        bng.settings.set_deterministic(50)
-        bng.control.pause()
-        bng.scenario.load(scenario)
-        bng.scenario.start()
-        yield bng, vehicle, other, scenario
-
-
 class TestVehicleShared:
     @pytest.fixture(scope="class")
     def scene(
         self, beamng: BeamNGpy
     ) -> Iterator[tuple[BeamNGpy, Vehicle, Vehicle, Scenario]]:
-        with vehicle_scenario(beamng) as loaded:
-            yield loaded
+        config = "vehicles/etk800/854_police_A.pc"
+        vehicle = Vehicle("test_car", model="etk800", part_config=config)
+        other = Vehicle("other", model="etk800")
+        vehicle.sensors.attach("electrics", sensors.Electrics())
+        other.sensors.attach("electrics", sensors.Electrics())
+        with loaded_scenario(
+            beamng,
+            level="small_island",
+            name="vehicle_shared",
+            vehicles=[
+                (vehicle, {"pos": _ISLAND_EGO_POS, "rot_quat": _ISLAND_EGO_ROT}),
+                (other, {"pos": _ISLAND_OTHER_POS, "rot_quat": _ISLAND_OTHER_ROT}),
+            ],
+            hz=50,
+            pause=True,
+        ) as (bng, scenario):
+            yield bng, vehicle, other, scenario
+
+    @pytest.fixture(autouse=True)
+    def _reset_shared_vehicles(self, scene):
+        bng, vehicle, other, _ = scene
+        restart_vehicles(bng, vehicle, other)
 
     def test_get_available_vehicles(self, scene):
-        bng, vehicle, other, _ = scene
-        _reset_vehicles(bng, vehicle, other)
+        bng, *_ = scene
         resp = bng.vehicles.get_available()
         assert len(resp) > 0
 
     def test_vehicle_move(self, scene):
-        bng, vehicle, other, _ = scene
-        _reset_vehicles(bng, vehicle, other)
+        bng, vehicle, *_ = scene
         vehicle.sensors.poll()
         start = np.array(vehicle.sensors["state"]["pos"])
         vehicle.control(throttle=1)
@@ -97,7 +73,6 @@ class TestVehicleShared:
 
     def test_lights(self, scene):
         bng, vehicle, other, _ = scene
-        _reset_vehicles(bng, vehicle, other)
 
         binary = {"left_signal", "right_signal", "hazard_signal"}
         ternary = {"headlights", "fog_lights", "lightbar"}
@@ -160,30 +135,29 @@ class TestVehicleShared:
 
     def test_vehicle_ai(self, scene):
         bng, vehicle, other, _ = scene
-        _reset_vehicles(bng, vehicle, other)
         vehicle.switch()
 
-        vehicle.ai.set_mode("traffic")
-        bng.control.step(500)
-        assert_continued_movement(bng, vehicle, _ISLAND_EGO_POS)
+        def traffic():
+            vehicle.ai.set_mode("traffic")
 
-        _reset_vehicles(bng, vehicle, other)
-        vehicle.ai.set_waypoint("wp_1")
-        bng.control.step(500)
-        assert_continued_movement(bng, vehicle, _ISLAND_EGO_POS)
+        def waypoint():
+            vehicle.ai.set_waypoint("wp_1")
 
-        _reset_vehicles(bng, vehicle, other)
-        vehicle.ai.set_speed(80 / 3.6)
-        vehicle.ai.set_target("other", mode="chase")
-        bng.control.step(500)
-        assert_continued_movement(bng, vehicle, _ISLAND_EGO_POS)
+        def chase():
+            vehicle.ai.set_speed(80 / 3.6)
+            vehicle.ai.set_target("other", mode="chase")
 
-        _reset_vehicles(bng, vehicle, other)
-        vehicle.ai.set_target("other", mode="flee")
-        bng.control.step(500)
-        assert_continued_movement(bng, vehicle, _ISLAND_EGO_POS)
+        def flee():
+            vehicle.ai.set_target("other", mode="flee")
 
-        _reset_vehicles(bng, vehicle, other)
+        for i, setup in enumerate((traffic, waypoint, chase, flee)):
+            if i:
+                restart_vehicles(bng, vehicle, other)
+            setup()
+            bng.control.step(500)
+            assert_continued_movement(bng, vehicle, _ISLAND_EGO_POS)
+
+        restart_vehicles(bng, vehicle, other)
         vehicle.teleport(
             _ISLAND_EGO_POS,
             rot_quat=_ISLAND_EGO_ROT,
@@ -205,8 +179,7 @@ class TestVehicleShared:
         assert np.linalg.norm(ref - pos) < 2.5
 
     def test_vehicle_bbox(self, scene):
-        bng, vehicle_a, other, _ = scene
-        _reset_vehicles(bng, vehicle_a, other)
+        bng, vehicle_a, *_ = scene
         bbox_beg = vehicle_a.get_bbox()
         vehicle_a.ai.set_mode("traffic")
         bng.control.step(2000, wait=True)
@@ -217,8 +190,7 @@ class TestVehicleShared:
             assert v != bbox_end[k]
 
     def test_traffic(self, scene):
-        bng, vehicle, other, _ = scene
-        _reset_vehicles(bng, vehicle, other)
+        bng, _, other, _ = scene
         bng.traffic.start([other])
         other.switch()
 
@@ -231,8 +203,7 @@ class TestVehicleShared:
             bng.control.pause()
 
     def test_spawn_without_entering_vehicle(self, scene):
-        bng, vehicle, other, _ = scene
-        _reset_vehicles(bng, vehicle, other)
+        bng, vehicle, *_ = scene
 
         npc = Vehicle("npc", model="pickup")
         try:
@@ -246,15 +217,13 @@ class TestVehicleShared:
             bng.vehicles.despawn(npc)
 
     def test_dynamic_vehicle_spawn(self, scene):
-        bng, vehicle, other, scenario = scene
-        _reset_vehicles(bng, vehicle, other)
+        _, vehicle, _, scenario = scene
         duplicate = Vehicle(vehicle.vid, model="etk800")
         with pytest.raises(BNGValueError):
             scenario.add_vehicle(duplicate, _SPAWN_NEAR_EGO)
 
     def test_vehicle_spawn(self, scene):
-        bng, vehicle, other, scenario = scene
-        _reset_vehicles(bng, vehicle, other)
+        bng, _, _, scenario = scene
 
         extra = Vehicle("relevant", model="etk800")
         scenario.add_vehicle(extra, pos=_SPAWN_NEAR_EGO)
@@ -267,8 +236,7 @@ class TestVehicleShared:
         assert not extra.is_connected()
 
     def test_part_configs(self, scene):
-        bng, vehicle, other, _ = scene
-        _reset_vehicles(bng, vehicle, other)
+        _, vehicle, *_ = scene
 
         options = vehicle.get_part_config()
         assert len(options) > 0
@@ -285,19 +253,12 @@ class TestVehicleShared:
                 assert v == options_flat[k]
 
 
-def _get_matching_entries(a, b):
-    ret = {}
-    for k, _ in a.items():
-        ret[k] = b[k]
-    return ret
-
-
 def _check_lights(target, data, msg_fmt):
-    data = _get_matching_entries(target, data)
+    data = {light: data[light] for light in target}
 
-    for l, v in target.items():
-        msg = msg_fmt.format(target, l)
-        assert v == data[l], msg
+    for light, value in target.items():
+        msg = msg_fmt.format(target, light)
+        assert value == data[light], msg
 
 
 def _generate_random_config(options: StrDict):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from beamngpy.sensors import GPS
 
-from tests.sensors.helpers import exercise_roundtrip, module_scene, using_sensor
+from tests.helpers import exercise_roundtrip, module_scene, using_sensor
 
 gps_scene = module_scene("gps_test", "Testing the GPS sensor", "GPS test")
 

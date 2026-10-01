@@ -3,7 +3,7 @@ from __future__ import annotations
 from time import sleep
 
 from beamngpy.sensors import Mesh
-from tests.sensors.helpers import exercise_roundtrip, module_scene, using_sensor
+from tests.helpers import exercise_roundtrip, module_scene, using_sensor
 
 mesh_scene = module_scene("mesh_test2", "Mesh analysis", "Mesh test")
 

@@ -144,6 +144,7 @@ def test_get_current_vehicles(beamng: BeamNGpy):
 
         bng.scenario.start()
 
+        player.set_shift_mode("arcade")
         player.control(throttle=1.0)
         bng.control.step(60)
         player.sensors.poll()

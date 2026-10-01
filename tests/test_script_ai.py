@@ -1,53 +1,67 @@
 from __future__ import annotations
 
-import json
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
 import numpy as np
 import pytest
 
-from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
+from beamngpy import BeamNGpy, Vehicle
+
+from tests.helpers import loaded_scenario, restart_vehicles
 
 SCRIPT_DATA = Path(__file__).resolve().parent.parent / "examples" / "data"
 
 
-@contextmanager
-def script_ai_scenario(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
-    with beamng as bng:
-        scenario = Scenario("smallgrid", "script_ai_test")
-        vehicle = Vehicle("ego", model="etk800")
-        scenario.add_vehicle(vehicle, pos=(0, 0, 0), safe_spawn=True)
-        scenario.make(bng)
-
-        bng.settings.set_deterministic(60)
-        bng.control.pause()
-        bng.scenario.load(scenario, precompile_shaders=False)
-        bng.scenario.start()
-
-        print("Script AI test start.")
-        yield bng, vehicle
-
-        print("Script AI test complete.")
-
-
 @pytest.fixture(scope="module")
 def script_ai_scene(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
-    with script_ai_scenario(beamng) as scene:
-        yield scene
+    vehicle = Vehicle("ego", model="etk800")
+    with loaded_scenario(
+        beamng, level="smallgrid", name="script_ai_test", label="Script AI test",
+        vehicles=[(vehicle, {"pos": (0, 0, 0), "safe_spawn": True})],
+        precompile_shaders=False, pause=True,
+    ) as (bng, _scenario):
+        yield bng, vehicle
 
 
-def test_script_ai_record_time_import_replay(script_ai_scene):
-    """Record a time-based Script AI path, import the JSON, and replay."""
+@pytest.fixture(autouse=True)
+def _reset_shared_scene(script_ai_scene):
     bng, vehicle = script_ai_scene
-    recording_name = "beamngpy_test_script_ai_record_t.json"
+    restart_vehicles(bng, vehicle)
+
+
+def _play_and_assert_moved(bng, vehicle, script, *, steps: int, moved_msg: str) -> None:
+    vehicle.sensors.poll()
+    start_pos = np.array(vehicle.sensors["state"]["pos"])
+
+    vehicle.ai.execute_script(script, start_delay=0.0, no_reset=False)
+    for _ in range(steps):
+        bng.control.step(30, wait=True)
+
+    vehicle.sensors.poll()
+    end_pos = np.array(vehicle.sensors["state"]["pos"])
+    assert np.linalg.norm(end_pos - start_pos) > 1.0
+    print(moved_msg)
+
+
+@pytest.mark.parametrize(
+    "record_speed,timing_key,recording_name",
+    [
+        pytest.param(False, "t", "beamngpy_test_script_ai_record_t.json", id="time"),
+        pytest.param(True, "v", "beamngpy_test_script_ai_record_v.json", id="velocity"),
+    ],
+)
+def test_script_ai_record_import_replay(script_ai_scene, record_speed, timing_key, recording_name):
+    """Record a Script AI path, import the JSON, and replay."""
+    bng, vehicle = script_ai_scene
+    other_key = "v" if timing_key == "t" else "t"
     recording_path = Path(bng.user_with_version) / recording_name
     if recording_path.exists():
         recording_path.unlink()
 
-    print("Recording Script AI path (time-based)...")
-    vehicle.ai.start_recording(record_speed=False)
+    kind = "time-based" if timing_key == "t" else "velocity-based"
+    print(f"Recording Script AI path ({kind})...")
+    vehicle.ai.start_recording(record_speed=record_speed)
     vehicle.control(throttle=0.4, steering=0.0, brake=0.0)
     for _ in range(90):
         bng.control.step(20, wait=True)
@@ -58,73 +72,28 @@ def test_script_ai_record_time_import_replay(script_ai_scene):
     assert recording_path.exists(), f"Recording was not written to {recording_path}"
     print(f"PASS: Recording written to {recording_path}")
 
-    print("Importing recorded Script AI file...")
+    if timing_key == "t":
+        print("Importing recorded Script AI file...")
+    else:
+        print("Importing recorded velocity-based Script AI file...")
     script = vehicle.ai.import_script_ai_file(recording_name)
     assert len(script) >= 3
     for node in script:
-        assert {"x", "y", "z", "t"} <= set(node.keys())
-        assert "v" not in node
-    assert script[-1]["t"] > script[0]["t"]
-    print(f"PASS: Imported {len(script)} t-based nodes")
+        assert {"x", "y", "z", timing_key} <= set(node.keys())
+        assert other_key not in node
+    if timing_key == "t":
+        assert script[-1]["t"] > script[0]["t"]
+    else:
+        assert any(node["v"] > 0 for node in script)
+    print(f"PASS: Imported {len(script)} {timing_key}-based nodes")
 
-    print("Replaying recorded script...")
-    vehicle.sensors.poll()
-    start_pos = np.array(vehicle.sensors["state"]["pos"])
-
-    vehicle.ai.execute_script(script, start_delay=0.0, no_reset=False)
-    for _ in range(120):
-        bng.control.step(30, wait=True)
-
-    vehicle.sensors.poll()
-    end_pos = np.array(vehicle.sensors["state"]["pos"])
-    assert np.linalg.norm(end_pos - start_pos) > 1.0
-    print("PASS: Vehicle moved during replay")
-
-    if recording_path.exists():
-        recording_path.unlink()
-
-
-def test_script_ai_record_velocity_import_replay(script_ai_scene):
-    """Record a velocity-based Script AI path, import the JSON, and replay."""
-    bng, vehicle = script_ai_scene
-    recording_name = "beamngpy_test_script_ai_record_v.json"
-    recording_path = Path(bng.user_with_version) / recording_name
-    if recording_path.exists():
-        recording_path.unlink()
-
-    print("Recording Script AI path (velocity-based)...")
-    vehicle.ai.start_recording(record_speed=True)
-    vehicle.control(throttle=0.4, steering=0.0, brake=0.0)
-    for _ in range(90):
-        bng.control.step(20, wait=True)
-    vehicle.control(throttle=0.0, steering=0.0, brake=0.5)
-    bng.control.step(30, wait=True)
-    vehicle.ai.stop_recording(recording_name)
-
-    assert recording_path.exists(), f"Recording was not written to {recording_path}"
-    print(f"PASS: Recording written to {recording_path}")
-
-    print("Importing recorded velocity-based Script AI file...")
-    script = vehicle.ai.import_script_ai_file(recording_name)
-    assert len(script) >= 3
-    for node in script:
-        assert {"x", "y", "z", "v"} <= set(node.keys())
-        assert "t" not in node
-    assert any(node["v"] > 0 for node in script)
-    print(f"PASS: Imported {len(script)} v-based nodes")
-
-    print("Replaying recorded velocity-based script...")
-    vehicle.sensors.poll()
-    start_pos = np.array(vehicle.sensors["state"]["pos"])
-
-    vehicle.ai.execute_script(script, start_delay=0.0, no_reset=False)
-    for _ in range(120):
-        bng.control.step(30, wait=True)
-
-    vehicle.sensors.poll()
-    end_pos = np.array(vehicle.sensors["state"]["pos"])
-    assert np.linalg.norm(end_pos - start_pos) > 1.0
-    print("PASS: Vehicle moved during velocity-based replay")
+    if timing_key == "t":
+        print("Replaying recorded script...")
+        moved_msg = "PASS: Vehicle moved during replay"
+    else:
+        print("Replaying recorded velocity-based script...")
+        moved_msg = "PASS: Vehicle moved during velocity-based replay"
+    _play_and_assert_moved(bng, vehicle, script, steps=120, moved_msg=moved_msg)
 
     if recording_path.exists():
         recording_path.unlink()
@@ -155,28 +124,7 @@ def test_script_ai_import_and_execute(script_ai_scene):
         print(f"PASS: Imported {len(script)} {timing_key}-based nodes")
 
         print(f"Executing {filename}...")
-        vehicle.sensors.poll()
-        start_pos = np.array(vehicle.sensors["state"]["pos"])
-
-        vehicle.ai.execute_script(script, start_delay=0.0, no_reset=False)
-        for _ in range(100):
-            bng.control.step(30, wait=True)
-
-        vehicle.sensors.poll()
-        end_pos = np.array(vehicle.sensors["state"]["pos"])
-        assert np.linalg.norm(end_pos - start_pos) > 1.0
-        print(f"PASS: Vehicle moved while playing {filename}")
-
-
-if __name__ == "__main__":
-    set_up_simple_logging()
-
-    bng = BeamNGpy("localhost", 25252, quit_on_close=False)
-    with script_ai_scenario(bng) as scene:
-        for test in (
-            test_script_ai_record_time_import_replay,
-            test_script_ai_record_velocity_import_replay,
-            test_script_ai_import_and_execute,
-        ):
-            print("Running ", test.__name__)
-            test(scene)
+        _play_and_assert_moved(
+            bng, vehicle, script, steps=100,
+            moved_msg=f"PASS: Vehicle moved while playing {filename}",
+        )

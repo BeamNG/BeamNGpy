@@ -80,18 +80,12 @@ def test_quats(beamng: BeamNGpy):
             bng.scenario.teleport_object(
                 rb, (-10, 5, 0), rot_quat=angle_to_quat((-45, 0, 0))
             )
-            assert True
         except socket.timeout:
             assert False
 
         try:
             rot_quat = (-0.003337, -0.0021882, -0.6891695, 0.7245892)
             bng.scenario.teleport_object(rb, (-10, 5, 0), rot_quat=rot_quat)
-            assert True
         except socket.timeout:
             assert False
 
-
-if __name__ == "__main__":
-    bng = BeamNGpy("localhost", 25252)
-    test_quats(bng)

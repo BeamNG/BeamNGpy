@@ -30,7 +30,7 @@ SENSOR_TEST_DIR = (0, -1, 0)
 SENSOR_TEST_UP = (0, 0, 1)
 
 # Root directory for VISUALISE=True test outputs (PNGs, plots). One subfolder per sensor type.
-_OUTPUT_ROOT = Path(__file__).resolve().parent / "output"
+_OUTPUT_ROOT = Path(__file__).resolve().parent / "sensors" / "output"
 
 
 RoundtripCase = Union[
@@ -131,12 +131,33 @@ def save_radar_plot(
 
 
 @contextmanager
+def resume_after(bng: BeamNGpy):
+    try:
+        yield
+    finally:
+        bng.control.resume()
+
+
+def restart_vehicles(bng: BeamNGpy, *vehicles: Vehicle, pause: bool = True) -> None:
+    bng.scenario.restart()
+    if pause:
+        bng.control.pause()
+    else:
+        bng.control.resume()
+    for vehicle in vehicles:
+        vehicle.set_shift_mode("arcade")
+        vehicle.control(throttle=0.0, brake=0.0, steering=0.0)
+
+
+@contextmanager
 def loaded_scenario(
-    beamng: BeamNGpy, *, name: str, description: str,
-    vehicles: list[tuple[Vehicle, dict[str, Any]]], label: str,
+    beamng: BeamNGpy, *, name: str,
+    vehicles: list[tuple[Vehicle, dict[str, Any]]],
     level: str = TEST_LEVEL, hz: int = 60,
-) -> Iterator[tuple[BeamNGpy, Vehicle]]:
-    """Standard sensor-test scenario load: deterministic Hz, hide HUD, yield ego vehicle."""
+    description: str | None = None, label: str | None = None,
+    pause: bool = False, precompile_shaders: bool = True,
+) -> Iterator[tuple[BeamNGpy, Scenario]]:
+    """Load a scenario on the shared BeamNG instance and resume physics on exit."""
     with beamng as bng:
         if not vehicles:
             raise ValueError("loaded_scenario requires at least one vehicle")
@@ -147,17 +168,22 @@ def loaded_scenario(
 
         scenario.make(bng)
         bng.settings.set_deterministic(hz)
-        bng.scenario.load(scenario)
+        if pause:
+            bng.control.pause()
+        bng.scenario.load(scenario, precompile_shaders=precompile_shaders)
         bng.ui.hide_hud()
         bng.scenario.start()
-
-        print(f"{label} start.")
-        try:
-            yield bng, vehicles[0][0]
-        finally:
+        for vehicle, _ in vehicles:
+            vehicle.set_shift_mode("arcade")
+        if not pause:
             bng.control.resume()
 
-        print(f"{label} complete.")
+        if label:
+            print(f"{label} start.")
+        with resume_after(bng):
+            yield bng, scenario
+        if label:
+            print(f"{label} complete.")
 
 
 def poll_auto_or_adhoc(sensor, is_auto: bool, *, attempt: int | None = None, adhoc_wait: float = 1):
@@ -192,8 +218,8 @@ def module_scene(
             vehicles = [(ego, {}), (other, {"pos": obstacle_pos})]
         with loaded_scenario(
             beamng, name=name, description=description, vehicles=vehicles, label=label,
-        ) as loaded:
-            yield loaded
+        ) as (bng, _scenario):
+            yield bng, ego
 
     return scene
 

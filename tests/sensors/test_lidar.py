@@ -8,7 +8,7 @@ import pytest
 from beamngpy import BeamNGpy
 from beamngpy.sensors import Lidar
 
-import tests.sensors.helpers as h
+import tests.helpers as h
 
 
 def validate_distribution(pointCloud):
@@ -71,13 +71,14 @@ lidar_scene = h.module_scene(
 )
 
 
-@pytest.mark.parametrize("is_using_shared_memory", [True, False])
-@pytest.mark.parametrize("is_auto", [True, False])
-def test_lidar_shmem(lidar_scene, is_using_shared_memory, is_auto):
-    """Default 360 mode with and without shared memory."""
+@pytest.mark.parametrize("is_using_shared_memory", [True, False], ids=["shared_memory", "socket"])
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
+def test_lidar_poll(lidar_scene, is_using_shared_memory, is_auto):
+    """Default 360 mode for each transport and polling mode."""
     bng, vehicle = lidar_scene
-    label = "shared memory" if is_using_shared_memory else "socket (no shared memory)"
-    print(f"Testing a LiDAR sensor which uses {label}...")
+    transport = "shared memory" if is_using_shared_memory else "socket (no shared memory)"
+    polling = "automatic" if is_auto else "ad-hoc"
+    print(f"Testing a LiDAR sensor which uses {transport} ({polling})...")
     with h.using_sensor(
         Lidar("lidar1", bng, vehicle, is_using_shared_memory=is_using_shared_memory),
         "LiDAR sensor removed.",
@@ -85,7 +86,7 @@ def test_lidar_shmem(lidar_scene, is_using_shared_memory, is_auto):
         polling_check(bng, lidar, is_auto, True, False)
 
 
-@pytest.mark.parametrize("is_using_shared_memory", [True, False])
+@pytest.mark.parametrize("is_using_shared_memory", [True, False], ids=["shared_memory", "socket"])
 def test_lidar_negative_update(lidar_scene, is_using_shared_memory):
     """Negative requested update time must not produce readings."""
     bng, vehicle = lidar_scene
@@ -108,35 +109,29 @@ def test_lidar_negative_update(lidar_scene, is_using_shared_memory):
         print("PASS: No data is present")
 
 
-@pytest.mark.parametrize("is_auto", [True, False])
-def test_lidar_lfo_mode(lidar_scene, is_auto):
-    """LFO (rotate) mode with a 90 degree aperture."""
+@pytest.mark.parametrize("rotate", [True, False], ids=["lfo", "static"])
+@pytest.mark.parametrize("is_using_shared_memory", [True, False], ids=["shared_memory", "socket"])
+@pytest.mark.parametrize("is_auto", [True, False], ids=["automatic", "ad_hoc"])
+def test_lidar_aperture_mode(lidar_scene, rotate, is_using_shared_memory, is_auto):
+    """LFO and static modes with a 90 degree aperture, for each transport and polling mode."""
     bng, vehicle = lidar_scene
-    print("Testing a LiDAR sensor in LFO mode...")
+    transport = "shared memory" if is_using_shared_memory else "socket (no shared memory)"
+    options = dict(
+        is_using_shared_memory=is_using_shared_memory, is_360_mode=False, horizontal_angle=90,
+    )
+    if rotate:
+        print(f"Testing a LiDAR sensor in LFO mode ({transport})...")
+        sensor_name = "lidar5"
+        options["is_rotate_mode"] = True
+        options["frequency"] = 1
+    else:
+        print(f"Testing a LiDAR sensor in static mode ({transport})...")
+        sensor_name = "lidar6"
     with h.using_sensor(
-        Lidar(
-            "lidar5", bng, vehicle,
-            is_using_shared_memory=True, is_360_mode=False,
-            is_rotate_mode=True, frequency=1, horizontal_angle=90,
-        ),
+        Lidar(sensor_name, bng, vehicle, **options),
         "LiDAR sensor removed.",
     ) as lidar:
-        polling_check(bng, lidar, is_auto, False, True)
-
-
-@pytest.mark.parametrize("is_auto", [True, False])
-def test_lidar_static_mode(lidar_scene, is_auto):
-    """Static mode with a 90 degree aperture."""
-    bng, vehicle = lidar_scene
-    print("Testing a LiDAR sensor in static mode...")
-    with h.using_sensor(
-        Lidar(
-            "lidar6", bng, vehicle,
-            is_using_shared_memory=True, is_360_mode=False, horizontal_angle=90,
-        ),
-        "LiDAR sensor removed.",
-    ) as lidar:
-        polling_check(bng, lidar, is_auto, False, False)
+        polling_check(bng, lidar, is_auto, False, rotate)
 
 
 def test_lidar_property_roundtrips(lidar_scene):
