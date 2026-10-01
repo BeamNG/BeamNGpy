@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import json
 import os
-import time
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from beamngpy.connection import CommBase
@@ -15,36 +12,6 @@ if TYPE_CHECKING:
     from os import PathLike
 
     from beamngpy.beamng import BeamNGpy
-
-_AGENT_LOG = Path(
-    r"F:/BeamNG_Technical/repositories/Gitlab/beamngpy/debug-fc0b00.log"
-)
-
-
-# #region agent log
-def _agent_log(hypothesis_id: str, location: str, message: str, data: dict) -> None:
-    try:
-        with open(_AGENT_LOG, "a", encoding="utf-8") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "sessionId": "fc0b00",
-                        "runId": "post-fix",
-                        "hypothesisId": hypothesis_id,
-                        "location": location,
-                        "message": message,
-                        "data": data,
-                        "timestamp": int(time.time() * 1000),
-                    },
-                    ensure_ascii=True,
-                )
-                + "\n"
-            )
-    except OSError:
-        pass
-
-
-# #endregion
 
 
 class OpenDriveImporter(CommBase):
@@ -91,28 +58,11 @@ class OpenDriveImporter(CommBase):
         """
         path_str = os.fspath(file_path)
         opts: StrDict = dict(options or {})
-        if "finalize" not in opts:
-            opts["finalize"] = True
         payload: StrDict = {
             "filePath": path_str,
             "options": opts,
         }
         content = local_text(path_str)
-        # #region agent log
-        _agent_log(
-            "H1",
-            "opendrive_import.py:import_xodr",
-            "before_send",
-            {
-                "path": path_str,
-                "pathExists": Path(path_str).is_file(),
-                "hasFileContent": content is not None,
-                "fileContentLen": 0 if content is None else len(content),
-                "finalize": opts.get("finalize"),
-                "moduleFile": __file__,
-            },
-        )
-        # #endregion
         if content is not None:
             payload["fileContent"] = content
         response = self.send_recv_ge("ImportOpenDrive", **payload)
