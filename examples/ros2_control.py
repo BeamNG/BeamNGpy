@@ -4,7 +4,7 @@ from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 def main():
     set_up_simple_logging()
 
-    bng = BeamNGpy("localhost", 25252).open()
+    bng = BeamNGpy("localhost", 25252).open(None, "-disable-sandbox")
 
     scenario = Scenario(
         "smallgrid",
@@ -20,7 +20,7 @@ def main():
 
     try:
         # The library must be available in Bin64 / BinLinux, or pass a full path here.
-        bng.ros2.load_bridge("ros2_windows_humble.dll")
+        bng.ros2.load_bridge("ros2_beamng_lyrical.dll")
 
         electrics_id = bng.ros2.add_sensor(
             vehicle,
