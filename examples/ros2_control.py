@@ -1,3 +1,20 @@
+"""Control the BeamNG ROS 2 integration bridge from BeamNGpy.
+
+This is for the DLL-based ROS 2 integration: the game-side C++ bridge
+(``ros2_beamng.dll`` / ``ros2_beamng.so``) is loaded into BeamNG.tech at
+runtime via ``load_bridge``.
+
+Before running this example:
+
+- Have the bridge library built and installed in the game's Bin64/BinLinux.
+- Source your ROS 2 installation and the beamng-ros2-integration overlay.
+
+See the `BeamNG ROS 2 docs
+<https://documentation.beamng.com/api/ros2/>`__ and the `compiling guide
+<https://github.com/BeamNG/beamng-ros2-integration#compiling-beamng-ros2-integration>`__
+for details.
+"""
+
 from beamngpy import BeamNGpy, Scenario, Vehicle, set_up_simple_logging
 
 
