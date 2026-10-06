@@ -20,7 +20,7 @@ def main():
 
     try:
         # The library must be available in Bin64 / BinLinux, or pass a full path here.
-        bng.ros2.load_bridge("ros2_beamng_lyrical.dll")
+        bng.ros2.load_bridge("ros2_windows_humble.dll")
 
         electrics_id = bng.ros2.add_sensor(
             vehicle,
