@@ -146,9 +146,11 @@ class Ros2ApiTest(unittest.TestCase):
             else:
                 self.assertNotIn("vid", message)
 
-        lua_path = Path(os.environ.get("BEAMNG_GAME_ROOT", r"C:\game")) / (
+        bng_home = Path(os.environ.get("BNG_HOME", ""))
+        lua_path = bng_home / (
             "lua/ge/extensions/tech/ros/pythonApi.lua"
         )
+
         if not lua_path.is_file():
             self.skipTest(f"game pythonApi.lua not found at {lua_path}")
         lua_source = lua_path.read_text(encoding="utf-8")
