@@ -6,8 +6,27 @@ from beamngpy.tools import OpenDriveImporter, OpenStreetMapImporter, SumoImporte
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
 
+def choose_importer() -> str:
+    """Ask which road-network format to import and return the menu choice."""
+    print("Choose the road network format to import:")
+    print("  1: OpenDRIVE (.xodr)")
+    print("  2: OpenStreetMap (.osm)")
+    print("  3: SUMO (.nod.xml + .edg.xml)")
+    while True:
+        choice = input("Enter 1-3 [1]: ").strip()
+        if not choice:
+            return "1"
+        if choice in ("1", "2", "3"):
+            return choice
+        print("Invalid choice; please enter 1, 2 or 3.")
+
+
 def main():
     set_up_simple_logging()
+
+    # Pick a single importer up front. Only that one network is imported;
+    # importing every format at once is too heavy on the simulator.
+    choice = choose_importer()
 
     # Initialize BeamNG.
     print("Initializing BeamNG...")
@@ -17,25 +36,40 @@ def main():
     vehicle = Vehicle("ego_vehicle", model="etk800")
     scenario.add_vehicle(vehicle)
 
-    # Import OpenDrive (.xodr).
-    # Pass `material=...` to texture the imported roads with something other than the default.
-    filename = SCRIPT_DIR / "data/Ex_LHT-Complex-X-Junction.xodr"
-    OpenDriveImporter.import_xodr(
-        filename, scenario, material="m_asphalt_new_01"
-    )  # import an OpenDrive file (.xodr).
-
-    # Import OpenStreetMap (.osm).
-    # filename = SCRIPT_DIR / 'data' / 'London.osm'
-    # OpenStreetMapImporter.import_osm(filename, scenario, material="m_asphalt_new_01")                 # import an OpenStreetMap file (.osm).
-
-    # prefix = str(SCRIPT_DIR / 'data' / 'wcusa')                           # Import Sumo files (.nod.xml, .edg.xml).
-    # SumoImporter.import_sumo(prefix, scenario, material="m_asphalt_new_01")
-
-    # Start up BeamNG with the imported road network.
     print("Making scenario...")
     scenario.make(beamng)
     beamng.scenario.load(scenario)
     beamng.scenario.start()
+
+    # Import into the loaded level with the chosen importer. There is no need
+    # to open the World Editor: Road Architect is initialized automatically
+    # and the imported roads are finalized headlessly, ready to drive on.
+    importers = {
+        "1": (
+            "OpenDRIVE",
+            OpenDriveImporter(beamng).import_xodr,
+            SCRIPT_DIR / "data/Ex_LHT-Complex-X-Junction.xodr",
+        ),
+        "2": (
+            "OpenStreetMap",
+            OpenStreetMapImporter(beamng).import_osm,
+            SCRIPT_DIR / "data/London.osm",
+        ),
+        "3": (
+            "SUMO",
+            SumoImporter(beamng).import_sumo,
+            SCRIPT_DIR / "data/wcusa",
+        ),
+    }
+    label, import_network, path = importers[choice]
+    print(f"Importing {label} road network from {path}...")
+    result = import_network(path)
+    print(
+        f"{label}: imported {result['importedRoadCount']} Road Architect "
+        f"road(s); skipped {result['skippedRoadCount']}."
+    )
+    for warning in result["warnings"]:
+        print(f"Warning: {warning}")
 
     # Execute BeamNG until the user closes it.
     input("Completed. Press Enter to exit...")
