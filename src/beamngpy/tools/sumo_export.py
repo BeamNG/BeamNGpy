@@ -26,7 +26,16 @@ class SumoExporter:
             
             sumo-gui -n <NAME>.net.xml -r <NAME>.rou.xml
 
-        ``netconvert`` may print warnings and still succeed. Wait until
+        ``netconvert`` may print warnings and still succeed. On maps with dense
+        junctions (West Coast USA), SUMO's own junction options reduce the
+        sub-metre stub edges it otherwise trims::
+
+            netconvert --node-files=<NAME>.nod.xml --edge-files=<NAME>.edg.xml ^
+              --junctions.join --junctions.join-dist 15 --default.junctions.radius 1.5 ^
+              -o <NAME>.net.xml
+
+        Those flags are native ``netconvert`` options and can also live in a
+        ``.netccfg`` file passed as ``netconvert -c <NAME>.netccfg``. Wait until
         ``randomTrips.py`` finishes writing ``<NAME>.rou.xml`` before launching
         ``sumo-gui``. This checks that the exported network loads and can carry
 

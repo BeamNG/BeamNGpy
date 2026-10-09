@@ -23,13 +23,29 @@ def main():
     print("Exporting road network data...")
 
     # Export OpenDrive (.xodr).
-    OpenDriveExporter.export("test_od", bng)
+    OpenDriveExporter.export("west_coast_usa", bng)
 
     # Export OpenStreetMap (.osm).
-    # OpenStreetMapExporter.export('test_osm', bng)
+    OpenStreetMapExporter.export('west_coast_usa', bng)
 
-    # Export Sumo (.nod.xml and .edg.xml).
-    # SumoExporter.export('test', bng)
+    # Export SUMO (.nod.xml and .edg.xml) into the BeamNG.tech user folder
+    # (typically <userpath>/BeamNG.tech/current/).
+    SumoExporter.export("west_coast_usa", bng)
+
+    # Validate the exported network in SUMO (cmd, from that folder).
+    # This checks that the network loads and can carry traffic; it is not a
+    # live BeamNG–SUMO co-simulation.
+    #
+    #   netconvert --node-files=west_coast_usa.nod.xml --edge-files=west_coast_usa.edg.xml -o west_coast_usa.net.xml
+    #   python "%SUMO_HOME%\tools\randomTrips.py" -n west_coast_usa.net.xml -r west_coast_usa.rou.xml -e 3600 -p 2
+    #   sumo-gui -n west_coast_usa.net.xml -r west_coast_usa.rou.xml
+    #
+    # netconvert may print warnings and still succeed (look for "Success.").
+    # On dense junctions, native netconvert options (or a .netccfg via
+    # netconvert -c) reduce stub edges: --junctions.join --junctions.join-dist 15
+    # --default.junctions.radius 1.5
+    # Wait until randomTrips.py finishes before launching sumo-gui, then press
+    # Play. Prefer an official map such as west_coast_usa for the first test.
 
     # Execute the simulation until user is finished.  The data file(s) have been written.
     print("Road network data exported.")
