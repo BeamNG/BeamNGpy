@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 def test_new_scenario(beamng: BeamNGpy):
-    with beamng as bng:
+    with using_timeout(beamng, 120) as bng:
         scenario = Scenario("tech_ground", "test_scenario")
         vehicle = Vehicle("test_car", model="etk800")
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
