@@ -207,9 +207,12 @@ def poll_auto_or_adhoc(sensor, is_auto: bool, *, attempt: int | None = None, adh
 def module_scene(
     name: str, description: str, label: str, *, color: str = "Red",
     obstacle_pos: tuple[float, float, float] | None = None,
+    beamng_fixture_name: str = "beamng",
 ):
-    @pytest.fixture(scope="module")
-    def scene(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
+    scope = "function" if beamng_fixture_name == "beamng_long_timeout" else "module"
+    @pytest.fixture(scope=scope)
+    def scene(request: pytest.FixtureRequest) -> Iterator[tuple[BeamNGpy, Vehicle]]:
+        beamng: BeamNGpy = request.getfixturevalue(beamng_fixture_name)
         ego = Vehicle("ego_vehicle", model=TEST_VEHICLE_MODEL, license="PYTHON", color=color)
         if obstacle_pos is None:
             vehicles = [(ego, {})]
