@@ -66,7 +66,7 @@ def test_multi_scenario(beamng: BeamNGpy):
     """
     with beamng as a_client:
         a_client.control.return_to_main_menu()  # if a scenario was running previously
-        scenario = Scenario("gridmap_v2", "multi_scenario")
+        scenario = Scenario("tech_ground", "multi_scenario")
         vehicle = Vehicle("vehicle1", model="etk800")
         scenario.add_vehicle(vehicle, pos=(0, 0, 100))
         scenario.make(a_client)

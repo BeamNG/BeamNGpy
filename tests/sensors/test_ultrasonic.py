@@ -51,6 +51,7 @@ ultrasonic_scene = h.module_scene(
     "Testing the ultrasonic sensor",
     "Ultrasonic test",
     obstacle_pos=h.USS_OBSTACLE_START,
+    timeout=120,
 )
 
 
