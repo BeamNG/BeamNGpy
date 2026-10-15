@@ -4,7 +4,7 @@ from beamngpy.sensors import GPS
 
 from tests.helpers import exercise_roundtrip, module_scene, using_sensor
 
-gps_scene = module_scene("gps_test", "Testing the GPS sensor", "GPS test", beamng_fixture_name="beamng_long_timeout")
+gps_scene = module_scene("gps_test", "Testing the GPS sensor", "GPS test")
 
 
 def test_gps_property_roundtrips(gps_scene):
