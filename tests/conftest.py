@@ -30,7 +30,7 @@ def beamng() -> Iterator[BeamNGpy]:
         headless=headless,
         nogpu=nogpu,
         gfx=gfx,
-        socket_timeout=240,
+        socket_timeout=60,
     )
     bng.open(None, "-no-tcom-debug")  # launch BeamNG if necessary
     bng.disconnect()  # to show no socket warning on next open()
@@ -45,3 +45,13 @@ def beamng() -> Iterator[BeamNGpy]:
             except BNGDisconnectedError:
                 pass
         bng.close()
+
+
+@pytest.fixture
+def beamng_long_timeout(beamng: BeamNGpy) -> Iterator[BeamNGpy]:
+    original_timeout = beamng.socket_timeout
+    beamng.socket_timeout = 300
+    try:
+        yield beamng
+    finally:
+        beamng.socket_timeout = original_timeout

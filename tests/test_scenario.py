@@ -48,8 +48,8 @@ def test_no_scenario(beamng: BeamNGpy):
         "/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json",  # mission
     ],
 )
-def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
-    with beamng as bng:
+def test_find_scenario(beamng_long_timeout: BeamNGpy, scenario_path: str):
+    with beamng_long_timeout as bng:
         scenarios = bng.scenario.get_scenarios()
         # Add print statements to check the structure of scenarios
         print("Available levels:", scenarios.keys())
