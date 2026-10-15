@@ -312,3 +312,16 @@ def exercise_roundtrip(sensor, cases: list[RoundtripCase] | None = None, *, upda
             assert actual == value
         else:
             assert_float_close(float(actual), float(value))
+
+
+@contextmanager
+def using_timeout(
+    beamng: BeamNGpy, timeout: float
+) -> Iterator[BeamNGpy]:
+    original_timeout = beamng.socket_timeout
+    beamng.socket_timeout = timeout
+    try:
+        with beamng as bng:
+            yield bng
+    finally:
+        beamng.socket_timeout = original_timeout

@@ -49,16 +49,6 @@ def beamng() -> Iterator[BeamNGpy]:
         bng.close()
 
 
-@pytest.fixture
-def beamng_long_timeout(beamng: BeamNGpy) -> Iterator[BeamNGpy]:
-    original_timeout = beamng.socket_timeout
-    beamng.socket_timeout = 500
-    try:
-        yield beamng
-    finally:
-        beamng.socket_timeout = original_timeout
-
-
 def warmup_scenario(beamng: BeamNGpy):
     scenario = Scenario("smallgrid", "test_scenario")
     vehicle = Vehicle("test_car", model="template_car")

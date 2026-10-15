@@ -9,6 +9,7 @@ import pytest
 from beamngpy import BeamNGpy, Level, Scenario, Vehicle
 from beamngpy.logging import BNGValueError
 from beamngpy.sensors import Electrics
+from tests.helpers import using_timeout
 
 if TYPE_CHECKING:
     from beamngpy.scenario.scenario_object import SceneObject
@@ -48,8 +49,8 @@ def test_no_scenario(beamng: BeamNGpy):
         "/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json",  # mission
     ],
 )
-def test_find_scenario(beamng_long_timeout: BeamNGpy, scenario_path: str):
-    with beamng_long_timeout as bng:
+def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
+    with using_timeout(beamng, 240) as bng:
         scenarios = bng.scenario.get_scenarios()
         # Add print statements to check the structure of scenarios
         print("Available levels:", scenarios.keys())
