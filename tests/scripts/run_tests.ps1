@@ -34,4 +34,3 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\BeamNG" -ErrorAction SilentlyCont
 
 Write-Host "Running tests ..."
 Invoke-Checked pytest --junit-xml=junit.xml $TESTS_PATH
-Copy-Item "$env:LOCALAPPDATA\BeamNG\BeamNG.tech\current\beamng.log" .\beamng.log

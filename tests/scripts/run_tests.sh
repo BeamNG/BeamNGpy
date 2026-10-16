@@ -22,4 +22,3 @@ rm -rf ~/.local/share/BeamNG
 
 echo "Running tests ..."
 pytest --junit-xml=junit.xml $TESTS_PATH
-cp ~/.local/share/BeamNG/BeamNG.tech/current/beamng.log ./beamng.log
