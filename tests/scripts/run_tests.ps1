@@ -33,4 +33,5 @@ Write-Host "Cleaning up BeamNG user folder ..."
 Remove-Item -Recurse -Force "$env:LOCALAPPDATA\BeamNG" -ErrorAction SilentlyContinue
 
 Write-Host "Running tests ..."
+Invoke-Checked $env:BNG_HOME\BeamNG.drive.exe -nosteam -tcom -tport 25252 -console -no-tcom-debug -tcom-listen-ip 127.0.0.1 -headless
 Invoke-Checked pytest --junit-xml=junit.xml $TESTS_PATH
