@@ -27,6 +27,7 @@ stages:
     paths:
       - junit.xml
       - revision.txt
+      - beamng.log
     expire_in: 6 months
     reports:
       junit: junit.xml
