@@ -4,6 +4,7 @@ import pytest
 
 from beamngpy import BeamNGpy, Scenario, Vehicle
 from beamngpy.logging import BNGValueError
+from tests.helpers import using_timeout
 
 
 def test_multi_vehicle(beamng: BeamNGpy):
@@ -64,7 +65,7 @@ def test_multi_scenario(beamng: BeamNGpy):
     Test that a second client can connect to a running instance and ask
     information about the loaded scenario.
     """
-    with beamng as a_client:
+    with using_timeout(beamng, 240) as a_client:
         a_client.control.return_to_main_menu()  # if a scenario was running previously
         scenario = Scenario("tech_ground", "multi_scenario")
         vehicle = Vehicle("vehicle1", model="etk800")
