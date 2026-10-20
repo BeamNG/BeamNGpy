@@ -35,7 +35,7 @@ def beamng() -> Iterator[BeamNGpy]:
     bng.open(None, "-no-tcom-debug")  # launch BeamNG if necessary
     warmup_scenario(bng)  # warmup scenario with long timeout
     bng.disconnect()  # to show no socket warning on next open()
-    bng.socket_timeout = 60  # for subsequent tests
+    bng.socket_timeout = 120  # for subsequent tests
     yield bng
 
     # Teardown: close BeamNG instance only if we launched it
