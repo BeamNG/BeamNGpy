@@ -24,6 +24,11 @@ Version 1.37
   :pydocs:`BeamNGpy.vehicles.spawn <beamngpy.api.beamng.VehiclesApi.spawn>` and
   :pydocs:`Scenario.add_vehicle <beamngpy.Scenario.add_vehicle>` so a spawned
   vehicle does not have to become the player vehicle.
+- Replaced the SUMO importer example data ``examples/data/wcusa`` (a West Coast USA
+  export) with ``examples/data/London``, a node/edge pair built from the
+  ``examples/data/London.osm`` that the OpenStreetMap importer already uses. Both
+  importers now cover the same area, and the SUMO pair is far smaller (836 exported
+  roads instead of about 114k).
 
 
 Version 1.36

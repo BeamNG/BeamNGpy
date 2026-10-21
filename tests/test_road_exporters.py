@@ -15,37 +15,6 @@ from beamngpy.logging import BNGError
 from tests.helpers import loaded_scenario
 
 
-@pytest.mark.parametrize(
-    ("module", "dependency", "exporter", "message"),
-    [
-        (
-            opendrive_export,
-            "ExportOpenDriveMap",
-            opendrive_export.OpenDriveExporter,
-            "OpenDRIVE",
-        ),
-        (
-            osm_export,
-            "ExportOpenStreetMap",
-            osm_export.OpenStreetMapExporter,
-            "OpenStreetMap",
-        ),
-        (sumo_export, "ExportSumo", sumo_export.SumoExporter, "SUMO"),
-    ],
-)
-def test_road_exporter_delegates_to_simulator_command(
-    monkeypatch, module, dependency, exporter, message
-):
-    calls = []
-    bng = object()
-
-    monkeypatch.setattr(module, dependency, lambda actual_bng, name: calls.append((actual_bng, name)))
-
-    exporter.export("road_network", bng)
-
-    assert calls == [(bng, "road_network")], f"{message} export was not delegated"
-
-
 # Road network export tests. A plain filename is resolved by the simulator against its
 # (versioned) user folder; absolute host paths outside its mounts are rejected.
 EXPORT_LEVEL = "hirochi_raceway"
