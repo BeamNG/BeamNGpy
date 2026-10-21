@@ -229,6 +229,8 @@ class Connection:
         try:
             # First, attempt to send over the current socket stored in this Connection instance.
             self.skt.send(packed_data)
+        except TimeoutError:
+            raise
         except socket.error:
             self.skt.reconnect()  # If the send has failed, we attempt to re-connect then we send again.
             self.skt.send(packed_data)
