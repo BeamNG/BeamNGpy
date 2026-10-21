@@ -275,10 +275,12 @@ class BeamNGpy:
         """
         self.logger.info("Closing BeamNGpy instance.")
         self._close_scenario()
-        if self.quit_on_close:
+        if self.quit_on_close and self.connection:
             self._try_quit_beamng()
-        else:
-            self._disconnect()
+        self._disconnect()
+        if self.quit_on_close and self.process:
+            if not self._wait_for_graceful_quit(timeout=10.0):
+                self._kill_beamng()
 
     def _load_system_info(self) -> None:
         info = self.system.get_info()
@@ -384,20 +386,30 @@ class BeamNGpy:
         self.platoon = PlatoonApi(self)
 
     def _try_quit_beamng(self) -> None:
-        """Sends Quit, then kills the launched process if it is still running after 10 seconds."""
-        deadline = time.time() + 10
+        """Attempts to send the quit request to the simulator, ignoring communication errors."""
         try:
-            if self.connection and self.connection.skt and (self.process is None or self.process.poll() is None):
-                self.connection.skt.skt.settimeout(10)
-                self.control.quit_beamng()
+            self.control._send(dict(type="Quit"))  # without ack in case process is stuck
         except (TimeoutError, ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, BNGDisconnectedError):
             pass
-        self._disconnect()
-        while self.process and self.process.poll() is None and time.time() < deadline:
+
+    def _wait_for_graceful_quit(self, timeout: float = 10.0) -> bool:
+        """Waits for the BeamNG.* process to quit gracefully.
+        Returns True if the process quit gracefully, False if it timed out.
+        """
+        start_time = time.time()
+        while self.process.poll() is None:
+            if time.time() - start_time > timeout:
+                return False
             time.sleep(0.1)
-        if self.process and self.process.poll() is None:
-            self.logger.info("Terminating BeamNG.tech process.")
-            kill_process_tree(self.process)
+        self.process = None
+        return True
+
+    def _kill_beamng(self) -> None:
+        """
+        Kills the running BeamNG.* process.
+        """
+        self.logger.info("Terminating BeamNG.tech process.")
+        kill_process_tree(self.process)
         self.process = None
 
     def _send(self, data: StrDict) -> Response:
