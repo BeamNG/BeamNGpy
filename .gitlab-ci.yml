@@ -12,7 +12,7 @@ stages:
   stage: test
   environment: TESTING
   variables:
-    TESTING_REVISION: "187721"
+    TESTING_REVISION: "190747"
     TESTING_TARGET: ".temp/testing"
     TESTS_PATH: "tests"
     HEADLESS: "1"
