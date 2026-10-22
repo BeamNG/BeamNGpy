@@ -243,13 +243,7 @@ Tools
       result = SumoImporter(bng).import_sumo("examples/data/London.nod.xml")
 
    The shipped pair was produced from ``examples/data/London.osm`` with
-   ``netconvert`` 1.17.0, run in ``examples/data`` (cmd)::
-
-      netconvert --osm-files=London.osm --output-file=_tmp_London.net.xml ^
-        --plain-output-prefix=London --proj.utm --geometry.remove ^
-        --roundabouts.guess --tls.discard-simple --tls.guess-signals ^
-        --ramps.guess --keep-edges.by-vclass=passenger --junctions.join
-
+   ``netconvert`` 1.17.0, run in ``examples/data`` ::   
 .. autoclass:: beamngpy.tools.TrafficConfig
    :members:
    :undoc-members:
