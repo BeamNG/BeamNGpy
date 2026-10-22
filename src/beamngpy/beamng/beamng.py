@@ -388,13 +388,8 @@ class BeamNGpy:
     def _try_quit_beamng(self) -> None:
         """Attempts to send the quit request to the simulator, ignoring communication errors."""
         try:
-            if self.process:
-                if self.process.poll() is None:
-                    # Only try to quit gracefully if the process is still running
-                    self.control.quit_beamng()
-            else:
-                self.control.quit_beamng()
-        except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, BNGDisconnectedError):
+            self.control._send(dict(type="Quit"))  # without ack in case process is stuck
+        except (TimeoutError, ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, BNGDisconnectedError):
             pass
 
     def _wait_for_graceful_quit(self, timeout: float = 10.0) -> bool:

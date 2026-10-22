@@ -42,6 +42,8 @@ class PrefixedLengthSocket:
         while length > 0:
             try:
                 received = self.skt.recv(min(BUF_SIZE, length))
+            except TimeoutError:
+                raise
             except socket.error:
                 self.reconnect()
                 received = self.skt.recv(min(BUF_SIZE, length))
