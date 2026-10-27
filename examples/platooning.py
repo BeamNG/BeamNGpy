@@ -13,6 +13,8 @@ def main():
     bng.open()
 
     # Define the platoons.
+    # Two platoons drive side by side: each platoon forms a column along x,
+    # the platoons are offset from each other along y.
     platoons = [
         {
             "vehicles": [
@@ -33,9 +35,9 @@ def main():
         },
         {
             "vehicles": [
-                ("ego_vehicle", "pickup", "ego vehicle", "Red", (252.56, 1205.09, 169.69)),
-                ("follower1", "pickup", "vehicle2", "Blue", (262.56, 1205.79, 169.69)),
-                ("follower2", "pickup", "vehicle3", "Green", (270.76, 1206.59, 169.69)),
+                ("ego_vehicle", "pickup", "ego vehicle", "Red", (190.56, 1198.09, 169.69)),
+                ("follower4", "pickup", "vehicle2", "Blue", (197.56, 1198.09, 169.69)),
+                ("follower5", "pickup", "vehicle3", "Green", (204.56, 1198.09, 169.69)),
             ],
             "speed": 20.0,
             "gap": 4.9,
