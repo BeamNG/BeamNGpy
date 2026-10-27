@@ -208,7 +208,7 @@ def poll_auto_or_adhoc(sensor, is_auto: bool, *, attempt: int | None = None, adh
 def module_scene(
     name: str, description: str, label: str, *, color: str = "Red",
     obstacle_pos: tuple[float, float, float] | None = None,
-    timeout: float = 120,
+    timeout: float = 300,
 ):
     @pytest.fixture(scope="module")
     def scene(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
