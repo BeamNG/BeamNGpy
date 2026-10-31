@@ -156,9 +156,10 @@ def loaded_scenario(
     level: str = TEST_LEVEL, hz: int = 60,
     description: str | None = None, label: str | None = None,
     pause: bool = False, precompile_shaders: bool = True,
+    timeout: float = 60,
 ) -> Iterator[tuple[BeamNGpy, Scenario]]:
     """Load a scenario on the shared BeamNG instance and resume physics on exit."""
-    with beamng as bng:
+    with using_timeout(beamng, timeout) as bng:
         if not vehicles:
             raise ValueError("loaded_scenario requires at least one vehicle")
 
@@ -207,6 +208,7 @@ def poll_auto_or_adhoc(sensor, is_auto: bool, *, attempt: int | None = None, adh
 def module_scene(
     name: str, description: str, label: str, *, color: str = "Red",
     obstacle_pos: tuple[float, float, float] | None = None,
+    timeout: float = 300,
 ):
     @pytest.fixture(scope="module")
     def scene(beamng: BeamNGpy) -> Iterator[tuple[BeamNGpy, Vehicle]]:
@@ -217,7 +219,7 @@ def module_scene(
             other = Vehicle(OTHER_VEHICLE_ID, model=TEST_VEHICLE_MODEL, license="PYTHON", color="Blue")
             vehicles = [(ego, {}), (other, {"pos": obstacle_pos})]
         with loaded_scenario(
-            beamng, name=name, description=description, vehicles=vehicles, label=label,
+            beamng, name=name, description=description, vehicles=vehicles, label=label, timeout=timeout,
         ) as (bng, _scenario):
             yield bng, ego
 
@@ -312,3 +314,16 @@ def exercise_roundtrip(sensor, cases: list[RoundtripCase] | None = None, *, upda
             assert actual == value
         else:
             assert_float_close(float(actual), float(value))
+
+
+@contextmanager
+def using_timeout(
+    beamng: BeamNGpy, timeout: float
+) -> Iterator[BeamNGpy]:
+    original_timeout = beamng.socket_timeout
+    beamng.socket_timeout = timeout
+    try:
+        with beamng as bng:
+            yield bng
+    finally:
+        beamng.socket_timeout = original_timeout

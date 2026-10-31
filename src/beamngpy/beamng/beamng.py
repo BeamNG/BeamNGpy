@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, List
 
 from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi, EditorApi,
-                                 EnvironmentApi, PlatoonApi, ScenarioApi,
+                                 EnvironmentApi, PlatoonApi, Ros2Api, ScenarioApi,
                                  SettingsApi, SystemApi, TrafficApi,
                                  TrafficSignalsApi, UiApi, VehiclesApi)
 from beamngpy.beamng import filesystem
@@ -112,6 +112,9 @@ class BeamNGpy:
         traffic_signals: TrafficSignalsApi
             The API module to read and override traffic signal instances.
             See :class:`.TrafficSignalsApi` for details.
+        ros2: Ros2Api
+            The API module to control the BeamNG ROS 2 C++ integration.
+            See :class:`.Ros2Api` for details.
         vehicles: VehiclesApi
             The API module to control the vehicles in the scenario.
             See :class:`.VehiclesApi` for details.
@@ -389,17 +392,13 @@ class BeamNGpy:
         self.get_current_vehicles = self.vehicles.get_current
 
         self.platoon = PlatoonApi(self)
+        self.ros2 = Ros2Api(self)
 
     def _try_quit_beamng(self) -> None:
         """Attempts to send the quit request to the simulator, ignoring communication errors."""
         try:
-            if self.process:
-                if self.process.poll() is None:
-                    # Only try to quit gracefully if the process is still running
-                    self.control.quit_beamng()
-            else:
-                self.control.quit_beamng()
-        except (ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, BNGDisconnectedError):
+            self.control._send(dict(type="Quit"))  # without ack in case process is stuck
+        except (TimeoutError, ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, BNGDisconnectedError):
             pass
 
     def _wait_for_graceful_quit(self, timeout: float = 10.0) -> bool:

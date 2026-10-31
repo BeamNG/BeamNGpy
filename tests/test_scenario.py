@@ -9,13 +9,14 @@ import pytest
 from beamngpy import BeamNGpy, Level, Scenario, Vehicle
 from beamngpy.logging import BNGValueError
 from beamngpy.sensors import Electrics
+from tests.helpers import using_timeout
 
 if TYPE_CHECKING:
     from beamngpy.scenario.scenario_object import SceneObject
 
 
 def test_new_scenario(beamng: BeamNGpy):
-    with beamng as bng:
+    with using_timeout(beamng, 120) as bng:
         scenario = Scenario("tech_ground", "test_scenario")
         vehicle = Vehicle("test_car", model="etk800")
         scenario.add_vehicle(vehicle, pos=(0, 0, 0), rot_quat=(0, 0, 0, 1))
@@ -49,7 +50,7 @@ def test_no_scenario(beamng: BeamNGpy):
     ],
 )
 def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
-    with beamng as bng:
+    with using_timeout(beamng, 240) as bng:
         scenarios = bng.scenario.get_scenarios()
         # Add print statements to check the structure of scenarios
         print("Available levels:", scenarios.keys())

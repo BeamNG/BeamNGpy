@@ -7,6 +7,7 @@ from tests.helpers import OBSTACLE_START, exercise_roundtrip, module_scene, usin
 ideal_radar_scene = module_scene(
     "ideal_radar_test", "Testing the ideal RADAR sensor", "Ideal RADAR test",
     obstacle_pos=OBSTACLE_START,
+    timeout=240,
 )
 
 

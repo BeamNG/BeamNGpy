@@ -12,7 +12,7 @@ stages:
   stage: test
   environment: TESTING
   variables:
-    TESTING_REVISION: "187231"
+    TESTING_REVISION: "191265"
     TESTING_TARGET: ".temp/testing"
     TESTS_PATH: "tests"
     HEADLESS: "1"
@@ -21,11 +21,14 @@ stages:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
     - python -u $TESTING_TARGET/beamngpy/setup_environment.py
   after_script:
+    - python -u tests/scripts/copy_log.py
     - python -u $TESTING_TARGET/beamngpy/cleanup_environment.py
   artifacts:
     when: always
     paths:
       - junit.xml
+      - revision.txt
+      - beamng.log
     expire_in: 6 months
     reports:
       junit: junit.xml
@@ -56,6 +59,7 @@ test-job-linux:
     - git clone -b feature/beamngpy $TESTING_REPO $TESTING_TARGET
     - python3 -u $TESTING_TARGET/beamngpy/setup_environment.py
   after_script:
+    - python3 -u tests/scripts/copy_log.py
     - python3 -u $TESTING_TARGET/beamngpy/cleanup_environment.py
   script:
     - bash tests/scripts/run_tests.sh

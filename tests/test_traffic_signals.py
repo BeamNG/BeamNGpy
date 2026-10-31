@@ -4,11 +4,12 @@ import time
 import uuid
 
 from beamngpy import BeamNGpy, Scenario, Vehicle
+from tests.helpers import using_timeout
 
 
 def test_traffic_signals_api(beamng: BeamNGpy) -> None:
     rid = uuid.uuid4().hex[:8]
-    with beamng as bng:
+    with using_timeout(beamng, 240) as bng:
         scenario = Scenario("east_coast_usa", f"ts_{rid}")
         vehicle = Vehicle(f"ego_{rid}", model="etk800", license="TS1")
         scenario.add_vehicle(

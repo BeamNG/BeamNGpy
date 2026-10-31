@@ -1,5 +1,5 @@
 from beamngpy import BeamNGpy, Scenario, Vehicle, ScenarioObject
-from tests.helpers import resume_after
+from tests.helpers import resume_after, using_timeout
 
 
 # DO NOT USE SMALLGRID
@@ -184,7 +184,7 @@ def test_safe_spawn_vehicle_spawn(beamng: BeamNGpy):
         - for pos.z value below ground -> vehicle is positioned at specified position
     """
 
-    with beamng as bng, resume_after(bng):
+    with using_timeout(beamng, 240) as bng, resume_after(bng):
         _run_spawn_cases(bng, prefab=False)
 
 
@@ -193,7 +193,7 @@ def test_safe_spawn_vehicle_prefab(beamng: BeamNGpy):
     Test that the safe_spawn parameter works correctly when the vehicle is added
     to a scenario before it is loaded (prefab / spawnAutoplace path).
     """
-    with beamng as bng, resume_after(bng):
+    with using_timeout(beamng, 240) as bng, resume_after(bng):
         _run_spawn_cases(bng, prefab=True)
 
 

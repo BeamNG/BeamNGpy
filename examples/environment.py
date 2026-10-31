@@ -56,18 +56,6 @@ def main() -> None:
         bng.env.set_gravity(-9.807)
         bng.env.set_gravity()
         print("set_gravity done")
-
-        for preset in PRESETS:
-            try:
-                print(f"Applying weather preset {preset!r} (transition={TRANSITION_S}s)...")
-                bng.env.set_weather_preset(preset, time=TRANSITION_S)
-                print(f"set_weather_preset({preset!r}) returned")
-                time.sleep(HOLD_S)
-                print(f"Held {preset!r} for {HOLD_S}s")
-            except Exception as exc:
-                print(f"set_weather_preset({preset!r}) skipped: {exc}")
-
-        print("Environment demo finished.")
         input("Press Enter to exit...")
     finally:
         bng.ui.show_hud()

@@ -6,7 +6,7 @@ from typing import Iterator
 import matplotlib
 import pytest
 
-from beamngpy import BeamNGpy
+from beamngpy import BeamNGpy, Scenario, Vehicle
 from beamngpy.logging import BNGDisconnectedError
 
 
@@ -30,10 +30,12 @@ def beamng() -> Iterator[BeamNGpy]:
         headless=headless,
         nogpu=nogpu,
         gfx=gfx,
-        socket_timeout=240,
+        socket_timeout=300,  # for warmup only
     )
     bng.open(None, "-no-tcom-debug")  # launch BeamNG if necessary
+    warmup_scenario(bng)  # warmup scenario with long timeout
     bng.disconnect()  # to show no socket warning on next open()
+    bng.socket_timeout = 120  # for subsequent tests
     yield bng
 
     # Teardown: close BeamNG instance only if we launched it
@@ -45,3 +47,13 @@ def beamng() -> Iterator[BeamNGpy]:
             except BNGDisconnectedError:
                 pass
         bng.close()
+
+
+def warmup_scenario(beamng: BeamNGpy):
+    scenario = Scenario("smallgrid", "test_scenario")
+    vehicle = Vehicle("test_car", model="template_car")
+    scenario.add_vehicle(vehicle, pos=(0, 0, 0))
+    scenario.make(beamng)
+    beamng.scenario.load(scenario)
+    beamng.scenario.start()
+    beamng.scenario.stop()
