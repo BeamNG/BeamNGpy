@@ -29,6 +29,14 @@ Version 1.37
   ``examples/data/London.osm`` that the OpenStreetMap importer already uses. Both
   importers now cover the same area, and the SUMO pair is far smaller (836 exported
   roads instead of about 114k).
+- Added :pydocs:`BeamNGpy.editor <beamngpy.api.beamng.EditorApi>`, which reports the
+  World Editor's unsaved changes
+  (:pydocs:`EditorApi.is_dirty <beamngpy.api.beamng.EditorApi.is_dirty>`) and drops
+  them (:pydocs:`EditorApi.discard_changes <beamngpy.api.beamng.EditorApi.discard_changes>`).
+  While the editor is dirty it puts its save prompt in front of every level load, and
+  a headless simulator cannot answer that prompt, so the level load behind it fails.
+  Discarding changes works like declining that prompt: nothing is written to the
+  level folder.
 
 
 Version 1.36

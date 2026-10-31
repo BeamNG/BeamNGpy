@@ -84,7 +84,15 @@ def import_scene(beamng: BeamNGpy) -> Iterator[BeamNGpy]:
         vehicles=[(vehicle, {"pos": (0, 0, 0), "safe_spawn": True})],
         precompile_shaders=False,
     ) as (bng, _scenario):
-        yield bng
+        try:
+            yield bng
+        finally:
+            # Importing roads marks the World Editor dirty. The next level load then
+            # runs the editor's save prompt first, which has no answer in headless
+            # mode and takes that load's MapLoaded response with it. Dropping the
+            # edits here costs nothing: every test in this module restarts the
+            # scenario anyway.
+            bng.editor.discard_changes()
 
 
 @pytest.fixture(autouse=True)
@@ -134,6 +142,17 @@ def teleport_ego(import_scene: BeamNGpy, xy: tuple[float, float]) -> None:
     vehicle = import_scene.scenario.get_vehicle("ego")
     assert vehicle is not None, "scenario vehicle 'ego' not found"
     vehicle.teleport((xy[0], xy[1], 0.0), reset=False)
+
+
+def test_discard_editor_changes(import_scene):
+    """An import leaves the World Editor dirty; discarding drops that state."""
+    import_scene.editor.discard_changes()
+    assert not import_scene.editor.is_dirty(), "a freshly discarded level should be clean"
+    do_import(import_scene, OpenDriveImporter, "import_xodr", XODR_FILE)
+    assert import_scene.editor.is_dirty(), "importing roads should dirty the editor"
+    assert import_scene.editor.discard_changes(), "the import should have been dropped"
+    assert not import_scene.editor.is_dirty()
+    assert not import_scene.editor.discard_changes(), "nothing is left to discard"
 
 
 @pytest.mark.parametrize(CASES, [OSM, XODR, SUMO])

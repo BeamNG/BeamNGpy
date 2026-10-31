@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List
 
-from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi,
+from beamngpy.api.beamng import (CameraApi, ControlApi, DebugApi, EditorApi,
                                  EnvironmentApi, PlatoonApi, ScenarioApi,
                                  SettingsApi, SystemApi, TrafficApi,
                                  TrafficSignalsApi, UiApi, VehiclesApi)
@@ -91,6 +91,9 @@ class BeamNGpy:
         debug: DebugApi
             The API module to control debug objects.
             See :class:`.DebugApi` for details.
+        editor: EditorApi
+            The API module to query and clear the World Editor's unsaved state.
+            See :class:`.EditorApi` for details.
         env: EnvironmentApi
             The API module to control the simulation's environment.
             See :class:`.EnvironmentApi` for details.
@@ -328,6 +331,8 @@ class BeamNGpy:
         self.remove_debug_text = self.debug.remove_text
         self.add_debug_square_prism = self.debug.add_square_prism
         self.remove_debug_square_prism = self.debug.remove_square_prism
+
+        self.editor = EditorApi(self)
 
         self.env = EnvironmentApi(self)
         self.set_tod = self.env.set_tod
