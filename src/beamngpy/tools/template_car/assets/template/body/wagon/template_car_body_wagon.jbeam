@@ -75,7 +75,7 @@
             //right
             ["f3r",    {{ (f3r_x|float) | round(3) }},      {{ (f3r_y|float) | round(3) }},     {{ (f3r_z|float) | round(3) }},  {"nodeWeight":{{ (f3r_m|float) }}}],
             ["f3rr",   {{ (f3rr_x|float) | round(3) }},      {{ (f3rr_y|float) | round(3) }},     {{ (f3rr_z|float) | round(3) }},  {"nodeWeight":{{ (f3rr_m|float) }}}],
-            ["f4r",    {{ (f4r_x|float) | round(3) }},       {{ (f4r_y|float) | round(3) }},     {{ (f4r_z|float) | round(3) }},  {"nodeWeight":{{ (f4_m|float) }}}],
+            ["f4r",    {{ (f4r_x|float) | round(3) }},       {{ (f4r_y|float) | round(3) }},     {{ (f4r_z|float) | round(3) }},  {"nodeWeight":{{ (f4r_m|float) }}}],
             //body middle (b1, b2, ... b8)
             ["b1",      {{ (b1_x|float) | round(3) }},       {{ (b1_y|float) | round(3) }},     {{ (b1_z|float) | round(3) }},  {"nodeWeight":{{ (b1_m|float) }}}],
             ["b1l",     {{ (b1l_x|float) | round(3) }},       {{ (b1l_y|float) | round(3) }},     {{ (b1l_z|float) | round(3) }},  {"nodeWeight":{{ (b1l_m|float) }}}],
