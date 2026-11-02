@@ -12,6 +12,7 @@ stages:
   stage: test
   environment: TESTING
   variables:
+    TESTING_BRANCH: "trunk"  # "trunk" or "branches/<branch-name>"
     TESTING_REVISION: "191265"
     TESTING_TARGET: ".temp/testing"
     TESTS_PATH: "tests"
@@ -35,6 +36,7 @@ stages:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       variables:
+        TESTING_BRANCH: "trunk"
         TESTING_REVISION: "latest"
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
