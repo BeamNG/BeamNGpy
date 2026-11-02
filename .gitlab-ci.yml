@@ -13,7 +13,7 @@ stages:
   environment: TESTING
   variables:
     TESTING_BRANCH: "trunk"  # "trunk" or "branches/<branch-name>"
-    TESTING_REVISION: "191265"
+    TESTING_REVISION: "191385"
     TESTING_TARGET: ".temp/testing"
     TESTS_PATH: "tests"
     HEADLESS: "1"
