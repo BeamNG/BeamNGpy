@@ -2,6 +2,7 @@ from .base import Api
 from .camera import CameraApi
 from .control import ControlApi
 from .debug import DebugApi
+from .editor import EditorApi
 from .environment import EnvironmentApi
 from .platoon import PlatoonApi
 from .ros2 import Ros2Api

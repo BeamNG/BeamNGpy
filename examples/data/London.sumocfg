@@ -1,0 +1,7 @@
+<configuration>
+  <input>
+    <net-file value="london.net.xml"/>
+    <route-files value="london.rou.xml"/>
+    <additional-files value="london.poly.xml"/>
+  </input>
+</configuration>
