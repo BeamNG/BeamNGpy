@@ -58,12 +58,31 @@ def main():
         "3": (
             "SUMO",
             SumoImporter(beamng).import_sumo,
-            SCRIPT_DIR / "data/wcusa",
+            # Generated from data/London.osm; see the SumoImporter docs for the
+            # netconvert command.
+            SCRIPT_DIR / "data/London",
         ),
     }
     label, import_network, path = importers[choice]
     print(f"Importing {label} road network from {path}...")
-    result = import_network(path)
+
+    # Import options, mirroring the editor 'Import Options' window:
+    #   Placement (XY):  None = player vehicle pose (default) | (x, y) = custom
+    #                    world position | "as_in_file" | "camera_position"
+    #   Offset (Z):      offset_to_terrain=True OR custom_offset=<meters> —
+    #                    mutually exclusive, both off by default
+    #   Terraform:       terraform=True ('Terraform Terrain To Import'), with
+    #                    domain_of_influence (default 30 m) and margin
+    #                    (default 1.0 m)
+    import_options = dict(
+        # placement_xy=(300.0, 700.0),  # place the network at this world position
+        # placement_xy="as_in_file",  # place the network at the same position as in the file
+        placement_xy="camera_position",  # place the network at the camera position
+        terraform=True,               # terraform the terrain to fit the network
+        domain_of_influence=30.0,     # default: 30
+        margin=1.0,                 # default: 1.0
+    )
+    result = import_network(path, **import_options)
     print(
         f"{label}: imported {result['importedRoadCount']} Road Architect "
         f"road(s); skipped {result['skippedRoadCount']}."
