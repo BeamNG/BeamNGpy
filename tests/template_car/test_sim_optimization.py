@@ -25,6 +25,8 @@ from .helpers import NUMBER, read_body_nodes, vehicle_files_dir
 VEHICLE_ID = "tcg_test_optimize"
 # Offsets from the measured default car, so the targets stay reachable on any game version.
 TARGET_OFFSETS = {"mass": 150.0, "cg_y": 0.05, "cg_z": 0.02}
+# A new spawn moves the settled CG by up to ~2.5 cm (seen on CI); the mass is not affected.
+SPAWN_CG_ERROR = 0.025
 
 
 def measure(env, vehicle: TemplateVehicle, variables: list[OptimizationVariables]) -> list[OutputValues]:
@@ -52,25 +54,27 @@ def _vehicle_with_targets(baseline: OutputValues, names) -> TemplateVehicle:
     return TemplateVehicle(name=VEHICLE_ID, optimization=Optimization(targets=targets, enabled=enabled))
 
 
-def _within_tolerance(vehicle: TemplateVehicle, outputs: OutputValues, scale: float = 1.0) -> bool:
+def _within_tolerance(vehicle: TemplateVehicle, outputs: OutputValues) -> bool:
     enabled = vehicle.optimization.enabled
     deviations = optimization.deviations(vehicle.optimization.targets, outputs, enabled)
-    return bool(np.all(np.abs(deviations) <= scale * vehicle.optimization.targets.tolerance(enabled)))
+    return bool(np.all(np.abs(deviations) <= vehicle.optimization.targets.tolerance(enabled)))
 
 
-def test_factors_move_outputs(optimizer_env, baseline):
-    heavier, rearward, higher = measure(
+def test_factors_move_outputs(optimizer_env):
+    # The asserted CG shifts are smaller than SPAWN_CG_ERROR, so the reference has to share the spawn.
+    reference, heavier, rearward, higher = measure(
         optimizer_env,
         TemplateVehicle(name=VEHICLE_ID),
         [
+            OptimizationVariables(),
             OptimizationVariables(mass_factor=1.2),
             OptimizationVariables(cg_y_factor=0.1),
             OptimizationVariables(cg_z_factor=0.2),
         ],
     )
-    assert heavier.mass > baseline.mass + 100
-    assert rearward.cg_y > baseline.cg_y + 0.01
-    assert higher.cg_z > baseline.cg_z + 0.005
+    assert heavier.mass > reference.mass + 100
+    assert rearward.cg_y > reference.cg_y + 0.01
+    assert higher.cg_z > reference.cg_z + 0.005
 
 
 @pytest.mark.parametrize("name", list(TARGET_OFFSETS))
@@ -94,7 +98,10 @@ def test_optimize_combined_targets(optimizer_env, baseline):
     assert _within_tolerance(vehicle, outputs), log.getvalue()
 
     (remeasured,) = measure(optimizer_env, vehicle, [var])
-    assert _within_tolerance(vehicle, remeasured, scale=5.0), (outputs, remeasured)
+    targets = vehicle.optimization.targets
+    assert remeasured.mass == pytest.approx(targets.mass, abs=5 * targets.tolerance(OptimizationEnabled(mass=True))[0])
+    assert remeasured.cg_y == pytest.approx(targets.cg_y, abs=SPAWN_CG_ERROR)
+    assert remeasured.cg_z == pytest.approx(targets.cg_z, abs=SPAWN_CG_ERROR)
 
 
 def test_public_api_generate_with_target(optimizer_env, baseline, tmp_path, capsys):
