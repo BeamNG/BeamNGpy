@@ -11,6 +11,7 @@ from tests.helpers import assert_vec3_close, module_scene, resume_after, using_s
 _SENSOR_TYPES = ("camera", "lidar", "radar", "ultrasonic")
 _MOUNT = (-5.0, 0.0, 1.0)
 _DIR = (0, -1, 0)
+_UP = (0, 0, 1)
 _STATIC_POS = (12.0, -3.0, 2.5)
 
 
@@ -74,9 +75,27 @@ def test_world_position_api(world_position_scene, sensor_type: str):
         assert_vec3_close(after, before)
 
     with using_sensor(_STATIC[sensor_type](static_name, bng)) as static_sensor:
-        static_pos = (15.0, 1.0, 3.0)
-        static_sensor.set_position(static_pos, world_space=True)
-        assert_vec3_close(static_sensor.get_position(), static_pos)
+        assert_vec3_close(static_sensor.get_position(), _STATIC_POS)
+        assert_vec3_close(static_sensor.get_position(world_space=False), _STATIC_POS)
+        assert_vec3_close(static_sensor.get_direction(), _DIR)
+        assert_vec3_close(static_sensor.get_up(), _UP)
+
+        for world_space, target_pos in ((True, (15.0, 1.0, 3.0)), (False, (18.0, -2.0, 4.0))):
+            static_sensor.set_position(target_pos, world_space=world_space)
+            assert_vec3_close(static_sensor.get_position(), target_pos)
+            assert_vec3_close(static_sensor.get_position(world_space=False), target_pos)
+
+        new_dir, new_up = (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)
+        static_sensor.set_direction(new_dir)
+        static_sensor.set_up(new_up)
+        assert_vec3_close(static_sensor.get_direction(), new_dir)
+        assert_vec3_close(static_sensor.get_up(), new_up)
+
+        vehicle.teleport((50.0, 50.0, 0.21), reset=False)
+        bng.control.step(20, wait=True)
+        assert_vec3_close(static_sensor.get_position(), (18.0, -2.0, 4.0))
+        assert_vec3_close(static_sensor.get_direction(), new_dir)
+        assert_vec3_close(static_sensor.get_up(), new_up)
 
 
 @pytest.mark.parametrize("sensor_type", _SENSOR_TYPES)
@@ -143,18 +162,9 @@ def test_world_position_smooth_far_from_origin(world_position_scene, sensor_type
             assert len(readings.shape) == 2
 
 
-def test_world_position_matrix_matches_api(world_position_scene):
-    """getSensorMatrix translation should match get_position() for cameras."""
-    bng, vehicle = world_position_scene
-    name = "camera_matrix_world"
-
-    vehicle.teleport(FAR_ORIGIN, reset=True)
-    bng.control.step(60, wait=True)
-
-    with using_sensor(_ATTACHED["camera"](name, bng, vehicle)) as sensor:
-        api_pos = sensor.get_position()
-        resp = bng.control.queue_lua_command(
-            f"""
+def _get_camera_matrix_pos(bng, name: str) -> tuple[float, float, float]:
+    resp = bng.control.queue_lua_command(
+        f"""
 local name = '{name}'
 for _, id in ipairs(extensions.tech_sensors.getActiveCameraSensors()) do
   if extensions.tech_sensors.getCameraSensorName(id) == name then
@@ -164,8 +174,38 @@ for _, id in ipairs(extensions.tech_sensors.getActiveCameraSensors()) do
 end
 return 'not_found'
 """,
-            response=True,
-        )
-        assert resp is not None and resp != "not_found", f"camera sensor {name} not found in lua"
-        matrix_pos = tuple(float(v) for v in resp.split(","))
-        assert_vec3_close(matrix_pos, api_pos, tol=0.01)
+        response=True,
+    )
+    assert resp is not None and resp != "not_found", f"camera sensor {name} not found in lua"
+    return tuple(float(v) for v in resp.split(","))
+
+
+def test_world_position_matrix_matches_api(world_position_scene):
+    """getSensorMatrix translation and projection should match world pose for attached and static cameras."""
+    bng, vehicle = world_position_scene
+    name = "camera_matrix_world"
+    static_name = "camera_static_matrix_world"
+
+    vehicle.teleport(FAR_ORIGIN, reset=True)
+    bng.control.step(60, wait=True)
+
+    with using_sensor(_ATTACHED["camera"](name, bng, vehicle)) as sensor:
+        assert_vec3_close(_get_camera_matrix_pos(bng, name), sensor.get_position(), tol=0.01)
+
+    with using_sensor(_STATIC["camera"](static_name, bng)) as static_cam:
+        assert_vec3_close(_get_camera_matrix_pos(bng, static_name), _STATIC_POS, tol=0.01)
+
+        cam_pos = (10.0, 20.0, 2.0)
+        static_cam.set_position(cam_pos, world_space=True)
+        static_cam.set_direction((1.0, 0.0, 0.0))
+        static_cam.set_up(_UP)
+        assert_vec3_close(_get_camera_matrix_pos(bng, static_name), cam_pos, tol=0.01)
+
+        cx, cy = static_cam.world_point_to_pixel((20.0, 20.0, 2.0))
+        assert abs(cx - 256) <= 2 and abs(cy - 256) <= 2
+        assert static_cam.world_point_to_pixel((5.0, 20.0, 2.0)) == (-1, -1)
+
+        static_cam.set_direction((0.0, 1.0, 0.0))
+        cx, cy = static_cam.world_point_to_pixel((10.0, 30.0, 2.0))
+        assert abs(cx - 256) <= 2 and abs(cy - 256) <= 2
+        assert static_cam.world_point_to_pixel((20.0, 20.0, 2.0)) == (-1, -1)

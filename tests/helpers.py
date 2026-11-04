@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from beamngpy import BeamNGpy, Scenario, Vehicle
+from beamngpy import BeamNGpy, Road, Scenario, Vehicle
 
 VISUALISE = False
 ATTEMPTS = 3
@@ -28,6 +28,9 @@ USS_OBSTACLE_STEP_Y = 0.25
 
 SENSOR_TEST_DIR = (0, -1, 0)
 SENSOR_TEST_UP = (0, 0, 1)
+
+# A straight road collapses to two navgraph nodes named after the road; this is its far end.
+TEST_ROAD_END_NODE = "adas_test_road2"
 
 # Root directory for VISUALISE=True test outputs (PNGs, plots). One subfolder per sensor type.
 _OUTPUT_ROOT = Path(__file__).resolve().parent / "sensors" / "output"
@@ -153,6 +156,7 @@ def restart_vehicles(bng: BeamNGpy, *vehicles: Vehicle, pause: bool = True) -> N
 def loaded_scenario(
     beamng: BeamNGpy, *, name: str,
     vehicles: list[tuple[Vehicle, dict[str, Any]]],
+    roads: list[Road] | None = None,
     level: str = TEST_LEVEL, hz: int = 60,
     description: str | None = None, label: str | None = None,
     pause: bool = False, precompile_shaders: bool = True,
@@ -166,6 +170,8 @@ def loaded_scenario(
         scenario = Scenario(level, name, description=description)
         for vehicle, add_kwargs in vehicles:
             scenario.add_vehicle(vehicle, **add_kwargs)
+        for road in roads or []:
+            scenario.add_road(road)
 
         scenario.make(bng)
         bng.settings.set_deterministic(hz)
@@ -185,6 +191,32 @@ def loaded_scenario(
             yield bng, scenario
         if label:
             print(f"{label} complete.")
+
+
+@contextmanager
+def straight_road_scenario(
+    beamng: BeamNGpy, *, name: str, label: str, vehicles: list[tuple[Vehicle, float]],
+) -> Iterator[BeamNGpy]:
+    """Paused tech_ground scenario with each vehicle at (0, y, 0) facing +Y on a 1.5 km straight road."""
+    # Narrow single lane: span AI drives the road centre and follow AI the lane centre, which must match.
+    road = Road("road_asphalt_2lane", rid="adas_test_road", default_width=4, drivability=1, one_way=True)
+    road.add_nodes(*[(0.0, float(y), 0.0) for y in range(-50, 1550, 100)])
+    with loaded_scenario(
+        beamng, level="tech_ground", name=name, label=label,
+        vehicles=[(vehicle, {"pos": (0, y, 0), "rot_quat": (0, 0, 1, 0)}) for vehicle, y in vehicles],
+        roads=[road], precompile_shaders=False, pause=True,
+    ) as (bng, _scenario):
+        yield bng
+
+
+def vehicle_state(vehicle: Vehicle) -> dict:
+    vehicle.sensors.poll()
+    return vehicle.sensors["state"]
+
+
+def horizontal_speed(vehicle: Vehicle) -> float:
+    vel = vehicle_state(vehicle)["vel"]
+    return sqrt(vel[0] ** 2 + vel[1] ** 2)
 
 
 def poll_auto_or_adhoc(sensor, is_auto: bool, *, attempt: int | None = None, adhoc_wait: float = 1):
