@@ -31,7 +31,7 @@ class PlatoonApi(Api):
             followerID=followerID,
         )
         resp = self._send(data).recv("CreatePlatoon")
-        return resp["platoonId"]
+        return int(resp["platoonId"])
 
     def join(
         self,
@@ -73,7 +73,7 @@ class PlatoonApi(Api):
             index=index,
         )
         resp = self._send(data).recv("SplitPlatoon")
-        return resp["platoonId"]
+        return int(resp["platoonId"])
 
     def launch(self, platoon_id: int, leader_mode: int, speed: float) -> None:
         """
