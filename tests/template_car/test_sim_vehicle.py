@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Iterator
 
 import numpy as np
 import pytest
 
-from beamngpy import BeamNGpy, Vehicle
+from beamngpy import BeamNGpy, Scenario, Vehicle
 from beamngpy.sensors import Electrics, PowertrainSensor
 from beamngpy.tools.template_car import TemplateVehicle, VehicleParameters
 
@@ -24,6 +25,19 @@ WHEEL_NODES = ["fw1l", "fw1r", "rw1l", "rw1r"]
 def default_car(sim_user) -> Iterator[str]:
     with generated_car(sim_user, DEFAULT_ID):
         yield DEFAULT_ID
+
+
+@contextmanager
+def _car_scenario(
+    beamng: BeamNGpy, *, vehicles: list[tuple[Vehicle, dict]], **kwargs
+) -> Iterator[tuple[BeamNGpy, Scenario]]:
+    """``loaded_scenario`` that despawns its cars on exit, so that ``generated_car`` can delete their files."""
+    with loaded_scenario(beamng, vehicles=vehicles, **kwargs) as (bng, scenario):
+        try:
+            yield bng, scenario
+        finally:
+            for vehicle, _ in vehicles:
+                bng.vehicles.despawn(vehicle)
 
 
 def _state(vehicle: Vehicle) -> dict:
@@ -61,7 +75,7 @@ class TestDefaultCar:
     def scene(self, beamng: BeamNGpy, default_car: str) -> Iterator[tuple[BeamNGpy, Vehicle]]:
         vehicle = Vehicle("tcg_default", model=default_car)
         vehicle.sensors.attach("electrics", Electrics())
-        with loaded_scenario(
+        with _car_scenario(
             beamng, name="tcg_default_car", vehicles=[(vehicle, {})], pause=True, precompile_shaders=False,
         ) as (bng, _):
             yield bng, vehicle
@@ -108,7 +122,7 @@ def test_structure_variant(beamng, sim_user, index):
     vehicle_id = f"tcg_test_variant_{index}"
     with generated_car(sim_user, vehicle_id, TemplateVehicle(name=vehicle_id, structure=structure)):
         vehicle = Vehicle("tcg_variant", model=vehicle_id)
-        with loaded_scenario(
+        with _car_scenario(
             beamng, name=f"tcg_variant_{index}", vehicles=[(vehicle, {})], pause=True, precompile_shaders=False,
         ) as (bng, _):
             parts = _chosen_parts(vehicle)
@@ -124,7 +138,7 @@ def test_geometry_follows_parameters(beamng, sim_user, default_car):
     with generated_car(sim_user, changed_id, TemplateVehicle(name=changed_id, parameters=parameters)):
         default = Vehicle("tcg_geometry_default", model=default_car)
         changed = Vehicle("tcg_geometry_changed", model=changed_id)
-        with loaded_scenario(
+        with _car_scenario(
             beamng, name="tcg_geometry",
             vehicles=[(default, {"pos": (0, 0, 0)}), (changed, {"pos": (6, 0, 0)})],
             pause=True, precompile_shaders=False,
@@ -144,7 +158,7 @@ def test_geometry_follows_parameters(beamng, sim_user, default_car):
 @pytest.mark.parametrize("safe_spawn, z_range", [(True, (-0.1, 0.6)), (False, (2.0, 3.5))], ids=["safe", "unsafe"])
 def test_safe_spawn(beamng, default_car, safe_spawn, z_range):
     vehicle = Vehicle("tcg_spawn", model=default_car)
-    with loaded_scenario(
+    with _car_scenario(
         beamng, level="tech_ground", name=f"tcg_spawn_{safe_spawn}",
         vehicles=[(vehicle, {"pos": (0, 0, 3), "safe_spawn": safe_spawn})],
         pause=True, precompile_shaders=False,

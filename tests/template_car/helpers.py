@@ -55,6 +55,7 @@ def generated_car(
     """Generate a car into ``<user>/current/vehicles`` and remove it afterwards.
 
     A running BeamNG picks up new files there, while unpacked mods are only mounted at startup.
+    Despawn the car before leaving: BeamNG hot-reloads a spawned car when its files are deleted, and disables it.
     """
     if vehicle is None:
         vehicle = TemplateVehicle(name=vehicle_id)
