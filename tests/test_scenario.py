@@ -45,7 +45,7 @@ def test_no_scenario(beamng: BeamNGpy):
 @pytest.mark.parametrize(
     "scenario_path",
     [
-        "/levels/GridMap/scenarios/gm_jumps.json",  # classic scenario
+        "/levels/tech_ground/scenarios/unitTest.json",  # classic scenario
         "/gameplay/missions/tech_ground/timeTrial/001-unitTest/info.json",  # mission
     ],
 )
@@ -56,7 +56,7 @@ def test_find_scenario(beamng: BeamNGpy, scenario_path: str):
         print("Available levels:", scenarios.keys())
 
         # Use .get() to avoid KeyErrors
-        scenarios_to_search = scenarios.get("tech_ground", []) + scenarios.get("GridMap", [])
+        scenarios_to_search = scenarios.get("tech_ground", [])
         target = None
 
         for scenario in scenarios_to_search:
