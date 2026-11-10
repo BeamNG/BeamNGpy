@@ -38,6 +38,7 @@ stages:
       variables:
         TESTING_BRANCH: "trunk"
         TESTING_REVISION: "latest"
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'  # trigger via GitLab API
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
     - when: never
