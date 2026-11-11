@@ -2,10 +2,6 @@
 Changelog
 =========
 
-
-
-
-
 Version 1.37
 ============
 - Added :pydocs:`BeamNGpy.settings.get_physics_frequency <beamngpy.api.beamng.SettingsApi.get_physics_frequency>`,
@@ -17,7 +13,7 @@ Version 1.37
   so every imported road referenced a material that does not exist in the level. The importers now
   use ``track_editor_C_center`` and accept a ``material`` argument to override it.
 - Added ``record_speed`` to :pydocs:`AIApi.start_recording <beamngpy.api.vehicle.AIApi.start_recording>`
-  (default False, matching Lua ``recordSpeed``). With ``record_speed=True`` the
+  (default ``False``, matching Lua ``recordSpeed``). With ``record_speed=True`` the
   recording stores node speeds (``v``) instead of timestamps (``t``), matching
   the ScriptAI Editor file format.
 - Added ``auto_enter`` to
@@ -37,7 +33,32 @@ Version 1.37
   a headless simulator cannot answer that prompt, so the level load behind it fails.
   Discarding changes works like declining that prompt: nothing is written to the
   level folder.
+- A ``TimeoutError`` during a send or receive is now raised. Before, it triggered a silent
+  reconnect and retry, which could hang well past the timeout.
+- Fixed an issue that could make :pydocs:`BeamNGpy.close() <beamngpy.BeamNGpy.close>` hang.
+- Added :pydocs:`BeamNGpy.ros2 <beamngpy.api.beamng.Ros2Api>` to control the C++ version of the
+  ROS2 integration.
+- Sensors improvements:
 
+  - Added getters and setters to read and change the sensor settings listed under BeamNG.tech.
+  - Added camera exposure control: new ``auto_exposure`` and ``manual_exposure`` arguments of the
+    :pydocs:`Camera <camera>` sensor, and the methods
+    :pydocs:`get_is_auto_exposure <beamngpy.sensors.Camera.get_is_auto_exposure>` /
+    :pydocs:`set_auto_exposure <beamngpy.sensors.Camera.set_auto_exposure>` and
+    :pydocs:`get_manual_exposure <beamngpy.sensors.Camera.get_manual_exposure>` /
+    :pydocs:`set_manual_exposure <beamngpy.sensors.Camera.set_manual_exposure>`.
+  - Sensor position and orientation now follow the BeamNG.tech rules for coordinate spaces:
+
+    - ``pos`` and ``set_position``: ``pos`` is relative to the vehicle for attached sensors and in
+      world space for static sensors (``is_static=True``). ``set_position(pos, world_space=False)``
+      follows the same rule. ``world_space=True`` is only accepted for static sensors.
+    - ``dir``, ``up``, ``set_direction`` and ``set_up``: relative to the vehicle by default. With
+      ``is_dir_world_space=True`` they are in world space. ``is_dir_world_space`` no longer affects ``pos``.
+    - ``get_position(world_space=True)``: returns the current world position by default, as before.
+      ``world_space=False`` returns the configured ``pos``.
+    - ``get_direction`` and ``get_up``: now return the vector in the space it was configured in. With
+      the default ``is_dir_world_space=False``, this is the configured vehicle-relative vector, not the
+      current world direction.
 
 Version 1.36
 ============
