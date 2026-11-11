@@ -91,7 +91,7 @@ Related helpers on the same AI object: ``drive_in_lane``, ``set_avoid_cars``, ``
 |[Procedural Meshes][12]|<ul><li>generate procedural content</li></ul>|
 |[Road Definition][13]|<ul><li>add custom roads to given maps</li></ul>|
 |[Advanced Driver Comfort Analysis][22]|<ul><li> use the Advanced IMU sensor</li></ul>|
-|[Spawning][15]|<ul><li>spawn a new vehicle after starting the scenario</li></ul>|
+|[Spawning][15]|<ul><li>spawn a new vehicle after starting the scenario</li><li>safely place the vehicle on the ground with `safe_spawn` (formerly `cling`): avoids spawning below the ground, in the air, or colliding with objects and other vehicles; the position and rotation may be adjusted if the requested spot is not safe; enabled by default</li></ul>|
 |[Ultrasonic Sensor][16]|<ul><li>use the ultrasonic sensor</li></ul>|
 |[Vehicle Road Bounding Box][17]|<ul><li>create a custom road</li><li>extract road information from the simulation</li><li>get a vehicle's bounding box</li></ul>|
 |[Vehicle State Plotting][18]|<ul><li>use the state sensor</li></ul>|
