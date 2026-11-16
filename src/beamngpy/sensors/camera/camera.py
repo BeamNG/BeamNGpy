@@ -56,6 +56,8 @@ class Camera(CommBase):
         is_dir_world_space: If True, ``dir`` and ``up`` are in world-space; otherwise vehicle space.
         integer_depth: If True, depth values will be quantized to the integer range 0-255. If False, depth values will be sent as 32-bit floats in the range
                        of 0.0-1.0. Will be set to False if ``postprocess_depth=True`` as full precision is needed for postprocessing. Defaults to True.
+        auto_exposure: If True (default), the camera follows the main view auto-exposure. If False, ``manual_exposure`` is used.
+        manual_exposure: Positive linear tonemap scale used when ``auto_exposure=False``. Defaults to 0.001.
     """
 
     @staticmethod
@@ -728,7 +730,8 @@ class Camera(CommBase):
 
     def get_direction(self) -> Float3:
         """
-        Gets the current forward direction vector of this sensor.
+        Gets the forward direction vector of this sensor in the coordinate space it was configured in
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
 
         Returns:
             The sensor direction.
@@ -738,7 +741,8 @@ class Camera(CommBase):
 
     def get_up(self) -> Float3:
         """
-        Gets the current up direction vector of this sensor.
+        Gets the up direction vector of this sensor in the coordinate space it was configured in
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
 
         Returns:
             The sensor up vector.
@@ -821,7 +825,8 @@ class Camera(CommBase):
 
     def set_direction(self, dir: Float3) -> None:
         """
-        Sets the current forward direction vector of this sensor.
+        Sets the forward direction vector of this sensor, in the coordinate space it was created with
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
 
         Args:
             dir: The new forward direction vector.
@@ -837,10 +842,11 @@ class Camera(CommBase):
 
     def set_up(self, up: Float3) -> None:
         """
-        Sets the current up vector of this sensor.
+        Sets the up direction vector of this sensor, in the coordinate space it was created with
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
 
         Args:
-            pos: The new up vector.
+            up: The new up vector.
         """
         self.send_ack_ge(
             "SetCameraSensorUp",

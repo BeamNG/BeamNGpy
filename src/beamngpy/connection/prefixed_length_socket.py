@@ -22,8 +22,8 @@ class PrefixedLengthSocket:
         Args:
             timeout: Optional timeout in seconds for socket operations. If None,
                      the socket blocks indefinitely (default). If set, recv/send
-                     will raise socket.timeout when the operation takes longer,
-                     which can be used to recover from simulator freezes.
+                     will raise :class:`TimeoutError` (:class:`socket.timeout`) when
+                     the operation takes longer, without reconnecting or retrying.
         """
         skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         skt.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)

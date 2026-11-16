@@ -69,10 +69,10 @@ class BeamNGpy:
              Incompatible with the ``nogpu`` option.
         socket_timeout: Optional timeout in seconds for socket operations when communicating
                        with the simulator. If None (default), the socket blocks indefinitely.
-                       If set, recv/send will raise :class:`socket.timeout` when the simulator
-                       does not respond in time (e.g. under heavy load with UI). Useful for
-                       long experiments to avoid freezing forever; catch the timeout and retry
-                       or restart the simulator.
+                       If set, recv/send will raise :class:`TimeoutError` (:class:`socket.timeout`)
+                       when the simulator does not respond in time (e.g. under heavy load with UI),
+                       without reconnecting or retrying. Useful for long experiments to avoid
+                       freezing forever; catch the timeout and retry or restart the simulator.
 
     Attributes
     ----------
@@ -277,7 +277,7 @@ class BeamNGpy:
 
     def close(self) -> None:
         """
-        Disconnects from the simulator and kills the BeamNG.* process.
+        Disconnects from the simulator and closes the BeamNG.* process if ``quit_on_close`` is True.
         """
         self.logger.info("Closing BeamNGpy instance.")
         self._close_scenario()

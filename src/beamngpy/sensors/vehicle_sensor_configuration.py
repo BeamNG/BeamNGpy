@@ -28,9 +28,9 @@ __all__ = ["VehicleSensorConfig"]
 class VehicleSensorConfig(CommBase):
     """
     A class used for managing ADAS vehicle sensor configurations.
-    For map-based ADAS sensor configurations (static, fixed-position sensors), see MapSensorConfiguration.py.
-    ADAS sensor configurations are produced with the GUI-Based ADAS Sensor Configuration Editor in the BeamNG.Tech World Editor (press F11).
-    
+    For map-based ADAS sensor configurations (static, fixed-position sensors), see :class:`.MapSensorConfig`.
+    ADAS sensor configurations are produced with the Sensor Configuration Editor in the BeamNG.tech World Editor (press F11).
+
     Args:
         vehicle: The vehicle to which the ADAS sensor configuration should be attached.
         name: A unique prefix for the ADAS sensor configuration names. If empty or None,

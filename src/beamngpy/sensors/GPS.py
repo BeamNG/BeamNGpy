@@ -24,10 +24,11 @@ class GPS(CommBase):
         vehicle: The vehicle to which this sensor should be attached.
         gfx_update_time: The gfx-step time which should pass between sensor reading updates to the user, in seconds.
         physics_update_time: The physics-step time which should pass between actual sampling the sensor, in seconds.
+        pos: (X, Y, Z) Coordinate triplet specifying the sensor position, in vehicle space.
         ref_lon: A reference longitude value, which tells the sensor where the origin point of the map is on the (longitude, lattitude) system.
         ref_lat: A reference lattitude value, which tells the sensor where the origin point of the map is on the (longitude, lattitude) system.
         is_send_immediately: A flag which indicates if the readings should be sent back as soon as available or upon graphics step updates, as bulk.
-        is_visualised: Whether or not to render the ultrasonic sensor points in the simulator.
+        is_visualised: Whether or not to render the GPS sensor point in the simulator.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle.
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle.
         is_dir_world_space: Flag which indicates if the direction is provided in world-space coordinates (True), or the default vehicle space (False).

@@ -50,7 +50,7 @@ class Ultrasonic(CommBase):
         is_static: A flag which indicates whether this sensor should be static (fixed position), or attached to a vehicle.
         is_snapping_desired: A flag which indicates whether or not to snap the sensor to the nearest vehicle triangle (not used for static sensors).
         is_force_inside_triangle: A flag which indicates if the sensor should be forced inside the nearest vehicle triangle (not used for static sensors).
-        is_dir_world_space: If True, ``dir`` and ``up`` are in world-space; otherwise vehicle space. Does not affect ``pos``.
+        is_dir_world_space: If True, ``dir`` and ``up`` are in world-space; otherwise vehicle space.
     """
 
     def __init__(
@@ -258,7 +258,8 @@ class Ultrasonic(CommBase):
 
     def get_direction(self) -> Float3:
         """
-        Gets the current direction vector of this sensor.
+        Gets the forward direction vector of this sensor in the coordinate space it was configured in
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
 
         Returns:
             The sensor direction.
@@ -269,7 +270,13 @@ class Ultrasonic(CommBase):
         return (table["x"], table["y"], table["z"])
 
     def get_up(self) -> Float3:
-        """Gets the current up direction vector of this sensor."""
+        """
+        Gets the up direction vector of this sensor in the coordinate space it was configured in
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
+
+        Returns:
+            The sensor up vector.
+        """
         table = self.send_recv_ge("GetUltrasonicSensorUp", name=self.name)["data"]
         return (table["x"], table["y"], table["z"])
 
@@ -378,7 +385,13 @@ class Ultrasonic(CommBase):
         )
 
     def set_direction(self, dir: Float3) -> None:
-        """Sets the current forward direction vector of this sensor."""
+        """
+        Sets the forward direction vector of this sensor, in the coordinate space it was created with
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
+
+        Args:
+            dir: The new forward direction vector.
+        """
         self.send_ack_ge(
             "SetUltrasonicSensorDirection",
             ack="CompletedSetUltrasonicSensorDirection",
@@ -389,7 +402,13 @@ class Ultrasonic(CommBase):
         )
 
     def set_up(self, up: Float3) -> None:
-        """Sets the current up vector of this sensor."""
+        """
+        Sets the up direction vector of this sensor, in the coordinate space it was created with
+        (vehicle space when ``is_dir_world_space=False``, world space when ``is_dir_world_space=True``).
+
+        Args:
+            up: The new up vector.
+        """
         self.send_ack_ge(
             "SetUltrasonicSensorUp",
             ack="CompletedSetUltrasonicSensorUp",
